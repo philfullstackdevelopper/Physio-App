@@ -14,12 +14,15 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Look up the instructor profile (may be null if this account is a patient).
+  // Look up the instructor profile. If this account is a patient, send them to
+  // their own space instead of the instructor dashboard.
   const { data: instructor } = await supabase
     .from("instructors")
     .select("full_name")
     .eq("id", user.id)
     .maybeSingle();
+
+  if (!instructor) redirect("/patient");
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">

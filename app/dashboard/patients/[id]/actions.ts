@@ -4,11 +4,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-// Assigns a condition to a patient and (re)fills their program with that
-// condition's exercises. RLS ensures the instructor can only touch their own patient.
+// Assigns a condition to a patient. The condition's workouts become available to
+// the patient. Changing the condition clears any previous workout recommendation.
 export async function assignCondition(formData: FormData) {
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -16,39 +15,39 @@ export async function assignCondition(formData: FormData) {
 
   const patientId = String(formData.get("patient_id") ?? "");
   const conditionId = String(formData.get("condition_id") ?? "");
-
   if (!patientId || !conditionId) {
     redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Veuillez choisir une condition.")}`);
   }
 
-  // Record the assigned condition on the patient.
-  const { error: updateError } = await supabase
+  const { error } = await supabase
     .from("patients")
-    .update({ condition_id: conditionId })
+    .update({ condition_id: conditionId, recommended_workout_id: null })
     .eq("id", patientId);
-  if (updateError) {
-    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(updateError.message)}`);
+  if (error) {
+    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
   }
 
-  // Clear any existing program, then copy the condition's exercises in.
-  await supabase.from("programs").delete().eq("patient_id", patientId);
+  revalidatePath(`/dashboard/patients/${patientId}`);
+  redirect(`/dashboard/patients/${patientId}`);
+}
 
-  const { data: conditionExercises } = await supabase
-    .from("condition_exercises")
-    .select("exercise_id, frequency")
-    .eq("condition_id", conditionId);
+// Sets (or clears) the instructor's recommended workout for this patient.
+export async function recommendWorkout(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  if (conditionExercises && conditionExercises.length > 0) {
-    const rows = conditionExercises.map((ce) => ({
-      patient_id: patientId,
-      exercise_id: ce.exercise_id,
-      frequency: ce.frequency,
-      instructor_id: user.id,
-    }));
-    const { error: insertError } = await supabase.from("programs").insert(rows);
-    if (insertError) {
-      redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(insertError.message)}`);
-    }
+  const patientId = String(formData.get("patient_id") ?? "");
+  const workoutId = String(formData.get("workout_id") ?? "") || null;
+
+  const { error } = await supabase
+    .from("patients")
+    .update({ recommended_workout_id: workoutId })
+    .eq("id", patientId);
+  if (error) {
+    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
   }
 
   revalidatePath(`/dashboard/patients/${patientId}`);
