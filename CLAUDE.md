@@ -33,6 +33,7 @@ Implement these tables in Supabase (Postgres) with row-level security (RLS) enab
 **`patients`**
 - `id` (uuid, references `auth.users`)
 - `instructor_id` (uuid, references `instructors.id`) — the owning instructor
+- `condition_id` (uuid, references `conditions.id`, nullable) — the patient's currently assigned condition/protocol
 - `full_name` (text)
 - `email` (text)
 - `created_at` (timestamptz, default now())
@@ -45,7 +46,21 @@ Implement these tables in Supabase (Postgres) with row-level security (RLS) enab
 - `created_by` (uuid, references `instructors.id`, nullable) — which instructor added it, if any
 - `created_at` (timestamptz, default now())
 
-**`programs`** (assigns exercises to a specific patient)
+**`conditions`** (a named protocol/ailment that bundles a set of exercises — e.g. "Lombalgie chronique". The instructor assigns a patient to a condition instead of picking exercises one by one.)
+- `id` (uuid, primary key)
+- `name` (text) — French name, e.g. "Entorse de la cheville"
+- `description` (text, nullable)
+- `created_by` (uuid, references `instructors.id`, nullable) — `null` means a pre-loaded platform condition (shared, read-only to instructors); a value means an instructor created their own
+- `created_at` (timestamptz, default now())
+
+**`condition_exercises`** (which exercises make up a condition, with a default frequency — the "template" copied into a patient's program when the condition is assigned)
+- `id` (uuid, primary key)
+- `condition_id` (uuid, references `conditions.id`)
+- `exercise_id` (uuid, references `exercises.id`)
+- `frequency` (text) — default frequency for this exercise within the condition
+- `created_at` (timestamptz, default now())
+
+**`programs`** (assigns exercises to a specific patient — auto-filled from a condition, then optionally tweaked by the instructor)
 - `id` (uuid, primary key)
 - `patient_id` (uuid, references `patients.id`)
 - `exercise_id` (uuid, references `exercises.id`)
@@ -64,6 +79,7 @@ Implement these tables in Supabase (Postgres) with row-level security (RLS) enab
 - An instructor can read/write only rows in `patients`, `programs`, and `exercise_logs` where `instructor_id` (or the patient's `instructor_id`, joined) matches their own `auth.uid()`.
 - A patient can read only their own row in `patients`, their own rows in `programs`, and can read/write only their own rows in `exercise_logs`.
 - `exercises` (the shared library) is readable by all authenticated instructors and patients, but only instructors can insert/update/delete.
+- `conditions` and `condition_exercises` are readable by all authenticated users. Pre-loaded platform conditions (`created_by` is null) are read-only to instructors. An instructor can insert their own conditions (with `created_by = auth.uid()`) and update/delete only their own; likewise they can only modify `condition_exercises` belonging to a condition they created.
 - Before applying any policy, explain in plain language what it does and why, so I can confirm it matches this intent.
 
 ## 4. Core user flows (Phase 1 only)
@@ -71,8 +87,12 @@ Implement these tables in Supabase (Postgres) with row-level security (RLS) enab
 **Instructor**
 1. Sign up / log in (Supabase Auth, email + password is sufficient for Phase 1 — no social login needed).
 2. See a list of their own patients. Add a new patient (name, email — patient gets invited to create their own login, or instructor sets a temporary password; pick the simpler Supabase-supported approach and explain the tradeoff).
-3. Build a program for a patient: pick exercises from the shared library, set a frequency for each.
-4. View a simple list of a patient's logged exercise completions.
+3. Assign the patient to a **condition**. This auto-fills the patient's program by copying that condition's exercises (with their default frequencies) into `programs`. The primary goal is minimal instructor effort — one assignment produces a full program.
+4. Optionally **tweak** an individual patient's program afterwards: add or remove specific exercises for that patient without affecting the shared condition.
+5. Instructors may also **create their own conditions** (name, description, and a set of exercises with frequencies), in addition to the pre-loaded platform conditions.
+6. View a simple list of a patient's logged exercise completions.
+
+The platform ships with a **pre-loaded starter set** of common conditions and exercises (French), so an instructor can assign a working program on day one. The instructor is positioned as a guide/recommender: programs are presented to patients as recommended by their physiotherapist, even though the exercise content may come from the shared platform library.
 
 **Patient**
 1. Log in.
