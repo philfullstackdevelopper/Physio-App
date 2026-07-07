@@ -6,7 +6,7 @@ import { assignCondition } from "./actions";
 type ProgramRow = {
   id: string;
   frequency: string | null;
-  exercises: { name: string; instructions: string | null } | null;
+  exercises: { name: string; instructions: string | null; media_url: string | null } | null;
 };
 
 export default async function PatientDetailPage({
@@ -42,7 +42,7 @@ export default async function PatientDetailPage({
 
   const { data: programData } = await supabase
     .from("programs")
-    .select("id, frequency, exercises ( name, instructions )")
+    .select("id, frequency, exercises ( name, instructions, media_url )")
     .eq("patient_id", id);
 
   const program = (programData ?? []) as unknown as ProgramRow[];
@@ -117,6 +117,16 @@ export default async function PatientDetailPage({
                   )}
                   {p.exercises?.instructions && (
                     <p className="mt-1 text-sm text-gray-500">{p.exercises.instructions}</p>
+                  )}
+                  {p.exercises?.media_url && (
+                    <a
+                      href={p.exercises.media_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline"
+                    >
+                      ▶ Voir une démonstration
+                    </a>
                   )}
                 </li>
               ))}
