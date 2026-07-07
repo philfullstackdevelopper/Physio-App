@@ -34,6 +34,7 @@ Implement these tables in Supabase (Postgres) with row-level security (RLS) enab
 - `id` (uuid, references `auth.users`)
 - `instructor_id` (uuid, references `instructors.id`) — the owning instructor
 - `condition_id` (uuid, references `conditions.id`, nullable) — the patient's currently assigned condition/protocol
+- `recommended_workout_id` (uuid, references `workouts.id`, nullable) — the workout the instructor recommends; the patient may still choose another workout of their condition
 - `full_name` (text)
 - `email` (text)
 - `created_at` (timestamptz, default now())
@@ -53,33 +54,35 @@ Implement these tables in Supabase (Postgres) with row-level security (RLS) enab
 - `created_by` (uuid, references `instructors.id`, nullable) — `null` means a pre-loaded platform condition (shared, read-only to instructors); a value means an instructor created their own
 - `created_at` (timestamptz, default now())
 
-**`condition_exercises`** (which exercises make up a condition, with a default frequency — the "template" copied into a patient's program when the condition is assigned)
+**`workouts`** (a workout/session alternative belonging to a condition. Each condition offers several workouts; the patient does whole sessions, not loose exercises.)
 - `id` (uuid, primary key)
 - `condition_id` (uuid, references `conditions.id`)
-- `exercise_id` (uuid, references `exercises.id`)
-- `frequency` (text) — default frequency for this exercise within the condition
+- `name` (text) — French, e.g. "Séance express", "Séance complète"
+- `description` (text, nullable)
+- `duration_minutes` (int, nullable) — how long the session takes
+- `times_per_week` (int, nullable) — recommended number of times to do it per week
+- `created_by` (uuid, references `instructors.id`, nullable) — `null` = pre-loaded platform workout (read-only); a value = an instructor's own workout
 - `created_at` (timestamptz, default now())
 
-**`programs`** (assigns exercises to a specific patient — auto-filled from a condition, then optionally tweaked by the instructor)
+**`workout_exercises`** (which exercises make up a workout)
 - `id` (uuid, primary key)
-- `patient_id` (uuid, references `patients.id`)
+- `workout_id` (uuid, references `workouts.id`)
 - `exercise_id` (uuid, references `exercises.id`)
-- `frequency` (text) — e.g. "daily", "3x/week"; keep this a simple text field for Phase 1, not a complex scheduling structure
-- `instructor_id` (uuid, references `instructors.id`) — the instructor who assigned it, for RLS convenience
+- `position` (int, default 0) — display order within the workout
 - `created_at` (timestamptz, default now())
 
-**`exercise_logs`** (a patient marking an exercise done — this is the "suivi en ligne")
+**`workout_logs`** (a patient marking a whole workout session done — this is the "suivi en ligne". Adherence = completions vs. the workout's `times_per_week`.)
 - `id` (uuid, primary key)
-- `program_id` (uuid, references `programs.id`)
 - `patient_id` (uuid, references `patients.id`)
+- `workout_id` (uuid, references `workouts.id`)
 - `completed_at` (timestamptz, default now())
 
 ### RLS rules to enforce
 
-- An instructor can read/write only rows in `patients`, `programs`, and `exercise_logs` where `instructor_id` (or the patient's `instructor_id`, joined) matches their own `auth.uid()`.
-- A patient can read only their own row in `patients`, their own rows in `programs`, and can read/write only their own rows in `exercise_logs`.
-- `exercises` (the shared library) is readable by all authenticated instructors and patients, but only instructors can insert/update/delete.
-- `conditions` and `condition_exercises` are readable by all authenticated users. Pre-loaded platform conditions (`created_by` is null) are read-only to instructors. An instructor can insert their own conditions (with `created_by = auth.uid()`) and update/delete only their own; likewise they can only modify `condition_exercises` belonging to a condition they created.
+- An instructor can read/write only rows in `patients` where `instructor_id` matches their own `auth.uid()`, and can read `workout_logs` of their own patients.
+- A patient can read only their own row in `patients`, and can read/write only their own rows in `workout_logs`.
+- `exercises` (the shared library) is readable by all authenticated instructors and patients, but only instructors can insert/update/delete (an instructor may modify only exercises they created; platform ones are read-only).
+- `conditions`, `workouts`, and `workout_exercises` are readable by all authenticated users. Pre-loaded platform rows (`created_by` is null) are read-only to instructors. An instructor can insert their own conditions/workouts (with `created_by = auth.uid()`) and update/delete only their own; they can only modify `workout_exercises` belonging to a workout they created.
 - Before applying any policy, explain in plain language what it does and why, so I can confirm it matches this intent.
 
 ## 4. Core user flows (Phase 1 only)
@@ -87,17 +90,17 @@ Implement these tables in Supabase (Postgres) with row-level security (RLS) enab
 **Instructor**
 1. Sign up / log in (Supabase Auth, email + password is sufficient for Phase 1 — no social login needed).
 2. See a list of their own patients. Add a new patient (name, email — patient gets invited to create their own login, or instructor sets a temporary password; pick the simpler Supabase-supported approach and explain the tradeoff).
-3. Assign the patient to a **condition**. This auto-fills the patient's program by copying that condition's exercises (with their default frequencies) into `programs`. The primary goal is minimal instructor effort — one assignment produces a full program.
-4. Optionally **tweak** an individual patient's program afterwards: add or remove specific exercises for that patient without affecting the shared condition.
-5. Instructors may also **create their own conditions** (name, description, and a set of exercises with frequencies), in addition to the pre-loaded platform conditions.
-6. View a simple list of a patient's logged exercise completions.
+3. Assign the patient to a **condition**. The condition already offers several **workouts** (session alternatives), each with a duration and a recommended number of times per week. One assignment gives the patient a full set of options — minimal instructor effort.
+4. Optionally **recommend a specific workout** for the patient (`patients.recommended_workout_id`); the patient may still choose another workout of that condition.
+5. Instructors may also **create their own conditions and workouts** (name, description, duration, times/week, and the exercises in each workout), in addition to the pre-loaded platform ones.
+6. View a patient's **adherence** — how many times they've completed each workout, versus the recommended times per week.
 
-The platform ships with a **pre-loaded starter set** of common conditions and exercises (French), so an instructor can assign a working program on day one. The instructor is positioned as a guide/recommender: programs are presented to patients as recommended by their physiotherapist, even though the exercise content may come from the shared platform library.
+The platform ships with a **pre-loaded starter set** of common conditions, workouts, and exercises (French), so an instructor can assign a working program on day one. The instructor is positioned as a guide/recommender: workouts are presented to patients as recommended by their physiotherapist, even though the content may come from the shared platform library.
 
 **Patient**
 1. Log in.
-2. See today's assigned exercises, with instructions/media for each.
-3. Mark each exercise as "done" — this creates a row in `exercise_logs`.
+2. See the **workout alternatives** for their condition — each with its duration and recommended times/week — with the instructor's recommendation highlighted.
+3. Open a workout to see its exercises (instructions + demonstration video), and **mark the whole session as done** — this creates a row in `workout_logs`.
 
 ## 5. Explicitly out of scope for Phase 1
 
