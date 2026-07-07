@@ -41,11 +41,17 @@ export default async function PatientsPage() {
           ) : (
             <ul className="divide-y divide-gray-100">
               {patients.map((p) => (
-                <li key={p.id} className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p className="font-medium text-gray-900">{p.full_name}</p>
-                    <p className="text-sm text-gray-500">{p.email}</p>
-                  </div>
+                <li key={p.id}>
+                  <Link
+                    href={`/dashboard/patients/${p.id}`}
+                    className="flex items-center justify-between px-4 py-3 hover:bg-gray-50"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{p.full_name}</p>
+                      <p className="text-sm text-gray-500">{p.email}</p>
+                    </div>
+                    <span className="text-gray-400">→</span>
+                  </Link>
                 </li>
               ))}
             </ul>
