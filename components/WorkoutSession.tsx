@@ -13,6 +13,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { Prescription } from "@/lib/exercise/prescription";
 import { analyzerForExercise } from "@/lib/exercise/analyzers";
 import { computeStreak } from "@/lib/exercise/streak";
+import { categoryFor } from "@/lib/exercise/category";
+import { suggestAdaptation } from "@/lib/exercise/adaptation";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 
 export interface SessionExercise {
@@ -111,9 +113,25 @@ export default function WorkoutSession({
   const [note, setNote] = useState("");
   const [fbSent, setFbSent] = useState(false);
   const [fbBusy, setFbBusy] = useState(false);
+  // Optional per-exercise feeling, captured on the celebration screen.
+  const [exDiff, setExDiff] = useState<number | null>(null);
+  const [exNote, setExNote] = useState("");
 
   const total = exercises.length;
   const current = exercises[idx];
+
+  // From the just-entered feeling, a non-binding adaptation suggestion. Candidate
+  // substitutes = other exercises of the same body area in this workout.
+  const suggestion =
+    current && exDiff != null
+      ? suggestAdaptation({
+          difficulty: exDiff,
+          goalReps: prescription.goalReps,
+          candidates: exercises
+            .filter((e) => e.name !== current.name && categoryFor(e.name) === categoryFor(current.name))
+            .map((e) => e.name),
+        })
+      : null;
 
   const finish = async () => {
     // Log the completed workout (RLS: patient can insert their own logs),
@@ -155,7 +173,32 @@ export default function WorkoutSession({
 
   const onExerciseDone = () => setPhase("celebrate");
 
-  const next = () => {
+  // Save the optional per-exercise feeling (skipped if the patient left it blank).
+  const saveExerciseFeedback = async () => {
+    if (exDiff == null && !exNote.trim()) return;
+    try {
+      await createClient().from("exercise_feedback").insert({
+        patient_id: patientId,
+        workout_id: workoutId,
+        exercise_name: current.name,
+        difficulty: exDiff,
+        notes: exNote.trim() || null,
+      });
+    } catch {
+      /* non-blocking — the session continues regardless */
+    }
+  };
+
+  const redo = () => {
+    setExDiff(null);
+    setExNote("");
+    setPhase("camera"); // restart the same exercise from the guided step
+  };
+
+  const next = async () => {
+    await saveExerciseFeedback();
+    setExDiff(null);
+    setExNote("");
     if (idx < total - 1) {
       setIdx(idx + 1);
       setPhase("intro");
@@ -277,12 +320,74 @@ export default function WorkoutSession({
           <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-1.5 text-sm font-semibold text-orange-600">
             🔥 {idx + 1} d&apos;affilée
           </div>
-          <button
-            onClick={next}
-            className="mt-6 w-full rounded-xl bg-teal-600 py-3 font-medium text-white hover:bg-teal-700"
-          >
-            {idx < total - 1 ? "Exercice suivant →" : "Terminer la séance 🏆"}
-          </button>
+
+          {/* Optional per-exercise feeling → richer data to tune future programs. */}
+          <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-left">
+            <p className="text-sm font-medium text-slate-800">
+              Comment s&apos;est passé cet exercice ?{" "}
+              <span className="font-normal text-slate-400">(optionnel)</span>
+            </p>
+            <p className="text-xs text-slate-500">Difficulté ressentie (1 = très facile, 10 = très difficile)</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setExDiff(exDiff === n ? null : n)}
+                  className={`h-9 w-9 rounded-full text-sm font-medium ${
+                    exDiff === n
+                      ? "bg-teal-600 text-white"
+                      : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={exNote}
+              onChange={(e) => setExNote(e.target.value)}
+              rows={2}
+              placeholder="Une douleur, une gêne, un ressenti… (optionnel)"
+              className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
+            />
+          </div>
+
+          {suggestion && suggestion.direction !== "none" && (
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-900">
+              <p className="font-medium">
+                💡{" "}
+                {suggestion.direction === "easier"
+                  ? "Cet exercice vous a paru difficile."
+                  : "Cet exercice vous a paru facile."}
+              </p>
+              <p className="mt-1">La prochaine fois, vous pourriez :</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                {suggestion.newReps && (
+                  <li>
+                    {suggestion.direction === "easier" ? "réduire" : "augmenter"} à{" "}
+                    {suggestion.newReps} répétitions (au lieu de {suggestion.currentReps})
+                  </li>
+                )}
+                {suggestion.substitute && <li>essayer « {suggestion.substitute} »</li>}
+              </ul>
+              <p className="mt-1 text-amber-700">Parlez-en à votre kiné si besoin.</p>
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <button
+              onClick={redo}
+              className="rounded-xl border border-slate-300 px-4 py-3 font-medium text-slate-700 hover:bg-slate-50 sm:flex-1"
+            >
+              🔁 Refaire
+            </button>
+            <button
+              onClick={next}
+              className="rounded-xl bg-teal-600 px-4 py-3 font-medium text-white hover:bg-teal-700 sm:flex-1"
+            >
+              {idx < total - 1 ? "Exercice suivant →" : "Terminer la séance 🏆"}
+            </button>
+          </div>
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">

@@ -5,6 +5,9 @@ import { startOfWeekISO } from "@/lib/week";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { ageFromDob } from "@/lib/exercise/patientProfile";
 import { computeStreak } from "@/lib/exercise/streak";
+import { categoryFor } from "@/lib/exercise/category";
+import { STAGE_START_WEEK } from "@/lib/exercise/stageProgress";
+import { suggestAdaptation } from "@/lib/exercise/adaptation";
 import { assignCondition, recommendWorkout } from "./actions";
 
 type WorkoutExercise = {
@@ -26,6 +29,21 @@ const ACTIVITY_LABELS: Record<string, string> = {
   moderate: "Modérée",
   active: "Active",
 };
+
+type ExerciseSummary = {
+  name: string;
+  count: number;
+  diffSum: number;
+  diffCount: number;
+  lastNote: string | null;
+};
+
+// Mean difficulty on the 1-10 scale of migration 0008. Returns -1 when the patient
+// left every rating blank, which sorts those exercises to the bottom.
+const avgDifficulty = (e: ExerciseSummary) => (e.diffCount ? e.diffSum / e.diffCount : -1);
+
+// Bucket a 1-10 average into a plain word.
+const difficultyLabel = (avg: number) => (avg < 4 ? "Facile" : avg < 7 ? "Moyen" : "Difficile");
 
 export default async function PatientDetailPage({
   params,
@@ -98,6 +116,31 @@ export default async function PatientDetailPage({
     ? Math.round((feedback.reduce((s, f) => s + (f.pain_score as number), 0) / feedback.length) * 10) / 10
     : null;
 
+  // Per-exercise feeling. Until migration 0008 is run the table is absent, the query
+  // errors, `data` is null — and the section below simply doesn't render.
+  const { data: exFeedback } = await supabase
+    .from("exercise_feedback")
+    .select("exercise_name, difficulty, notes, created_at")
+    .eq("patient_id", id)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  // Collapse the raw rows into one entry per exercise, hardest first.
+  const exSummary = Object.values(
+    (exFeedback ?? []).reduce<Record<string, ExerciseSummary>>((acc, r) => {
+      const name = r.exercise_name as string;
+      const entry = (acc[name] ??= { name, count: 0, diffSum: 0, diffCount: 0, lastNote: null });
+      entry.count += 1;
+      if (r.difficulty != null) {
+        entry.diffSum += r.difficulty as number;
+        entry.diffCount += 1;
+      }
+      // Rows arrive newest-first, so the first note we meet is the most recent one.
+      if (entry.lastNote === null && r.notes) entry.lastNote = r.notes as string;
+      return acc;
+    }, {}),
+  ).sort((a, b) => avgDifficulty(b) - avgDifficulty(a));
+
   // Workouts of the ASSIGNED condition (kiné-driven), with weekly completions.
   let workouts: Workout[] = [];
   const weekCount: Record<string, number> = {};
@@ -119,6 +162,25 @@ export default async function PatientDetailPage({
       .gte("completed_at", weekStart);
     for (const l of logs ?? []) weekCount[l.workout_id] = (weekCount[l.workout_id] ?? 0) + 1;
   }
+
+  // Substitution pool for the adaptation suggestions: each exercise's body-area
+  // category and its gentlest stage rank (by the workout it appears in), so we
+  // can offer a comparable easier/harder alternative from the same condition.
+  const exStageRank: Record<string, number> = {};
+  const exCategory: Record<string, string> = {};
+  for (const w of workouts) {
+    const rank = w.stage ? STAGE_START_WEEK[w.stage as InjuryStage] ?? 99 : 99;
+    for (const we of w.workout_exercises ?? []) {
+      const n = we.exercises?.name;
+      if (!n) continue;
+      if (exStageRank[n] == null || rank < exStageRank[n]) exStageRank[n] = rank;
+      exCategory[n] = categoryFor(n);
+    }
+  }
+  const candidatesFor = (name: string) =>
+    Object.keys(exStageRank)
+      .filter((n) => n !== name && exCategory[n] === categoryFor(name))
+      .sort((a, b) => exStageRank[a] - exStageRank[b]); // gentle → hard
 
   const stageLabel = profile?.injury_stage
     ? STAGE_LABELS[profile.injury_stage as InjuryStage]
@@ -234,6 +296,64 @@ export default async function PatientDetailPage({
                   {f.notes ? <p className="mt-0.5 italic text-slate-600">« {f.notes as string} »</p> : null}
                 </li>
               ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Ressenti par exercice — quels mouvements sont les plus durs */}
+        {exSummary.length > 0 && (
+          <section className="mt-6 rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-medium text-slate-900">Ressenti par exercice</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Du plus difficile au plus facile, pour adapter le prochain programme.
+            </p>
+            <ul className="mt-3 divide-y divide-slate-100 text-sm">
+              {exSummary.map((e) => {
+                const avg = avgDifficulty(e);
+                const rated = avg >= 0;
+                const suggestion = rated
+                  ? suggestAdaptation({
+                      difficulty: Math.round(avg),
+                      goalReps: 10,
+                      candidates: candidatesFor(e.name),
+                    })
+                  : null;
+                const adapt = suggestion && suggestion.direction !== "none" ? suggestion : null;
+                return (
+                  <li key={e.name} className="py-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-medium text-slate-800">{e.name}</span>
+                      <span className="whitespace-nowrap text-slate-700">
+                        {rated ? (
+                          <>
+                            <span className="font-semibold">{Math.round(avg * 10) / 10}/10</span>{" "}
+                            <span className="text-slate-500">{difficultyLabel(avg)}</span>
+                          </>
+                        ) : (
+                          <span className="text-slate-400">Pas de note</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <span className="text-xs text-slate-400">
+                        {e.count} retour{e.count > 1 ? "s" : ""}
+                      </span>
+                      {adapt && (
+                        <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-600">
+                          À adapter
+                        </span>
+                      )}
+                    </div>
+                    {adapt && (
+                      <p className="mt-1 text-sm text-slate-600">
+                        → {adapt.direction === "easier" ? "Alléger" : "Intensifier"} l&apos;intensité
+                        {adapt.substitute && <> · ou proposer « {adapt.substitute} »</>}
+                      </p>
+                    )}
+                    {e.lastNote && <p className="mt-0.5 italic text-slate-600">« {e.lastNote} »</p>}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}

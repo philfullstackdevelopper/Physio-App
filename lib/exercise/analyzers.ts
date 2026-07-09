@@ -146,3 +146,24 @@ export function analyzerForExercise(name: string): Analyzer {
   // Everything else (squats, lunges, hops…) — generic 3D auto rep counting.
   return { kind: "auto", minRange: 25, cue: "Comptage automatique de vos répétitions 💪" };
 }
+
+/**
+ * Rest (in seconds) to take between sets, scaled to how demanding the exercise
+ * is. Small paced movements need little recovery; compound strength work and
+ * long holds need more. Clamped to a sensible 15–45 s window.
+ */
+export function restSecondsFor(analyzer: Analyzer, goalReps = 10): number {
+  switch (analyzer.kind) {
+    case "paced":
+      return 15; // small, low-load movements (neck, ankle, wrist)
+    case "manual":
+      return 20;
+    case "hold":
+      return analyzer.holdSeconds >= 30 ? 35 : 25; // long isometric holds fatigue more
+    case "reps":
+    case "auto":
+      return goalReps >= 12 ? 45 : 35; // compound strength work
+    default:
+      return 20;
+  }
+}

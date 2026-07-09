@@ -5,6 +5,7 @@ import { isProfileComplete } from "@/lib/exercise/patientProfile";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { computeStreak } from "@/lib/exercise/streak";
 import { currentStage, careWeek } from "@/lib/exercise/stageProgress";
+import { startOfTodayISO } from "@/lib/week";
 import { signout } from "./actions";
 
 type Workout = {
@@ -15,6 +16,56 @@ type Workout = {
   times_per_week: number | null;
   workout_exercises: { exercises: { name: string } | null }[];
 };
+
+/** One workout card. `done` = already completed today (green), `isRec` = the
+ *  practitioner's recommended one. */
+function WorkoutCard({ w, isRec, done = false }: { w: Workout; isRec: boolean; done?: boolean }) {
+  const exNames = (w.workout_exercises ?? [])
+    .map((we) => we.exercises?.name)
+    .filter(Boolean) as string[];
+  return (
+    <Link
+      href={`/patient/${w.id}`}
+      className={`block rounded-2xl border p-5 shadow-sm transition hover:shadow-md ${
+        done
+          ? "border-teal-300 bg-teal-50"
+          : isRec
+            ? "border-teal-500 bg-white ring-1 ring-teal-500"
+            : "border-slate-100 bg-white"
+      }`}
+    >
+      {done ? (
+        <span className="inline-block rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-medium text-white">
+          ✅ Faite aujourd&apos;hui
+        </span>
+      ) : isRec ? (
+        <span className="inline-block rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700">
+          ★ Recommandée par votre praticien
+        </span>
+      ) : null}
+      <div className="mt-2 flex items-baseline justify-between gap-3">
+        <h3 className="text-lg font-semibold text-slate-900">{w.name}</h3>
+        <span className="shrink-0 font-bold text-teal-700">
+          <span className="text-3xl tabular-nums">{w.duration_minutes}</span>
+          <span className="text-sm font-medium text-slate-400"> min</span>
+        </span>
+      </div>
+      {w.description && <p className="mt-1 text-sm text-slate-500">{w.description}</p>}
+      {exNames.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-1.5">
+          {exNames.map((n, i) => (
+            <li key={i} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
+              {n}
+            </li>
+          ))}
+        </ul>
+      )}
+      <span className="mt-4 inline-block text-sm font-medium text-teal-700">
+        {done ? "Refaire la séance →" : "Voir la séance →"}
+      </span>
+    </Link>
+  );
+}
 
 export default async function PatientHome() {
   const supabase = await createClient();
@@ -66,15 +117,27 @@ export default async function PatientHome() {
   // Daily streak (consecutive days with a completed workout).
   const { data: streakLogs } = await supabase
     .from("workout_logs")
-    .select("completed_at")
+    .select("completed_at, workout_id")
     .eq("patient_id", user.id)
     .order("completed_at", { ascending: false })
     .limit(400);
   const streak = computeStreak((streakLogs ?? []).map((l) => l.completed_at as string));
 
+  // Which workouts were completed TODAY? (reuses the logs already fetched)
+  const todayISO = startOfTodayISO();
+  const doneTodayIds = new Set(
+    (streakLogs ?? [])
+      .filter((l) => (l.completed_at as string) >= todayISO)
+      .map((l) => l.workout_id as string),
+  );
+  const doneToday = doneTodayIds.size > 0;
+
   // Recommended workout first, then by duration.
   const recId = patient?.recommended_workout_id;
   const ordered = [...workouts].sort((a, b) => (a.id === recId ? -1 : b.id === recId ? 1 : 0));
+  // Split the program: what's already been done today vs. what's left to continue.
+  const doneWorkouts = ordered.filter((w) => doneTodayIds.has(w.id));
+  const remainingWorkouts = ordered.filter((w) => !doneTodayIds.has(w.id));
 
   return (
     <main className="min-h-screen p-6 sm:p-8">
@@ -118,57 +181,53 @@ export default async function PatientHome() {
           </Link>
         </div>
 
+        {doneToday && (
+          <>
+            <div className="mt-6 rounded-2xl border border-teal-200 bg-teal-50 p-5">
+              <p className="font-display text-xl font-semibold text-teal-800">
+                ✅ Séance faite aujourd&apos;hui !
+              </p>
+              <p className="mt-1 text-sm text-teal-700">
+                Beau travail — revenez demain pour garder votre série. 🔥
+              </p>
+            </div>
+            {doneWorkouts.length > 0 && (
+              <div className="mt-4 space-y-4">
+                {doneWorkouts.map((w) => (
+                  <WorkoutCard key={w.id} w={w} isRec={w.id === recId} done />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
         {workouts.length === 0 ? (
           <div className="mt-8 rounded-xl border border-slate-100 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
             Votre praticien n&apos;a pas encore configuré votre programme. Revenez bientôt !
           </div>
+        ) : doneToday ? (
+          remainingWorkouts.length > 0 && (
+            <>
+              <h2 className="mt-8 text-lg font-medium text-slate-900">Pour continuer aujourd&apos;hui</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                Optionnel — d&apos;autres séances, si vous vous sentez d&apos;attaque.
+              </p>
+              <div className="mt-4 space-y-4">
+                {remainingWorkouts.map((w) => (
+                  <WorkoutCard key={w.id} w={w} isRec={w.id === recId} />
+                ))}
+              </div>
+            </>
+          )
         ) : (
           <>
             <h2 className="mt-8 text-lg font-medium text-slate-900">
               Routines suggérées pour aujourd&apos;hui
             </h2>
             <div className="mt-4 space-y-4">
-              {ordered.map((w) => {
-                const isRec = w.id === recId;
-                const exNames = (w.workout_exercises ?? [])
-                  .map((we) => we.exercises?.name)
-                  .filter(Boolean) as string[];
-                return (
-                  <Link
-                    key={w.id}
-                    href={`/patient/${w.id}`}
-                    className={`block rounded-2xl border bg-white p-5 shadow-sm transition hover:shadow-md ${
-                      isRec ? "border-teal-500 ring-1 ring-teal-500" : "border-slate-100"
-                    }`}
-                  >
-                    {isRec && (
-                      <span className="inline-block rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700">
-                        ★ Recommandée par votre praticien
-                      </span>
-                    )}
-                    <div className="mt-2 flex items-baseline justify-between gap-3">
-                      <h3 className="text-lg font-semibold text-slate-900">{w.name}</h3>
-                      <span className="shrink-0 font-bold text-teal-700">
-                        <span className="text-3xl tabular-nums">{w.duration_minutes}</span>
-                        <span className="text-sm font-medium text-slate-400"> min</span>
-                      </span>
-                    </div>
-                    {w.description && <p className="mt-1 text-sm text-slate-500">{w.description}</p>}
-                    {exNames.length > 0 && (
-                      <ul className="mt-3 flex flex-wrap gap-1.5">
-                        {exNames.map((n, i) => (
-                          <li key={i} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
-                            {n}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <span className="mt-4 inline-block text-sm font-medium text-teal-700">
-                      Voir la séance →
-                    </span>
-                  </Link>
-                );
-              })}
+              {ordered.map((w) => (
+                <WorkoutCard key={w.id} w={w} isRec={w.id === recId} />
+              ))}
             </div>
           </>
         )}

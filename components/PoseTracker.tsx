@@ -17,7 +17,7 @@ import type {
   Landmark,
 } from "@mediapipe/tasks-vision";
 import { DEFAULT_SQUAT, type Prescription } from "@/lib/exercise/prescription";
-import { SQUAT_ANALYZER, type Analyzer } from "@/lib/exercise/analyzers";
+import { SQUAT_ANALYZER, restSecondsFor, type Analyzer } from "@/lib/exercise/analyzers";
 
 type Tone = "good" | "warn" | "info";
 type Feedback = { text: string; tone: Tone };
@@ -93,6 +93,19 @@ export default function PoseTracker({
   const [pacedRemaining, setPacedRemaining] = useState<number | null>(null);
   const [active, setActive] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  // Pause: freezes every counter without ending the exercise.
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
+  // Guidance mode: "camera" (pose tracking) or "audio" (beeps only, no video).
+  const modeRef = useRef<"camera" | "audio">("camera");
+  const [mode, setMode] = useState<"camera" | "audio">("camera");
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Rest between sets: a difficulty-scaled countdown that freezes counting.
+  const restingRef = useRef(false);
+  const restRemainingRef = useRef(0);
+  const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [rest, setRest] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Feedback>({
     text: "Cliquez sur « Démarrer » pour lancer l'analyse.",
     tone: "info",
@@ -105,6 +118,92 @@ export default function PoseTracker({
     if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
     popupTimeoutRef.current = setTimeout(() => setPopup(null), 1700);
   }, []);
+
+  // Short synthesized "beep" (Web Audio) — no sound files needed. Used to pace
+  // the audio-only mode: a top per rep, a longer tone at the end of a hold/set.
+  const beep = useCallback((freq: number, ms: number) => {
+    try {
+      const w = window as unknown as {
+        AudioContext?: typeof AudioContext;
+        webkitAudioContext?: typeof AudioContext;
+      };
+      const Ctor = w.AudioContext ?? w.webkitAudioContext;
+      if (!Ctor) return;
+      let ctx = audioCtxRef.current;
+      if (!ctx) {
+        ctx = new Ctor();
+        audioCtxRef.current = ctx;
+      }
+      if (ctx.state === "suspended") void ctx.resume();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      const t = ctx.currentTime;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.25, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + ms / 1000 + 0.02);
+    } catch {
+      /* audio unavailable — stay silent */
+    }
+  }, []);
+
+  // Create/resume the audio context on a user gesture so later beeps can play.
+  const unlockAudio = useCallback(() => {
+    try {
+      const w = window as unknown as {
+        AudioContext?: typeof AudioContext;
+        webkitAudioContext?: typeof AudioContext;
+      };
+      const Ctor = w.AudioContext ?? w.webkitAudioContext;
+      if (!Ctor) return;
+      audioCtxRef.current = audioCtxRef.current ?? new Ctor();
+      void audioCtxRef.current.resume?.();
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // End a rest early / when its countdown hits zero: resume the next set.
+  const endRest = useCallback(() => {
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    restTimerRef.current = null;
+    restingRef.current = false;
+    setRest(null);
+    const an = anRef.current;
+    if (an.kind === "hold") {
+      holdRemainingRef.current = an.holdSeconds; // fresh target for the next hold
+      setHoldRemaining(an.holdSeconds);
+    }
+    beep(880, 150); // "go" for the next set
+    setFeedback({ text: "C'est reparti ! Série suivante 💪", tone: "good" });
+  }, [beep]);
+
+  // Rest between sets — counting stays frozen (via restingRef) until it ends.
+  const startRest = useCallback(
+    (seconds: number) => {
+      restingRef.current = true;
+      restRemainingRef.current = seconds;
+      setRest(seconds);
+      if (restTimerRef.current) clearInterval(restTimerRef.current);
+      restTimerRef.current = setInterval(() => {
+        if (completedRef.current) {
+          if (restTimerRef.current) clearInterval(restTimerRef.current);
+          restTimerRef.current = null;
+          return;
+        }
+        if (pausedRef.current) return; // a manual pause also freezes the rest
+        restRemainingRef.current = Math.max(0, restRemainingRef.current - 0.25);
+        setRest(Math.ceil(restRemainingRef.current));
+        if (restRemainingRef.current <= 0) endRest();
+      }, 250);
+    },
+    [endRest],
+  );
 
   const finishAll = useCallback(
     (done: number) => {
@@ -119,24 +218,33 @@ export default function PoseTracker({
 
   // One completed repetition (used by rep detection AND the manual button).
   const registerRep = useCallback(() => {
+    if (pausedRef.current || restingRef.current) return; // ignore stray taps mid-pause/rest
     const ex = exRef.current;
     repsRef.current += 1;
     setReps(repsRef.current);
+    beep(660, 90); // audible "top" for each rep (camera AND audio modes)
     if (repsRef.current >= ex.goalReps) {
       setsRef.current += 1;
       setSetsDone(setsRef.current);
       repsRef.current = 0;
       setReps(0);
-      if (setsRef.current >= ex.goalSets) finishAll(setsRef.current * ex.goalReps);
-      else flashPopup(`Série ${setsRef.current} terminée ! Reposez-vous 🧘`, "good");
+      beep(1200, 220); // set complete
+      if (setsRef.current >= ex.goalSets) {
+        finishAll(setsRef.current * ex.goalReps);
+      } else {
+        flashPopup(`Série ${setsRef.current} terminée ! Reposez-vous 🧘`, "good");
+        startRest(restSecondsFor(anRef.current, ex.goalReps)); // rest before next set
+      }
     } else {
       flashPopup("Belle répétition ! 💪", "good");
     }
-  }, [finishAll, flashPopup]);
+  }, [beep, finishAll, flashPopup, startRest]);
 
   // Metronome: add +1 rep every `secondsPerRep` while running.
   const startPaced = useCallback(
     (secondsPerRep: number) => {
+      // Guard: never let two metronome timers run at once (would count double-speed).
+      if (pacedTimerRef.current) clearInterval(pacedTimerRef.current);
       pacedRemainingRef.current = secondsPerRep;
       setPacedRemaining(secondsPerRep);
       pacedTimerRef.current = setInterval(() => {
@@ -145,6 +253,8 @@ export default function PoseTracker({
           pacedTimerRef.current = null;
           return;
         }
+        if (pausedRef.current) return; // frozen while paused
+        if (restingRef.current) return; // frozen during a rest
         pacedRemainingRef.current -= 0.25;
         if (pacedRemainingRef.current <= 0) {
           registerRep();
@@ -154,6 +264,40 @@ export default function PoseTracker({
       }, 250);
     },
     [registerRep],
+  );
+
+  // Audio-only timed hold: counts the seconds down by the clock (no camera),
+  // beeping at the end of each hold. Mirrors the camera hold logic.
+  const startHoldTimer = useCallback(
+    () => {
+      if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+      holdTimerRef.current = setInterval(() => {
+        const ex = exRef.current;
+        if (completedRef.current) {
+          if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+          holdTimerRef.current = null;
+          return;
+        }
+        if (pausedRef.current) return; // frozen while paused
+        if (restingRef.current) return; // frozen during a rest
+        holdRemainingRef.current = Math.max(0, holdRemainingRef.current - 0.25);
+        setHoldRemaining(Math.ceil(holdRemainingRef.current));
+        if (holdRemainingRef.current <= 0) {
+          beep(1200, 300); // end of a hold
+          setsRef.current += 1;
+          setSetsDone(setsRef.current);
+          if (setsRef.current >= ex.goalSets) {
+            if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+            holdTimerRef.current = null;
+            finishAll(setsRef.current);
+          } else {
+            flashPopup(`Maintien ${setsRef.current} terminé ! Reposez-vous 🧘`, "good");
+            startRest(restSecondsFor(anRef.current, ex.goalReps)); // rest before next hold
+          }
+        }
+      }, 250);
+    },
+    [beep, finishAll, flashPopup, startRest],
   );
 
   // Actually start counting (called when the 3-2-1 countdown reaches zero).
@@ -167,6 +311,12 @@ export default function PoseTracker({
     setReps(0);
     setSetsDone(0);
     completedRef.current = false;
+    pausedRef.current = false;
+    setPaused(false);
+    restingRef.current = false;
+    setRest(null);
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    restTimerRef.current = null;
     candMinRef.current = new Array(AUTO_JOINTS.length).fill(Infinity);
     candMaxRef.current = new Array(AUTO_JOINTS.length).fill(-Infinity);
     lastTsRef.current = null;
@@ -177,31 +327,64 @@ export default function PoseTracker({
     activeRef.current = true;
     setActive(true);
     setFeedback({ text: "cue" in an ? an.cue : "C'est parti !", tone: "info" });
-    if (an.kind === "paced") startPaced(an.secondsPerRep);
-  }, [startPaced]);
+    beep(880, 150); // "go"
+    // Start the matching timer. In audio mode (no camera) we pace holds AND
+    // reps by the clock; in camera mode the video drives hold/rep counting.
+    if (an.kind === "hold") {
+      if (modeRef.current === "audio") startHoldTimer();
+    } else if (an.kind === "paced") {
+      startPaced(an.secondsPerRep);
+    } else if (modeRef.current === "audio") {
+      startPaced(3); // pace generic reps by sound when there's no camera
+    }
+  }, [beep, startPaced, startHoldTimer]);
 
   // Patient-triggered 3-2-1 countdown before the exercise begins.
   const startCountdown = useCallback(() => {
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-    setCountdown(3);
+    // Track the count in a plain closure variable so the "go" side effect lives
+    // in the interval callback (run once), NOT inside a setState updater (which
+    // React re-runs in Strict Mode — that double-fired begin() and started the
+    // exercise timer twice, counting at double speed).
+    let remaining = 3;
+    setCountdown(remaining);
     countdownTimerRef.current = setInterval(() => {
-      setCountdown((c) => {
-        const next = (c ?? 1) - 1;
-        if (next <= 0) {
-          if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-          countdownTimerRef.current = null;
-          begin();
-          return null;
-        }
-        return next;
-      });
+      remaining -= 1;
+      if (remaining <= 0) {
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+        setCountdown(null);
+        begin();
+      } else {
+        setCountdown(remaining);
+      }
     }, 1000);
   }, [begin]);
+
+  // Pause / resume — flip the flag; every counter checks it.
+  const togglePause = useCallback(() => {
+    const next = !pausedRef.current;
+    pausedRef.current = next;
+    setPaused(next);
+    lastTsRef.current = null; // reset hold timing so it doesn't jump on resume
+    setFeedback(
+      next
+        ? { text: "⏸️ En pause — reprenez quand vous êtes prêt.", tone: "info" }
+        : { text: "C'est reparti ! 💪", tone: "good" },
+    );
+  }, []);
 
   const analyse = useCallback(
     (lm: NormalizedLandmark[], world: Landmark[]) => {
       const ex = exRef.current;
       const an = anRef.current;
+
+      // While paused or resting, freeze all counting (and keep the hold clock
+      // from jumping when it resumes).
+      if (pausedRef.current || restingRef.current) {
+        lastTsRef.current = null;
+        return;
+      }
 
       // ---- Timed hold ----------------------------------------------------
       if (an.kind === "hold") {
@@ -228,8 +411,7 @@ export default function PoseTracker({
               finishAll(setsRef.current);
             } else {
               flashPopup(`Maintien ${setsRef.current} terminé ! Reposez-vous 🧘`, "good");
-              holdRemainingRef.current = an.holdSeconds;
-              setHoldRemaining(an.holdSeconds);
+              startRest(restSecondsFor(an, ex.goalReps)); // rest before next hold
             }
           }
         }
@@ -315,7 +497,7 @@ export default function PoseTracker({
         else setFeedback({ text: "Prêt.", tone: "info" });
       }
     },
-    [finishAll, flashPopup, registerRep],
+    [finishAll, flashPopup, registerRep, startRest],
   );
 
   const loop = useCallback(() => {
@@ -339,6 +521,13 @@ export default function PoseTracker({
     const an = anRef.current;
     setError(null);
     setStatus("loading");
+    modeRef.current = "camera";
+    setMode("camera");
+    unlockAudio(); // allow the rep beeps to play in camera mode too
+    restingRef.current = false;
+    setRest(null);
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    restTimerRef.current = null;
     setReps(0);
     setSetsDone(0);
     setAngle(null);
@@ -353,6 +542,8 @@ export default function PoseTracker({
     if (pacedTimerRef.current) clearInterval(pacedTimerRef.current);
     pacedTimerRef.current = null;
     setPacedRemaining(null);
+    pausedRef.current = false;
+    setPaused(false);
     if (an.kind === "hold") {
       holdRemainingRef.current = an.holdSeconds;
       setHoldRemaining(an.holdSeconds);
@@ -404,18 +595,68 @@ export default function PoseTracker({
           : "Impossible de charger le modèle. Vérifiez votre connexion internet.",
       );
     }
-  }, [loop]);
+  }, [loop, unlockAudio]);
+
+  // Audio-only start: no camera, no model — just the beeps + on-screen timer.
+  const startAudio = useCallback(() => {
+    const an = anRef.current;
+    setError(null);
+    setReps(0);
+    setSetsDone(0);
+    setAngle(null);
+    repsRef.current = 0;
+    setsRef.current = 0;
+    phaseRef.current = "up";
+    minAngleRef.current = 180;
+    completedRef.current = false;
+    lastTsRef.current = null;
+    if (pacedTimerRef.current) clearInterval(pacedTimerRef.current);
+    pacedTimerRef.current = null;
+    setPacedRemaining(null);
+    if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+    holdTimerRef.current = null;
+    pausedRef.current = false;
+    setPaused(false);
+    restingRef.current = false;
+    setRest(null);
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    restTimerRef.current = null;
+    if (an.kind === "hold") {
+      holdRemainingRef.current = an.holdSeconds;
+      setHoldRemaining(an.holdSeconds);
+    } else {
+      setHoldRemaining(null);
+    }
+    modeRef.current = "audio";
+    setMode("audio");
+    unlockAudio(); // allow the beeps to play (this runs on a user gesture)
+    activeRef.current = false;
+    setActive(false);
+    setCountdown(null);
+    setStatus("running");
+    setFeedback({ text: "Installez-vous, puis appuyez sur « Commencer ». Suivez les bips 🔊", tone: "info" });
+  }, [unlockAudio]);
 
   const stop = useCallback(() => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     if (pacedTimerRef.current) clearInterval(pacedTimerRef.current);
     pacedTimerRef.current = null;
+    if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+    holdTimerRef.current = null;
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    restTimerRef.current = null;
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
     countdownTimerRef.current = null;
     activeRef.current = false;
     setActive(false);
     setCountdown(null);
+    pausedRef.current = false;
+    setPaused(false);
+    restingRef.current = false;
+    setRest(null);
+    modeRef.current = "camera";
+    setMode("camera");
     if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -483,6 +724,83 @@ export default function PoseTracker({
         </span>
       </div>
 
+      {/* Shown before the exercise starts: the times/rhythm are a guide to follow. */}
+      {!active && (
+        <p className="rounded-lg bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+          ⏱️ Pour cet exercice, les durées et le rythme indiqués sont des repères
+          pour vous guider — suivez-les au mieux, sans forcer.
+        </p>
+      )}
+
+      {mode === "audio" ? (
+        <div className="relative flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-2xl bg-slate-900 text-white shadow-sm">
+          <span className="text-xs uppercase tracking-wide text-slate-300">
+            {isHold ? "Maintien" : "Série"} {Math.min(setsDone + 1, prescription.goalSets)} / {prescription.goalSets}
+          </span>
+          <div className="mt-1 text-7xl font-bold tabular-nums">
+            {isHold ? (
+              <>
+                {holdRemaining ?? holdSeconds}
+                <span className="text-3xl font-normal text-slate-300"> s</span>
+              </>
+            ) : (
+              <>
+                {reps}
+                <span className="text-3xl font-normal text-slate-300"> / {prescription.goalReps}</span>
+              </>
+            )}
+          </div>
+          {active && !isHold && (
+            <div className="mt-2 text-sm text-slate-300">
+              Prochaine rép. dans {pacedRemaining ?? secondsPerRep} s
+            </div>
+          )}
+          <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200">
+            🔊 Guidage sonore — suivez les bips
+          </div>
+
+          {popup && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className={`rounded-full px-5 py-2.5 text-lg font-semibold shadow-lg ${popupClass(popup.tone)}`}>
+                {popup.text}
+              </div>
+            </div>
+          )}
+          {status === "running" && !active && countdown === null && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40">
+              <button
+                onClick={startCountdown}
+                className="rounded-full bg-teal-600 px-6 py-3 text-lg font-semibold text-white shadow-lg transition hover:bg-teal-700"
+              >
+                ▶ Commencer l&apos;exercice
+              </button>
+            </div>
+          )}
+          {countdown !== null && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60">
+              <div className="font-display text-8xl font-bold tabular-nums text-white">{countdown}</div>
+            </div>
+          )}
+          {rest !== null && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 text-white">
+              <span className="text-sm uppercase tracking-wide text-slate-300">Repos 🧘</span>
+              <div className="font-display text-7xl font-bold tabular-nums">
+                {rest}
+                <span className="text-2xl font-normal text-slate-300"> s</span>
+              </div>
+              <span className="mt-1 text-sm text-slate-300">
+                Série {Math.min(setsDone + 1, prescription.goalSets)} / {prescription.goalSets} à suivre
+              </span>
+              <button
+                onClick={endRest}
+                className="mt-4 rounded-full border border-white/40 px-4 py-1.5 text-sm font-medium text-white hover:bg-white/10"
+              >
+                Passer le repos →
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-slate-900 shadow-sm">
         <video ref={videoRef} className="absolute inset-0 h-full w-full -scale-x-100 object-cover" playsInline muted />
 
@@ -540,12 +858,32 @@ export default function PoseTracker({
           </div>
         )}
 
+        {rest !== null && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 text-white">
+            <span className="text-sm uppercase tracking-wide text-slate-300">Repos 🧘</span>
+            <div className="font-display text-7xl font-bold tabular-nums">
+              {rest}
+              <span className="text-2xl font-normal text-slate-300"> s</span>
+            </div>
+            <span className="mt-1 text-sm text-slate-300">
+              Série {Math.min(setsDone + 1, prescription.goalSets)} / {prescription.goalSets} à suivre
+            </span>
+            <button
+              onClick={endRest}
+              className="mt-4 rounded-full border border-white/40 px-4 py-1.5 text-sm font-medium text-white hover:bg-white/10"
+            >
+              Passer le repos →
+            </button>
+          </div>
+        )}
+
         {status !== "running" && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-900/70 text-sm text-slate-200">
             {status === "loading" ? "Chargement…" : "Caméra inactive"}
           </div>
         )}
       </div>
+      )}
 
       {/* Functional progress bar */}
       <div>
@@ -569,7 +907,7 @@ export default function PoseTracker({
 
       <div className="flex flex-col gap-3">
         {/* Manual tap-to-count (manual mode, or backup in auto mode) */}
-        {showManualButton && status === "running" && active && (
+        {showManualButton && mode === "camera" && status === "running" && active && (
           <button
             onClick={registerRep}
             className={`rounded-xl py-4 text-lg font-semibold shadow-sm ${
@@ -582,14 +920,37 @@ export default function PoseTracker({
           </button>
         )}
 
-        {status !== "running" ? (
+        {/* Pause / resume — only while an exercise is actively counting. */}
+        {status === "running" && active && (
           <button
-            onClick={start}
-            disabled={status === "loading"}
-            className="rounded-md bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+            onClick={togglePause}
+            className={`rounded-xl py-3 text-base font-semibold shadow-sm ${
+              paused
+                ? "bg-teal-600 text-white hover:bg-teal-700"
+                : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+            }`}
           >
-            {status === "loading" ? "Chargement…" : "Démarrer la caméra"}
+            {paused ? "▶ Reprendre" : "⏸ Pause"}
           </button>
+        )}
+
+        {status !== "running" ? (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              onClick={start}
+              disabled={status === "loading"}
+              className="flex-1 rounded-md bg-teal-600 px-4 py-2.5 font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+            >
+              {status === "loading" ? "Chargement…" : "🎥 Avec caméra"}
+            </button>
+            <button
+              onClick={startAudio}
+              disabled={status === "loading"}
+              className="flex-1 rounded-md border border-teal-600 px-4 py-2.5 font-medium text-teal-700 hover:bg-teal-50 disabled:opacity-50"
+            >
+              🔊 Sans caméra (son)
+            </button>
+          </div>
         ) : (
           <button onClick={stop} className="rounded-md border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50">
             Arrêter

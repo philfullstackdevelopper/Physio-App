@@ -6,3 +6,11 @@ export function startOfWeekISO(): string {
   const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceMonday);
   return monday.toISOString();
 }
+
+// Returns the start of today (00:00, local time) as an ISO string.
+// Used to tell whether a session was already completed today.
+export function startOfTodayISO(): string {
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return midnight.toISOString();
+}
