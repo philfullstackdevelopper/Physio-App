@@ -99,13 +99,20 @@ export default async function WorkoutDetailPage({
           ))}
         </ol>
 
-        <form action={completeWorkout} className="mt-8">
+        <Link
+          href={`/patient/${workout.id}/seance`}
+          className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-4 text-lg font-semibold text-white shadow-sm transition hover:bg-teal-700"
+        >
+          ▶ Commencer la séance
+        </Link>
+
+        <form action={completeWorkout} className="mt-3">
           <input type="hidden" name="workout_id" value={workout.id} />
           <button
             type="submit"
-            className="w-full rounded-lg bg-teal-600 py-3 font-medium text-white shadow-sm hover:bg-teal-700"
+            className="w-full rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
           >
-            Marquer la séance comme faite
+            Marquer comme faite sans la séance guidée
           </button>
         </form>
       </div>
