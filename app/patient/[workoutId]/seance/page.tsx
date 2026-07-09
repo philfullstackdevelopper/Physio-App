@@ -4,6 +4,7 @@ import { recommendPrescription } from "@/lib/exercise/prescription";
 import { isProfileComplete, profileToContext } from "@/lib/exercise/patientProfile";
 import type { RepOverrideMap } from "@/lib/exercise/overrides";
 import { daysAgoISO } from "@/lib/week";
+import { getCurrentAccess } from "@/lib/billing/context";
 import WorkoutSession, { type SessionExercise } from "@/components/WorkoutSession";
 
 type WorkoutExerciseRow = {
@@ -82,6 +83,12 @@ export default async function SeancePage({
     (recentDifficulty[name] ??= []).push(r.difficulty as number);
   }
 
+  // The in-session adaptation suggestion is a premium feature — free-floor
+  // patients (trial ended, not subscribed) don't see it.
+  const access = await getCurrentAccess(supabase, user.id);
+  const showAdaptation =
+    access.role === "patient" ? access.access.capabilities.adaptationEngine : false;
+
   return (
     <main className="min-h-screen p-6 sm:p-8">
       <div className="mx-auto max-w-xl">
@@ -93,6 +100,7 @@ export default async function SeancePage({
           prescription={prescription}
           repOverrides={repOverrides}
           recentDifficulty={recentDifficulty}
+          showAdaptation={showAdaptation}
         />
       </div>
     </main>

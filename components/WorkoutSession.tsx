@@ -102,6 +102,7 @@ export default function WorkoutSession({
   prescription,
   repOverrides = {},
   recentDifficulty = {},
+  showAdaptation = true,
 }: {
   workoutId: string;
   patientId: string;
@@ -112,6 +113,8 @@ export default function WorkoutSession({
   repOverrides?: RepOverrideMap;
   /** Recent 1-10 difficulty ratings, per exercise name. Drives automatic easing. */
   recentDifficulty?: Record<string, number[]>;
+  /** Premium feature: show the adaptation suggestion (trial/subscribed only). */
+  showAdaptation?: boolean;
 }) {
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<Phase>("intro");
@@ -378,7 +381,7 @@ export default function WorkoutSession({
             />
           </div>
 
-          {suggestion && suggestion.direction !== "none" && (
+          {showAdaptation && suggestion && suggestion.direction !== "none" && (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-900">
               <p className="font-medium">
                 💡{" "}
