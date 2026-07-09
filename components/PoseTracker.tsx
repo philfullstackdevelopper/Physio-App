@@ -55,6 +55,10 @@ export default function PoseTracker({
   const videoRef = useRef<HTMLVideoElement>(null);
   const landmarkerRef = useRef<PoseLandmarkerType | null>(null);
   const rafRef = useRef<number | null>(null);
+  // Always points at the latest `loop` so the animation frame can re-schedule
+  // itself without the function referencing its own binding (which the React
+  // hooks lint flags and which would block the production build).
+  const loopRef = useRef<() => void>(() => {});
   const streamRef = useRef<MediaStream | null>(null);
   const lastVideoTimeRef = useRef(-1);
   const popupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -514,8 +518,13 @@ export default function PoseTracker({
         setFeedback({ text: "Aucune personne détectée.", tone: "warn" });
       }
     }
-    rafRef.current = requestAnimationFrame(loop);
+    rafRef.current = requestAnimationFrame(() => loopRef.current());
   }, [analyse]);
+
+  // Keep the ref pointing at the current loop for the self-rescheduling above.
+  useEffect(() => {
+    loopRef.current = loop;
+  }, [loop]);
 
   const start = useCallback(async () => {
     const an = anRef.current;

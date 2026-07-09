@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { startOfWeekISO } from "@/lib/week";
+import { startOfWeekISO, daysAgoISO } from "@/lib/week";
+import { assessSignals, type ProgressSignals } from "@/lib/exercise/stageProgress";
 import { signout } from "./actions";
 
 export default async function DashboardPage() {
@@ -29,6 +30,53 @@ export default async function DashboardPage() {
     .select("patient_id")
     .gte("completed_at", startOfWeekISO());
   const activeThisWeek = new Set((weekLogs ?? []).map((l) => l.patient_id)).size;
+
+  // Patients whose recent feedback needs the instructor's eye. Three queries for
+  // the whole roster rather than three per patient — RLS already narrows every
+  // row to this instructor's own patients.
+  const since = daysAgoISO(14);
+  const [{ data: roster }, { data: painRows }, { data: diffRows }] = await Promise.all([
+    supabase.from("patients").select("id, full_name"),
+    supabase
+      .from("patient_feedback")
+      .select("patient_id, pain_score, difficulty, created_at")
+      .gte("created_at", since),
+    supabase
+      .from("exercise_feedback")
+      .select("patient_id, difficulty, created_at")
+      .gte("created_at", since),
+  ]);
+
+  const signalsByPatient = new Map<string, ProgressSignals>();
+  const bucket = (pid: string) => {
+    let b = signalsByPatient.get(pid);
+    if (!b) signalsByPatient.set(pid, (b = { painScores: [], difficulties: [] }));
+    return b;
+  };
+  for (const r of painRows ?? []) {
+    const b = bucket(r.patient_id as string);
+    const at = r.created_at as string;
+    if (r.pain_score != null) b.painScores.push({ value: r.pain_score as number, at });
+    if (r.difficulty != null) b.difficulties.push({ value: r.difficulty as number, at });
+  }
+  for (const r of diffRows ?? []) {
+    if (r.difficulty != null) {
+      bucket(r.patient_id as string).difficulties.push({
+        value: r.difficulty as number,
+        at: r.created_at as string,
+      });
+    }
+  }
+
+  const alerts = (roster ?? [])
+    .map((p) => ({
+      id: p.id as string,
+      name: (p.full_name as string) ?? "Patient",
+      ...assessSignals(signalsByPatient.get(p.id as string) ?? { painScores: [], difficulties: [] }),
+    }))
+    .filter((a) => a.concerning)
+    // Most urgent first, then alphabetically so the order is stable between loads.
+    .sort((a, b) => Number(b.severe) - Number(a.severe) || a.name.localeCompare(b.name, "fr"));
 
   return (
     <main className="min-h-screen bg-slate-50 p-6 sm:p-8">
@@ -60,6 +108,37 @@ export default async function DashboardPage() {
             <div className="mt-0.5 text-sm text-slate-500">Actifs cette semaine</div>
           </div>
         </div>
+
+        {/* Patients dont les retours récents demandent une attention. */}
+        {alerts.length > 0 && (
+          <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
+            <h2 className="font-medium text-amber-900">
+              {alerts.length === 1
+                ? "1 patient à surveiller"
+                : `${alerts.length} patients à surveiller`}
+            </h2>
+            <p className="mt-0.5 text-sm text-amber-800">
+              D&apos;après leurs retours des 14 derniers jours. Leur programme a déjà été allégé
+              automatiquement.
+            </p>
+            <ul className="mt-3 space-y-1.5">
+              {alerts.map((a) => (
+                <li key={a.id}>
+                  <Link
+                    href={`/dashboard/patients/${a.id}`}
+                    className="flex items-baseline justify-between gap-3 rounded-lg bg-white px-3 py-2 shadow-sm transition hover:bg-amber-100/50"
+                  >
+                    <span className="font-medium text-slate-800">
+                      {a.severe && <span title="Situation sévère">🔴 </span>}
+                      {a.name}
+                    </span>
+                    <span className="text-right text-sm text-slate-500">{a.cause}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <Link
           href="/dashboard/patients"

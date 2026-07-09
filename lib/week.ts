@@ -14,3 +14,9 @@ export function startOfTodayISO(): string {
   const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return midnight.toISOString();
 }
+
+// Returns the instant `days` days ago as an ISO string.
+// Used to bound "recent feedback" so an old rough patch stops counting.
+export function daysAgoISO(days: number): string {
+  return new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
+}

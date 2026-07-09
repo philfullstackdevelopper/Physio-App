@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { isProfileComplete } from "@/lib/exercise/patientProfile";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { computeStreak } from "@/lib/exercise/streak";
-import { currentStage, careWeek } from "@/lib/exercise/stageProgress";
-import { startOfTodayISO } from "@/lib/week";
+import { stageWithFeedback, careWeek, type Rating } from "@/lib/exercise/stageProgress";
+import { startOfTodayISO, daysAgoISO } from "@/lib/week";
 import { signout } from "./actions";
 
 type Workout = {
@@ -97,9 +97,33 @@ export default async function PatientHome() {
     : { data: null };
 
   // Suggestions depend on the practitioner's condition + the patient's CURRENT
-  // stage, which auto-advances with the time elapsed since they declared it.
+  // stage. The calendar advances that stage on its own, but recent pain and
+  // difficulty can hold it back — see stageWithFeedback(). Only the last two
+  // weeks count, so an old rough patch doesn't freeze someone indefinitely.
   const declaredStage = profile!.injury_stage as InjuryStage;
-  const stage = currentStage(declaredStage, profile!.updated_at as string);
+  const since = daysAgoISO(14);
+  const [{ data: painRows }, { data: diffRows }] = await Promise.all([
+    supabase
+      .from("patient_feedback")
+      .select("pain_score, difficulty, created_at")
+      .eq("patient_id", user.id)
+      .gte("created_at", since),
+    supabase
+      .from("exercise_feedback")
+      .select("difficulty, created_at")
+      .eq("patient_id", user.id)
+      .gte("created_at", since),
+  ]);
+  // Each rating keeps its date so a bad episode can age out one stage per week.
+  const rated = (rows: Record<string, unknown>[], field: string): Rating[] =>
+    rows
+      .filter((r) => r[field] != null)
+      .map((r) => ({ value: r[field] as number, at: r.created_at as string }));
+  const decision = stageWithFeedback(declaredStage, profile!.updated_at as string, {
+    painScores: rated(painRows ?? [], "pain_score"),
+    difficulties: [...rated(painRows ?? [], "difficulty"), ...rated(diffRows ?? [], "difficulty")],
+  });
+  const stage = decision.stage;
   const week = careWeek(declaredStage, profile!.updated_at as string);
   let workouts: Workout[] = [];
   if (assignedConditionId) {
@@ -180,6 +204,34 @@ export default async function PatientHome() {
             Mettre à jour ma situation
           </Link>
         </div>
+
+        {/* The brake, explained gently. The patient never sees the clinical wording
+            of `decision.reason` — that phrasing is written for the practitioner.
+            Three cases: still braked, climbing back, or merely flagged. */}
+        {(decision.concerning || decision.held) &&
+          (decision.held && !decision.concerning ? (
+            <div className="mt-6 rounded-2xl border border-teal-200 bg-teal-50 p-5">
+              <p className="font-medium text-teal-900">Vous allez mieux 💪</p>
+              <p className="mt-1 text-sm text-teal-800">
+                Vos retours s&apos;améliorent. Nous augmentons vos séances petit à petit, une étape
+                par semaine, pour éviter toute rechute.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <p className="font-medium text-amber-900">
+                {decision.held
+                  ? "Nous avons adapté votre programme"
+                  : "Vos derniers retours ont été transmis"}
+              </p>
+              <p className="mt-1 text-sm text-amber-800">
+                {decision.held
+                  ? "Vos derniers retours indiquent que les exercices restent difficiles. Nous vous proposons donc des séances plus douces pour le moment — c'est normal, et c'est fait pour vous protéger."
+                  : "Vous signalez encore des douleurs importantes. Votre praticien en est informé."}{" "}
+                Parlez-en à votre praticien si cela persiste.
+              </p>
+            </div>
+          ))}
 
         {doneToday && (
           <>

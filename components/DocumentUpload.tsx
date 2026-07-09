@@ -43,7 +43,7 @@ export default function DocumentUpload({
     try {
       // Unique path under the patient's own folder (satisfies storage RLS).
       const safe = file.name.replace(/[^\w.\-]+/g, "_");
-      const path = `${patientId}/${Date.now()}_${safe}`;
+      const path = `${patientId}/${crypto.randomUUID()}_${safe}`;
 
       const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file);
       if (upErr) throw upErr;
