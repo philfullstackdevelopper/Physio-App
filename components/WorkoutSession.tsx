@@ -15,6 +15,8 @@ import { analyzerForExercise } from "@/lib/exercise/analyzers";
 import { computeStreak } from "@/lib/exercise/streak";
 import { categoryFor } from "@/lib/exercise/category";
 import { suggestAdaptation } from "@/lib/exercise/adaptation";
+import { effectiveGoalReps, type RepOverrideMap } from "@/lib/exercise/overrides";
+import { autoEaseGoalReps } from "@/lib/exercise/autoEase";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 
 export interface SessionExercise {
@@ -98,12 +100,18 @@ export default function WorkoutSession({
   workoutName,
   exercises,
   prescription,
+  repOverrides = {},
+  recentDifficulty = {},
 }: {
   workoutId: string;
   patientId: string;
   workoutName: string;
   exercises: SessionExercise[];
   prescription: Prescription;
+  /** Instructor decisions, per exercise name. Absent = standard prescription. */
+  repOverrides?: RepOverrideMap;
+  /** Recent 1-10 difficulty ratings, per exercise name. Drives automatic easing. */
+  recentDifficulty?: Record<string, number[]>;
 }) {
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<Phase>("intro");
@@ -120,13 +128,31 @@ export default function WorkoutSession({
   const total = exercises.length;
   const current = exercises[idx];
 
+  // The prescription THIS exercise runs under, composed in three steps:
+  //   1. the standard prescription from the patient's profile and stage,
+  //   2. the instructor's stored decision, if any — which effectiveGoalReps()
+  //      refuses to honour when it was an increase decided before a regression,
+  //   3. automatic easing from the patient's own recent ratings, which can only
+  //      ever lower the result.
+  // Softening therefore happens with or without the instructor. Hardening never
+  // happens without them.
+  const decided = current
+    ? effectiveGoalReps(prescription.goalReps, repOverrides[current.name])
+    : prescription.goalReps;
+  const autoEased = current
+    ? autoEaseGoalReps(decided, recentDifficulty[current.name] ?? [])
+    : { goalReps: decided, eased: false, reason: "" };
+  const currentPrescription: Prescription = current
+    ? { ...prescription, goalReps: autoEased.goalReps }
+    : prescription;
+
   // From the just-entered feeling, a non-binding adaptation suggestion. Candidate
   // substitutes = other exercises of the same body area in this workout.
   const suggestion =
     current && exDiff != null
       ? suggestAdaptation({
           difficulty: exDiff,
-          goalReps: prescription.goalReps,
+          goalReps: currentPrescription.goalReps,
           candidates: exercises
             .filter((e) => e.name !== current.name && categoryFor(e.name) === categoryFor(current.name))
             .map((e) => e.name),
@@ -398,6 +424,15 @@ export default function WorkoutSession({
             {current.name}
           </h2>
 
+          {/* A shorter series than usual is not a bug — say why, gently. */}
+          {autoEased.eased && (
+            <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Série allégée à <span className="font-semibold">{autoEased.goalReps} répétitions</span>{" "}
+              — vous avez trouvé cet exercice difficile récemment. Écoutez votre corps, et parlez-en
+              à votre praticien.
+            </p>
+          )}
+
           {/* Step 1: explanation */}
           {phase === "intro" && (
             <>
@@ -434,7 +469,7 @@ export default function WorkoutSession({
             <div className="mt-4">
               <PoseTracker
                 key={idx}
-                prescription={prescription}
+                prescription={currentPrescription}
                 analyzer={analyzerForExercise(current.name)}
                 onComplete={onExerciseDone}
               />

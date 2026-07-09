@@ -1,14 +1,25 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { startOfWeekISO } from "@/lib/week";
-import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
-import { ageFromDob } from "@/lib/exercise/patientProfile";
+import { startOfWeekISO, daysAgoISO } from "@/lib/week";
+import { autoEaseGoalReps } from "@/lib/exercise/autoEase";
+import {
+  STAGE_LABELS,
+  DEFAULT_SQUAT,
+  recommendPrescription,
+  type InjuryStage,
+} from "@/lib/exercise/prescription";
+import { ageFromDob, profileToContext } from "@/lib/exercise/patientProfile";
+import {
+  effectiveGoalReps,
+  isLapsedIncrease,
+  type RepOverrideMap,
+} from "@/lib/exercise/overrides";
 import { computeStreak } from "@/lib/exercise/streak";
 import { categoryFor } from "@/lib/exercise/category";
 import { STAGE_START_WEEK } from "@/lib/exercise/stageProgress";
 import { suggestAdaptation } from "@/lib/exercise/adaptation";
-import { assignCondition, recommendWorkout } from "./actions";
+import { assignCondition, recommendWorkout, applyAdaptation, resetAdaptation } from "./actions";
 
 type WorkoutExercise = {
   position: number;
@@ -140,6 +151,33 @@ export default async function PatientDetailPage({
       return acc;
     }, {}),
   ).sort((a, b) => avgDifficulty(b) - avgDifficulty(a));
+
+  // The patient's real rep target today — the baseline every suggestion and every
+  // stored override is measured against. Previously this page assumed a flat 10.
+  const baseReps = profile
+    ? recommendPrescription(profileToContext(profile)).goalReps
+    : DEFAULT_SQUAT.goalReps;
+
+  // Overrides the instructor has already applied, keyed by exercise name.
+  const { data: overrideRows } = await supabase
+    .from("exercise_overrides")
+    .select("exercise_name, goal_reps, base_reps")
+    .eq("patient_id", id);
+  const overrides: RepOverrideMap = Object.fromEntries(
+    (overrideRows ?? []).map((r) => [
+      r.exercise_name as string,
+      { goalReps: r.goal_reps as number, baseReps: r.base_reps as number },
+    ]),
+  );
+
+  // The same recent ratings the patient's session uses for automatic easing, so
+  // this page never shows a rep target the patient isn't actually being given.
+  const recentCutoff = daysAgoISO(14);
+  const recentDifficulty: Record<string, number[]> = {};
+  for (const r of exFeedback ?? []) {
+    if (r.difficulty == null || (r.created_at as string) < recentCutoff) continue;
+    (recentDifficulty[r.exercise_name as string] ??= []).push(r.difficulty as number);
+  }
 
   // Workouts of the ASSIGNED condition (kiné-driven), with weekly completions.
   let workouts: Workout[] = [];
@@ -311,10 +349,17 @@ export default async function PatientDetailPage({
               {exSummary.map((e) => {
                 const avg = avgDifficulty(e);
                 const rated = avg >= 0;
+                const ov = overrides[e.name] ?? null;
+                // Exactly what the patient's session computes: baseline, then the
+                // instructor's decision, then automatic easing.
+                const decidedReps = effectiveGoalReps(baseReps, ov);
+                const auto = autoEaseGoalReps(decidedReps, recentDifficulty[e.name] ?? []);
+                const currentReps = auto.goalReps;
+                const lapsed = isLapsedIncrease(baseReps, ov);
                 const suggestion = rated
                   ? suggestAdaptation({
                       difficulty: Math.round(avg),
-                      goalReps: 10,
+                      goalReps: currentReps,
                       candidates: candidatesFor(e.name),
                     })
                   : null;
@@ -344,12 +389,69 @@ export default async function PatientDetailPage({
                         </span>
                       )}
                     </div>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Prescription actuelle : <span className="font-semibold">{currentReps} rép.</span>
+                      {auto.eased && (
+                        <span className="text-amber-700">
+                          {" "}
+                          — allégée automatiquement depuis {decidedReps} rép. ({auto.reason})
+                        </span>
+                      )}
+                      {ov && !lapsed && !auto.eased && (
+                        <span className="text-slate-400"> (ajustée par vous)</span>
+                      )}
+                      {lapsed && (
+                        <span className="text-amber-700">
+                          {" "}
+                          — votre augmentation à {ov?.goalReps} rép. est suspendue : le patient a
+                          régressé
+                        </span>
+                      )}
+                    </p>
+
                     {adapt && (
-                      <p className="mt-1 text-sm text-slate-600">
-                        → {adapt.direction === "easier" ? "Alléger" : "Intensifier"} l&apos;intensité
-                        {adapt.substitute && <> · ou proposer « {adapt.substitute} »</>}
-                      </p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <p className="text-sm text-slate-600">
+                          → {adapt.direction === "easier" ? "Alléger" : "Intensifier"} :{" "}
+                          {adapt.newReps ? (
+                            <span className="font-medium">
+                              {adapt.newReps} rép. au lieu de {currentReps}
+                            </span>
+                          ) : (
+                            "ajuster l'intensité"
+                          )}
+                          {adapt.substitute && <> · ou proposer « {adapt.substitute} »</>}
+                        </p>
+                        {adapt.newReps && (
+                          <form action={applyAdaptation}>
+                            <input type="hidden" name="patient_id" value={patient.id} />
+                            <input type="hidden" name="exercise_name" value={e.name} />
+                            <input type="hidden" name="goal_reps" value={adapt.newReps} />
+                            <input type="hidden" name="base_reps" value={baseReps} />
+                            <button
+                              type="submit"
+                              className="rounded-md bg-teal-600 px-3 py-1 text-xs font-medium text-white hover:bg-teal-700"
+                            >
+                              Appliquer
+                            </button>
+                          </form>
+                        )}
+                      </div>
                     )}
+
+                    {ov && (
+                      <form action={resetAdaptation} className="mt-1">
+                        <input type="hidden" name="patient_id" value={patient.id} />
+                        <input type="hidden" name="exercise_name" value={e.name} />
+                        <button
+                          type="submit"
+                          className="text-xs font-medium text-slate-500 hover:underline"
+                        >
+                          Revenir à la prescription standard ({baseReps} rép.)
+                        </button>
+                      </form>
+                    )}
+
                     {e.lastNote && <p className="mt-0.5 italic text-slate-600">« {e.lastNote} »</p>}
                   </li>
                 );

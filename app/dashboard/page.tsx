@@ -88,14 +88,22 @@ export default async function DashboardPage() {
               Bonjour, {instructor?.full_name ? instructor.full_name.split(" ")[0] : ""} 👋
             </h1>
           </div>
-          <form action={signout}>
-            <button
-              type="submit"
-              className="shrink-0 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href="/billing"
+              className="rounded-md border border-teal-600 bg-white px-4 py-2 text-sm font-medium text-teal-700 hover:bg-teal-50"
             >
-              Se déconnecter
-            </button>
-          </form>
+              Mon abonnement
+            </Link>
+            <form action={signout}>
+              <button
+                type="submit"
+                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                Se déconnecter
+              </button>
+            </form>
+          </div>
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-3">

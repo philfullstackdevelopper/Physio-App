@@ -125,13 +125,13 @@ export default async function PatientHome() {
   });
   const stage = decision.stage;
   const week = careWeek(declaredStage, profile!.updated_at as string);
+  const WORKOUT_FIELDS =
+    "id, name, description, duration_minutes, times_per_week, workout_exercises ( exercises ( name ) )";
   let workouts: Workout[] = [];
   if (assignedConditionId) {
     const { data } = await supabase
       .from("workouts")
-      .select(
-        "id, name, description, duration_minutes, times_per_week, workout_exercises ( exercises ( name ) )",
-      )
+      .select(WORKOUT_FIELDS)
       .eq("condition_id", assignedConditionId)
       .eq("stage", stage)
       .order("duration_minutes");
@@ -156,6 +156,16 @@ export default async function PatientHome() {
   );
   const doneToday = doneTodayIds.size > 0;
 
+  // A session done today may belong to another stage than the one we just loaded
+  // — the patient's stage can move between two sessions, and the feedback brake
+  // moves it more often. Fetch those by id so today's work never vanishes from
+  // the page just because the phase changed underneath it.
+  const missingDoneIds = [...doneTodayIds].filter((id) => !workouts.some((w) => w.id === id));
+  if (missingDoneIds.length > 0) {
+    const { data } = await supabase.from("workouts").select(WORKOUT_FIELDS).in("id", missingDoneIds);
+    workouts = [...workouts, ...((data ?? []) as unknown as Workout[])];
+  }
+
   // Recommended workout first, then by duration.
   const recId = patient?.recommended_workout_id;
   const ordered = [...workouts].sort((a, b) => (a.id === recId ? -1 : b.id === recId ? 1 : 0));
@@ -173,14 +183,22 @@ export default async function PatientHome() {
               {patient?.full_name ? patient.full_name.split(" ")[0] : "Bienvenue"}
             </h1>
           </div>
-          <form action={signout}>
-            <button
-              type="submit"
-              className="shrink-0 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href="/billing"
+              className="rounded-md border border-teal-600 bg-white px-4 py-2 text-sm font-medium text-teal-700 hover:bg-teal-50"
             >
-              Se déconnecter
-            </button>
-          </form>
+              Mon abonnement
+            </Link>
+            <form action={signout}>
+              <button
+                type="submit"
+                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Se déconnecter
+              </button>
+            </form>
+          </div>
         </div>
 
         <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-sm font-semibold text-orange-600">

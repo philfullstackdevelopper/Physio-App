@@ -32,11 +32,26 @@ export interface RepAnalyzer {
   needed: number[]; // landmark indices that must be visible
 }
 
+/**
+ * A body-line check for a static hold: the angle at `joints[1]` should stay at
+ * or above `minAngle` (≈180° = perfectly straight). Present only on holds where
+ * the line is large, unambiguous and plainly visible — a sagging plank. Absent
+ * on stretches and neck isometrics, where no defensible form claim exists.
+ */
+export interface HoldAlignment {
+  jointsLeft: [number, number, number];
+  jointsRight: [number, number, number];
+  minAngle: number;
+  cueBad: string;
+}
+
 export interface HoldAnalyzer {
   kind: "hold";
   holdSeconds: number; // seconds to hold per set
   cue: string;
   needed: number[];
+  /** When set, the hold also judges posture — not just elapsed time. */
+  alignment?: HoldAlignment;
 }
 
 export interface ManualAnalyzer {
@@ -87,6 +102,34 @@ export const SQUAT_ANALYZER: RepAnalyzer = {
   needed: [LM.hipL, LM.hipR, LM.kneeL, LM.kneeR, LM.ankleL, LM.ankleR],
 };
 
+/**
+ * Forward lunge — standing, large range of motion, both knees flexing to ≈90°.
+ * The literature validates pose tracking on exactly this profile, so a depth
+ * claim is defensible here, as it is for the squat. Averaging both knees is
+ * deliberate: in a correct lunge both bend together, and averaging survives one
+ * knee being briefly occluded by the other.
+ */
+export const LUNGE_ANALYZER: RepAnalyzer = {
+  kind: "reps",
+  jointsLeft: [LM.hipL, LM.kneeL, LM.ankleL],
+  jointsRight: [LM.hipR, LM.kneeR, LM.ankleR],
+  direction: "flexion",
+  enter: 130, // deeper than standing (~170°) — the descent has begun
+  exit: 155, // back up: the rep is complete
+  angleLabel: "Angle genou",
+  cueGood: "Bonne descente 👍 Remontez.",
+  cueMore: "Presque ! Pliez davantage le genou avant 👇",
+  needed: [LM.hipL, LM.hipR, LM.kneeL, LM.kneeR, LM.ankleL, LM.ankleR],
+};
+
+/** Plank body-line: shoulder→hip→knee should stay near straight. */
+const PLANK_ALIGNMENT: HoldAlignment = {
+  jointsLeft: [LM.shoulderL, LM.hipL, LM.kneeL],
+  jointsRight: [LM.shoulderR, LM.hipR, LM.kneeR],
+  minAngle: 160, // below this the hips have dropped (or piked up)
+  cueBad: "Alignez le corps — ne creusez pas les reins.",
+};
+
 const HOLD_FULL_BODY: number[] = [LM.hipL, LM.hipR, LM.kneeL, LM.kneeR];
 const HOLD_UPPER: number[] = [LM.shoulderL, LM.shoulderR, LM.nose];
 
@@ -95,10 +138,19 @@ export function analyzerForExercise(name: string): Analyzer {
   const n = name.toLowerCase();
 
   if (n.includes("squat")) return SQUAT_ANALYZER;
+  if (n.includes("fente")) return LUNGE_ANALYZER;
 
   // Timed holds — planks, balance, isometrics, and stretches.
+  // Planks are the one hold whose posture we judge: the body line is long and
+  // unmistakable, so a sagging hip is measurable rather than guessed at.
   if (n.includes("planche") || n.includes("gainage"))
-    return { kind: "hold", holdSeconds: 30, cue: "Tenez la position, corps aligné.", needed: HOLD_FULL_BODY };
+    return {
+      kind: "hold",
+      holdSeconds: 30,
+      cue: "Tenez la position, corps aligné.",
+      needed: [...HOLD_FULL_BODY, LM.shoulderL, LM.shoulderR],
+      alignment: PLANK_ALIGNMENT,
+    };
   if (n.includes("équilibre") || n.includes("equilibre"))
     return { kind: "hold", holdSeconds: 30, cue: "Gardez l'équilibre.", needed: HOLD_FULL_BODY };
   if (n.includes("isométrique") || n.includes("isometrique"))

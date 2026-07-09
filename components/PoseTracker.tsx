@@ -18,6 +18,12 @@ import type {
 } from "@mediapipe/tasks-vision";
 import { DEFAULT_SQUAT, type Prescription } from "@/lib/exercise/prescription";
 import { SQUAT_ANALYZER, restSecondsFor, type Analyzer } from "@/lib/exercise/analyzers";
+import {
+  MIN_VIS_TRACK,
+  MIN_VIS_FORM,
+  UNVERIFIED_FORM_CUE,
+  UNVERIFIED_HOLD_CUE,
+} from "@/lib/exercise/cameraSuitability";
 
 type Tone = "good" | "warn" | "info";
 type Feedback = { text: string; tone: Tone };
@@ -392,7 +398,7 @@ export default function PoseTracker({
 
       // ---- Timed hold ----------------------------------------------------
       if (an.kind === "hold") {
-        const present = an.needed.every((i) => vis(lm[i]) >= 0.5);
+        const present = an.needed.every((i) => vis(lm[i]) >= MIN_VIS_TRACK);
         const now = performance.now();
         const last = lastTsRef.current;
         lastTsRef.current = now;
@@ -417,6 +423,26 @@ export default function PoseTracker({
               flashPopup(`Maintien ${setsRef.current} terminé ! Reposez-vous 🧘`, "good");
               startRest(restSecondsFor(an, ex.goalReps)); // rest before next hold
             }
+          }
+        }
+        // Body-line check, on the holds that carry one. The timer keeps running
+        // either way: a sagging plank earns a correction, not a lost second, and
+        // a badly-framed one earns no verdict at all.
+        if (an.alignment) {
+          const al = an.alignment;
+          const joints = [...al.jointsLeft, ...al.jointsRight];
+          if (joints.some((i) => vis(lm[i]) < MIN_VIS_FORM)) {
+            setFeedback({ text: UNVERIFIED_HOLD_CUE, tone: "warn" });
+            return;
+          }
+          const [la, lb, lc] = al.jointsLeft;
+          const [ra, rb, rc] = al.jointsRight;
+          const line =
+            (angle3(world[la], world[lb], world[lc]) + angle3(world[ra], world[rb], world[rc])) / 2;
+          setAngle(Math.round(line));
+          if (line < al.minAngle) {
+            setFeedback({ text: al.cueBad, tone: "warn" });
+            return;
           }
         }
         setFeedback({ text: an.cue, tone: "good" });
@@ -469,11 +495,15 @@ export default function PoseTracker({
 
       // ---- Rep counting from a joint angle -------------------------------
       if (an.kind === "reps") {
-        if (an.needed.some((i) => vis(lm[i]) < 0.5)) {
+        if (an.needed.some((i) => vis(lm[i]) < MIN_VIS_TRACK)) {
           setAngle(null);
           setFeedback({ text: "Reculez pour être entièrement visible.", tone: "warn" });
           return;
         }
+        // Visible enough to follow the movement — but good enough to judge how
+        // deep it went? Only above the higher bar do we say anything about form.
+        const formConfident = an.needed.every((i) => vis(lm[i]) >= MIN_VIS_FORM);
+
         const [la, lb, lc] = an.jointsLeft;
         const [ra, rb, rc] = an.jointsRight;
         const a = (angle3(world[la], world[lb], world[lc]) + angle3(world[ra], world[rb], world[rc])) / 2;
@@ -491,12 +521,16 @@ export default function PoseTracker({
           minAngleRef.current = Math.min(minAngleRef.current, a);
           if (a > an.exit) {
             phaseRef.current = "up";
-            if (minAngleRef.current <= ex.goodDepth) registerRep();
+            // When we can't trust the depth reading, count the rep rather than
+            // silently withhold it: the patient must never lose a repetition
+            // because of a bad camera angle.
+            if (!formConfident || minAngleRef.current <= ex.goodDepth) registerRep();
             else flashPopup(an.cueMore, "warn");
           }
         }
 
-        if (a <= ex.goodDepth) setFeedback({ text: an.cueGood, tone: "good" });
+        if (!formConfident) setFeedback({ text: UNVERIFIED_FORM_CUE, tone: "warn" });
+        else if (a <= ex.goodDepth) setFeedback({ text: an.cueGood, tone: "good" });
         else if (a < an.exit) setFeedback({ text: "Continuez…", tone: "info" });
         else setFeedback({ text: "Prêt.", tone: "info" });
       }

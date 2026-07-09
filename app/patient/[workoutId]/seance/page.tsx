@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { recommendPrescription } from "@/lib/exercise/prescription";
 import { isProfileComplete, profileToContext } from "@/lib/exercise/patientProfile";
+import type { RepOverrideMap } from "@/lib/exercise/overrides";
+import { daysAgoISO } from "@/lib/week";
 import WorkoutSession, { type SessionExercise } from "@/components/WorkoutSession";
 
 type WorkoutExerciseRow = {
@@ -51,6 +53,35 @@ export default async function SeancePage({
 
   const prescription = recommendPrescription(profileToContext(profile!));
 
+  // Per-exercise decisions the instructor has applied. RLS lets the patient read
+  // only their own. Absent table (migration 0010 not run) → empty map → the
+  // standard prescription applies, exactly as before.
+  const { data: overrideRows } = await supabase
+    .from("exercise_overrides")
+    .select("exercise_name, goal_reps, base_reps")
+    .eq("patient_id", user.id);
+  const repOverrides: RepOverrideMap = Object.fromEntries(
+    (overrideRows ?? []).map((r) => [
+      r.exercise_name as string,
+      { goalReps: r.goal_reps as number, baseReps: r.base_reps as number },
+    ]),
+  );
+
+  // How hard the patient found each exercise lately. Feeds the automatic easing,
+  // so a program softens even when the instructor never looks. Bounded to two
+  // weeks: an old rough patch must not keep the load down forever.
+  const { data: recentFeedback } = await supabase
+    .from("exercise_feedback")
+    .select("exercise_name, difficulty")
+    .eq("patient_id", user.id)
+    .gte("created_at", daysAgoISO(14));
+  const recentDifficulty: Record<string, number[]> = {};
+  for (const r of recentFeedback ?? []) {
+    if (r.difficulty == null) continue;
+    const name = r.exercise_name as string;
+    (recentDifficulty[name] ??= []).push(r.difficulty as number);
+  }
+
   return (
     <main className="min-h-screen p-6 sm:p-8">
       <div className="mx-auto max-w-xl">
@@ -60,6 +91,8 @@ export default async function SeancePage({
           workoutName={workout.name}
           exercises={exercises}
           prescription={prescription}
+          repOverrides={repOverrides}
+          recentDifficulty={recentDifficulty}
         />
       </div>
     </main>
