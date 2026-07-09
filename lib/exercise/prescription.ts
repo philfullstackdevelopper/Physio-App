@@ -37,6 +37,9 @@ export interface Prescription {
   maxLean: number;
 }
 
+/** Every exercise, every patient: three sets. Reps and depth carry the load. */
+export const FIXED_GOAL_SETS = 3;
+
 export interface PatientContext {
   ageYears?: number;
   heightCm?: number;
@@ -103,9 +106,10 @@ export function recommendPrescription(
     // "recovery" (or undefined) → keep the age/activity-based values.
   }
 
-  // Number of sets scales with activity; early stage caps it.
-  let goalSets = activity === "sedentary" ? 2 : activity === "active" ? 4 : base.goalSets;
-  if (patient.stage === "acute") goalSets = Math.min(goalSets, 2);
+  // Sets are fixed at 3 for every exercise and every patient, by product decision:
+  // one predictable session shape. Load is modulated through reps and depth
+  // instead, which the patient feels more finely than a whole extra set.
+  const goalSets = FIXED_GOAL_SETS;
 
   return { ...base, goalReps, goalSets, goodDepth };
 }

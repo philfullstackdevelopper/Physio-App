@@ -10,7 +10,7 @@
 // All analysis is local — no video leaves the device.
 // =============================================================================
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   PoseLandmarker as PoseLandmarkerType,
   NormalizedLandmark,
@@ -24,6 +24,15 @@ import {
   UNVERIFIED_FORM_CUE,
   UNVERIFIED_HOLD_CUE,
 } from "@/lib/exercise/cameraSuitability";
+import ExerciseGuide from "@/components/ExerciseGuide";
+import {
+  adjustForLevel,
+  adjustRest,
+  clampLevel,
+  levelLabel,
+  MIN_LEVEL,
+  DEFAULT_MAX_LEVEL,
+} from "@/lib/exercise/intensity";
 
 type Tone = "good" | "warn" | "info";
 type Feedback = { text: string; tone: Tone };
@@ -53,10 +62,22 @@ export default function PoseTracker({
   prescription = DEFAULT_SQUAT,
   analyzer = SQUAT_ANALYZER,
   onComplete,
+  onLevelChange,
+  exerciseName,
+  instructions = null,
+  maxLevel = DEFAULT_MAX_LEVEL,
 }: {
   prescription?: Prescription;
   analyzer?: Analyzer;
   onComplete?: (done: number) => void;
+  /** Fires whenever the patient moves the intensity dial, so it can be recorded
+   *  even if they finish the exercise by hand rather than by reaching the goal. */
+  onLevelChange?: (level: number) => void;
+  /** When given, the "how do I do this?" card stays on screen during the exercise. */
+  exerciseName?: string;
+  instructions?: string | null;
+  /** Highest level this patient may select — see maxLevelFor(). 0 = ease only. */
+  maxLevel?: number;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const landmarkerRef = useRef<PoseLandmarkerType | null>(null);
@@ -69,12 +90,33 @@ export default function PoseTracker({
   const lastVideoTimeRef = useRef(-1);
   const popupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const exRef = useRef(prescription);
+  // The patient's own live intensity dial. Session-local: never written back to
+  // their prescription, so tomorrow starts from what the practitioner set.
+  const [level, setLevel] = useState(0);
+  const adjusted = useMemo(() => adjustForLevel(prescription, level), [prescription, level]);
+
+  // Every change goes through here, so the parent always knows the level even if
+  // the patient ends the exercise by hand instead of reaching the goal.
+  const applyLevel = useCallback(
+    (next: number) => {
+      const clamped = clampLevel(next, maxLevel);
+      setLevel(clamped);
+      onLevelChange?.(clamped);
+    },
+    [maxLevel, onLevelChange],
+  );
+  const bumpLevel = (delta: number) => applyLevel(level + delta);
+
+  const exRef = useRef(adjusted);
   const anRef = useRef(analyzer);
+  const levelRef = useRef(level);
   useEffect(() => {
-    exRef.current = prescription;
+    // The camera loop reads targets through these refs, so changing the dial
+    // mid-set takes effect on the very next repetition.
+    exRef.current = adjusted;
     anRef.current = analyzer;
-  }, [prescription, analyzer]);
+    levelRef.current = level;
+  }, [adjusted, analyzer, level]);
 
   // Rep / set machine.
   const phaseRef = useRef<"up" | "down">("up");
@@ -220,6 +262,8 @@ export default function PoseTracker({
       flashPopup("Objectif atteint ! 🎉 Bravo", "good");
       if (!completedRef.current) {
         completedRef.current = true;
+        // The level is read from the ref, not the closure: the patient may have
+        // moved the dial after this callback was created.
         onComplete?.(done);
       }
     },
@@ -243,7 +287,7 @@ export default function PoseTracker({
         finishAll(setsRef.current * ex.goalReps);
       } else {
         flashPopup(`Série ${setsRef.current} terminée ! Reposez-vous 🧘`, "good");
-        startRest(restSecondsFor(anRef.current, ex.goalReps)); // rest before next set
+        startRest(adjustRest(restSecondsFor(anRef.current, ex.goalReps), levelRef.current)); // rest before next set
       }
     } else {
       flashPopup("Belle répétition ! 💪", "good");
@@ -302,7 +346,7 @@ export default function PoseTracker({
             finishAll(setsRef.current);
           } else {
             flashPopup(`Maintien ${setsRef.current} terminé ! Reposez-vous 🧘`, "good");
-            startRest(restSecondsFor(anRef.current, ex.goalReps)); // rest before next hold
+            startRest(adjustRest(restSecondsFor(anRef.current, ex.goalReps), levelRef.current)); // rest before next hold
           }
         }
       }, 250);
@@ -421,7 +465,7 @@ export default function PoseTracker({
               finishAll(setsRef.current);
             } else {
               flashPopup(`Maintien ${setsRef.current} terminé ! Reposez-vous 🧘`, "good");
-              startRest(restSecondsFor(an, ex.goalReps)); // rest before next hold
+              startRest(adjustRest(restSecondsFor(an, ex.goalReps), levelRef.current)); // rest before next hold
             }
           }
         }
@@ -731,12 +775,12 @@ export default function PoseTracker({
   let progressLabel = "";
   if (isHold) {
     const doneSec = setsDone * holdSeconds + (holdSeconds - (holdRemaining ?? holdSeconds));
-    const totalSec = prescription.goalSets * holdSeconds;
+    const totalSec = adjusted.goalSets * holdSeconds;
     progressPct = totalSec > 0 ? Math.min(100, (doneSec / totalSec) * 100) : 0;
-    progressLabel = `${setsDone} / ${prescription.goalSets} maintiens`;
+    progressLabel = `${setsDone} / ${adjusted.goalSets} maintiens`;
   } else {
-    const total = prescription.goalSets * prescription.goalReps;
-    const done = setsDone * prescription.goalReps + reps;
+    const total = adjusted.goalSets * adjusted.goalReps;
+    const done = setsDone * adjusted.goalReps + reps;
     progressPct = total > 0 ? Math.min(100, (done / total) * 100) : 0;
     progressLabel = `${done} / ${total} reps`;
   }
@@ -745,14 +789,14 @@ export default function PoseTracker({
   const secondsPerRep = analyzer.kind === "paced" ? analyzer.secondsPerRep : 0;
 
   const goalBadge = isHold
-    ? `Objectif : ${prescription.goalSets} × ${holdSeconds}s de maintien`
+    ? `Objectif : ${adjusted.goalSets} × ${holdSeconds}s de maintien`
     : analyzer.kind === "reps"
-      ? `Objectif : ${prescription.goalSets} × ${prescription.goalReps} reps · ${analyzer.angleLabel} ≤ ${prescription.goodDepth}°`
+      ? `Objectif : ${adjusted.goalSets} × ${adjusted.goalReps} reps · ${analyzer.angleLabel} ≤ ${adjusted.goodDepth}°`
       : analyzer.kind === "auto"
-        ? `Objectif : ${prescription.goalSets} × ${prescription.goalReps} reps (comptage auto)`
+        ? `Objectif : ${adjusted.goalSets} × ${adjusted.goalReps} reps (comptage auto)`
         : isPaced
-          ? `Objectif : ${prescription.goalSets} × ${prescription.goalReps} reps · 1 rép. / ${secondsPerRep}s`
-          : `Objectif : ${prescription.goalSets} × ${prescription.goalReps} reps`;
+          ? `Objectif : ${adjusted.goalSets} × ${adjusted.goalReps} reps · 1 rép. / ${secondsPerRep}s`
+          : `Objectif : ${adjusted.goalSets} × ${adjusted.goalReps} reps`;
 
   // Auto & rep modes show a live joint angle; a manual "+1" backup for those.
   const showAngle = analyzer.kind === "reps" || analyzer.kind === "auto";
@@ -765,6 +809,53 @@ export default function PoseTracker({
         <span className="rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-medium text-white">
           {goalBadge}
         </span>
+
+        {/* The patient's own dial. Takes effect on the next repetition — the loop
+            reads its targets through exRef, which follows `adjusted`. */}
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => bumpLevel(1)}
+            disabled={level >= maxLevel}
+            className="rounded-md border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+          >
+            + Intensifier
+          </button>
+          <button
+            onClick={() => bumpLevel(-1)}
+            disabled={level <= MIN_LEVEL}
+            className="rounded-md border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+          >
+            − Alléger
+          </button>
+          <span className={`text-xs ${level === 0 ? "text-slate-500" : "font-medium text-teal-800"}`}>
+            {levelLabel(level)}
+          </span>
+          {level !== 0 && (
+            <button onClick={() => applyLevel(0)} className="text-xs text-slate-500 hover:underline">
+              Revenir à la prescription
+            </button>
+          )}
+        </div>
+
+        {/* A greyed-out button with no explanation reads as a bug. Say why. */}
+        {maxLevel === 0 ? (
+          <p className="mt-1 text-xs text-slate-500">
+            À ce stade de votre rééducation, l&apos;intensité ne peut pas être augmentée. Vous pouvez
+            toujours alléger si besoin.
+          </p>
+        ) : (
+          level >= maxLevel && (
+            <p className="mt-1 text-xs text-slate-500">
+              C&apos;est le maximum recommandé pour votre profil et votre phase de récupération.
+            </p>
+          )
+        )}
+        {level !== 0 && (
+          <p className="mt-1 text-xs text-slate-500">
+            Réglage valable pour cette séance uniquement. Votre praticien garde la main sur votre
+            programme.
+          </p>
+        )}
       </div>
 
       {/* Shown before the exercise starts: the times/rhythm are a guide to follow. */}
@@ -778,7 +869,7 @@ export default function PoseTracker({
       {mode === "audio" ? (
         <div className="relative flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-2xl bg-slate-900 text-white shadow-sm">
           <span className="text-xs uppercase tracking-wide text-slate-300">
-            {isHold ? "Maintien" : "Série"} {Math.min(setsDone + 1, prescription.goalSets)} / {prescription.goalSets}
+            {isHold ? "Maintien" : "Série"} {Math.min(setsDone + 1, adjusted.goalSets)} / {adjusted.goalSets}
           </span>
           <div className="mt-1 text-7xl font-bold tabular-nums">
             {isHold ? (
@@ -789,7 +880,7 @@ export default function PoseTracker({
             ) : (
               <>
                 {reps}
-                <span className="text-3xl font-normal text-slate-300"> / {prescription.goalReps}</span>
+                <span className="text-3xl font-normal text-slate-300"> / {adjusted.goalReps}</span>
               </>
             )}
           </div>
@@ -832,7 +923,7 @@ export default function PoseTracker({
                 <span className="text-2xl font-normal text-slate-300"> s</span>
               </div>
               <span className="mt-1 text-sm text-slate-300">
-                Série {Math.min(setsDone + 1, prescription.goalSets)} / {prescription.goalSets} à suivre
+                Série {Math.min(setsDone + 1, adjusted.goalSets)} / {adjusted.goalSets} à suivre
               </span>
               <button
                 onClick={endRest}
@@ -850,13 +941,13 @@ export default function PoseTracker({
         {/* Top-left counter */}
         <div className="absolute left-3 top-3 rounded-lg bg-black/60 px-3 py-1.5 text-white">
           <span className="text-xs uppercase tracking-wide text-slate-300">
-            {isHold ? "Maintien" : "Série"} {Math.min(setsDone + 1, prescription.goalSets)} / {prescription.goalSets}
+            {isHold ? "Maintien" : "Série"} {Math.min(setsDone + 1, adjusted.goalSets)} / {adjusted.goalSets}
           </span>
           <div className="text-2xl font-semibold tabular-nums">
             {isHold ? (
               <>{holdRemaining ?? holdSeconds}<span className="text-base font-normal text-slate-300"> s</span></>
             ) : (
-              <>{reps} <span className="text-base font-normal text-slate-300">/ {prescription.goalReps}</span></>
+              <>{reps} <span className="text-base font-normal text-slate-300">/ {adjusted.goalReps}</span></>
             )}
           </div>
         </div>
@@ -909,7 +1000,7 @@ export default function PoseTracker({
               <span className="text-2xl font-normal text-slate-300"> s</span>
             </div>
             <span className="mt-1 text-sm text-slate-300">
-              Série {Math.min(setsDone + 1, prescription.goalSets)} / {prescription.goalSets} à suivre
+              Série {Math.min(setsDone + 1, adjusted.goalSets)} / {adjusted.goalSets} à suivre
             </span>
             <button
               onClick={endRest}
@@ -1000,6 +1091,16 @@ export default function PoseTracker({
           </button>
         )}
       </div>
+
+      {/* The instructions stay reachable while the patient is actually moving —
+          not only on the intro screen he has already left behind. */}
+      {exerciseName && (
+        <ExerciseGuide
+          name={exerciseName}
+          instructions={instructions}
+          goalText={goalBadge.replace(/^Objectif : /, "")}
+        />
+      )}
 
       <p className="text-xs text-slate-400">
         L&apos;analyse s&apos;effectue localement dans votre navigateur. Aucune vidéo n&apos;est envoyée à un serveur.

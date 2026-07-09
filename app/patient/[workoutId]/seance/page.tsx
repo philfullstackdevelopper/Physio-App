@@ -4,6 +4,7 @@ import { recommendPrescription } from "@/lib/exercise/prescription";
 import { isProfileComplete, profileToContext } from "@/lib/exercise/patientProfile";
 import type { RepOverrideMap } from "@/lib/exercise/overrides";
 import { daysAgoISO } from "@/lib/week";
+import { maxLevelFor } from "@/lib/exercise/intensity";
 import { getCurrentAccess } from "@/lib/billing/context";
 import WorkoutSession, { type SessionExercise } from "@/components/WorkoutSession";
 
@@ -83,6 +84,10 @@ export default async function SeancePage({
     (recentDifficulty[name] ??= []).push(r.difficulty as number);
   }
 
+  // How far this patient may push the in-session dial: the lowest ceiling among
+  // their age, their activity level and their rehab phase. Easing is never capped.
+  const maxIntensityLevel = maxLevelFor(profileToContext(profile!));
+
   // The in-session adaptation suggestion is a premium feature — free-floor
   // patients (trial ended, not subscribed) don't see it.
   const access = await getCurrentAccess(supabase, user.id);
@@ -101,6 +106,7 @@ export default async function SeancePage({
           repOverrides={repOverrides}
           recentDifficulty={recentDifficulty}
           showAdaptation={showAdaptation}
+          maxIntensityLevel={maxIntensityLevel}
         />
       </div>
     </main>

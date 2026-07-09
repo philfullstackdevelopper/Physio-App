@@ -103,6 +103,7 @@ export default function WorkoutSession({
   repOverrides = {},
   recentDifficulty = {},
   showAdaptation = true,
+  maxIntensityLevel,
 }: {
   workoutId: string;
   patientId: string;
@@ -115,6 +116,8 @@ export default function WorkoutSession({
   recentDifficulty?: Record<string, number[]>;
   /** Premium feature: show the adaptation suggestion (trial/subscribed only). */
   showAdaptation?: boolean;
+  /** Highest intensity this patient may select, from maxLevelFor(). 0 = ease only. */
+  maxIntensityLevel?: number;
 }) {
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<Phase>("intro");
@@ -127,6 +130,8 @@ export default function WorkoutSession({
   // Optional per-exercise feeling, captured on the celebration screen.
   const [exDiff, setExDiff] = useState<number | null>(null);
   const [exNote, setExNote] = useState("");
+  // Intensity the patient actually chose for this exercise (-2..+2, 0 = as prescribed).
+  const [exLevel, setExLevel] = useState(0);
 
   const total = exercises.length;
   const current = exercises[idx];
@@ -202,25 +207,34 @@ export default function WorkoutSession({
 
   const onExerciseDone = () => setPhase("celebrate");
 
-  // Save the optional per-exercise feeling (skipped if the patient left it blank).
+  // Save the optional per-exercise feeling, together with the intensity the
+  // patient actually worked at. Skipped when they left everything blank AND ran
+  // the exercise exactly as prescribed — there is then nothing to record.
   const saveExerciseFeedback = async () => {
-    if (exDiff == null && !exNote.trim()) return;
-    try {
-      await createClient().from("exercise_feedback").insert({
-        patient_id: patientId,
-        workout_id: workoutId,
-        exercise_name: current.name,
-        difficulty: exDiff,
-        notes: exNote.trim() || null,
-      });
-    } catch {
-      /* non-blocking — the session continues regardless */
+    if (exDiff == null && !exNote.trim() && exLevel === 0) return;
+    const supabase = createClient();
+    const row = {
+      patient_id: patientId,
+      workout_id: workoutId,
+      exercise_name: current.name,
+      difficulty: exDiff,
+      notes: exNote.trim() || null,
+    };
+    // Supabase returns an error object rather than throwing, so a missing column
+    // would silently swallow the whole rating. Try with the new column; if
+    // migration 0012 has not been run yet, fall back to the row without it.
+    const { error } = await supabase
+      .from("exercise_feedback")
+      .insert({ ...row, intensity_level: exLevel });
+    if (error) {
+      await supabase.from("exercise_feedback").insert(row);
     }
   };
 
   const redo = () => {
     setExDiff(null);
     setExNote("");
+    setExLevel(0);
     setPhase("camera"); // restart the same exercise from the guided step
   };
 
@@ -228,6 +242,7 @@ export default function WorkoutSession({
     await saveExerciseFeedback();
     setExDiff(null);
     setExNote("");
+    setExLevel(0);
     if (idx < total - 1) {
       setIdx(idx + 1);
       setPhase("intro");
@@ -475,9 +490,15 @@ export default function WorkoutSession({
                 prescription={currentPrescription}
                 analyzer={analyzerForExercise(current.name)}
                 onComplete={onExerciseDone}
+                onLevelChange={setExLevel}
+                exerciseName={current.name}
+                instructions={current.instructions}
+                maxLevel={maxIntensityLevel}
               />
               <button
-                onClick={onExerciseDone}
+                // Finishing by hand: no rep count, and the dial keeps whatever
+                // the patient last set — never the click event.
+                onClick={() => onExerciseDone()}
                 className="mt-3 w-full rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
               >
                 J&apos;ai terminé cet exercice ✓
