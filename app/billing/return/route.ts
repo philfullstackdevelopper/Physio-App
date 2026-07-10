@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/billing/stripe";
+import { getStripe } from "@/lib/billing/stripe";
 import { syncSubscription } from "@/lib/billing/sync";
 
 // Where Stripe sends the user after a successful checkout. We retrieve the
@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 
   if (sessionId) {
     try {
-      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      const session = await getStripe().checkout.sessions.retrieve(sessionId, {
         expand: ["subscription"],
       });
       const sub = session.subscription;

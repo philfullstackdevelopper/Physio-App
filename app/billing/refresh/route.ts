@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { stripe } from "@/lib/billing/stripe";
+import { getStripe } from "@/lib/billing/stripe";
 import { syncSubscription } from "@/lib/billing/sync";
 
 // Re-sync the current user's subscription from Stripe, then return to /billing.
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     const customerId = (sub?.stripe_customer_id as string | null) ?? null;
     if (customerId) {
       try {
-        const list = await stripe.subscriptions.list({
+        const list = await getStripe().subscriptions.list({
           customer: customerId,
           status: "all",
           limit: 1,

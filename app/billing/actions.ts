@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { stripe } from "@/lib/billing/stripe";
+import { getStripe } from "@/lib/billing/stripe";
 import { PLANS, isPlanKey } from "@/lib/billing/plans";
 
 // Starts a Stripe Checkout (hosted page) for the given plan and redirects there.
@@ -25,7 +25,7 @@ export async function startCheckout(formData: FormData) {
   const base = `${proto}://${host}`;
   const cancelPath = plan.audience === "patient" ? "/patient" : "/dashboard";
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
     customer_email: user.email ?? undefined,
     client_reference_id: user.id,
@@ -73,7 +73,7 @@ export async function openBillingPortal() {
   const proto = host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https";
   const base = `${proto}://${host}`;
 
-  const portal = await stripe.billingPortal.sessions.create({
+  const portal = await getStripe().billingPortal.sessions.create({
     customer: customerId,
     // Return through a route that re-syncs status (so a cancel/change reflects
     // locally without needing a webhook during local testing).

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { stripe } from "@/lib/billing/stripe";
+import { getStripe } from "@/lib/billing/stripe";
 import { syncSubscription } from "@/lib/billing/sync";
 
 // Stripe needs the Node runtime (not Edge) and the raw request body to verify
@@ -15,6 +15,8 @@ export async function POST(req: Request) {
   if (!sig || !webhookSecret) {
     return NextResponse.json({ error: "Webhook non configuré." }, { status: 400 });
   }
+
+  const stripe = getStripe();
 
   let event: Stripe.Event;
   try {
