@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { CheckCircle2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { PLANS } from "@/lib/billing/plans";
 import { patientAccess, instructorAccess, trialDaysLeft } from "@/lib/billing/access";
 import { startCheckout, openBillingPortal } from "./actions";
@@ -14,10 +15,7 @@ export default async function BillingPage({
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   const [{ data: kine }, { data: pat }, { data: sub }] = await Promise.all([
     supabase.from("instructors").select("id").eq("id", user.id).maybeSingle(),
@@ -40,8 +38,9 @@ export default async function BillingPage({
         <h1 className="mt-1 text-2xl font-semibold text-slate-900">Mon abonnement</h1>
 
         {sp.subscribed === "1" && (
-          <p className="mt-4 rounded-lg bg-teal-50 p-3 text-sm font-medium text-teal-700">
-            ✅ Paiement confirmé — votre accès est activé. Merci !
+          <p className="mt-4 flex items-center gap-1.5 rounded-lg bg-teal-50 p-3 text-sm font-medium text-teal-700">
+            <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+            Paiement confirmé — votre accès est activé. Merci !
           </p>
         )}
         {sp.checkout === "cancel" && (
@@ -61,22 +60,39 @@ export default async function BillingPage({
             const plan = PLANS.patient_monthly;
             const levelLabel =
               acc.level === "premium"
-                ? "Abonné(e) — accès complet ✨"
+                ? "Abonné(e) — accès complet"
                 : acc.level === "trial"
                   ? `Essai gratuit en cours — ${days} jour${days > 1 ? "s" : ""} restant${days > 1 ? "s" : ""}`
                   : "Offre gratuite (exercices prescrits par votre kiné)";
             return (
               <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                 <p className="text-sm text-slate-500">Votre accès actuel</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">{levelLabel}</p>
+                <p className="mt-1 flex items-center gap-1.5 text-lg font-semibold text-slate-900">
+                  {acc.level === "premium" && (
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-600" strokeWidth={1.75} />
+                  )}
+                  {levelLabel}
+                </p>
 
                 {acc.level !== "premium" && (
                   <>
                     <ul className="mt-4 space-y-1.5 text-sm text-slate-600">
-                      <li>✓ Bibliothèque complète d&apos;exercices</li>
-                      <li>✓ Suggestions d&apos;adaptation personnalisées</li>
-                      <li>✓ Analyse caméra de précision (posture)</li>
-                      <li>✓ Prise de rendez-vous et visio avec votre kiné</li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
+                        Bibliothèque complète d&apos;exercices
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
+                        Suggestions d&apos;adaptation personnalisées
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
+                        Analyse caméra de précision (posture)
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
+                        Prise de rendez-vous et visio avec votre kiné
+                      </li>
                     </ul>
                     <form action={startCheckout} className="mt-5">
                       <input type="hidden" name="plan" value={plan.key} />
@@ -104,17 +120,32 @@ export default async function BillingPage({
             return (
               <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                 <p className="text-sm text-slate-500">Votre formule</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {acc.level === "pro" ? "Kiné Pro — actif ✨" : "Gratuit (prescription illimitée)"}
+                <p className="mt-1 flex items-center gap-1.5 text-lg font-semibold text-slate-900">
+                  {acc.level === "pro" && (
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-600" strokeWidth={1.75} />
+                  )}
+                  {acc.level === "pro" ? "Kiné Pro — actif" : "Gratuit (prescription illimitée)"}
                 </p>
 
                 {acc.level !== "pro" && (
                   <>
                     <ul className="mt-4 space-y-1.5 text-sm text-slate-600">
-                      <li>✓ Analyse caméra de précision pour vos patients</li>
-                      <li>✓ Suggestions d&apos;adaptation détaillées</li>
-                      <li>✓ Suivi télésoin (bilan, visio, mise à jour du programme)</li>
-                      <li>✓ Tableaux de bord avancés</li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
+                        Analyse caméra de précision pour vos patients
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
+                        Suggestions d&apos;adaptation détaillées
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
+                        Suivi télésoin (bilan, visio, mise à jour du programme)
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
+                        Tableaux de bord avancés
+                      </li>
                     </ul>
                     <form action={startCheckout} className="mt-5">
                       <input type="hidden" name="plan" value={plan.key} />

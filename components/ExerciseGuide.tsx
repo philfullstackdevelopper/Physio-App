@@ -13,6 +13,7 @@
 // it is only counting repetitions, is worse off than one who was never told.
 // =============================================================================
 
+import { Camera } from "lucide-react";
 import { parseSteps } from "@/lib/exercise/steps";
 import { suitabilityFor, type CameraSuitability } from "@/lib/exercise/cameraSuitability";
 
@@ -74,8 +75,9 @@ export default function ExerciseGuide({
           </p>
         )}
 
-        <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
-          🎥 {CAMERA_NOTE[suitability]}
+        <p className="mt-3 flex items-start gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-500">
+          <Camera className="h-3.5 w-3.5 shrink-0 translate-y-0.5" strokeWidth={1.75} />
+          {CAMERA_NOTE[suitability]}
         </p>
         <p className="mt-1 text-xs text-slate-500">
           Une douleur vive ? Arrêtez-vous et parlez-en à votre praticien.

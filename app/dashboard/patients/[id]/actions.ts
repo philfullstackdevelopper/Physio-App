@@ -3,15 +3,13 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 
 // Assigns a condition to a patient. The condition's workouts become available to
 // the patient. Changing the condition clears any previous workout recommendation.
 export async function assignCondition(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  await requireUser(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const conditionId = String(formData.get("condition_id") ?? "");
@@ -37,10 +35,7 @@ export async function assignCondition(formData: FormData) {
 // an increase. See lib/exercise/overrides.ts.
 export async function applyAdaptation(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const exerciseName = String(formData.get("exercise_name") ?? "");
@@ -76,10 +71,7 @@ export async function applyAdaptation(formData: FormData) {
 // Removes an override — the patient goes back to the standard prescription.
 export async function resetAdaptation(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  await requireUser(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const exerciseName = String(formData.get("exercise_name") ?? "");
@@ -100,10 +92,7 @@ export async function resetAdaptation(formData: FormData) {
 // Sets (or clears) the instructor's recommended workout for this patient.
 export async function recommendWorkout(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  await requireUser(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const workoutId = String(formData.get("workout_id") ?? "") || null;

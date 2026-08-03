@@ -11,6 +11,7 @@
 // =============================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Volume2, Video, Clock } from "lucide-react";
 import type {
   PoseLandmarker as PoseLandmarkerType,
   NormalizedLandmark,
@@ -232,7 +233,7 @@ export default function PoseTracker({
       setHoldRemaining(an.holdSeconds);
     }
     beep(880, 150); // "go" for the next set
-    setFeedback({ text: "C'est reparti ! Série suivante 💪", tone: "good" });
+    setFeedback({ text: "C'est reparti ! Série suivante.", tone: "good" });
   }, [beep]);
 
   // Rest between sets — counting stays frozen (via restingRef) until it ends.
@@ -259,7 +260,7 @@ export default function PoseTracker({
 
   const finishAll = useCallback(
     (done: number) => {
-      flashPopup("Objectif atteint ! 🎉 Bravo", "good");
+      flashPopup("Objectif atteint ! Bravo", "good");
       if (!completedRef.current) {
         completedRef.current = true;
         // The level is read from the ref, not the closure: the patient may have
@@ -286,11 +287,11 @@ export default function PoseTracker({
       if (setsRef.current >= ex.goalSets) {
         finishAll(setsRef.current * ex.goalReps);
       } else {
-        flashPopup(`Série ${setsRef.current} terminée ! Reposez-vous 🧘`, "good");
+        flashPopup(`Série ${setsRef.current} terminée ! Reposez-vous.`, "good");
         startRest(adjustRest(restSecondsFor(anRef.current, ex.goalReps), levelRef.current)); // rest before next set
       }
     } else {
-      flashPopup("Belle répétition ! 💪", "good");
+      flashPopup("Belle répétition !", "good");
     }
   }, [beep, finishAll, flashPopup, startRest]);
 
@@ -345,7 +346,7 @@ export default function PoseTracker({
             holdTimerRef.current = null;
             finishAll(setsRef.current);
           } else {
-            flashPopup(`Maintien ${setsRef.current} terminé ! Reposez-vous 🧘`, "good");
+            flashPopup(`Maintien ${setsRef.current} terminé ! Reposez-vous.`, "good");
             startRest(adjustRest(restSecondsFor(anRef.current, ex.goalReps), levelRef.current)); // rest before next hold
           }
         }
@@ -423,8 +424,8 @@ export default function PoseTracker({
     lastTsRef.current = null; // reset hold timing so it doesn't jump on resume
     setFeedback(
       next
-        ? { text: "⏸️ En pause — reprenez quand vous êtes prêt.", tone: "info" }
-        : { text: "C'est reparti ! 💪", tone: "good" },
+        ? { text: "En pause — reprenez quand vous êtes prêt.", tone: "info" }
+        : { text: "C'est reparti !", tone: "good" },
     );
   }, []);
 
@@ -464,7 +465,7 @@ export default function PoseTracker({
             if (setsRef.current >= ex.goalSets) {
               finishAll(setsRef.current);
             } else {
-              flashPopup(`Maintien ${setsRef.current} terminé ! Reposez-vous 🧘`, "good");
+              flashPopup(`Maintien ${setsRef.current} terminé ! Reposez-vous.`, "good");
               startRest(adjustRest(restSecondsFor(an, ex.goalReps), levelRef.current)); // rest before next hold
             }
           }
@@ -721,7 +722,7 @@ export default function PoseTracker({
     setActive(false);
     setCountdown(null);
     setStatus("running");
-    setFeedback({ text: "Installez-vous, puis appuyez sur « Commencer ». Suivez les bips 🔊", tone: "info" });
+    setFeedback({ text: "Installez-vous, puis appuyez sur « Commencer ». Suivez les bips.", tone: "info" });
   }, [unlockAudio]);
 
   const stop = useCallback(() => {
@@ -860,8 +861,9 @@ export default function PoseTracker({
 
       {/* Shown before the exercise starts: the times/rhythm are a guide to follow. */}
       {!active && (
-        <p className="rounded-lg bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
-          ⏱️ Pour cet exercice, les durées et le rythme indiqués sont des repères
+        <p className="flex items-start gap-1.5 rounded-lg bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+          <Clock className="h-4 w-4 shrink-0 translate-y-0.5" strokeWidth={1.75} />
+          Pour cet exercice, les durées et le rythme indiqués sont des repères
           pour vous guider — suivez-les au mieux, sans forcer.
         </p>
       )}
@@ -890,7 +892,8 @@ export default function PoseTracker({
             </div>
           )}
           <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200">
-            🔊 Guidage sonore — suivez les bips
+            <Volume2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+            Guidage sonore — suivez les bips
           </div>
 
           {popup && (
@@ -917,7 +920,7 @@ export default function PoseTracker({
           )}
           {rest !== null && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 text-white">
-              <span className="text-sm uppercase tracking-wide text-slate-300">Repos 🧘</span>
+              <span className="text-sm uppercase tracking-wide text-slate-300">Repos</span>
               <div className="font-display text-7xl font-bold tabular-nums">
                 {rest}
                 <span className="text-2xl font-normal text-slate-300"> s</span>
@@ -994,7 +997,7 @@ export default function PoseTracker({
 
         {rest !== null && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 text-white">
-            <span className="text-sm uppercase tracking-wide text-slate-300">Repos 🧘</span>
+            <span className="text-sm uppercase tracking-wide text-slate-300">Repos</span>
             <div className="font-display text-7xl font-bold tabular-nums">
               {rest}
               <span className="text-2xl font-normal text-slate-300"> s</span>
@@ -1073,16 +1076,24 @@ export default function PoseTracker({
             <button
               onClick={start}
               disabled={status === "loading"}
-              className="flex-1 rounded-md bg-teal-600 px-4 py-2.5 font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-teal-600 px-4 py-2.5 font-medium text-white hover:bg-teal-700 disabled:opacity-50"
             >
-              {status === "loading" ? "Chargement…" : "🎥 Avec caméra"}
+              {status === "loading" ? (
+                "Chargement…"
+              ) : (
+                <>
+                  <Video className="h-4 w-4" strokeWidth={1.75} />
+                  Avec caméra
+                </>
+              )}
             </button>
             <button
               onClick={startAudio}
               disabled={status === "loading"}
-              className="flex-1 rounded-md border border-teal-600 px-4 py-2.5 font-medium text-teal-700 hover:bg-teal-50 disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-teal-600 px-4 py-2.5 font-medium text-teal-700 hover:bg-teal-50 disabled:opacity-50"
             >
-              🔊 Sans caméra (son)
+              <Volume2 className="h-4 w-4" strokeWidth={1.75} />
+              Sans caméra (son)
             </button>
           </div>
         ) : (

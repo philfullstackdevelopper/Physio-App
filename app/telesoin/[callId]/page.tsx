@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { startOfWeekISO } from "@/lib/week";
 import { computeStreak } from "@/lib/exercise/streak";
 import VideoCall from "@/components/VideoCall";
@@ -10,10 +11,7 @@ import { endCall } from "../actions";
 export default async function CallPage({ params }: { params: Promise<{ callId: string }> }) {
   const { callId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   const { data: call } = await supabase
     .from("video_calls")

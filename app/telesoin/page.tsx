@@ -1,16 +1,14 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { Video } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { getCurrentAccess } from "@/lib/billing/context";
 import UpgradeCta from "@/components/UpgradeCta";
 import { startCall } from "./actions";
 
 export default async function TelesoinHub() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
   const access = await getCurrentAccess(supabase, user.id);
 
   const kinePro = access.role === "instructor" && access.access.capabilities.telesoinWorkflow;
@@ -78,8 +76,9 @@ export default async function TelesoinHub() {
                     <span className="font-medium text-slate-800">{p.full_name ?? "Patient"}</span>
                     <form action={startCall}>
                       <input type="hidden" name="patient_id" value={p.id} />
-                      <button className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700">
-                        📹 Démarrer l&apos;appel
+                      <button className="flex items-center gap-1.5 rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700">
+                        <Video className="h-4 w-4" strokeWidth={1.75} />
+                        Démarrer l&apos;appel
                       </button>
                     </form>
                   </li>

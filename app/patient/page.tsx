@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CheckCircle2, Star, Lock, Flame } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { isProfileComplete } from "@/lib/exercise/patientProfile";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { computeStreak } from "@/lib/exercise/streak";
 import { stageWithFeedback, careWeek, type Rating } from "@/lib/exercise/stageProgress";
 import { startOfTodayISO, daysAgoISO } from "@/lib/week";
+import { getCurrentAccess } from "@/lib/billing/context";
 import { signout } from "./actions";
 
 type Workout = {
@@ -35,12 +38,14 @@ function WorkoutCard({ w, isRec, done = false }: { w: Workout; isRec: boolean; d
       }`}
     >
       {done ? (
-        <span className="inline-block rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-medium text-white">
-          ✅ Faite aujourd&apos;hui
+        <span className="inline-flex items-center gap-1 rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-medium text-white">
+          <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
+          Faite aujourd&apos;hui
         </span>
       ) : isRec ? (
-        <span className="inline-block rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700">
-          ★ Recommandée par votre praticien
+        <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700">
+          <Star className="h-3.5 w-3.5" strokeWidth={2} />
+          Recommandée par votre praticien
         </span>
       ) : null}
       <div className="mt-2 flex items-baseline justify-between gap-3">
@@ -69,10 +74,7 @@ function WorkoutCard({ w, isRec, done = false }: { w: Workout; isRec: boolean; d
 
 export default async function PatientHome() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   // First-login gate: send the patient to onboarding until their situation +
   // profile are recorded.
@@ -138,6 +140,70 @@ export default async function PatientHome() {
     workouts = (data ?? []) as unknown as Workout[];
   }
 
+  // Free-tier patients (no trial, no subscription) get a locked teaser instead
+  // of the real program — seeing that a program exists is the hook to subscribe,
+  // actually following it is the paid product.
+  const access = await getCurrentAccess(supabase, user.id);
+  if (access.role === "patient" && access.access.level === "free") {
+    const exerciseCount = new Set(
+      workouts.flatMap((w) =>
+        (w.workout_exercises ?? []).map((we) => we.exercises?.name).filter(Boolean),
+      ),
+    ).size;
+    return (
+      <main className="min-h-screen p-6 sm:p-8">
+        <div className="mx-auto max-w-2xl">
+          <div className="flex items-center justify-between gap-2">
+            <Link
+              href="/billing"
+              className="rounded-xl border border-teal-600 bg-white px-4 py-2 text-sm font-medium text-teal-700 shadow-sm transition hover:bg-teal-50"
+            >
+              Mon abonnement
+            </Link>
+            <form action={signout}>
+              <button
+                type="submit"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50"
+              >
+                Se déconnecter
+              </button>
+            </form>
+          </div>
+
+          <div className="mt-4 text-center">
+            <h1 className="font-display text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
+              Bonjour, {patient?.full_name ? patient.full_name.split(" ")[0] : "Bienvenue"}
+            </h1>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-teal-200 bg-teal-50 p-8 text-center">
+            <Lock className="mx-auto h-10 w-10 text-teal-600" strokeWidth={1.5} />
+            {workouts.length > 0 ? (
+              <p className="mt-4 text-lg font-medium text-slate-900">
+                Votre kiné vous a assigné un programme de {exerciseCount} exercice
+                {exerciseCount > 1 ? "s" : ""}.
+              </p>
+            ) : (
+              <p className="mt-4 text-lg font-medium text-slate-900">
+                Votre praticien n&apos;a pas encore configuré votre programme.
+              </p>
+            )}
+            <p className="mt-2 text-sm text-slate-600">
+              Abonnez-vous pour voir le détail des exercices, suivre votre progression et démarrer
+              vos séances guidées.
+            </p>
+            <Link
+              href="/billing"
+              className="mt-6 inline-block rounded-xl bg-teal-600 px-6 py-3 text-lg font-semibold text-white shadow-sm transition hover:bg-teal-700"
+            >
+              S&apos;abonner pour commencer
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   // Daily streak (consecutive days with a completed workout).
   const { data: streakLogs } = await supabase
     .from("workout_logs")
@@ -156,18 +222,22 @@ export default async function PatientHome() {
   );
   const doneToday = doneTodayIds.size > 0;
 
-  // A session done today may belong to another stage than the one we just loaded
-  // — the patient's stage can move between two sessions, and the feedback brake
-  // moves it more often. Fetch those by id so today's work never vanishes from
-  // the page just because the phase changed underneath it.
-  const missingDoneIds = [...doneTodayIds].filter((id) => !workouts.some((w) => w.id === id));
-  if (missingDoneIds.length > 0) {
-    const { data } = await supabase.from("workouts").select(WORKOUT_FIELDS).in("id", missingDoneIds);
+  // A session done today, or the one the practitioner recommends, may belong to
+  // another stage than the one we just loaded — the patient's stage can move
+  // between two sessions, and the feedback brake moves it more often. The
+  // practitioner's recommendation must also never silently vanish just because
+  // its stage doesn't match right now — the kiné stays the guide. Fetch those
+  // by id so neither case disappears from the page.
+  const recId = patient?.recommended_workout_id;
+  const missingIds = [...doneTodayIds, ...(recId ? [recId] : [])].filter(
+    (id) => !workouts.some((w) => w.id === id),
+  );
+  if (missingIds.length > 0) {
+    const { data } = await supabase.from("workouts").select(WORKOUT_FIELDS).in("id", missingIds);
     workouts = [...workouts, ...((data ?? []) as unknown as Workout[])];
   }
 
   // Recommended workout first, then by duration.
-  const recId = patient?.recommended_workout_id;
   const ordered = [...workouts].sort((a, b) => (a.id === recId ? -1 : b.id === recId ? 1 : 0));
   // Split the program: what's already been done today vs. what's left to continue.
   const doneWorkouts = ordered.filter((w) => doneTodayIds.has(w.id));
@@ -176,36 +246,37 @@ export default async function PatientHome() {
   return (
     <main className="min-h-screen p-6 sm:p-8">
       <div className="mx-auto max-w-2xl">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-teal-700">Bonjour 👋</p>
-            <h1 className="font-display text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
-              {patient?.full_name ? patient.full_name.split(" ")[0] : "Bienvenue"}
-            </h1>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Link
-              href="/billing"
-              className="rounded-md border border-teal-600 bg-white px-4 py-2 text-sm font-medium text-teal-700 hover:bg-teal-50"
+        <div className="flex items-center justify-between gap-2">
+          <Link
+            href="/billing"
+            className="rounded-xl border border-teal-600 bg-white px-4 py-2 text-sm font-medium text-teal-700 shadow-sm transition hover:bg-teal-50"
+          >
+            Mon abonnement
+          </Link>
+          <form action={signout}>
+            <button
+              type="submit"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50"
             >
-              Mon abonnement
-            </Link>
-            <form action={signout}>
-              <button
-                type="submit"
-                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Se déconnecter
-              </button>
-            </form>
+              Se déconnecter
+            </button>
+          </form>
+        </div>
+
+        <div className="mt-4 text-center">
+          <h1 className="font-display text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
+            Bonjour, {patient?.full_name ? patient.full_name.split(" ")[0] : "Bienvenue"}
+          </h1>
+        </div>
+
+        <div className="mt-4 flex justify-center">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-sm font-semibold text-orange-600">
+            <Flame className="h-4 w-4" strokeWidth={2} />
+            {streak > 0 ? `${streak} jour${streak > 1 ? "s" : ""} d'affilée` : "Commencez votre série aujourd'hui !"}
           </div>
         </div>
 
-        <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-sm font-semibold text-orange-600">
-          🔥 {streak > 0 ? `${streak} jour${streak > 1 ? "s" : ""} d'affilée` : "Commencez votre série aujourd'hui !"}
-        </div>
-
-        <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
+        <div className="mt-2 flex items-center justify-center gap-2 text-center text-sm text-slate-500">
           <span>
             {condition?.name ? (
               <>
@@ -229,7 +300,7 @@ export default async function PatientHome() {
         {(decision.concerning || decision.held) &&
           (decision.held && !decision.concerning ? (
             <div className="mt-6 rounded-2xl border border-teal-200 bg-teal-50 p-5">
-              <p className="font-medium text-teal-900">Vous allez mieux 💪</p>
+              <p className="font-medium text-teal-900">Vous allez mieux</p>
               <p className="mt-1 text-sm text-teal-800">
                 Vos retours s&apos;améliorent. Nous augmentons vos séances petit à petit, une étape
                 par semaine, pour éviter toute rechute.
@@ -254,11 +325,12 @@ export default async function PatientHome() {
         {doneToday && (
           <>
             <div className="mt-6 rounded-2xl border border-teal-200 bg-teal-50 p-5">
-              <p className="font-display text-xl font-semibold text-teal-800">
-                ✅ Séance faite aujourd&apos;hui !
+              <p className="flex items-center gap-1.5 font-display text-xl font-semibold text-teal-800">
+                <CheckCircle2 className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+                Séance faite aujourd&apos;hui !
               </p>
               <p className="mt-1 text-sm text-teal-700">
-                Beau travail — revenez demain pour garder votre série. 🔥
+                Beau travail — revenez demain pour garder votre série.
               </p>
             </div>
             {doneWorkouts.length > 0 && (

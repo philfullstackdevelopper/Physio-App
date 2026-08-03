@@ -3,15 +3,13 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 
 // Saves the patient's onboarding profile into `patient_profiles`.
 // RLS ensures a patient can only write their own row (id = auth.uid()).
 export async function saveOnboarding(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   const conditionId = String(formData.get("condition_id") ?? "");
   const injuryStage = String(formData.get("injury_stage") ?? "");

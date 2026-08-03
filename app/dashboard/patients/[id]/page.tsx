@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Flame, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { startOfWeekISO, daysAgoISO } from "@/lib/week";
 import { autoEaseGoalReps } from "@/lib/exercise/autoEase";
 import {
@@ -67,10 +69,7 @@ export default async function PatientDetailPage({
   const { error } = await searchParams;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  await requireUser(supabase);
 
   const { data: patient } = await supabase
     .from("patients")
@@ -230,20 +229,25 @@ export default async function PatientDetailPage({
         <Link href="/dashboard/patients" className="text-sm text-slate-500 hover:underline">
           ← Mes patients
         </Link>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900">{patient.full_name}</h1>
-        <p className="text-sm text-slate-500">{patient.email}</p>
+        <div className="mt-1 text-center">
+          <h1 className="text-2xl font-semibold text-slate-900">{patient.full_name}</h1>
+          <p className="text-sm text-slate-500">{patient.email}</p>
+        </div>
 
         {error && <p className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
         {/* Suivi — quick stats */}
         <section className="mt-6 grid grid-cols-3 gap-3">
           {[
-            { label: "Séances totales", value: totalSessions },
-            { label: "Cette semaine", value: weekSessions },
-            { label: "Jours d'affilée", value: `${streak} 🔥` },
+            { label: "Séances totales", value: totalSessions, icon: null },
+            { label: "Cette semaine", value: weekSessions, icon: null },
+            { label: "Jours d'affilée", value: streak, icon: Flame },
           ].map((s) => (
             <div key={s.label} className="rounded-xl border border-slate-100 bg-white p-4 text-center shadow-sm">
-              <div className="text-2xl font-semibold text-slate-900 tabular-nums">{s.value}</div>
+              <div className="flex items-center justify-center gap-1 text-2xl font-semibold text-slate-900 tabular-nums">
+                {s.value}
+                {s.icon && <s.icon className="h-4 w-4 text-orange-500" strokeWidth={2} />}
+              </div>
               <div className="mt-0.5 text-xs text-slate-500">{s.label}</div>
             </div>
           ))}
@@ -296,12 +300,16 @@ export default async function PatientDetailPage({
                         href={d.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm font-medium text-teal-700 hover:underline"
+                        className="flex items-center gap-1.5 text-sm font-medium text-teal-700 hover:underline"
                       >
-                        📄 {d.file_name}
+                        <FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                        {d.file_name}
                       </a>
                     ) : (
-                      <span className="text-sm text-slate-500">📄 {d.file_name}</span>
+                      <span className="flex items-center gap-1.5 text-sm text-slate-500">
+                        <FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                        {d.file_name}
+                      </span>
                     )}
                   </li>
                 ))}

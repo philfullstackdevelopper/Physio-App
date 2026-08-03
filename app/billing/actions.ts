@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 import { PLANS, isPlanKey } from "@/lib/billing/plans";
 
@@ -14,10 +15,7 @@ export async function startCheckout(formData: FormData) {
   const plan = PLANS[planKey];
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   const h = await headers();
   const host = h.get("host") ?? "localhost:3000";
@@ -55,10 +53,7 @@ export async function startCheckout(formData: FormData) {
 // invoices. Requires an existing Stripe customer (created at first checkout).
 export async function openBillingPortal() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   const { data: sub } = await supabase
     .from("subscriptions")

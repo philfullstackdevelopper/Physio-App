@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
+import SeancesTabs from "@/components/SeancesTabs";
 import { createSeance, duplicateSeance } from "./actions";
 
 const STAGES = Object.entries(STAGE_LABELS) as [InjuryStage, string][];
@@ -22,10 +23,7 @@ export default async function SeancesPage({
   const { error } = await searchParams;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   const { data: conditions } = await supabase.from("conditions").select("id, name").order("name");
   const conditionName = (cid: string | null) => conditions?.find((c) => c.id === cid)?.name;
@@ -54,9 +52,14 @@ export default async function SeancesPage({
   return (
     <main className="min-h-screen bg-slate-50 p-6 sm:p-8">
       <div className="mx-auto max-w-2xl">
-        <Link href="/dashboard" className="text-sm text-slate-500 hover:underline">
-          ← Tableau de bord
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/dashboard" className="text-sm text-slate-500 hover:underline">
+            ← Tableau de bord
+          </Link>
+          <Link href="/dashboard/exercises" className="text-sm font-medium text-teal-700 hover:underline">
+            Gérer mes exercices →
+          </Link>
+        </div>
         <h1 className="mt-1 text-2xl font-semibold text-slate-900">Mes séances</h1>
         <p className="mt-1 text-sm text-slate-500">
           Composez vos propres séances ; elles seront proposées aux patients de la phase choisie.
@@ -115,72 +118,22 @@ export default async function SeancesPage({
           </button>
         </form>
 
-        {/* My séances */}
-        <h2 className="mt-8 text-lg font-medium text-slate-900">Mes séances personnalisées</h2>
-        <div className="mt-3 rounded-xl bg-white p-2 shadow-sm">
-          {seances.length === 0 ? (
-            <p className="p-6 text-center text-sm text-slate-500">
-              Aucune séance personnalisée pour le moment. Créez-en une ci-dessus, ou
-              dupliquez un modèle ci-dessous.
-            </p>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {seances.map((s) => (
-                <li key={s.id}>
-                  <Link
-                    href={`/dashboard/seances/${s.id}`}
-                    className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
-                  >
-                    <div>
-                      <p className="font-medium text-slate-900">{s.name}</p>
-                      <p className="text-sm text-slate-500">
-                        {conditionName(s.condition_id) ?? "—"}
-                        {s.stage && <span> · {STAGE_LABELS[s.stage as InjuryStage]}</span>}
-                        <span className="text-slate-400"> · {s.workout_exercises?.[0]?.count ?? 0} exercices</span>
-                      </p>
-                    </div>
-                    <span className="text-slate-400">→</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Platform séances — visible to all, not editable; duplicate to customise */}
-        <h2 className="mt-8 text-lg font-medium text-slate-900">Séances prévues (plateforme)</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Déjà disponibles pour tous les kinés. Dupliquez-en une pour en faire votre
-          propre version modifiable.
-        </p>
-        <div className="mt-3 rounded-xl bg-white p-2 shadow-sm">
-          {templates.length === 0 ? (
-            <p className="p-6 text-center text-sm text-slate-500">Aucun modèle disponible.</p>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {templates.map((t) => (
-                <li key={t.id} className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p className="font-medium text-slate-900">{t.name}</p>
-                    <p className="text-sm text-slate-500">
-                      {conditionName(t.condition_id) ?? "—"}
-                      {t.stage && <span> · {STAGE_LABELS[t.stage as InjuryStage]}</span>}
-                    </p>
-                  </div>
-                  <form action={duplicateSeance}>
-                    <input type="hidden" name="template_id" value={t.id} />
-                    <button
-                      type="submit"
-                      className="rounded-md border border-teal-600 px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-teal-50"
-                    >
-                      Dupliquer
-                    </button>
-                  </form>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <SeancesTabs
+          mine={seances.map((s) => ({
+            id: s.id,
+            name: s.name,
+            conditionName: conditionName(s.condition_id),
+            stageLabel: s.stage ? STAGE_LABELS[s.stage as InjuryStage] : undefined,
+            extra: `${s.workout_exercises?.[0]?.count ?? 0} exercices`,
+          }))}
+          templates={templates.map((t) => ({
+            id: t.id,
+            name: t.name,
+            conditionName: conditionName(t.condition_id),
+            stageLabel: t.stage ? STAGE_LABELS[t.stage as InjuryStage] : undefined,
+          }))}
+          duplicateSeance={duplicateSeance}
+        />
       </div>
     </main>
   );

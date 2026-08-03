@@ -3,14 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Ensure the caller is a logged-in instructor; returns their user id.
 async function requireInstructor(supabase: SupabaseClient): Promise<string> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
   const { data: instr } = await supabase
     .from("instructors")
     .select("id")

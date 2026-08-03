@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Sparkles } from "lucide-react";
 
 // A small, drop-anywhere upsell banner linking to /billing. Renders nothing for
 // users who already have full access. Server-component friendly (no client JS).
@@ -34,7 +35,9 @@ export default function UpgradeCta({
       className="mt-6 block rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-white p-5 shadow-sm transition hover:shadow-md"
     >
       <div className="flex items-start gap-3">
-        <span className="text-2xl">✨</span>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
+          <Sparkles className="h-5 w-5" strokeWidth={1.75} />
+        </span>
         <div>
           <p className="font-semibold text-slate-900">{title}</p>
           <p className="mt-0.5 text-sm text-slate-600">{subtitle}</p>

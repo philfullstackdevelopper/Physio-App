@@ -1,15 +1,12 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
+import PatientsFilter from "@/components/PatientsFilter";
 
 export default async function PatientsPage() {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  await requireUser(supabase);
 
   const { data: patients } = await supabase
     .from("patients")
@@ -44,36 +41,21 @@ export default async function PatientsPage() {
           </Link>
         </div>
 
-        <div className="mt-8 rounded-xl bg-white p-2 shadow-sm">
-          {!patients || patients.length === 0 ? (
-            <p className="p-6 text-center text-sm text-slate-500">
-              Aucun patient pour le moment. Cliquez sur « Ajouter » pour commencer.
-            </p>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {patients.map((p) => {
-                const stage = stageOf(p.id);
-                return (
-                  <li key={p.id}>
-                    <Link
-                      href={`/dashboard/patients/${p.id}`}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
-                    >
-                      <div>
-                        <p className="font-medium text-slate-900">{p.full_name}</p>
-                        <p className="text-sm text-slate-500">
-                          {conditionName(p.condition_id) ?? "Condition non assignée"}
-                          {stage && <span className="text-slate-400"> · {STAGE_LABELS[stage]}</span>}
-                        </p>
-                      </div>
-                      <span className="text-slate-400">→</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
+        <PatientsFilter
+          patients={(patients ?? []).map((p) => {
+            const stage = stageOf(p.id);
+            return {
+              id: p.id,
+              name: p.full_name,
+              conditionId: p.condition_id,
+              conditionName: conditionName(p.condition_id),
+              stage,
+              stageLabel: stage ? STAGE_LABELS[stage] : undefined,
+            };
+          })}
+          conditions={conditions ?? []}
+          stages={Object.entries(STAGE_LABELS).map(([value, label]) => ({ value, label }))}
+        />
       </div>
     </main>
   );

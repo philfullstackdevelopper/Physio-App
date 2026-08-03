@@ -1,18 +1,22 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { recommendPrescription } from "@/lib/exercise/prescription";
 import { isProfileComplete, profileToContext } from "@/lib/exercise/patientProfile";
+import { getCurrentAccess } from "@/lib/billing/context";
 import GuidedExercise from "@/components/GuidedExercise";
 
 // Live guided exercise for the logged-in patient. Targets are derived from the
 // profile captured at onboarding — no information is re-asked here.
 export default async function PatientExercisePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
+
+  // Free-tier patients only see the locked teaser on /patient — typing this
+  // URL directly must not bypass that.
+  const access = await getCurrentAccess(supabase, user.id);
+  if (access.role === "patient" && access.access.level === "free") redirect("/patient");
 
   const { data: profile } = await supabase
     .from("patient_profiles")

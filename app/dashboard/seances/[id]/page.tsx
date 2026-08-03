@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import ExercisePicker from "@/components/ExercisePicker";
 import { saveSeance, deleteSeance } from "../actions";
@@ -18,10 +20,7 @@ export default async function SeanceEditorPage({
   const { saved } = await searchParams;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   const { data: workout } = await supabase
     .from("workouts")
@@ -49,8 +48,9 @@ export default async function SeanceEditorPage({
         <h1 className="mt-1 text-2xl font-semibold text-slate-900">Composer la séance</h1>
 
         {saved && (
-          <p className="mt-4 rounded-md bg-teal-50 p-3 text-sm font-medium text-teal-800">
-            Séance enregistrée ✅
+          <p className="mt-4 flex items-center gap-1.5 rounded-md bg-teal-50 p-3 text-sm font-medium text-teal-800">
+            <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+            Séance enregistrée
           </p>
         )}
 

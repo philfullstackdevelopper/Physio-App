@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { getCurrentAccess } from "@/lib/billing/context";
 import { newRoomName } from "@/lib/video/provider";
 
@@ -11,10 +12,7 @@ export async function startCall(formData: FormData) {
   if (typeof patientId !== "string") throw new Error("Patient manquant.");
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   const access = await getCurrentAccess(supabase, user.id);
   if (access.role !== "instructor" || !access.access.capabilities.telesoinWorkflow) {
@@ -46,10 +44,7 @@ export async function endCall(formData: FormData) {
   if (typeof callId !== "string") return;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   await supabase
     .from("video_calls")

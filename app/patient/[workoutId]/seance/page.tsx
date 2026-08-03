@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { recommendPrescription } from "@/lib/exercise/prescription";
 import { isProfileComplete, profileToContext } from "@/lib/exercise/patientProfile";
 import type { RepOverrideMap } from "@/lib/exercise/overrides";
@@ -21,10 +22,12 @@ export default async function SeancePage({
   const { workoutId } = await params;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
+
+  // Free-tier patients only see the locked teaser on /patient — typing this
+  // URL directly must not bypass that.
+  const access = await getCurrentAccess(supabase, user.id);
+  if (access.role === "patient" && access.access.level === "free") redirect("/patient");
 
   const { data: profile } = await supabase
     .from("patient_profiles")
@@ -90,7 +93,6 @@ export default async function SeancePage({
 
   // The in-session adaptation suggestion is a premium feature — free-floor
   // patients (trial ended, not subscribed) don't see it.
-  const access = await getCurrentAccess(supabase, user.id);
   const showAdaptation =
     access.role === "patient" ? access.access.capabilities.adaptationEngine : false;
 

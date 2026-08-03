@@ -26,3 +26,20 @@ body {
 .font-display {
   font-family: var(--font-display), Georgia, "Times New Roman", serif;
 }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ringIn {
+  from {
+    stroke-dashoffset: var(--ring-total, 264);
+  }
+}

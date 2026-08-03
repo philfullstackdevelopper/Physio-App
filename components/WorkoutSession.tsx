@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Trophy, Flame, CheckCircle2, PartyPopper, Lightbulb, RotateCcw, Video, Check } from "lucide-react";
 import PoseTracker from "@/components/PoseTracker";
 import { createClient } from "@/lib/supabase/client";
 import type { Prescription } from "@/lib/exercise/prescription";
@@ -29,10 +30,10 @@ type Phase = "intro" | "demo" | "camera" | "celebrate" | "finished";
 
 const CHEERS = [
   "Excellent travail !",
-  "Continue comme ça 💪",
+  "Continue comme ça !",
   "Superbe !",
   "Tu gères !",
-  "Impressionnant 🔥",
+  "Impressionnant !",
 ];
 
 /** Render the exercise demonstration: a video/image if we have one, otherwise
@@ -263,7 +264,7 @@ export default function WorkoutSession({
   if (phase === "finished") {
     return (
       <div className="mx-auto max-w-md rounded-3xl border border-teal-100 bg-white p-8 text-center shadow-sm">
-        <div className="text-6xl">🏆</div>
+        <Trophy className="mx-auto h-14 w-14 text-amber-500" strokeWidth={1.5} />
         <h2 className="font-display mt-4 text-3xl font-semibold text-slate-900">
           Séance terminée !
         </h2>
@@ -271,7 +272,8 @@ export default function WorkoutSession({
           Bravo, vous avez complété les {total} exercices de « {workoutName} ».
         </p>
         <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-1.5 text-sm font-semibold text-orange-600">
-          🔥 {streak && streak > 0
+          <Flame className="h-4 w-4" strokeWidth={2} />
+          {streak && streak > 0
             ? `${streak} jour${streak > 1 ? "s" : ""} d'affilée`
             : `${total} exercices terminés`}
         </div>
@@ -312,8 +314,9 @@ export default function WorkoutSession({
             </button>
           </div>
         ) : (
-          <p className="mt-6 rounded-lg bg-teal-50 p-3 text-sm font-medium text-teal-700">
-            Merci ! Votre ressenti a été transmis à votre kiné ✅
+          <p className="mt-6 flex items-center justify-center gap-1.5 rounded-lg bg-teal-50 p-3 text-sm font-medium text-teal-700">
+            <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+            Merci ! Votre ressenti a été transmis à votre kiné
           </p>
         )}
 
@@ -356,13 +359,14 @@ export default function WorkoutSession({
       {/* ---- Celebration between exercises ---- */}
       {phase === "celebrate" ? (
         <div className="rounded-3xl border border-teal-100 bg-white p-8 text-center shadow-sm">
-          <div className="text-6xl">🎉</div>
+          <PartyPopper className="mx-auto h-12 w-12 text-teal-600" strokeWidth={1.5} />
           <h2 className="font-display mt-3 text-2xl font-semibold text-slate-900">
             {CHEERS[idx % CHEERS.length]}
           </h2>
           <p className="mt-1 text-slate-600">« {current.name} » terminé.</p>
           <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-1.5 text-sm font-semibold text-orange-600">
-            🔥 {idx + 1} d&apos;affilée
+            <Flame className="h-4 w-4" strokeWidth={2} />
+            {idx + 1} d&apos;affilée
           </div>
 
           {/* Optional per-exercise feeling → richer data to tune future programs. */}
@@ -398,8 +402,8 @@ export default function WorkoutSession({
 
           {showAdaptation && suggestion && suggestion.direction !== "none" && (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-900">
-              <p className="font-medium">
-                💡{" "}
+              <p className="flex items-center gap-1.5 font-medium">
+                <Lightbulb className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                 {suggestion.direction === "easier"
                   ? "Cet exercice vous a paru difficile."
                   : "Cet exercice vous a paru facile."}
@@ -421,15 +425,16 @@ export default function WorkoutSession({
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <button
               onClick={redo}
-              className="rounded-xl border border-slate-300 px-4 py-3 font-medium text-slate-700 hover:bg-slate-50 sm:flex-1"
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 px-4 py-3 font-medium text-slate-700 hover:bg-slate-50 sm:flex-1"
             >
-              🔁 Refaire
+              <RotateCcw className="h-4 w-4" strokeWidth={1.75} />
+              Refaire
             </button>
             <button
               onClick={next}
               className="rounded-xl bg-teal-600 px-4 py-3 font-medium text-white hover:bg-teal-700 sm:flex-1"
             >
-              {idx < total - 1 ? "Exercice suivant →" : "Terminer la séance 🏆"}
+              {idx < total - 1 ? "Exercice suivant →" : "Terminer la séance"}
             </button>
           </div>
         </div>
@@ -475,9 +480,10 @@ export default function WorkoutSession({
               </div>
               <button
                 onClick={() => setPhase("camera")}
-                className="mt-6 w-full rounded-xl bg-teal-600 py-3 font-medium text-white hover:bg-teal-700"
+                className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl bg-teal-600 py-3 font-medium text-white hover:bg-teal-700"
               >
-                🎥 Je suis prêt, commencer
+                <Video className="h-4 w-4" strokeWidth={1.75} />
+                Je suis prêt, commencer
               </button>
             </>
           )}
@@ -499,9 +505,10 @@ export default function WorkoutSession({
                 // Finishing by hand: no rep count, and the dial keeps whatever
                 // the patient last set — never the click event.
                 onClick={() => onExerciseDone()}
-                className="mt-3 w-full rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
               >
-                J&apos;ai terminé cet exercice ✓
+                <Check className="h-4 w-4" strokeWidth={1.75} />
+                J&apos;ai terminé cet exercice
               </button>
             </div>
           )}

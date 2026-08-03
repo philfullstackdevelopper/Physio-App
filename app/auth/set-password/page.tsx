@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { setPassword } from "./actions";
 
 export default async function SetPasswordPage({
@@ -11,10 +11,7 @@ export default async function SetPasswordPage({
 
   // The patient must have arrived via a valid invite link (which logged them in).
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  await requireUser(supabase);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4">

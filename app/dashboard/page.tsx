@@ -1,17 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Users, Flame, UsersRound, Dumbbell, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { startOfWeekISO, daysAgoISO } from "@/lib/week";
 import { assessSignals, type ProgressSignals } from "@/lib/exercise/stageProgress";
 import { signout } from "./actions";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   const { data: instructor } = await supabase
     .from("instructors")
@@ -78,48 +76,78 @@ export default async function DashboardPage() {
     // Most urgent first, then alphabetically so the order is stable between loads.
     .sort((a, b) => Number(b.severe) - Number(a.severe) || a.name.localeCompare(b.name, "fr"));
 
+  const firstName = instructor?.full_name ? instructor.full_name.split(" ")[0] : "";
+
   return (
-    <main className="min-h-screen bg-slate-50 p-6 sm:p-8">
-      <div className="mx-auto max-w-2xl">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-teal-700">Tableau de bord</p>
-            <h1 className="font-display text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
-              Bonjour, {instructor?.full_name ? instructor.full_name.split(" ")[0] : ""} 👋
-            </h1>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Link
-              href="/billing"
-              className="rounded-md border border-teal-600 bg-white px-4 py-2 text-sm font-medium text-teal-700 hover:bg-teal-50"
+    <main className="relative min-h-screen overflow-hidden bg-[#faf7f2]">
+      {/* Warm ambient background, matching the rest of the app */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-20"
+        style={{
+          background:
+            "radial-gradient(900px 500px at 10% -10%, #ccfbf1 0%, transparent 55%)," +
+            "radial-gradient(800px 500px at 100% 0%, #fde9d9 0%, transparent 50%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 opacity-40"
+        style={{
+          backgroundImage: "radial-gradient(rgba(15, 118, 110, 0.14) 1px, transparent 1px)",
+          backgroundSize: "22px 22px",
+          maskImage: "radial-gradient(900px 500px at 50% 0%, black 0%, transparent 75%)",
+          WebkitMaskImage: "radial-gradient(900px 500px at 50% 0%, black 0%, transparent 75%)",
+        }}
+      />
+
+      <div className="mx-auto max-w-3xl p-6 sm:p-8">
+        <div className="flex items-center justify-between gap-2">
+          <Link
+            href="/billing"
+            className="rounded-xl border border-teal-600 bg-white/80 px-4 py-2 text-sm font-medium text-teal-700 shadow-sm backdrop-blur transition hover:bg-teal-50"
+          >
+            Mon abonnement
+          </Link>
+          <form action={signout}>
+            <button
+              type="submit"
+              className="rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 shadow-sm backdrop-blur transition hover:bg-slate-50"
             >
-              Mon abonnement
-            </Link>
-            <form action={signout}>
-              <button
-                type="submit"
-                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              >
-                Se déconnecter
-              </button>
-            </form>
-          </div>
+              Se déconnecter
+            </button>
+          </form>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
-            <div className="text-3xl font-semibold text-slate-900 tabular-nums">{patientCount ?? 0}</div>
+        <div className="mt-4 text-center">
+          <span className="inline-flex items-center rounded-full border border-teal-100 bg-white/70 px-3 py-1 text-xs font-medium text-teal-700 shadow-sm backdrop-blur">
+            Tableau de bord
+          </span>
+          <h1 className="font-display mt-3 text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
+            Bonjour, {firstName}
+          </h1>
+        </div>
+
+        <div className="mt-8 grid grid-cols-2 gap-4">
+          <div className="rounded-2xl border border-slate-100 bg-white/90 p-6 shadow-sm backdrop-blur">
+            <Users className="h-6 w-6 text-slate-400" strokeWidth={1.75} />
+            <div className="mt-3 text-3xl font-semibold text-slate-900 tabular-nums">
+              {patientCount ?? 0}
+            </div>
             <div className="mt-0.5 text-sm text-slate-500">Patients</div>
           </div>
-          <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
-            <div className="text-3xl font-semibold text-teal-700 tabular-nums">{activeThisWeek}</div>
+          <div className="rounded-2xl border border-teal-100 bg-white/90 p-6 shadow-sm backdrop-blur">
+            <Flame className="h-6 w-6 text-teal-600" strokeWidth={1.75} />
+            <div className="mt-3 text-3xl font-semibold text-teal-700 tabular-nums">
+              {activeThisWeek}
+            </div>
             <div className="mt-0.5 text-sm text-slate-500">Actifs cette semaine</div>
           </div>
         </div>
 
         {/* Patients dont les retours récents demandent une attention. */}
         {alerts.length > 0 && (
-          <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
+          <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
             <h2 className="font-medium text-amber-900">
               {alerts.length === 1
                 ? "1 patient à surveiller"
@@ -136,8 +164,13 @@ export default async function DashboardPage() {
                     href={`/dashboard/patients/${a.id}`}
                     className="flex items-baseline justify-between gap-3 rounded-lg bg-white px-3 py-2 shadow-sm transition hover:bg-amber-100/50"
                   >
-                    <span className="font-medium text-slate-800">
-                      {a.severe && <span title="Situation sévère">🔴 </span>}
+                    <span className="flex items-center gap-1.5 font-medium text-slate-800">
+                      {a.severe && (
+                        <span
+                          title="Situation sévère"
+                          className="h-2 w-2 shrink-0 rounded-full bg-red-500"
+                        />
+                      )}
                       {a.name}
                     </span>
                     <span className="text-right text-sm text-slate-500">{a.cause}</span>
@@ -148,21 +181,39 @@ export default async function DashboardPage() {
           </section>
         )}
 
-        <Link
-          href="/dashboard/patients"
-          className="mt-6 flex items-center justify-between rounded-xl bg-teal-600 px-5 py-4 font-medium text-white shadow-sm transition hover:bg-teal-700"
-        >
-          <span>Mes patients</span>
-          <span>→</span>
-        </Link>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/dashboard/patients"
+            className="group flex flex-col rounded-2xl border border-teal-600 bg-teal-600 p-6 text-white shadow-sm transition hover:bg-teal-700"
+          >
+            <UsersRound className="h-6 w-6" strokeWidth={1.75} />
+            <span className="font-display mt-3 text-lg font-semibold">Mes patients</span>
+            <span className="mt-1 flex-1 text-sm text-teal-50">
+              Suivez leur assiduité, ajustez leur programme.
+            </span>
+            <span className="mt-4 flex items-center gap-1 text-sm font-medium">
+              Ouvrir
+              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+            </span>
+          </Link>
 
-        <Link
-          href="/dashboard/seances"
-          className="mt-3 flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
-        >
-          <span>Mes séances (composer les exercices)</span>
-          <span className="text-slate-400">→</span>
-        </Link>
+          <Link
+            href="/dashboard/seances"
+            className="group flex flex-col rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-sm backdrop-blur transition hover:shadow-md"
+          >
+            <Dumbbell className="h-6 w-6 text-teal-700" strokeWidth={1.75} />
+            <span className="font-display mt-3 text-lg font-semibold text-slate-900">
+              Mes séances
+            </span>
+            <span className="mt-1 flex-1 text-sm text-slate-500">
+              Composez, dupliquez ou retrouvez vos séances.
+            </span>
+            <span className="mt-4 flex items-center gap-1 text-sm font-medium text-teal-700">
+              Ouvrir
+              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+            </span>
+          </Link>
+        </div>
       </div>
     </main>
   );

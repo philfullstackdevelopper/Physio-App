@@ -2,6 +2,8 @@
 // per-exercise difficulty (hardest first), and recent pain/notes. Presentational
 // only — the call page fetches the data and passes it in.
 
+import { Flame } from "lucide-react";
+
 export interface DossierExercise {
   name: string;
   count: number;
@@ -35,12 +37,15 @@ export default function TelesoinDossier({ patientName, data }: { patientName: st
 
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: "Séances totales", value: data.totalSessions },
-          { label: "Cette semaine", value: data.weekSessions },
-          { label: "Jours d'affilée", value: `${data.streak} 🔥` },
+          { label: "Séances totales", value: data.totalSessions, icon: null },
+          { label: "Cette semaine", value: data.weekSessions, icon: null },
+          { label: "Jours d'affilée", value: data.streak, icon: Flame },
         ].map((s) => (
           <div key={s.label} className="rounded-xl border border-slate-100 bg-white p-3 text-center shadow-sm">
-            <div className="text-xl font-semibold text-slate-900 tabular-nums">{s.value}</div>
+            <div className="flex items-center justify-center gap-1 text-xl font-semibold text-slate-900 tabular-nums">
+              {s.value}
+              {s.icon && <s.icon className="h-3.5 w-3.5 text-orange-500" strokeWidth={2} />}
+            </div>
             <div className="mt-0.5 text-[11px] text-slate-500">{s.label}</div>
           </div>
         ))}

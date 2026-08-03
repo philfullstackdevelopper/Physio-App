@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import DocumentUpload, { type DocMeta } from "@/components/DocumentUpload";
 import { saveOnboarding } from "./actions";
@@ -16,10 +16,7 @@ export default async function OnboardingPage({
   const { error } = await searchParams;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = await requireUser(supabase);
 
   const { data: conditions } = await supabase
     .from("conditions")

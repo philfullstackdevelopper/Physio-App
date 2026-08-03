@@ -9,6 +9,7 @@
 // =============================================================================
 
 import { useState } from "react";
+import { FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const BUCKET = "patient-documents";
@@ -106,7 +107,10 @@ export default function DocumentUpload({
         <ul className="mt-3 space-y-1.5">
           {docs.map((doc) => (
             <li key={doc.id} className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-sm">
-              <span className="truncate text-slate-700">📄 {doc.file_name}</span>
+              <span className="flex min-w-0 items-center gap-1.5 truncate text-slate-700">
+                <FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                {doc.file_name}
+              </span>
               <button
                 type="button"
                 onClick={() => remove(doc)}
