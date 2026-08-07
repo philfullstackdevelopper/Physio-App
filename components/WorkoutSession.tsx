@@ -36,6 +36,17 @@ const CHEERS = [
   "Impressionnant !",
 ];
 
+// Coarse difficulty scale for the end-of-session recap — five labelled levels
+// instead of 1-10 buttons repeated per exercise, which got cluttered fast.
+// Values still line up with the adaptation engine's 1-10 thresholds.
+const DIFFICULTY_LEVELS: { value: number; label: string }[] = [
+  { value: 2, label: "Très facile" },
+  { value: 4, label: "Facile" },
+  { value: 5, label: "Normal" },
+  { value: 8, label: "Difficile" },
+  { value: 10, label: "Très difficile" },
+];
+
 /** Render the exercise demonstration: a video/image if we have one, otherwise
  *  a clean illustrated step-by-step card built from the instructions. */
 function Demo({
@@ -128,11 +139,16 @@ export default function WorkoutSession({
   const [note, setNote] = useState("");
   const [fbSent, setFbSent] = useState(false);
   const [fbBusy, setFbBusy] = useState(false);
-  // Optional per-exercise feeling, captured on the celebration screen.
-  const [exDiff, setExDiff] = useState<number | null>(null);
-  const [exNote, setExNote] = useState("");
   // Intensity the patient actually chose for this exercise (-2..+2, 0 = as prescribed).
   const [exLevel, setExLevel] = useState(0);
+  // Intensity level per exercise, captured automatically as each one finishes.
+  const [intensityByExercise, setIntensityByExercise] = useState<Record<string, number>>({});
+  // Per-exercise feeling, filled in on the end-of-session recap (optional, per exercise) —
+  // no longer asked between exercises, to keep the workout's rhythm.
+  const [perExerciseFeedback, setPerExerciseFeedback] = useState<
+    Record<string, { difficulty: number | null; note: string }>
+  >({});
+  const [perExerciseOpen, setPerExerciseOpen] = useState<Record<string, boolean>>({});
 
   const total = exercises.length;
   const current = exercises[idx];
@@ -155,18 +171,21 @@ export default function WorkoutSession({
     ? { ...prescription, goalReps: autoEased.goalReps }
     : prescription;
 
-  // From the just-entered feeling, a non-binding adaptation suggestion. Candidate
-  // substitutes = other exercises of the same body area in this workout.
-  const suggestion =
-    current && exDiff != null
-      ? suggestAdaptation({
-          difficulty: exDiff,
-          goalReps: currentPrescription.goalReps,
-          candidates: exercises
-            .filter((e) => e.name !== current.name && categoryFor(e.name) === categoryFor(current.name))
-            .map((e) => e.name),
-        })
-      : null;
+  // Non-binding adaptation suggestion for a given exercise, computed on demand
+  // from whatever difficulty the patient enters on the end-of-session recap.
+  const suggestionFor = (name: string) => {
+    const difficulty = perExerciseFeedback[name]?.difficulty;
+    if (difficulty == null) return null;
+    const decided = effectiveGoalReps(prescription.goalReps, repOverrides[name]);
+    const eased = autoEaseGoalReps(decided, recentDifficulty[name] ?? []);
+    return suggestAdaptation({
+      difficulty,
+      goalReps: eased.goalReps,
+      candidates: exercises
+        .filter((e) => e.name !== name && categoryFor(e.name) === categoryFor(name))
+        .map((e) => e.name),
+    });
+  };
 
   const finish = async () => {
     // Log the completed workout (RLS: patient can insert their own logs),
@@ -191,13 +210,40 @@ export default function WorkoutSession({
     if (pain == null) return;
     setFbBusy(true);
     try {
-      await createClient().from("patient_feedback").insert({
+      const supabase = createClient();
+      await supabase.from("patient_feedback").insert({
         patient_id: patientId,
         workout_id: workoutId,
         pain_score: pain,
         notes: note.trim() || null,
         completed: true,
       });
+      // One row per exercise that has something worth recording: a rating, a
+      // note, or an intensity the patient actually changed. Sent all together
+      // at session end now, instead of one round-trip per exercise.
+      await Promise.all(
+        exercises.map(async (e) => {
+          const fb = perExerciseFeedback[e.name];
+          const intensity = intensityByExercise[e.name] ?? 0;
+          if (fb?.difficulty == null && !fb?.note?.trim() && intensity === 0) return;
+          const row = {
+            patient_id: patientId,
+            workout_id: workoutId,
+            exercise_name: e.name,
+            difficulty: fb?.difficulty ?? null,
+            notes: fb?.note?.trim() || null,
+          };
+          // Supabase returns an error object rather than throwing, so a missing
+          // column would silently swallow the whole row. Try with the new
+          // column; if migration 0012 has not been run yet, fall back.
+          const { error } = await supabase
+            .from("exercise_feedback")
+            .insert({ ...row, intensity_level: intensity });
+          if (error) {
+            await supabase.from("exercise_feedback").insert(row);
+          }
+        }),
+      );
       setFbSent(true);
     } catch {
       /* non-blocking */
@@ -208,41 +254,13 @@ export default function WorkoutSession({
 
   const onExerciseDone = () => setPhase("celebrate");
 
-  // Save the optional per-exercise feeling, together with the intensity the
-  // patient actually worked at. Skipped when they left everything blank AND ran
-  // the exercise exactly as prescribed — there is then nothing to record.
-  const saveExerciseFeedback = async () => {
-    if (exDiff == null && !exNote.trim() && exLevel === 0) return;
-    const supabase = createClient();
-    const row = {
-      patient_id: patientId,
-      workout_id: workoutId,
-      exercise_name: current.name,
-      difficulty: exDiff,
-      notes: exNote.trim() || null,
-    };
-    // Supabase returns an error object rather than throwing, so a missing column
-    // would silently swallow the whole rating. Try with the new column; if
-    // migration 0012 has not been run yet, fall back to the row without it.
-    const { error } = await supabase
-      .from("exercise_feedback")
-      .insert({ ...row, intensity_level: exLevel });
-    if (error) {
-      await supabase.from("exercise_feedback").insert(row);
-    }
-  };
-
   const redo = () => {
-    setExDiff(null);
-    setExNote("");
     setExLevel(0);
     setPhase("camera"); // restart the same exercise from the guided step
   };
 
-  const next = async () => {
-    await saveExerciseFeedback();
-    setExDiff(null);
-    setExNote("");
+  const next = () => {
+    setIntensityByExercise((m) => ({ ...m, [current.name]: exLevel }));
     setExLevel(0);
     if (idx < total - 1) {
       setIdx(idx + 1);
@@ -305,10 +323,89 @@ export default function WorkoutSession({
               placeholder="Un mot sur votre ressenti (optionnel)…"
               className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
             />
+            <div className="mt-5 border-t border-slate-200 pt-4">
+              <p className="text-sm font-medium text-slate-800">Vos exercices</p>
+              <p className="text-xs text-slate-500">
+                Une note ou une difficulté pour un exercice en particulier, si besoin (optionnel)
+              </p>
+              <div className="mt-2 space-y-1.5">
+                {exercises.map((e) => {
+                  const open = !!perExerciseOpen[e.name];
+                  const fb = perExerciseFeedback[e.name];
+                  const suggestion = showAdaptation ? suggestionFor(e.name) : null;
+                  return (
+                    <div key={e.name} className="rounded-xl border border-slate-200 bg-white">
+                      <button
+                        type="button"
+                        onClick={() => setPerExerciseOpen((m) => ({ ...m, [e.name]: !open }))}
+                        className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-medium text-slate-700"
+                      >
+                        <span className="flex items-center gap-2">
+                          {e.name}
+                          {(fb?.difficulty != null || fb?.note?.trim()) && (
+                            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+                          )}
+                        </span>
+                        <span className="text-slate-400">{open ? "−" : "+"}</span>
+                      </button>
+                      {open && (
+                        <div className="border-t border-slate-100 px-3 pb-3 pt-2">
+                          <div className="flex flex-wrap gap-1.5">
+                            {DIFFICULTY_LEVELS.map((lvl) => (
+                              <button
+                                key={lvl.value}
+                                type="button"
+                                onClick={() =>
+                                  setPerExerciseFeedback((m) => ({
+                                    ...m,
+                                    [e.name]: {
+                                      difficulty: m[e.name]?.difficulty === lvl.value ? null : lvl.value,
+                                      note: m[e.name]?.note ?? "",
+                                    },
+                                  }))
+                                }
+                                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                                  fb?.difficulty === lvl.value
+                                    ? "bg-teal-600 text-white"
+                                    : "border border-slate-300 text-slate-600 hover:bg-slate-100"
+                                }`}
+                              >
+                                {lvl.label}
+                              </button>
+                            ))}
+                          </div>
+                          <textarea
+                            value={fb?.note ?? ""}
+                            onChange={(ev) =>
+                              setPerExerciseFeedback((m) => ({
+                                ...m,
+                                [e.name]: { difficulty: m[e.name]?.difficulty ?? null, note: ev.target.value },
+                              }))
+                            }
+                            rows={2}
+                            placeholder="Une douleur, une gêne… (optionnel)"
+                            className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
+                          />
+                          {suggestion && suggestion.direction !== "none" && (
+                            <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
+                              <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+                              {suggestion.direction === "easier"
+                                ? "Cet exercice vous a paru difficile — vous pourriez réduire l'intensité la prochaine fois."
+                                : "Cet exercice vous a paru facile — vous pourriez augmenter l'intensité la prochaine fois."}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <button
               onClick={saveFeeling}
               disabled={pain == null || fbBusy}
-              className="mt-2 w-full rounded-lg bg-teal-600 py-2.5 font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+              className="mt-4 w-full rounded-lg bg-teal-600 py-2.5 font-medium text-white hover:bg-teal-700 disabled:opacity-50"
             >
               {fbBusy ? "Envoi…" : "Envoyer à mon kiné"}
             </button>
@@ -369,60 +466,7 @@ export default function WorkoutSession({
             {idx + 1} d&apos;affilée
           </div>
 
-          {/* Optional per-exercise feeling → richer data to tune future programs. */}
-          <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-left">
-            <p className="text-sm font-medium text-slate-800">
-              Comment s&apos;est passé cet exercice ?{" "}
-              <span className="font-normal text-slate-400">(optionnel)</span>
-            </p>
-            <p className="text-xs text-slate-500">Difficulté ressentie (1 = très facile, 10 = très difficile)</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setExDiff(exDiff === n ? null : n)}
-                  className={`h-9 w-9 rounded-full text-sm font-medium ${
-                    exDiff === n
-                      ? "bg-teal-600 text-white"
-                      : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-            <textarea
-              value={exNote}
-              onChange={(e) => setExNote(e.target.value)}
-              rows={2}
-              placeholder="Une douleur, une gêne, un ressenti… (optionnel)"
-              className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
-            />
-          </div>
-
-          {showAdaptation && suggestion && suggestion.direction !== "none" && (
-            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-900">
-              <p className="flex items-center gap-1.5 font-medium">
-                <Lightbulb className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                {suggestion.direction === "easier"
-                  ? "Cet exercice vous a paru difficile."
-                  : "Cet exercice vous a paru facile."}
-              </p>
-              <p className="mt-1">La prochaine fois, vous pourriez :</p>
-              <ul className="mt-1 list-disc space-y-0.5 pl-5">
-                {suggestion.newReps && (
-                  <li>
-                    {suggestion.direction === "easier" ? "réduire" : "augmenter"} à{" "}
-                    {suggestion.newReps} répétitions (au lieu de {suggestion.currentReps})
-                  </li>
-                )}
-                {suggestion.substitute && <li>essayer « {suggestion.substitute} »</li>}
-              </ul>
-              <p className="mt-1 text-amber-700">Parlez-en à votre kiné si besoin.</p>
-            </div>
-          )}
-
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
             <button
               onClick={redo}
               className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 px-4 py-3 font-medium text-slate-700 hover:bg-slate-50 sm:flex-1"

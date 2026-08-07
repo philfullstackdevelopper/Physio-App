@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2, Star, Lock, Flame } from "lucide-react";
+import { CheckCircle2, Star, Lock, Flame, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { isProfileComplete } from "@/lib/exercise/patientProfile";
@@ -9,7 +9,7 @@ import { computeStreak } from "@/lib/exercise/streak";
 import { stageWithFeedback, careWeek, type Rating } from "@/lib/exercise/stageProgress";
 import { startOfTodayISO, daysAgoISO } from "@/lib/week";
 import { getCurrentAccess } from "@/lib/billing/context";
-import { signout } from "./actions";
+import { signout, markMessageRead } from "./actions";
 
 type Workout = {
   id: string;
@@ -90,6 +90,50 @@ export default async function PatientHome() {
     .select("full_name, condition_id, recommended_workout_id")
     .eq("id", user.id)
     .maybeSingle();
+
+  // Short notes from the practitioner (e.g. reacting to a recent session).
+  // Shown regardless of subscription tier — this is communication, not the
+  // paid exercise content the free-tier gate below protects.
+  const { data: messages } = await supabase
+    .from("patient_messages")
+    .select("id, body, created_at, read_at")
+    .eq("patient_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const messagesSection = messages && messages.length > 0 && (
+    <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+      <h2 className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+        <MessageCircle className="h-4 w-4 text-teal-600" strokeWidth={1.75} />
+        Messages de votre kiné
+      </h2>
+      <ul className="mt-3 space-y-3">
+        {messages.map((m) => (
+          <li
+            key={m.id as string}
+            className={`rounded-xl p-3 text-sm ${
+              m.read_at ? "bg-slate-50 text-slate-600" : "bg-teal-50 text-slate-800"
+            }`}
+          >
+            <p>{m.body as string}</p>
+            <div className="mt-1.5 flex items-center justify-between">
+              <span className="text-xs text-slate-400">
+                {new Date(m.created_at as string).toLocaleString("fr-FR")}
+              </span>
+              {!m.read_at && (
+                <form action={markMessageRead}>
+                  <input type="hidden" name="message_id" value={m.id as string} />
+                  <button type="submit" className="text-xs font-medium text-teal-700 hover:underline">
+                    Marquer comme lu
+                  </button>
+                </form>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 
   // What the patient SEES is driven by the condition ASSIGNED BY THE PRACTITIONER
   // (patients.condition_id). The patient's self-declaration is intake only.
@@ -175,6 +219,8 @@ export default async function PatientHome() {
               Bonjour, {patient?.full_name ? patient.full_name.split(" ")[0] : "Bienvenue"}
             </h1>
           </div>
+
+          {messagesSection}
 
           <div className="mt-8 rounded-2xl border border-teal-200 bg-teal-50 p-8 text-center">
             <Lock className="mx-auto h-10 w-10 text-teal-600" strokeWidth={1.5} />
@@ -275,6 +321,8 @@ export default async function PatientHome() {
             {streak > 0 ? `${streak} jour${streak > 1 ? "s" : ""} d'affilée` : "Commencez votre série aujourd'hui !"}
           </div>
         </div>
+
+        {messagesSection}
 
         <div className="mt-2 flex items-center justify-center gap-2 text-center text-sm text-slate-500">
           <span>

@@ -89,6 +89,32 @@ export async function resetAdaptation(formData: FormData) {
   redirect(`/dashboard/patients/${patientId}`);
 }
 
+// Sends a short message from the instructor to one of their patients (e.g.
+// reacting to a recent session). RLS re-checks the patient is really theirs.
+export async function sendMessage(formData: FormData) {
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+
+  const patientId = String(formData.get("patient_id") ?? "");
+  const body = String(formData.get("body") ?? "").trim();
+
+  const fail = (msg: string) =>
+    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(msg)}`);
+
+  if (!patientId) fail("Patient introuvable.");
+  if (!body) fail("Le message ne peut pas être vide.");
+
+  const { error } = await supabase.from("patient_messages").insert({
+    patient_id: patientId,
+    instructor_id: user.id,
+    body,
+  });
+  if (error) fail(error.message);
+
+  revalidatePath(`/dashboard/patients/${patientId}`);
+  redirect(`/dashboard/patients/${patientId}`);
+}
+
 // Sets (or clears) the instructor's recommended workout for this patient.
 export async function recommendWorkout(formData: FormData) {
   const supabase = await createClient();

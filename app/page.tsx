@@ -2,17 +2,16 @@ import Link from "next/link";
 import {
   UserRound,
   Stethoscope,
-  Target,
-  Video,
-  TrendingUp,
   ShieldCheck,
   HeartHandshake,
   Sparkles,
   Play,
   CheckCircle2,
+  Video,
   Quote,
 } from "lucide-react";
 import ConditionsShowcase from "@/components/ConditionsShowcase";
+import FeaturesShowcase from "@/components/FeaturesShowcase";
 
 const TRUST_POINTS = [
   { icon: HeartHandshake, label: "Conçu avec des kinésithérapeutes" },
@@ -39,24 +38,6 @@ const QUESTIONS = [
   { color: "bg-teal-600", question: "Comment reprendre le sport sans risquer une rechute ?" },
   { color: "bg-orange-400", question: "Puis-je faire mes exercices seul(e), sans risque ?" },
   { color: "bg-slate-700", question: "Comment mon kiné peut-il me suivre à distance ?" },
-];
-
-const FEATURES = [
-  {
-    icon: Target,
-    title: "Programmes sur mesure",
-    body: "Votre situation et votre étape de récupération façonnent chaque séance.",
-  },
-  {
-    icon: Video,
-    title: "Correction par caméra",
-    body: "L'IA compte vos répétitions et corrige votre posture en temps réel.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Progression partagée",
-    body: "Vous et votre praticien suivez vos progrès, séance après séance.",
-  },
 ];
 
 /** Illustrative mockup of a guided session — no real data, purely decorative. */
@@ -296,20 +277,7 @@ export default function Home() {
         </section>
 
         {/* Features */}
-        <section className="mx-auto mt-24 grid max-w-5xl gap-6 pb-24 sm:grid-cols-3">
-          {FEATURES.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-2xl border border-slate-100 bg-white/70 p-6 shadow-sm backdrop-blur transition hover:-translate-y-1 hover:shadow-md"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
-                <f.icon className="h-5 w-5" strokeWidth={1.75} />
-              </span>
-              <h3 className="mt-3 font-semibold text-slate-900">{f.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{f.body}</p>
-            </div>
-          ))}
-        </section>
+        <FeaturesShowcase />
       </main>
 
       {/* Footer */}

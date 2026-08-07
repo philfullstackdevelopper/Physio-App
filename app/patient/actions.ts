@@ -31,6 +31,24 @@ export async function completeWorkout(formData: FormData) {
   redirect(`/patient/${workoutId}?done=1`);
 }
 
+// Patient marks a message from their instructor as read.
+export async function markMessageRead(formData: FormData) {
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+
+  const messageId = String(formData.get("message_id") ?? "");
+  if (!messageId) redirect("/patient");
+
+  await supabase
+    .from("patient_messages")
+    .update({ read_at: new Date().toISOString() })
+    .eq("id", messageId)
+    .eq("patient_id", user.id);
+
+  revalidatePath("/patient");
+  redirect("/patient");
+}
+
 export async function signout() {
   const supabase = await createClient();
   await supabase.auth.signOut();

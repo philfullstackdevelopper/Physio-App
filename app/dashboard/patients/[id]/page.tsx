@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Flame, FileText } from "lucide-react";
+import { Flame, FileText, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { startOfWeekISO, daysAgoISO } from "@/lib/week";
@@ -21,7 +21,13 @@ import { computeStreak } from "@/lib/exercise/streak";
 import { categoryFor } from "@/lib/exercise/category";
 import { STAGE_START_WEEK } from "@/lib/exercise/stageProgress";
 import { suggestAdaptation } from "@/lib/exercise/adaptation";
-import { assignCondition, recommendWorkout, applyAdaptation, resetAdaptation } from "./actions";
+import {
+  assignCondition,
+  recommendWorkout,
+  applyAdaptation,
+  resetAdaptation,
+  sendMessage,
+} from "./actions";
 
 type WorkoutExercise = {
   position: number;
@@ -80,6 +86,14 @@ export default async function PatientDetailPage({
 
   const { data: conditions } = await supabase.from("conditions").select("id, name").order("name");
   const conditionName = (cid: string | null) => conditions?.find((c) => c.id === cid)?.name;
+
+  // Messages already sent to this patient (most recent first).
+  const { data: messages } = await supabase
+    .from("patient_messages")
+    .select("id, body, created_at, read_at")
+    .eq("patient_id", id)
+    .order("created_at", { ascending: false })
+    .limit(10);
 
   // Patient's declared situation + profile (intake).
   const { data: profile } = await supabase
@@ -251,6 +265,46 @@ export default async function PatientDetailPage({
               <div className="mt-0.5 text-xs text-slate-500">{s.label}</div>
             </div>
           ))}
+        </section>
+
+        {/* Messages au patient */}
+        <section className="mt-6 rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+          <h2 className="flex items-center gap-2 text-lg font-medium text-slate-900">
+            <MessageCircle className="h-5 w-5 text-teal-600" strokeWidth={1.75} />
+            Messages
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Un mot pour votre patient — par exemple après sa dernière séance.
+          </p>
+          <form action={sendMessage} className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <input type="hidden" name="patient_id" value={patient.id} />
+            <textarea
+              name="body"
+              required
+              rows={2}
+              placeholder="Écrire un message…"
+              className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="self-end rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 sm:self-auto"
+            >
+              Envoyer
+            </button>
+          </form>
+          {messages && messages.length > 0 && (
+            <ul className="mt-4 divide-y divide-slate-100 text-sm">
+              {messages.map((m) => (
+                <li key={m.id as string} className="py-2">
+                  <p className="text-slate-700">{m.body as string}</p>
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {new Date(m.created_at as string).toLocaleString("fr-FR")}
+                    {m.read_at ? " · lu" : " · pas encore lu"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         {/* Situation & profil déclarés par le patient */}
