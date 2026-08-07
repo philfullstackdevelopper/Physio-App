@@ -25,6 +25,20 @@
 
 create schema if not exists auth;
 
+-- Every existing policy in 0001-0016 says "to authenticated", and the
+-- signup/invite policies below say "to anon" — Supabase creates these two
+-- roles for every project automatically; a plain Postgres has neither, so
+-- 0001 would fail to even create its policies without this. CREATE ROLE has
+-- no native "IF NOT EXISTS", hence the existence check.
+do $$ begin
+  if not exists (select from pg_roles where rolname = 'anon') then
+    create role anon nologin;
+  end if;
+  if not exists (select from pg_roles where rolname = 'authenticated') then
+    create role authenticated nologin;
+  end if;
+end $$;
+
 -- Our own auth.users, standing in for Supabase's managed one. Same table
 -- name/column (id) that 0001's "references auth.users (id)" already expects,
 -- so those foreign keys resolve without any change to 0001 itself.
@@ -113,6 +127,55 @@ create policy users_insert_patient_by_instructor on auth.users
 -- someone using an invite/reset/confirm token is NOT logged in yet, so this
 -- table must never be reachable through the normal per-request connection at
 -- all (RLS with zero policies = always denied, which is what we want). It
--- will only be read/written by the auth server code itself (Phase 2), over a
--- separate, narrowly-scoped connection — not the general service-role-style
+-- will only be read/written by the auth server code itself, over the
+-- narrowly-scoped connection below — not the general service-role-style
 -- bypass we're removing.
+
+-- ---------------------------------------------------------------------------
+-- 4. AUTH_SERVICE ROLE — the login/token-verification exception
+-- ---------------------------------------------------------------------------
+-- A subtlety the design above glossed over: logging in means looking a user
+-- up BY EMAIL before they're authenticated — auth.uid() is still null at
+-- that point, so the "own row" policies above correctly refuse that lookup,
+-- same as they'd refuse anyone else's. Same problem for reading/writing
+-- auth_tokens (invite/reset/confirm), which by definition happens before
+-- login too.
+--
+-- This role is the one narrow, deliberate exception: it can read auth.users
+-- by email (to check a password) and fully manage auth_tokens (create an
+-- invite/reset link, look one up, mark it used) — nothing else. It is used
+-- ONLY by the Auth.js server code in lib/auth/*, over its own connection,
+-- never by the app's regular per-request queries (those stay on the
+-- "authenticated"/"anon" roles above, fully RLS-scoped as normal). This is
+-- deliberately much narrower than the Supabase service-role key it replaces,
+-- which could read and write literally everything.
+do $$ begin
+  if not exists (select from pg_roles where rolname = 'auth_service') then
+    create role auth_service nologin;
+  end if;
+end $$;
+
+drop policy if exists auth_service_read_users on auth.users;
+create policy auth_service_read_users on auth.users
+  for select to auth_service using (true);
+
+drop policy if exists auth_service_insert_users on auth.users;
+create policy auth_service_insert_users on auth.users
+  for insert to auth_service with check (true);
+
+drop policy if exists auth_service_all_tokens on public.auth_tokens;
+create policy auth_service_all_tokens on public.auth_tokens
+  for all to auth_service using (true) with check (true);
+
+-- ---------------------------------------------------------------------------
+-- 5. ONE MANUAL STEP LEFT — cannot be scripted in advance
+-- ---------------------------------------------------------------------------
+-- anon/authenticated/auth_service are NOLOGIN: nothing connects directly as
+-- them. The app's single Postgres connection (DATABASE_URL) authenticates as
+-- whatever role Scalingo's addon provisions, then switches roles per query
+-- via "set role" — same pattern Supabase's own PostgREST layer uses
+-- internally. That connecting role's name is only known once the Scalingo
+-- Postgres addon actually exists (Phase 0.1), so it can't be hardcoded here.
+-- Run this once, filling in the real role name, right after provisioning:
+--
+--   grant anon, authenticated, auth_service to <scalingo_role_name>;
