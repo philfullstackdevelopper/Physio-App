@@ -282,7 +282,20 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200/70 py-8">
-        <p className="text-center text-sm text-slate-400">© 2026 Physio-App</p>
+        <div className="mx-auto flex max-w-3xl flex-col items-center gap-2 text-center">
+          <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-slate-500">
+            <a href="/cgu" className="hover:text-slate-700 hover:underline">
+              CGU
+            </a>
+            <a href="/confidentialite" className="hover:text-slate-700 hover:underline">
+              Politique de confidentialité
+            </a>
+            <a href="/mentions-legales" className="hover:text-slate-700 hover:underline">
+              Mentions légales
+            </a>
+          </nav>
+          <p className="text-sm text-slate-400">© 2026 Physio-App</p>
+        </div>
       </footer>
     </div>
   );
