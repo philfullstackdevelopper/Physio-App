@@ -27,10 +27,14 @@ export default async function OnboardingPage({
   const { data: profile } = await supabase
     .from("patient_profiles")
     .select(
-      "condition_id, injury_stage, rehab_progress, history, date_of_birth, height_cm, weight_kg, activity_level",
+      "condition_id, injury_stage, rehab_progress, history, date_of_birth, height_cm, weight_kg, activity_level, health_data_consent_at",
     )
     .eq("id", user.id)
     .maybeSingle();
+
+  // Consent is asked once. Already-consenting patients editing their
+  // situation later aren't asked again.
+  const needsConsent = !profile?.health_data_consent_at;
 
   const { data: docs } = await supabase
     .from("patient_documents")
@@ -164,6 +168,29 @@ export default async function OnboardingPage({
               <option value="active">Active (sport fréquent)</option>
             </select>
           </label>
+
+          {needsConsent && (
+            <>
+              <hr className="border-slate-100" />
+              <label className="flex items-start gap-2 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  name="health_data_consent"
+                  required
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-600"
+                />
+                <span>
+                  J&apos;accepte que mes données de santé (condition, ressenti, historique)
+                  soient traitées par mon kinésithérapeute et Physio-App dans le cadre de
+                  mon suivi, conformément à la{" "}
+                  <a href="/confidentialite" className="text-teal-700 underline" target="_blank">
+                    politique de confidentialité
+                  </a>
+                  .
+                </span>
+              </label>
+            </>
+          )}
 
           <button
             type="submit"

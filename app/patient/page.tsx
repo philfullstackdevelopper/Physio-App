@@ -204,6 +204,12 @@ export default async function PatientHome() {
             >
               Mon abonnement
             </Link>
+            <Link
+              href="/patient/compte"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50"
+            >
+              Mon compte
+            </Link>
             <form action={signout}>
               <button
                 type="submit"
@@ -298,6 +304,12 @@ export default async function PatientHome() {
             className="rounded-xl border border-teal-600 bg-white px-4 py-2 text-sm font-medium text-teal-700 shadow-sm transition hover:bg-teal-50"
           >
             Mon abonnement
+          </Link>
+          <Link
+            href="/patient/compte"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50"
+          >
+            Mon compte
           </Link>
           <form action={signout}>
             <button

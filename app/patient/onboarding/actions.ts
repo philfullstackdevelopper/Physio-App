@@ -28,6 +28,29 @@ export async function saveOnboarding(formData: FormData) {
     );
   }
 
+  // RGPD article 9: health data needs explicit, specific consent. Asked once —
+  // if the patient already consented on a prior save, keep that original
+  // timestamp rather than overwrite it; only require the checkbox when
+  // there's no consent on file yet.
+  const { data: existing } = await supabase
+    .from("patient_profiles")
+    .select("health_data_consent_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  let healthDataConsentAt = existing?.health_data_consent_at ?? null;
+  if (!healthDataConsentAt) {
+    const consented = formData.get("health_data_consent") === "on";
+    if (!consented) {
+      redirect(
+        `/patient/onboarding?error=${encodeURIComponent(
+          "Merci de cocher la case de consentement pour continuer.",
+        )}`,
+      );
+    }
+    healthDataConsentAt = new Date().toISOString();
+  }
+
   const { error } = await supabase.from("patient_profiles").upsert(
     {
       id: user.id,
@@ -39,6 +62,7 @@ export async function saveOnboarding(formData: FormData) {
       height_cm: heightCm,
       weight_kg: weightKg,
       activity_level: activityLevel,
+      health_data_consent_at: healthDataConsentAt,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "id" },
