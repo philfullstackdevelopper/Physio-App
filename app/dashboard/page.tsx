@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { startOfWeekISO, daysAgoISO } from "@/lib/week";
 import { assessSignals, type ProgressSignals } from "@/lib/exercise/stageProgress";
-import { signout } from "./actions";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -102,24 +101,7 @@ export default async function DashboardPage() {
       />
 
       <div className="mx-auto max-w-3xl p-6 sm:p-8">
-        <div className="flex items-center justify-between gap-2">
-          <Link
-            href="/billing"
-            className="rounded-xl border border-teal-600 bg-white/80 px-4 py-2 text-sm font-medium text-teal-700 shadow-sm backdrop-blur transition hover:bg-teal-50"
-          >
-            Mon abonnement
-          </Link>
-          <form action={signout}>
-            <button
-              type="submit"
-              className="rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 shadow-sm backdrop-blur transition hover:bg-slate-50"
-            >
-              Se déconnecter
-            </button>
-          </form>
-        </div>
-
-        <div className="mt-4 text-center">
+        <div className="text-center">
           <span className="inline-flex items-center rounded-full border border-teal-100 bg-white/70 px-3 py-1 text-xs font-medium text-teal-700 shadow-sm backdrop-blur">
             Tableau de bord
           </span>
