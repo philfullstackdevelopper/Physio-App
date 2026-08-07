@@ -200,9 +200,18 @@ export default async function OnboardingPage({
           </button>
         </form>
 
-        {/* Documents upload directly to private storage — separate from the form. */}
+        {/* Documents upload directly to private storage — separate from the form,
+            so it must be gated on consent independently: this widget can't rely
+            on the form above having been submitted yet. */}
         <div className="mt-4">
-          <DocumentUpload patientId={user.id} initialDocs={(docs ?? []) as DocMeta[]} />
+          {needsConsent ? (
+            <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+              Cochez la case de consentement ci-dessus et enregistrez votre situation pour
+              pouvoir déposer des documents médicaux.
+            </p>
+          ) : (
+            <DocumentUpload patientId={user.id} initialDocs={(docs ?? []) as DocMeta[]} />
+          )}
         </div>
       </div>
     </main>
