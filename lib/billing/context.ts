@@ -20,7 +20,11 @@ export async function getCurrentAccess(
   userId: string,
 ): Promise<AccessContext> {
   const [{ data: kine }, { data: pat }, { data: sub }] = await Promise.all([
-    supabase.from("instructors").select("id").eq("id", userId).maybeSingle(),
+    supabase
+      .from("instructors")
+      .select("id, monthly_patient_price_cents")
+      .eq("id", userId)
+      .maybeSingle(),
     supabase.from("patients").select("id, trial_ends_at").eq("id", userId).maybeSingle(),
     supabase.from("subscriptions").select("status, current_period_end").eq("user_id", userId).maybeSingle(),
   ]);
@@ -29,7 +33,8 @@ export async function getCurrentAccess(
   const subCurrentPeriodEnd = (sub?.current_period_end as string | null) ?? null;
 
   if (kine) {
-    return { role: "instructor", access: instructorAccess({ subStatus, subCurrentPeriodEnd }) };
+    const hasPatientPricing = kine.monthly_patient_price_cents != null;
+    return { role: "instructor", access: instructorAccess({ hasPatientPricing }) };
   }
   if (pat) {
     const trialEndsAt = (pat.trial_ends_at as string | null) ?? null;

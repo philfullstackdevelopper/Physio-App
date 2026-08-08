@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, UsersRound, Dumbbell, ListChecks, CreditCard, LogOut } from "lucide-react";
+import { LayoutDashboard, UsersRound, Dumbbell, ListChecks, Wallet, CreditCard, LogOut } from "lucide-react";
 
 const LINKS = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/patients", label: "Mes patients", icon: UsersRound },
   { href: "/dashboard/seances", label: "Mes séances", icon: Dumbbell },
   { href: "/dashboard/exercises", label: "Mes exercices", icon: ListChecks },
+  { href: "/dashboard/facturation", label: "Tarif & paiements", icon: Wallet },
   { href: "/billing", label: "Mon abonnement", icon: CreditCard },
 ];
 

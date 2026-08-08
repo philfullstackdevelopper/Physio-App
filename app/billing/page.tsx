@@ -18,7 +18,7 @@ export default async function BillingPage({
   const user = await requireUser(supabase);
 
   const [{ data: kine }, { data: pat }, { data: sub }] = await Promise.all([
-    supabase.from("instructors").select("id").eq("id", user.id).maybeSingle(),
+    supabase.from("instructors").select("id, monthly_patient_price_cents").eq("id", user.id).maybeSingle(),
     supabase.from("patients").select("id, trial_ends_at").eq("id", user.id).maybeSingle(),
     supabase.from("subscriptions").select("plan, status, current_period_end, stripe_customer_id").eq("user_id", user.id).maybeSingle(),
   ]);
@@ -115,8 +115,8 @@ export default async function BillingPage({
           })()
         ) : isKine ? (
           (() => {
-            const acc = instructorAccess({ subStatus, subCurrentPeriodEnd: subEnd });
-            const plan = PLANS.kine_pro;
+            const priceCents = kine?.monthly_patient_price_cents as number | null;
+            const acc = instructorAccess({ hasPatientPricing: priceCents != null });
             return (
               <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                 <p className="text-sm text-slate-500">Votre formule</p>
@@ -124,44 +124,22 @@ export default async function BillingPage({
                   {acc.level === "pro" && (
                     <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-600" strokeWidth={1.75} />
                   )}
-                  {acc.level === "pro" ? "Kiné Pro — actif" : "Gratuit (prescription illimitée)"}
+                  {acc.level === "pro"
+                    ? `Tarif fixé — ${euro(priceCents as number)} €/mois par patient`
+                    : "Tarif pas encore fixé"}
                 </p>
-
-                {acc.level !== "pro" && (
-                  <>
-                    <ul className="mt-4 space-y-1.5 text-sm text-slate-600">
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
-                        Analyse caméra de précision pour vos patients
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
-                        Suggestions d&apos;adaptation détaillées
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
-                        Suivi télésoin (bilan, visio, mise à jour du programme)
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
-                        Tableaux de bord avancés
-                      </li>
-                    </ul>
-                    <form action={startCheckout} className="mt-5">
-                      <input type="hidden" name="plan" value={plan.key} />
-                      <button className="w-full rounded-xl bg-teal-600 py-3 font-medium text-white hover:bg-teal-700">
-                        Passer à Kiné Pro — {euro(plan.amount)} €/mois
-                      </button>
-                    </form>
-                  </>
-                )}
-                {hasCustomer && (
-                  <form action={openBillingPortal} className="mt-4">
-                    <button className="w-full rounded-xl border border-slate-300 py-3 font-medium text-slate-700 hover:bg-slate-50">
-                      Gérer mon abonnement
-                    </button>
-                  </form>
-                )}
+                <p className="mt-2 text-sm text-slate-600">
+                  Vous fixez librement le tarif mensuel que vos patients vous paient. Ce paiement
+                  va directement sur votre propre compte, jamais chez Physio-App. En échange, vous
+                  payez à Physio-App 15&nbsp;% de ce tarif, par patient actif, au prorata du nombre
+                  de jours du mois où le patient était suivi.
+                </p>
+                <Link
+                  href="/dashboard/facturation"
+                  className="mt-5 inline-block w-full rounded-xl bg-teal-600 py-3 text-center font-medium text-white hover:bg-teal-700"
+                >
+                  {acc.level === "pro" ? "Gérer mon tarif et mes paiements" : "Fixer mon tarif"}
+                </Link>
               </section>
             );
           })()

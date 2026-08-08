@@ -6,8 +6,15 @@
 //
 // Business model (see CLAUDE.md / the build brief):
 //   PATIENT:  free floor  ->  2-month trial (full)  ->  premium €10/mo (full)
-//   KINÉ:     free         ->  Pro €30/mo
-// Physio-App fees are flat and never tied to a kiné's télésoin billing volume.
+//   KINÉ:     free  ->  "pro" once he has set his own patient price and pays
+//             Physio-App a prorated 15% platform fee per active patient
+//             (lib/billing/platformFee.ts) — there is no separate flat
+//             instructor subscription anymore (the old "kine_pro" €30/mo
+//             plan was removed). Fees ARE now proportional to how many
+//             patients a kiné brings — that was a deliberate, carefully
+//             reasoned choice (see the project's plan docs): the money only
+//             ever flows kiné -> Physio-App, never the reverse, which is
+//             what avoids the compérage risk a reversed flow would create.
 // =============================================================================
 
 export type PatientLevel = "free" | "trial" | "premium";
@@ -78,8 +85,10 @@ export function patientAccess(b: PatientBilling, now: Date = new Date()): Patien
 // ---- Instructor (kiné) ---------------------------------------------------
 
 export interface InstructorBilling {
-  subStatus?: string | null;
-  subCurrentPeriodEnd?: string | null;
+  /** Has the kiné set his own monthly patient price? That's what "opted in"
+   *  to the new pricing model means now — there's no separate subscription
+   *  to check anymore. */
+  hasPatientPricing: boolean;
 }
 
 export interface InstructorCapabilities {
@@ -98,8 +107,8 @@ export interface InstructorAccess {
   capabilities: InstructorCapabilities;
 }
 
-export function instructorAccess(b: InstructorBilling, now: Date = new Date()): InstructorAccess {
-  const pro = isSubscriptionActive(b.subStatus, b.subCurrentPeriodEnd, now);
+export function instructorAccess(b: InstructorBilling): InstructorAccess {
+  const pro = b.hasPatientPricing;
   return {
     level: pro ? "pro" : "free",
     capabilities: {

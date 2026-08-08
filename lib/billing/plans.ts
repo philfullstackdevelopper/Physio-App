@@ -1,9 +1,16 @@
 // Plan definitions — amounts in the smallest currency unit (cents). Change a
-// price here to A/B test (e.g. the kiné price at €19/€29/€39). Prices are built
-// inline at checkout (Stripe Checkout supports subscription price_data), so there
-// are no Stripe price IDs to manage.
+// price here to A/B test. Prices are built inline at checkout (Stripe
+// Checkout supports subscription price_data), so there are no Stripe price
+// IDs to manage.
+//
+// "kine_pro" (a flat €30/mo instructor subscription) was removed: kinés now
+// set their own patient price and pay Physio-App a prorated 15% platform fee
+// per active patient instead — see lib/billing/platformFee.ts. The
+// 'kine_platform_fee' subscriptions.plan value (migration 0020) represents
+// that new relationship, but it isn't a fixed-price plan like the ones below
+// (the amount varies every month), so it deliberately has no entry here.
 
-export type PlanKey = "patient_monthly" | "kine_pro";
+export type PlanKey = "patient_monthly";
 
 export interface Plan {
   key: PlanKey;
@@ -21,15 +28,8 @@ export const PLANS: Record<PlanKey, Plan> = {
     currency: "eur",
     audience: "patient",
   },
-  kine_pro: {
-    key: "kine_pro",
-    label: "Physio-App — Kiné Pro",
-    amount: 3000, // €30 / mois — test 1900 / 2900 / 3900
-    currency: "eur",
-    audience: "instructor",
-  },
 };
 
 export function isPlanKey(v: unknown): v is PlanKey {
-  return v === "patient_monthly" || v === "kine_pro";
+  return v === "patient_monthly";
 }
