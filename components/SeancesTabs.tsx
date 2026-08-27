@@ -119,17 +119,14 @@ export default function SeancesTabs({
                 {templates.map((t) => (
                   <li key={t.id} className="flex items-center justify-between px-4 py-3">
                     <div>
-                      <p className="font-medium text-slate-900">{t.name}</p>
-                      <p className="text-sm text-slate-500">
-                        {t.conditionName ?? "—"}
-                        {t.stageLabel && <span> · {t.stageLabel}</span>}
-                      </p>
+                      <p className="font-medium text-slate-900">{t.conditionName ?? t.name}</p>
+                      <p className="text-sm text-slate-500">{t.stageLabel ?? t.name}</p>
                     </div>
                     <form action={duplicateSeance}>
                       <input type="hidden" name="template_id" value={t.id} />
                       <button
                         type="submit"
-                        className="rounded-md border border-teal-600 px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-teal-50"
+                        className="rounded-md border border-blue-600 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
                       >
                         Dupliquer
                       </button>
@@ -150,7 +147,7 @@ export default function SeancesTabs({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Nom de la séance ou de la condition…"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
           />
 
           <div className="mt-3 rounded-xl bg-white p-2 shadow-sm">
@@ -170,7 +167,7 @@ export default function SeancesTabs({
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-slate-900">{s.name}</p>
-                            <span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700">
+                            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                               Personnalisée
                             </span>
                           </div>
@@ -186,21 +183,18 @@ export default function SeancesTabs({
                       <>
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="font-medium text-slate-900">{s.name}</p>
+                            <p className="font-medium text-slate-900">{s.conditionName ?? s.name}</p>
                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
                               Plateforme
                             </span>
                           </div>
-                          <p className="text-sm text-slate-500">
-                            {s.conditionName ?? "—"}
-                            {s.stageLabel && <span> · {s.stageLabel}</span>}
-                          </p>
+                          <p className="text-sm text-slate-500">{s.stageLabel ?? s.name}</p>
                         </div>
                         <form action={duplicateSeance}>
                           <input type="hidden" name="template_id" value={s.id} />
                           <button
                             type="submit"
-                            className="rounded-md border border-teal-600 px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-teal-50"
+                            className="rounded-md border border-blue-600 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
                           >
                             Dupliquer
                           </button>

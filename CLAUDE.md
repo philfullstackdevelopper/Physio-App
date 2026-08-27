@@ -2,11 +2,11 @@
 
 # Physio-App — Project Specification
 
-This file is the source of truth for this project. Read it fully before making changes. If a request conflicts with this spec, flag the conflict instead of silently deviating.
+This file is the source of truth for this project. Read it fully before making changes. If a request conflicts with this spec, flag the conflict instead of silently deviating. If you notice the *code* has drifted from what this file says, flag that too and propose a correction to this file rather than silently trusting either one — this file has gone stale before and caused an agent to treat live features as forbidden.
 
 ## 1. What this app is
 
-A multi-tenant SaaS platform ("suivi en ligne") for physiotherapy instructors to manage patient exercise programs and track adherence. One platform, many instructors, each instructor's patients and data completely isolated from every other instructor's.
+A multi-tenant SaaS platform ("suivi en ligne") for physiotherapy instructors (kinés) to manage patient exercise programs and track adherence. One platform, many instructors, each instructor's patients and data completely isolated from every other instructor's.
 
 The entire user interface is in French. Do not add an internationalization/translation layer — hardcode French strings directly.
 
@@ -14,118 +14,97 @@ The entire user interface is in French. Do not add an internationalization/trans
 
 There are three roles. Build for exactly these three — do not add extra roles (e.g. "clinic admin," "assistant") unless explicitly asked.
 
-**Admin** (the platform owner, i.e. me): manages the platform itself. Out of scope for Phase 1 — no admin panel yet.
+**Admin** (the platform owner, i.e. Philippe): manages the platform itself. Built so far: approving new instructor signups from `/admin` (see migration `0023_instructor_approval.sql` — instructors default to `pending` on self-serve signup and must be approved before they can use the dashboard).
 
-**Instructor** (the physiotherapist): signs up, logs in, manages their own roster of patients, builds programs for patients from a shared exercise library, views patient adherence.
+**Instructor** (the physiotherapist / kiné): signs up, waits for admin approval, logs in, manages their own roster of patients, builds programs for patients from a shared exercise library, views patient adherence, messages their patients, sets their own per-patient price and connects Stripe to get paid.
 
-**Patient**: logs in, sees their assigned program for today, marks exercises as done. Patients do not manage other patients and cannot see other instructors' or other patients' data.
+**Patient**: logs in, accepts CGU + health-data consent, sees their assigned program for today, marks exercises/sessions as done, messages their instructor, can export or delete their own data. Patients do not manage other patients and cannot see other instructors' or other patients' data.
 
 ## 3. Data model
 
-Implement these tables in Supabase (Postgres) with row-level security (RLS) enabled on every table from the start — never add a table without RLS policies in the same step.
+The schema lives in `supabase/migrations/` (numbered SQL files, applied in order via `node scripts/migrate.mjs`). **That directory is the source of truth for the schema — do not hand-copy or re-describe individual columns here, they will drift.** Read the migrations directly when you need exact column names/types.
 
-**`instructors`**
-- `id` (uuid, references `auth.users`)
-- `full_name` (text)
-- `email` (text)
-- `created_at` (timestamptz, default now())
+Conceptually, the schema is organized around:
 
-**`patients`**
-- `id` (uuid, references `auth.users`)
-- `instructor_id` (uuid, references `instructors.id`) — the owning instructor
-- `condition_id` (uuid, references `conditions.id`, nullable) — the patient's currently assigned condition/protocol
-- `recommended_workout_id` (uuid, references `workouts.id`, nullable) — the workout the instructor recommends; the patient may still choose another workout of their condition
-- `full_name` (text)
-- `email` (text)
-- `created_at` (timestamptz, default now())
-
-**`exercises`** (shared library, not owned by a single instructor — any instructor can use any exercise)
-- `id` (uuid, primary key)
-- `name` (text)
-- `instructions` (text)
-- `media_url` (text, nullable) — link to a video/image/GIF demonstrating the exercise
-- `created_by` (uuid, references `instructors.id`, nullable) — which instructor added it, if any
-- `created_at` (timestamptz, default now())
-
-**`conditions`** (a named protocol/ailment that bundles a set of exercises — e.g. "Lombalgie chronique". The instructor assigns a patient to a condition instead of picking exercises one by one.)
-- `id` (uuid, primary key)
-- `name` (text) — French name, e.g. "Entorse de la cheville"
-- `description` (text, nullable)
-- `created_by` (uuid, references `instructors.id`, nullable) — `null` means a pre-loaded platform condition (shared, read-only to instructors); a value means an instructor created their own
-- `created_at` (timestamptz, default now())
-
-**`workouts`** (a workout/session alternative belonging to a condition. Each condition offers several workouts; the patient does whole sessions, not loose exercises.)
-- `id` (uuid, primary key)
-- `condition_id` (uuid, references `conditions.id`)
-- `name` (text) — French, e.g. "Séance express", "Séance complète"
-- `description` (text, nullable)
-- `duration_minutes` (int, nullable) — how long the session takes
-- `times_per_week` (int, nullable) — recommended number of times to do it per week
-- `created_by` (uuid, references `instructors.id`, nullable) — `null` = pre-loaded platform workout (read-only); a value = an instructor's own workout
-- `created_at` (timestamptz, default now())
-
-**`workout_exercises`** (which exercises make up a workout)
-- `id` (uuid, primary key)
-- `workout_id` (uuid, references `workouts.id`)
-- `exercise_id` (uuid, references `exercises.id`)
-- `position` (int, default 0) — display order within the workout
-- `created_at` (timestamptz, default now())
-
-**`workout_logs`** (a patient marking a whole workout session done — this is the "suivi en ligne". Adherence = completions vs. the workout's `times_per_week`.)
-- `id` (uuid, primary key)
-- `patient_id` (uuid, references `patients.id`)
-- `workout_id` (uuid, references `workouts.id`)
-- `completed_at` (timestamptz, default now())
+- **Identity**: `instructors`, `patients` (owned by an instructor), and — for the Phase-2 auth migration only (see §7) — `auth.users`, `auth_tokens`, `app_users`.
+- **Exercise library**: `exercises` (shared library, any instructor can use any exercise), `conditions` (named protocols, e.g. "Lombalgie chronique"), `workouts` (session alternatives within a condition), `workout_exercises`, plus staging/override tables (`exercise_overrides`, `exercise_feedback`) that support adaptive difficulty.
+- **Assignment & adherence**: a patient is assigned a `condition` and optionally a `recommended_workout_id`; completing a session writes a `workout_logs` row. `patient_profiles`, `patient_feedback`, `patient_documents` hold richer per-patient clinical/intake detail beyond the Phase-1 basics.
+- **Billing**: `instructor_connect_accounts` (Stripe Connect account id — deliberately its own table, not a column on `instructors`, so the instructor's own RLS update policy can't let them redirect their own patients' payments — see `lib/billing/platformFee.ts`), `platform_invoices`.
+- **Messaging**: `patient_messages` — instructor-to-patient messaging, already live (dashboard patient detail page and the patient app both use it).
+- **Compliance**: `0018_health_data_consent.sql`, `0019_terms_acceptance.sql` — explicit consent gates, required before a patient can proceed.
 
 ### RLS rules to enforce
 
-- An instructor can read/write only rows in `patients` where `instructor_id` matches their own `auth.uid()`, and can read `workout_logs` of their own patients.
+- An instructor can read/write only rows in `patients` where `instructor_id` matches their own auth id, and can read `workout_logs` of their own patients.
 - A patient can read only their own row in `patients`, and can read/write only their own rows in `workout_logs`.
 - `exercises` (the shared library) is readable by all authenticated instructors and patients, but only instructors can insert/update/delete (an instructor may modify only exercises they created; platform ones are read-only).
-- `conditions`, `workouts`, and `workout_exercises` are readable by all authenticated users. Pre-loaded platform rows (`created_by` is null) are read-only to instructors. An instructor can insert their own conditions/workouts (with `created_by = auth.uid()`) and update/delete only their own; they can only modify `workout_exercises` belonging to a workout they created.
-- Before applying any policy, explain in plain language what it does and why, so I can confirm it matches this intent.
+- `conditions`, `workouts`, and `workout_exercises` are readable by all authenticated users. Pre-loaded platform rows (`created_by` is null) are read-only to instructors. An instructor can insert their own conditions/workouts and update/delete only their own.
+- RLS is enabled on every table from the start — never add a table without RLS policies in the same migration.
+- Before applying any policy, explain in plain language what it does and why, so Philippe can confirm it matches this intent.
 
-## 4. Core user flows (Phase 1 only)
+## 4. Core user flows (current)
 
 **Instructor**
-1. Sign up / log in (Supabase Auth, email + password is sufficient for Phase 1 — no social login needed).
-2. See a list of their own patients. Add a new patient (name, email — patient gets invited to create their own login, or instructor sets a temporary password; pick the simpler Supabase-supported approach and explain the tradeoff).
-3. Assign the patient to a **condition**. The condition already offers several **workouts** (session alternatives), each with a duration and a recommended number of times per week. One assignment gives the patient a full set of options — minimal instructor effort.
-4. Optionally **recommend a specific workout** for the patient (`patients.recommended_workout_id`); the patient may still choose another workout of that condition.
-5. Instructors may also **create their own conditions and workouts** (name, description, duration, times/week, and the exercises in each workout), in addition to the pre-loaded platform ones.
-6. View a patient's **adherence** — how many times they've completed each workout, versus the recommended times per week.
-
-The platform ships with a **pre-loaded starter set** of common conditions, workouts, and exercises (French), so an instructor can assign a working program on day one. The instructor is positioned as a guide/recommender: workouts are presented to patients as recommended by their physiotherapist, even though the content may come from the shared platform library.
+1. Sign up (`/signup`) → account is created `pending` → Philippe approves from `/admin` → instructor can log in.
+2. See a list of their own patients; add a new patient (Clerk invitation, patient sets their own password via Clerk's flow).
+3. Assign the patient to a **condition**, which already offers several **workouts** (session alternatives). Optionally recommend a specific workout.
+4. Create their own conditions/workouts/exercises in addition to the pre-loaded platform library.
+5. View a patient's **adherence** (completions vs. recommended times/week), and message the patient directly.
+6. Set their own monthly per-patient price and connect a Stripe account (`/dashboard/facturation`) to get paid directly by patients.
 
 **Patient**
-1. Log in.
-2. See the **workout alternatives** for their condition — each with its duration and recommended times/week — with the instructor's recommendation highlighted.
-3. Open a workout to see its exercises (instructions + demonstration video), and **mark the whole session as done** — this creates a row in `workout_logs`.
+1. Log in (Clerk), accept CGU and health-data consent on first use.
+2. See workout alternatives for their condition, with the instructor's recommendation highlighted.
+3. Open a workout, do the guided session (adaptive difficulty via `lib/exercise/autoEase.ts`, pain/difficulty feedback), and mark it done → `workout_logs`.
+4. Message their instructor; from `/patient/compte`, export their data (JSON) or delete their account.
 
-## 5. Explicitly out of scope for Phase 1
+**Billing (money flow)** — two flows kept strictly separate: patients pay their instructor directly via the instructor's own Stripe Connect account (Physio-App never touches that money — avoids compérage risk); the platform separately bills the instructor a prorated 15% fee per active patient (`lib/billing/platformFee.ts`). There is no flat subscription plan anymore — the old "Kiné Pro" flat plan was removed in favor of this per-patient model.
 
-Do not build these unless asked — they belong to later phases:
-- Billing / Stripe / subscriptions
-- Self-serve instructor signup marketing pages
-- Admin panel for the platform owner
+## 5. Explicitly out of scope (still not built)
+
 - Email/SMS reminders
-- Multi-language support
 - Rich scheduling (calendars, recurring rules beyond a plain text frequency field)
-- Messaging between instructor and patient
+- Multi-language support
 - Analytics/adherence charts beyond a simple completion list
+- Any role beyond Admin / Instructor / Patient
 
-## 6. Technical stack (already set up — do not change without discussion)
+## 6. Permanently dropped (do not resurrect without being asked)
 
-- **Next.js** (App Router, TypeScript, Tailwind CSS, Turbopack) — the application itself, frontend and backend together
-- **Supabase** — Postgres database, authentication, and file storage. Client wired up under `lib/supabase/`.
-- **Vercel** — hosting, auto-deploys on every push to the `main` branch on GitHub
-- **GitHub** — repo at `philfullstackdevelopper/Physio-App`, branch `main`
+**Télésoin (remote video sessions) and camera-based pose-tracking exercise analysis.** Both were fully built, then deliberately removed — not paused. Migration `0024_drop_telesoin.sql` drops the `video_calls` table outright and says explicitly "dropped from the product entirely — not paused." If a request seems to want either of these back, flag it rather than reintroducing the old components (`VideoCall`, `TelesoinDossier`, `PoseTracker`, etc. — already fully removed, don't recreate them from git history without explicit confirmation).
 
-Environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) live in `.env.local` locally and in Vercel's project environment variables for production. Never commit `.env.local` to git.
+## 7. Planned but not currently active
 
-## 7. Working conventions
+Two pieces of scaffolding exist in the repo for future work. Both are intentionally unfinished — don't "complete" them unprompted, and don't delete them either.
 
-- I am a complete beginner to coding. Before running any command or making any non-trivial change, briefly explain what it does and why in plain language.
-- Prefer small, incremental steps I can verify (run locally, check in browser) over large multi-file changes in one go.
+**Self-hosted Postgres + custom auth (Scalingo migration, "Phase 2").** The long-term plan is to move off Supabase to a self-hosted Postgres on Scalingo, with `auth.ts` (Auth.js/NextAuth, credentials-based) replacing the current Clerk-based auth. Status: `auth.ts`, `lib/db/pool.ts`, `lib/db/withUserContext.ts`, `lib/auth/password.ts`, `lib/auth/tokens.ts`, and the `app/api/auth/[...nextauth]/route.ts` route exist and are explicitly commented "NOT YET WIRED INTO THE LIVE APP." Migration `0017_users_and_auth_tokens.sql` recreates `auth.users`/`auth.uid()` on plain Postgres specifically so the existing RLS policies keep working unchanged after the cutover. **Known issue:** the `next-auth` and `bcryptjs` packages this code imports are not currently installed (missing from `package.json`/`node_modules`), which breaks `npm run build` today even though nothing in the live app calls this code — because `app/api/auth/[...nextauth]/route.ts` is still a real route Next.js compiles. Either install those two packages before resuming this work, or exclude that route from the build in the meantime — check with Philippe before doing either, since this is mid-flight work.
+
+**AI-generated rehab protocols** (`lib/ai/protocol.ts`, `app/api/protocol/route.ts`). Currently a mock/placeholder with invented example conditions and exercises, not wired to any UI. This is meant to become a real feature eventually, but only once it's built on the clinical partner's real protocols — never on invented/mock clinical content, and never connected to real patients before that clinical review happens. The current placeholder data must not be mistaken for reviewed clinical content.
+
+## 8. Technical stack (already set up — do not change without discussion)
+
+- **Next.js 16** (App Router, TypeScript, Tailwind CSS 4, Turbopack) — frontend and backend together. Next.js 16 renamed `middleware.ts` → `proxy.ts` (same job, runs before each request) — this codebase already uses `proxy.ts`.
+- **React 19**, icons via **lucide-react** (no emoji as UI icons — use real icons or flag the need for real photos).
+- **Clerk** (`@clerk/nextjs`) — current authentication for both instructors and patients (frFR localization). This replaced an earlier Supabase-Auth-based system; see §7 for the *next* planned auth migration.
+- **Supabase** — Postgres database and file storage. Client wired up under `lib/supabase/`. Supabase's own Auth product is no longer used (Clerk is), but the Postgres database and Storage remain live.
+- **Stripe** (Connect) — per-patient billing, see §4.
+- **Vercel** — hosting, auto-deploys on every push to the `main` branch on GitHub.
+- **GitHub** — repo at `philfullstackdevelopper/Physio-App`.
+
+Environment variables live in `.env.local` locally and in Vercel's project environment variables for production. Never commit `.env.local` to git, and never print or read its contents unless the user asks.
+
+## 9. Working conventions
+
+- Philippe is a complete beginner to coding. Before running any command or making any non-trivial change, briefly explain what it does and why in plain language.
+- Prefer small, incremental steps he can verify (run locally, check in browser) over large multi-file changes in one go.
 - When implementing RLS policies or anything touching data isolation between instructors, always explain the policy before applying it — this is the one part of the app that must never be wrong.
 - Keep all UI text in French.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

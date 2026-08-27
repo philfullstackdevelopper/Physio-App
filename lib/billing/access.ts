@@ -48,10 +48,6 @@ export interface PatientCapabilities {
   selfServiceLibrary: boolean;
   /** The adaptive-suggestion engine surfaced in the patient UI. */
   adaptationEngine: boolean;
-  /** Precision camera-AI (form/depth/hold quality), not just rep counting. */
-  precisionCameraAI: boolean;
-  /** Distance booking + join a live télésoin video call. */
-  bookingVisio: boolean;
 }
 
 export interface PatientAccess {
@@ -76,8 +72,6 @@ export function patientAccess(b: PatientBilling, now: Date = new Date()): Patien
     capabilities: {
       selfServiceLibrary: full,
       adaptationEngine: full,
-      precisionCameraAI: full, // may ALSO be granted by the kiné's Pro tier — see patientPrecisionAI()
-      bookingVisio: full,
     },
   };
 }
@@ -92,12 +86,8 @@ export interface InstructorBilling {
 }
 
 export interface InstructorCapabilities {
-  /** Full camera-AI precision for the kiné's patients (reliable exercises). */
-  precisionCameraAI: boolean;
   /** Adaptation-suggestion engine surfaced in full detail in the dashboard. */
   adaptationDetail: boolean;
-  /** The télésoin review workflow (brief → live call → program update). */
-  telesoinWorkflow: boolean;
   /** Advanced roster dashboards (flagged-first, trend charts). */
   advancedDashboards: boolean;
 }
@@ -112,20 +102,8 @@ export function instructorAccess(b: InstructorBilling): InstructorAccess {
   return {
     level: pro ? "pro" : "free",
     capabilities: {
-      precisionCameraAI: pro,
       adaptationDetail: pro,
-      telesoinWorkflow: pro,
       advancedDashboards: pro,
     },
   };
-}
-
-/**
- * Whether a patient may use precision camera-AI on a given exercise. Granted if
- * the patient is on trial/premium OR their kiné is on the Pro tier (Level 2
- * enables it across the kiné's patients). The exercise must also be tagged as
- * camera-AI-reliable — that check lives with the exercise, not here.
- */
-export function patientPrecisionAI(patient: PatientAccess, kineIsPro: boolean): boolean {
-  return patient.capabilities.precisionCameraAI || kineIsPro;
 }

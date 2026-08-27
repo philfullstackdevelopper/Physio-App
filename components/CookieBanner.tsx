@@ -13,7 +13,9 @@ export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY)) setVisible(true);
+    if (localStorage.getItem(STORAGE_KEY)) return;
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
   }, []);
 
   if (!visible) return null;
@@ -23,8 +25,8 @@ export default function CookieBanner() {
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 text-sm text-slate-600 sm:flex-row sm:justify-between">
         <p>
           Ce site utilise uniquement des cookies essentiels au fonctionnement de votre
-          connexion — aucun cookie publicitaire ou de mesure d&apos;audience.{" "}
-          <a href="/confidentialite" className="text-teal-700 underline">
+          connexion, aucun cookie publicitaire ou de mesure d&apos;audience.{" "}
+          <a href="/confidentialite" className="text-blue-700 underline">
             En savoir plus
           </a>
           .
@@ -34,7 +36,7 @@ export default function CookieBanner() {
             localStorage.setItem(STORAGE_KEY, "1");
             setVisible(false);
           }}
-          className="shrink-0 rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+          className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           Compris
         </button>

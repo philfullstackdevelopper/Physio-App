@@ -25,6 +25,13 @@ L'ensemble des contenus présents sur Physio-App (textes, logo, charte
 graphique) est la propriété de [raison sociale], sauf mention contraire.
 Toute reproduction non autorisée est interdite.
 
+## Crédits
+
+Certaines illustrations d'exercices proviennent du projet
+[Everkinetic](https://github.com/everkinetic/data), enrichi par
+[bryllim/workout-guide](https://github.com/bryllim/workout-guide), sous
+licence [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+
 ## Données personnelles
 
 Voir la [politique de confidentialité](/confidentialite).

@@ -35,7 +35,7 @@ export default async function PatientsPage() {
           </div>
           <Link
             href="/dashboard/patients/new"
-            className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             + Ajouter
           </Link>

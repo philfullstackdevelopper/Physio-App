@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import ExerciseVideoUpload from "@/components/ExerciseVideoUpload";
+import PlatformExerciseLibrary from "@/components/PlatformExerciseLibrary";
 import { createExercise } from "./actions";
 
 export default async function ExercisesPage({
@@ -19,6 +20,12 @@ export default async function ExercisesPage({
     .select("id, name, instructions, media_url")
     .eq("created_by", user.id)
     .order("created_at", { ascending: false });
+
+  const { data: platform } = await supabase
+    .from("exercises")
+    .select("id, name, media_url, media_start_seconds")
+    .is("created_by", null)
+    .order("name");
 
   return (
     <main className="min-h-screen bg-slate-50 p-6 sm:p-8">
@@ -45,18 +52,18 @@ export default async function ExercisesPage({
               name="name"
               required
               placeholder="Nom de l'exercice"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
             />
             <textarea
               name="instructions"
               placeholder="Instructions (optionnel)"
               rows={2}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
             />
           </div>
           <button
             type="submit"
-            className="mt-3 rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+            className="mt-3 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             Créer
           </button>
@@ -78,6 +85,8 @@ export default async function ExercisesPage({
             ))
           )}
         </div>
+
+        <PlatformExerciseLibrary exercises={platform ?? []} />
       </div>
     </main>
   );

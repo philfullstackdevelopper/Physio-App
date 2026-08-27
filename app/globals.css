@@ -3,8 +3,8 @@
 :root {
   --background: #f8fafb;
   --foreground: #0f172a;
-  --brand: #0d9488; /* teal-600 */
-  --brand-dark: #0f766e; /* teal-700 */
+  --brand: #155dfc; /* blue-600 */
+  --brand-dark: #1447c9; /* blue-700 */
 }
 
 @theme inline {
@@ -12,15 +12,14 @@
   --color-foreground: var(--foreground);
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
+
 
 /* Warm display serif for headings (opt-in via className). */
 .font-display {
@@ -43,3 +42,13 @@ body {
     stroke-dashoffset: var(--ring-total, 264);
   }
 }
+
+/* ExerciseIllustration's 3-frame motion cross-fade. Global (not injected per
+   component instance) — a workout screen can render this many times over,
+   and every instance would otherwise re-declare the same @keyframes. */
+@keyframes ei-frame-1 { 0%, 27% { opacity: 1; } 33%, 94% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes ei-frame-2 { 0%, 27% { opacity: 0; } 33%, 60% { opacity: 1; } 66%, 100% { opacity: 0; } }
+@keyframes ei-frame-3 { 0%, 60% { opacity: 0; } 66%, 94% { opacity: 1; } 100% { opacity: 0; } }
+.ei-frame-1 { animation: ei-frame-1 3.6s ease-in-out infinite; }
+.ei-frame-2 { animation: ei-frame-2 3.6s ease-in-out infinite; }
+.ei-frame-3 { animation: ei-frame-3 3.6s ease-in-out infinite; }

@@ -29,6 +29,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+.dev-server.log
+dev-server.log
+fresh-dev-server.log
+
+# scratch/debug scripts, not source
+_tmp-*
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -37,6 +43,15 @@ yarn-error.log*
 # vercel
 .vercel
 
+# claude code — personal local overrides, not shared with the team
+/.claude/settings.local.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# graphify — regenerated knowledge graph, not source
+graphify-out/
+
+# MCP server config — contains a live Supabase access token
+.mcp.json

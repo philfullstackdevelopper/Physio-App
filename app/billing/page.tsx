@@ -1,13 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CheckCircle2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { PLANS } from "@/lib/billing/plans";
-import { patientAccess, instructorAccess, trialDaysLeft } from "@/lib/billing/access";
+import { patientAccess, trialDaysLeft } from "@/lib/billing/access";
 import { startCheckout, openBillingPortal } from "./actions";
 
 const euro = (cents: number) => (cents / 100).toFixed(0);
 
+// Patient-only page — kinés manage their money at /dashboard/facturation
+// ("Tarif & paiements"), a different mechanism (per-patient pricing +
+// Stripe Connect) with nothing in common with this patient subscription.
 export default async function BillingPage({
   searchParams,
 }: {
@@ -18,13 +22,14 @@ export default async function BillingPage({
   const user = await requireUser(supabase);
 
   const [{ data: kine }, { data: pat }, { data: sub }] = await Promise.all([
-    supabase.from("instructors").select("id, monthly_patient_price_cents").eq("id", user.id).maybeSingle(),
+    supabase.from("instructors").select("id").eq("id", user.id).maybeSingle(),
     supabase.from("patients").select("id, trial_ends_at").eq("id", user.id).maybeSingle(),
     supabase.from("subscriptions").select("plan, status, current_period_end, stripe_customer_id").eq("user_id", user.id).maybeSingle(),
   ]);
 
-  const isKine = !!kine;
-  const isPatient = !!pat && !isKine;
+  if (kine) redirect("/dashboard/facturation");
+
+  const isPatient = !!pat;
   const subStatus = (sub?.status as string | null) ?? null;
   const subEnd = (sub?.current_period_end as string | null) ?? null;
   const hasCustomer = !!(sub?.stripe_customer_id as string | null);
@@ -32,13 +37,13 @@ export default async function BillingPage({
   return (
     <main className="min-h-screen bg-slate-50 p-6 sm:p-8">
       <div className="mx-auto max-w-lg">
-        <Link href={isKine ? "/dashboard" : "/patient"} className="text-sm text-slate-500 hover:underline">
+        <Link href="/patient" className="text-sm text-slate-500 hover:underline">
           ← Retour
         </Link>
         <h1 className="mt-1 text-2xl font-semibold text-slate-900">Mon abonnement</h1>
 
         {sp.subscribed === "1" && (
-          <p className="mt-4 flex items-center gap-1.5 rounded-lg bg-teal-50 p-3 text-sm font-medium text-teal-700">
+          <p className="mt-4 flex items-center gap-1.5 rounded-lg bg-blue-50 p-3 text-sm font-medium text-blue-700">
             <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
             Paiement confirmé — votre accès est activé. Merci !
           </p>
@@ -69,7 +74,7 @@ export default async function BillingPage({
                 <p className="text-sm text-slate-500">Votre accès actuel</p>
                 <p className="mt-1 flex items-center gap-1.5 text-lg font-semibold text-slate-900">
                   {acc.level === "premium" && (
-                    <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-600" strokeWidth={1.75} />
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-blue-600" strokeWidth={1.75} />
                   )}
                   {levelLabel}
                 </p>
@@ -78,25 +83,17 @@ export default async function BillingPage({
                   <>
                     <ul className="mt-4 space-y-1.5 text-sm text-slate-600">
                       <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
+                        <Check className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} />
                         Bibliothèque complète d&apos;exercices
                       </li>
                       <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
+                        <Check className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} />
                         Suggestions d&apos;adaptation personnalisées
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
-                        Analyse caméra de précision (posture)
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 shrink-0 text-teal-600" strokeWidth={2} />
-                        Prise de rendez-vous et visio avec votre kiné
                       </li>
                     </ul>
                     <form action={startCheckout} className="mt-5">
                       <input type="hidden" name="plan" value={plan.key} />
-                      <button className="w-full rounded-xl bg-teal-600 py-3 font-medium text-white hover:bg-teal-700">
+                      <button className="w-full rounded-xl bg-blue-600 py-3 font-medium text-white hover:bg-blue-700">
                         S&apos;abonner — {euro(plan.amount)} €/mois
                       </button>
                     </form>
@@ -113,40 +110,10 @@ export default async function BillingPage({
               </section>
             );
           })()
-        ) : isKine ? (
-          (() => {
-            const priceCents = kine?.monthly_patient_price_cents as number | null;
-            const acc = instructorAccess({ hasPatientPricing: priceCents != null });
-            return (
-              <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                <p className="text-sm text-slate-500">Votre formule</p>
-                <p className="mt-1 flex items-center gap-1.5 text-lg font-semibold text-slate-900">
-                  {acc.level === "pro" && (
-                    <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-600" strokeWidth={1.75} />
-                  )}
-                  {acc.level === "pro"
-                    ? `Tarif fixé — ${euro(priceCents as number)} €/mois par patient`
-                    : "Tarif pas encore fixé"}
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  Vous fixez librement le tarif mensuel que vos patients vous paient. Ce paiement
-                  va directement sur votre propre compte, jamais chez Physio-App. En échange, vous
-                  payez à Physio-App 15&nbsp;% de ce tarif, par patient actif, au prorata du nombre
-                  de jours du mois où le patient était suivi.
-                </p>
-                <Link
-                  href="/dashboard/facturation"
-                  className="mt-5 inline-block w-full rounded-xl bg-teal-600 py-3 text-center font-medium text-white hover:bg-teal-700"
-                >
-                  {acc.level === "pro" ? "Gérer mon tarif et mes paiements" : "Fixer mon tarif"}
-                </Link>
-              </section>
-            );
-          })()
         ) : (
           <p className="mt-6 rounded-lg bg-amber-50 p-4 text-sm text-amber-700">
-            Compte non reconnu comme patient ou kiné. Vérifiez que la migration
-            <code className="mx-1 rounded bg-amber-100 px-1">0009</code>a bien été lancée dans Supabase.
+            Impossible de retrouver votre compte. Réessayez, ou contactez-nous si le problème
+            persiste.
           </p>
         )}
       </div>

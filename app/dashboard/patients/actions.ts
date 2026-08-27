@@ -3,12 +3,15 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { clerkClient } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { precreateAppUserId } from "@/lib/auth/user-map";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// Instructor invites a new patient by email. Creates the patient's account,
-// emails them an invite link to set their password, and records the patient row.
+// Instructor invites a new patient by email. Creates the patient's Clerk
+// account invitation (they choose their own password from the e-mail), and
+// records the patient row owned by the inviting instructor.
 export async function addPatient(formData: FormData) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
@@ -23,26 +26,43 @@ export async function addPatient(formData: FormData) {
   const hdrs = await headers();
   const origin = hdrs.get("origin") ?? `https://${hdrs.get("host")}`;
 
-  // Create the patient's auth account and send the invite email (admin action).
-  const admin = createAdminClient();
-  const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(
-    email,
-    {
-      data: { full_name: fullName, role: "patient" },
-      redirectTo: `${origin}/auth/confirm?next=/auth/set-password`,
-    },
-  );
-
-  if (inviteError || !invited?.user) {
+  // Reserve the internal uuid BEFORE the invite goes out, so patients.id and
+  // app_users.app_id agree from day one (resolveAppUserId will find this row
+  // by email on the patient's first login and attach their Clerk id).
+  let appId: string;
+  try {
+    ({ appId } = await precreateAppUserId(email));
+  } catch (e) {
     redirect(
-      `/dashboard/patients/new?error=${encodeURIComponent(inviteError?.message ?? "Impossible d'inviter ce patient.")}`,
+      `/dashboard/patients/new?error=${encodeURIComponent(e instanceof Error ? e.message : "Erreur interne.")}`,
     );
   }
 
-  // Record the patient, owned by the current instructor. Done with the instructor's
-  // own session so the patients RLS policy (instructor_id = auth.uid()) is enforced.
+  // Send the Clerk invitation. The patient sets their password via Clerk's own
+  // flow — no Supabase invite link, no token confirmation route needed anymore.
+  try {
+    const client = await clerkClient();
+    await client.invitations.createInvitation({
+      emailAddress: email,
+      redirectTo: `${origin}/login`,
+      publicMetadata: { full_name: fullName, role: "patient" },
+    });
+  } catch (e) {
+    redirect(
+      `/dashboard/patients/new?error=${
+        encodeURIComponent(
+          e instanceof Error && e.message.includes("already")
+            ? "Un compte existe déjà avec cette adresse."
+            : "Impossible d'inviter ce patient.",
+        )
+      }`,
+    );
+  }
+
+  // Record the patient, owned by the current instructor. Done with the
+  // instructor's own session so the patients RLS policy is enforced.
   const { error: patientError } = await supabase.from("patients").insert({
-    id: invited.user.id,
+    id: appId,
     instructor_id: user.id,
     full_name: fullName,
     email,

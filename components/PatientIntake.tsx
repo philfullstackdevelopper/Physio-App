@@ -47,7 +47,7 @@ export default function PatientIntake({
             type="number" min={5} max={100} required
             value={ageYears}
             onChange={(e) => setAge(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-slate-900 focus:border-teal-600 focus:outline-none"
+            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-slate-900 focus:border-blue-600 focus:outline-none"
           />
         </label>
         <label className="text-sm text-slate-600">
@@ -56,7 +56,7 @@ export default function PatientIntake({
             type="number" min={100} max={230} required
             value={heightCm}
             onChange={(e) => setHeight(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-slate-900 focus:border-teal-600 focus:outline-none"
+            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-slate-900 focus:border-blue-600 focus:outline-none"
           />
         </label>
         <label className="text-sm text-slate-600">
@@ -65,7 +65,7 @@ export default function PatientIntake({
             type="number" min={20} max={250} required
             value={weightKg}
             onChange={(e) => setWeight(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-slate-900 focus:border-teal-600 focus:outline-none"
+            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-slate-900 focus:border-blue-600 focus:outline-none"
           />
         </label>
       </div>
@@ -75,7 +75,7 @@ export default function PatientIntake({
         <select
           value={activityLevel}
           onChange={(e) => setActivity(e.target.value as ActivityLevel)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
         >
           <option value="sedentary">Sédentaire (peu ou pas de sport)</option>
           <option value="moderate">Modérée (activité régulière)</option>
@@ -85,7 +85,7 @@ export default function PatientIntake({
 
       <button
         type="submit"
-        className="mt-1 rounded-md bg-teal-600 px-4 py-2.5 font-medium text-white hover:bg-teal-700"
+        className="mt-1 rounded-md bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-700"
       >
         Commencer ma séance
       </button>

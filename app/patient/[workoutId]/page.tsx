@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CheckCircle2, Play } from "lucide-react";
+import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { startOfWeekISO } from "@/lib/week";
-import { getCurrentAccess } from "@/lib/billing/context";
 import { completeWorkout } from "../actions";
 
 type Workout = {
@@ -32,11 +32,6 @@ export default async function WorkoutDetailPage({
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  // Free-tier patients only see the locked teaser on /patient — typing this
-  // URL directly must not bypass that.
-  const access = await getCurrentAccess(supabase, user.id);
-  if (access.role === "patient" && access.access.level === "free") redirect("/patient");
-
   const { data: workoutData } = await supabase
     .from("workouts")
     .select(
@@ -59,10 +54,7 @@ export default async function WorkoutDetailPage({
   return (
     <main className="min-h-screen p-6 sm:p-8">
       <div className="mx-auto max-w-2xl">
-        <Link href="/patient" className="text-sm text-slate-500 hover:underline">
-          ← Mes séances
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900">{workout.name}</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{workout.name}</h1>
         <p className="mt-1 text-sm text-slate-500">
           {workout.duration_minutes} min · {workout.times_per_week}×/semaine · {count ?? 0} fait(s)
           cette semaine
@@ -70,18 +62,20 @@ export default async function WorkoutDetailPage({
         {workout.description && <p className="mt-2 text-slate-600">{workout.description}</p>}
 
         {done && (
-          <p className="mt-4 flex items-center gap-1.5 rounded-md bg-teal-50 p-3 text-sm font-medium text-teal-800">
-            <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-            Bravo ! Séance enregistrée.
+          <p className="mt-4 flex items-center gap-1.5 border-l-2 border-l-blue-600 pl-3 text-sm font-medium text-slate-900">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={1.75} />
+            Séance enregistrée
           </p>
         )}
-        {error && <p className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {error && (
+          <p className="mt-4 border-l-2 border-l-red-500 pl-3 text-sm text-red-700">{error}</p>
+        )}
 
         <ol className="mt-6 space-y-4">
           {exercises.map((we, i) => (
             <li key={i} className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
               <div className="flex items-start gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-700">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-semibold text-blue-700">
                   {i + 1}
                 </span>
                 <div className="flex-1">
@@ -90,7 +84,7 @@ export default async function WorkoutDetailPage({
                     <p className="mt-1 text-sm text-slate-600">{we.exercises.instructions}</p>
                   )}
                   {we.exercises?.media_url &&
-                    (/\.(mp4|webm|mov|m4v)$/i.test(we.exercises.media_url) ? (
+                    (/\.(mp4|webm|mov|m4v|ogg)$/i.test(we.exercises.media_url) ? (
                       <video
                         controls
                         preload="metadata"
@@ -102,13 +96,21 @@ export default async function WorkoutDetailPage({
                         href={we.exercises.media_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline"
+                        className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline"
                       >
                         <Play className="h-3.5 w-3.5" strokeWidth={2} fill="currentColor" />
                         Voir une démonstration
                       </a>
                     ))}
                 </div>
+                {/* Pas encore de vidéo pour cet exercice : le schéma animé sert de visuel,
+                    pour que la liste reste claire en attendant le tournage. */}
+                {!we.exercises?.media_url && we.exercises && (
+                  <ExerciseIllustration
+                    name={we.exercises.name}
+                    className="h-16 w-20 shrink-0 self-center text-blue-600 opacity-80"
+                  />
+                )}
               </div>
             </li>
           ))}
@@ -116,7 +118,7 @@ export default async function WorkoutDetailPage({
 
         <Link
           href={`/patient/${workout.id}/seance`}
-          className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-4 text-lg font-semibold text-white shadow-sm transition hover:bg-teal-700"
+          className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 text-lg font-semibold text-white shadow-sm transition hover:bg-blue-700"
         >
           <Play className="h-5 w-5" strokeWidth={2} fill="currentColor" />
           Commencer la séance

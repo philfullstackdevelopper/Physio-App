@@ -202,9 +202,14 @@ export default async function PatientDetailPage({
         "id, name, description, duration_minutes, times_per_week, stage, workout_exercises ( position, exercises ( name ) )",
       )
       .eq("condition_id", patient.condition_id)
-      .order("stage")
       .order("duration_minutes");
-    workouts = (workoutsData ?? []) as unknown as Workout[];
+    // Sort by recovery-phase order (Protection -> Mobilité -> Renforcement ->
+    // Reprise), not alphabetically by the raw stage value — .order("stage")
+    // above sorted text, not sequence, which scattered phases out of order.
+    const stageOrder = new Map(Object.keys(STAGE_LABELS).map((s, i) => [s, i]));
+    workouts = ((workoutsData ?? []) as unknown as Workout[]).sort(
+      (a, b) => (stageOrder.get(a.stage ?? "") ?? 99) - (stageOrder.get(b.stage ?? "") ?? 99),
+    );
 
     const { data: logs } = await supabase
       .from("workout_logs")
@@ -270,7 +275,7 @@ export default async function PatientDetailPage({
         {/* Messages au patient */}
         <section className="mt-6 rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
           <h2 className="flex items-center gap-2 text-lg font-medium text-slate-900">
-            <MessageCircle className="h-5 w-5 text-teal-600" strokeWidth={1.75} />
+            <MessageCircle className="h-5 w-5 text-blue-600" strokeWidth={1.75} />
             Messages
           </h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -283,11 +288,11 @@ export default async function PatientDetailPage({
               required
               rows={2}
               placeholder="Écrire un message…"
-              className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none"
             />
             <button
               type="submit"
-              className="self-end rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 sm:self-auto"
+              className="self-end rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 sm:self-auto"
             >
               Envoyer
             </button>
@@ -354,7 +359,7 @@ export default async function PatientDetailPage({
                         href={d.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-sm font-medium text-teal-700 hover:underline"
+                        className="flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:underline"
                       >
                         <FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                         {d.file_name}
@@ -492,7 +497,7 @@ export default async function PatientDetailPage({
                             <input type="hidden" name="base_reps" value={baseReps} />
                             <button
                               type="submit"
-                              className="rounded-md bg-teal-600 px-3 py-1 text-xs font-medium text-white hover:bg-teal-700"
+                              className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
                             >
                               Appliquer
                             </button>
@@ -536,7 +541,7 @@ export default async function PatientDetailPage({
               name="condition_id"
               defaultValue={patient.condition_id ?? ""}
               required
-              className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
             >
               <option value="" disabled>
                 Choisir une condition…
@@ -549,7 +554,7 @@ export default async function PatientDetailPage({
             </select>
             <button
               type="submit"
-              className="rounded-md bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
+              className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
             >
               Assigner
             </button>
@@ -572,7 +577,7 @@ export default async function PatientDetailPage({
                   <div
                     key={w.id}
                     className={`rounded-xl border bg-white p-5 shadow-sm ${
-                      isRecommended ? "border-teal-500 ring-1 ring-teal-500" : "border-slate-100"
+                      isRecommended ? "border-blue-500 ring-1 ring-blue-500" : "border-slate-100"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -580,12 +585,12 @@ export default async function PatientDetailPage({
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-semibold text-slate-900">{w.name}</h3>
                           {isRecommended && (
-                            <span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700">
+                            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                               Recommandée
                             </span>
                           )}
                         </div>
-                        {wStage && <p className="mt-0.5 text-xs font-medium text-teal-700">{wStage}</p>}
+                        {wStage && <p className="mt-0.5 text-xs font-medium text-blue-700">{wStage}</p>}
                         <p className="mt-1 text-sm text-slate-500">
                           {w.duration_minutes} min · {w.times_per_week}×/semaine
                         </p>
@@ -601,7 +606,7 @@ export default async function PatientDetailPage({
                           className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ${
                             isRecommended
                               ? "border border-slate-300 text-slate-600 hover:bg-slate-50"
-                              : "bg-teal-600 text-white hover:bg-teal-700"
+                              : "bg-blue-600 text-white hover:bg-blue-700"
                           }`}
                         >
                           {isRecommended ? "Retirer" : "Recommander"}

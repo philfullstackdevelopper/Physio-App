@@ -48,7 +48,7 @@ export default async function SeanceEditorPage({
         <h1 className="mt-1 text-2xl font-semibold text-slate-900">Composer la séance</h1>
 
         {saved && (
-          <p className="mt-4 flex items-center gap-1.5 rounded-md bg-teal-50 p-3 text-sm font-medium text-teal-800">
+          <p className="mt-4 flex items-center gap-1.5 rounded-md bg-blue-50 p-3 text-sm font-medium text-blue-800">
             <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
             Séance enregistrée
           </p>
@@ -67,7 +67,7 @@ export default async function SeanceEditorPage({
                   name="name"
                   required
                   defaultValue={workout.name}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
                 />
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -77,7 +77,7 @@ export default async function SeanceEditorPage({
                     name="condition_id"
                     required
                     defaultValue={workout.condition_id ?? ""}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
                   >
                     {conditions?.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -91,7 +91,7 @@ export default async function SeanceEditorPage({
                   <select
                     name="stage"
                     defaultValue={workout.stage ?? ""}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
                   >
                     <option value="">Toutes phases</option>
                     {STAGES.map(([value, label]) => (
@@ -106,7 +106,7 @@ export default async function SeanceEditorPage({
                   <input
                     type="number" name="duration_minutes" min={1} max={90}
                     defaultValue={workout.duration_minutes ?? 10}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
                   />
                 </label>
                 <label className="text-sm text-slate-600">
@@ -114,7 +114,7 @@ export default async function SeanceEditorPage({
                   <input
                     type="number" name="times_per_week" min={1} max={14}
                     defaultValue={workout.times_per_week ?? 3}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
                   />
                 </label>
               </div>
@@ -137,7 +137,7 @@ export default async function SeanceEditorPage({
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              className="rounded-md bg-teal-600 px-5 py-2.5 font-medium text-white hover:bg-teal-700"
+              className="rounded-md bg-blue-600 px-5 py-2.5 font-medium text-white hover:bg-blue-700"
             >
               Enregistrer la séance
             </button>

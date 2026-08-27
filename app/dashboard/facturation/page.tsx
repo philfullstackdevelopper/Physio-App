@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { setPatientPrice, startConnectOnboarding } from "../connect/actions";
 
-const euro = (cents: number) => (cents / 100).toFixed(0);
-
 export default async function FacturationPage({
   searchParams,
 }: {
@@ -34,7 +32,7 @@ export default async function FacturationPage({
         <p className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>
       )}
       {saved === "1" && (
-        <p className="mt-4 flex items-center gap-1.5 rounded-md bg-teal-50 p-3 text-sm text-teal-700">
+        <p className="mt-4 flex items-center gap-1.5 rounded-md bg-blue-50 p-3 text-sm text-blue-700">
           <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
           Tarif enregistré.
         </p>
@@ -63,12 +61,12 @@ export default async function FacturationPage({
               required
               defaultValue={priceCents ? priceCents / 100 : undefined}
               placeholder="40"
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
             />
           </label>
           <button
             type="submit"
-            className="rounded-md bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
+            className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
           >
             {priceCents ? "Mettre à jour" : "Valider"}
           </button>
@@ -85,7 +83,7 @@ export default async function FacturationPage({
         <div className="mt-3 flex items-center gap-2 text-sm">
           {connectStatus === "active" ? (
             <>
-              <CheckCircle2 className="h-4 w-4 text-teal-600" strokeWidth={1.75} />
+              <CheckCircle2 className="h-4 w-4 text-blue-600" strokeWidth={1.75} />
               <span className="text-slate-700">Paiements activés</span>
             </>
           ) : (
@@ -101,7 +99,7 @@ export default async function FacturationPage({
           <form action={startConnectOnboarding} className="mt-4">
             <button
               type="submit"
-              className="w-full rounded-md border border-teal-600 px-4 py-2 font-medium text-teal-700 hover:bg-teal-50"
+              className="w-full rounded-md border border-blue-600 px-4 py-2 font-medium text-blue-700 hover:bg-blue-50"
             >
               {connectStatus === "onboarding" ? "Reprendre l'inscription" : "Activer les paiements"}
             </button>

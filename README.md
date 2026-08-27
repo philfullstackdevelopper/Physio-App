@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Physio-App
 
-## Getting Started
+Suivi de rééducation entre kinésithérapeutes et leurs patients : programmes d'exercices sur mesure, séances guidées en vidéo, suivi d'assiduité et retours de douleur en continu.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router) + React 19 + TypeScript
+- **Tailwind CSS 4**, icônes [lucide-react](https://lucide.dev)
+- **Supabase** (Postgres + Auth + Storage) via `@supabase/ssr`
+- **NextAuth v5 (beta)** pour la session praticien
+- **Stripe** (Connect + facturation patient)
+
+## Démarrage
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # puis remplir les valeurs Supabase / Stripe
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Variables d'environnement : voir `.env.example` (Supabase, Stripe clés test, emails admin, URL publique du site).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Commande | Rôle |
+| --- | --- |
+| `npm run dev` | Serveur de développement |
+| `npm run build` | Build de production |
+| `npm run start` | Sert le build de production |
+| `npm run lint` | ESLint |
+| `node scripts/migrate.mjs` | Applique les migrations SQL de `supabase/migrations/` |
 
-## Learn More
+## Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+app/
+  page.tsx                 Landing publique
+  praticiens/              Page dédiée aux kinésithérapeutes
+  login/ signup/           Accès patient & inscription praticien
+  dashboard/               Espace praticien (patients, séances, exercices, facturation)
+  patient/                 Espace patient (programme, séance guidée, compte)
+  cgu/ confidentialite/    Pages légales
+  api/                     Route handlers (auth, Stripe webhook…)
+components/                Composants UI (landing, mockups, sections)
+lib/                       Clients Supabase/Stripe, helpers, config site
+supabase/migrations/       Schéma SQL versionné
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Base de données
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Le schéma vit dans `supabase/migrations` (numérotés, appliqués dans l'ordre via `scripts/migrate.mjs`). Toute modification de schéma passe par une nouvelle migration — ne jamais éditer une migration déjà appliquée.
 
-## Deploy on Vercel
+## Points d'attention
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Next.js 16** : conventions récentes (`proxy.ts` remplace `middleware.ts`). En cas de doute, consulter la doc embarquée dans `node_modules/next/dist/docs/`.
+- Santé/RGPD : pas d'analytics tiers ; cookies essentiels uniquement (cf. `components/CookieBanner.tsx`).
+- Les inscriptions praticiens passent par une approbation admin (`ADMIN_EMAILS`).

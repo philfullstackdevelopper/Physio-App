@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { requestPasswordReset } from "./actions";
+import DotCanvas from "@/components/DotCanvas";
+import { LogoMark } from "@/components/Logo";
 
 export default async function ForgotPasswordPage({
   searchParams,
@@ -9,26 +11,16 @@ export default async function ForgotPasswordPage({
   const { error, sent } = await searchParams;
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#faf7f2] p-4">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-20"
-        style={{
-          background:
-            "radial-gradient(900px 500px at 10% -5%, #ccfbf1 0%, transparent 55%)," +
-            "radial-gradient(800px 500px at 100% 10%, #fde9d9 0%, transparent 50%)",
-        }}
-      />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f6f8fd] p-4">
+      <DotCanvas />
 
-      <div className="w-full max-w-sm">
+      <div className="relative w-full max-w-sm">
         <Link href="/" className="mb-6 flex items-center justify-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 text-lg font-bold text-white shadow-sm">
-            P
-          </span>
-          <span className="text-xl font-semibold text-slate-900">Physio-App</span>
+          <LogoMark size={36} />
+          <span className="font-display text-xl font-semibold text-slate-900">Physio-App</span>
         </Link>
 
-        <div className="rounded-3xl border border-teal-100 bg-white/90 p-8 shadow-sm backdrop-blur">
+        <div className="rounded-3xl border border-blue-100 bg-white/90 p-8 shadow-sm backdrop-blur">
           <h1 className="font-display text-2xl font-semibold text-slate-900">Mot de passe oublié</h1>
 
           {sent ? (
@@ -39,7 +31,7 @@ export default async function ForgotPasswordPage({
               </p>
               <Link
                 href="/login"
-                className="block w-full rounded-xl bg-teal-600 py-2.5 text-center font-medium text-white shadow-sm transition hover:bg-teal-700"
+                className="block w-full rounded-xl bg-blue-600 py-2.5 text-center font-medium text-white shadow-sm transition hover:bg-blue-700"
               >
                 Retour à la connexion
               </Link>
@@ -65,19 +57,19 @@ export default async function ForgotPasswordPage({
                     name="email"
                     type="email"
                     required
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 transition focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-teal-600 py-2.5 font-medium text-white shadow-sm transition hover:bg-teal-700"
+                  className="w-full rounded-xl bg-blue-600 py-2.5 font-medium text-white shadow-sm transition hover:bg-blue-700"
                 >
                   Envoyer le lien
                 </button>
               </form>
 
               <p className="mt-6 text-center text-sm text-slate-500">
-                <Link href="/login" className="font-medium text-teal-700 hover:underline">
+                <Link href="/login" className="font-medium text-blue-700 hover:underline">
                   ← Retour à la connexion
                 </Link>
               </p>

@@ -1,13 +1,14 @@
 "use client";
 
 // =============================================================================
-// ExerciseVideoUpload — instructor films/exports a demo video and attaches it
-// to one of their own exercises. Uploads straight to the public "exercise-media"
-// Storage bucket (storage RLS checks the exercise is owned by this instructor),
-// then writes the public URL onto exercises.media_url.
+// ExerciseVideoUpload — attach a demo video to an exercise (the instructor's
+// own, or a shared platform one). Uploads to the public "exercise-media"
+// Storage bucket, then writes the public URL + start point through
+// set_exercise_media() — a narrow RPC (see migration 0022) so this works on
+// platform exercises too, without opening up their name/instructions.
 // =============================================================================
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const BUCKET = "exercise-media";
@@ -16,14 +17,19 @@ const MAX_MB = 100;
 export default function ExerciseVideoUpload({
   exerciseId,
   initialUrl,
+  initialStartSeconds = 0,
 }: {
   exerciseId: string;
   initialUrl: string | null;
+  initialStartSeconds?: number;
 }) {
   const supabase = createClient();
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [url, setUrl] = useState(initialUrl);
+  const [startSeconds, setStartSeconds] = useState(initialStartSeconds);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedStart, setSavedStart] = useState(false);
 
   const upload = async (file: File) => {
     setError(null);
@@ -42,13 +48,15 @@ export default function ExerciseVideoUpload({
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
       const publicUrl = data.publicUrl;
 
-      const { error: dbErr } = await supabase
-        .from("exercises")
-        .update({ media_url: publicUrl })
-        .eq("id", exerciseId);
-      if (dbErr) throw dbErr;
+      const { error: rpcErr } = await supabase.rpc("set_exercise_media", {
+        p_exercise_id: exerciseId,
+        p_media_url: publicUrl,
+        p_start_seconds: 0,
+      });
+      if (rpcErr) throw rpcErr;
 
       setUrl(publicUrl);
+      setStartSeconds(0);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Échec de l'envoi de la vidéo.");
     } finally {
@@ -56,10 +64,54 @@ export default function ExerciseVideoUpload({
     }
   };
 
+  const useCurrentTimeAsStart = async () => {
+    const v = videoRef.current;
+    if (!v || !url) return;
+    const seconds = Math.floor(v.currentTime);
+    setError(null);
+    try {
+      const { error: rpcErr } = await supabase.rpc("set_exercise_media", {
+        p_exercise_id: exerciseId,
+        p_media_url: url,
+        p_start_seconds: seconds,
+      });
+      if (rpcErr) throw rpcErr;
+      setStartSeconds(seconds);
+      setSavedStart(true);
+      setTimeout(() => setSavedStart(false), 2000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Échec de l'enregistrement du point de départ.");
+    }
+  };
+
   return (
     <div>
       {url && (
-        <video controls preload="metadata" src={url} className="mt-2 w-full max-w-xs rounded-lg" />
+        <>
+          <video
+            ref={videoRef}
+            controls
+            preload="metadata"
+            src={url}
+            className="mt-2 w-full max-w-xs rounded-lg"
+          />
+          <div className="mt-1.5 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={useCurrentTimeAsStart}
+              className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Définir l&apos;instant actuel comme départ
+            </button>
+            <span className="text-xs text-slate-400">
+              {savedStart ? "Enregistré ✓" : `Départ actuel : ${startSeconds}s`}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            Avancez la vidéo jusqu&apos;au moment où le mouvement commence, puis cliquez ci-dessus —
+            la séance patient démarrera et bouclera pile à cet instant.
+          </p>
+        </>
       )}
 
       <label className="mt-2 inline-block cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">

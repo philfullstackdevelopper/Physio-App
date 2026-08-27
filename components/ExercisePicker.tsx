@@ -38,7 +38,7 @@ export default function ExercisePicker({
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Rechercher un exercice…"
-        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
+        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none"
       />
 
       <div className="mt-3 max-h-[28rem] space-y-4 overflow-y-auto">
@@ -50,7 +50,7 @@ export default function ExercisePicker({
             : list.length;
           return (
             <div key={cat} className={visibleCount === 0 ? "hidden" : ""}>
-              <p className="sticky top-0 bg-white py-1 text-xs font-semibold uppercase tracking-wide text-teal-700">
+              <p className="sticky top-0 bg-white py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
                 {cat} <span className="font-normal text-slate-400">({list.length})</span>
               </p>
               <div className="mt-1 space-y-0.5">
@@ -66,7 +66,7 @@ export default function ExercisePicker({
                         name="exercise_ids"
                         value={ex.id}
                         defaultChecked={selected.has(ex.id)}
-                        className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-sm text-slate-700">{ex.name}</span>
                     </label>

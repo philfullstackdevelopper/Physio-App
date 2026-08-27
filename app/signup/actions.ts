@@ -30,10 +30,13 @@ export async function signup(formData: FormData) {
 
   // With email confirmation OFF, signUp returns an active session, so this insert
   // runs as the new user and satisfies the instructors RLS policy (id = auth.uid()).
+  // status: "pending" — kinés no longer self-activate, Philippe approves each
+  // signup by hand from /admin (see app/dashboard/layout.tsx for the gate).
   const { error: profileError } = await supabase.from("instructors").insert({
     id: data.user.id,
     full_name: fullName,
     email,
+    status: "pending",
   });
 
   if (profileError) {
@@ -43,5 +46,5 @@ export async function signup(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/signup/pending");
 }

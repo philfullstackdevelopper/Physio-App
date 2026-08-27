@@ -66,7 +66,7 @@ export default async function OnboardingPage({
               name="condition_id"
               required
               defaultValue={profile?.condition_id ?? ""}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
             >
               <option value="" disabled>
                 Choisir…
@@ -85,7 +85,7 @@ export default async function OnboardingPage({
               name="injury_stage"
               required
               defaultValue={profile?.injury_stage ?? ""}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
             >
               <option value="" disabled>
                 Choisir…
@@ -105,7 +105,7 @@ export default async function OnboardingPage({
               name="rehab_progress"
               placeholder="ex. 3 semaines après l'opération, je remarche sans béquilles"
               defaultValue={profile?.rehab_progress ?? ""}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
             />
           </label>
 
@@ -116,7 +116,7 @@ export default async function OnboardingPage({
               rows={3}
               placeholder="Décrivez votre blessure, vos douleurs, ce qui vous limite…"
               defaultValue={profile?.history ?? ""}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
             />
           </label>
 
@@ -132,7 +132,7 @@ export default async function OnboardingPage({
               name="date_of_birth"
               required
               defaultValue={profile?.date_of_birth ?? ""}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
             />
           </label>
 
@@ -142,7 +142,7 @@ export default async function OnboardingPage({
               <input
                 type="number" name="height_cm" min={100} max={230} required
                 defaultValue={profile?.height_cm ?? ""}
-                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
               />
             </label>
             <label className="text-sm text-slate-600">
@@ -150,7 +150,7 @@ export default async function OnboardingPage({
               <input
                 type="number" name="weight_kg" min={20} max={250} required
                 defaultValue={profile?.weight_kg ?? ""}
-                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
               />
             </label>
           </div>
@@ -161,7 +161,7 @@ export default async function OnboardingPage({
               name="activity_level"
               required
               defaultValue={profile?.activity_level ?? "moderate"}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
             >
               <option value="sedentary">Sédentaire (peu ou pas de sport)</option>
               <option value="moderate">Modérée (activité régulière)</option>
@@ -177,13 +177,13 @@ export default async function OnboardingPage({
                   type="checkbox"
                   name="health_data_consent"
                   required
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-600"
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
                 />
                 <span>
                   J&apos;accepte que mes données de santé (condition, ressenti, historique)
                   soient traitées par mon kinésithérapeute et Physio-App dans le cadre de
                   mon suivi, conformément à la{" "}
-                  <a href="/confidentialite" className="text-teal-700 underline" target="_blank">
+                  <a href="/confidentialite" className="text-blue-700 underline" target="_blank">
                     politique de confidentialité
                   </a>
                   .
@@ -194,7 +194,7 @@ export default async function OnboardingPage({
 
           <button
             type="submit"
-            className="mt-1 rounded-md bg-teal-600 px-4 py-2.5 font-medium text-white hover:bg-teal-700"
+            className="mt-1 rounded-md bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-700"
           >
             Enregistrer et continuer
           </button>

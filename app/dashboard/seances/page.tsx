@@ -42,12 +42,27 @@ export default async function SeancesPage({
     .select("id, name, stage, condition_id")
     .is("created_by", null)
     .order("name");
-  const templates = (templatesData ?? []) as {
+  const rawTemplates = (templatesData ?? []) as {
     id: string;
     name: string;
     stage: string | null;
     condition_id: string | null;
   }[];
+
+  // Group by condition (what a kiné actually scans for), then by phase order
+  // within each condition — not insertion/seed order, which scattered the
+  // same condition's phases across the list.
+  const stageOrder = new Map<string, number>(STAGES.map(([value], i) => [value, i]));
+  const templates = [...rawTemplates].sort((a, b) => {
+    const condCompare = (conditionName(a.condition_id) ?? "").localeCompare(
+      conditionName(b.condition_id) ?? "",
+      "fr",
+    );
+    if (condCompare !== 0) return condCompare;
+    const aOrder = a.stage ? (stageOrder.get(a.stage) ?? 99) : 99;
+    const bOrder = b.stage ? (stageOrder.get(b.stage) ?? 99) : 99;
+    return aOrder - bOrder;
+  });
 
   return (
     <main className="min-h-screen bg-slate-50 p-6 sm:p-8">
@@ -56,7 +71,7 @@ export default async function SeancesPage({
           <Link href="/dashboard" className="text-sm text-slate-500 hover:underline">
             ← Tableau de bord
           </Link>
-          <Link href="/dashboard/exercises" className="text-sm font-medium text-teal-700 hover:underline">
+          <Link href="/dashboard/exercises" className="text-sm font-medium text-blue-700 hover:underline">
             Gérer mes exercices →
           </Link>
         </div>
@@ -78,14 +93,14 @@ export default async function SeancesPage({
               name="name"
               required
               placeholder="Nom de la séance"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
             />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <select
                 name="condition_id"
                 required
                 defaultValue=""
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
               >
                 <option value="" disabled>
                   Condition…
@@ -99,7 +114,7 @@ export default async function SeancesPage({
               <select
                 name="stage"
                 defaultValue=""
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
               >
                 <option value="">Phase (toutes)</option>
                 {STAGES.map(([value, label]) => (
@@ -112,7 +127,7 @@ export default async function SeancesPage({
           </div>
           <button
             type="submit"
-            className="mt-3 rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+            className="mt-3 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             Créer et composer
           </button>

@@ -3,6 +3,8 @@
 // Pure function, usable on server or client. Counts in the local timezone.
 // =============================================================================
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
 /**
@@ -31,4 +33,18 @@ export function computeStreak(timestamps: (string | null | undefined)[], now: Da
     cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
+}
+
+/** Fetches the log rows the streak needs and computes it — the same query
+ *  shape the patient home loader and the end-of-session celebration both
+ *  need, so a future change to it (e.g. the 400-row window) only happens
+ *  once. Works with either a server or browser Supabase client. */
+export async function fetchStreak(supabase: SupabaseClient, patientId: string): Promise<number> {
+  const { data } = await supabase
+    .from("workout_logs")
+    .select("completed_at")
+    .eq("patient_id", patientId)
+    .order("completed_at", { ascending: false })
+    .limit(400);
+  return computeStreak((data ?? []).map((l) => l.completed_at as string));
 }

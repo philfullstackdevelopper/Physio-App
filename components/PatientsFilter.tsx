@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { UserPlus } from "lucide-react";
 
 type Patient = {
   id: string;
@@ -45,12 +46,12 @@ export default function PatientsFilter({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Rechercher un patient…"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none sm:flex-1"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none sm:flex-1"
         />
         <select
           value={conditionFilter}
           onChange={(e) => setConditionFilter(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none sm:w-48"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none sm:w-48"
         >
           <option value="">Toutes conditions</option>
           {conditions.map((c) => (
@@ -62,7 +63,7 @@ export default function PatientsFilter({
         <select
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none sm:w-40"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none sm:w-40"
         >
           <option value="">Toutes phases</option>
           {stages.map((s) => (
@@ -75,9 +76,24 @@ export default function PatientsFilter({
 
       <div className="mt-3 rounded-xl bg-white p-2 shadow-sm">
         {patients.length === 0 ? (
-          <p className="p-6 text-center text-sm text-slate-500">
-            Aucun patient pour le moment. Cliquez sur « Ajouter » pour commencer.
-          </p>
+          <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
+              <UserPlus className="h-6 w-6 text-blue-600" strokeWidth={1.75} />
+            </span>
+            <div>
+              <p className="font-medium text-slate-900">Aucun patient pour le moment</p>
+              <p className="mt-1 text-sm text-slate-500">
+                Ajoutez votre premier patient pour lui assigner une condition et un programme
+                d&rsquo;exercices.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/patients/new"
+              className="mt-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Ajouter un patient
+            </Link>
+          </div>
         ) : filtered.length === 0 ? (
           <p className="p-6 text-center text-sm text-slate-500">
             {hasActiveFilters

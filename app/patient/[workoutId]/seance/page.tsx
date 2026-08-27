@@ -5,13 +5,16 @@ import { recommendPrescription } from "@/lib/exercise/prescription";
 import { isProfileComplete, profileToContext } from "@/lib/exercise/patientProfile";
 import type { RepOverrideMap } from "@/lib/exercise/overrides";
 import { daysAgoISO } from "@/lib/week";
-import { maxLevelFor } from "@/lib/exercise/intensity";
-import { getCurrentAccess } from "@/lib/billing/context";
 import WorkoutSession, { type SessionExercise } from "@/components/WorkoutSession";
 
 type WorkoutExerciseRow = {
   position: number;
-  exercises: { name: string; instructions: string | null; media_url: string | null } | null;
+  exercises: {
+    name: string;
+    instructions: string | null;
+    media_url: string | null;
+    media_start_seconds: number | null;
+  } | null;
 };
 
 export default async function SeancePage({
@@ -24,11 +27,6 @@ export default async function SeancePage({
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  // Free-tier patients only see the locked teaser on /patient — typing this
-  // URL directly must not bypass that.
-  const access = await getCurrentAccess(supabase, user.id);
-  if (access.role === "patient" && access.access.level === "free") redirect("/patient");
-
   const { data: profile } = await supabase
     .from("patient_profiles")
     .select("condition_id, injury_stage, date_of_birth, height_cm, weight_kg, activity_level")
@@ -36,11 +34,27 @@ export default async function SeancePage({
     .maybeSingle();
   if (!isProfileComplete(profile)) redirect("/patient/onboarding");
 
-  const { data: workoutData } = await supabase
+  // media_start_seconds needs migration 0022. Until it's run by hand in
+  // Supabase (this project's convention — see CLAUDE.md), fall back to the
+  // query without it rather than let the whole session silently 404. Only
+  // retry when the column itself is the problem (Postgres 42703 /
+  // undefined_column) — a workoutId that's just wrong or not this patient's
+  // must not pay for a second, doomed round trip that would find nothing
+  // either way.
+  let { data: workoutData, error: workoutError } = await supabase
     .from("workouts")
-    .select("id, name, workout_exercises ( position, exercises ( name, instructions, media_url ) )")
+    .select(
+      "id, name, workout_exercises ( position, exercises ( name, instructions, media_url, media_start_seconds ) )",
+    )
     .eq("id", workoutId)
     .maybeSingle();
+  if (workoutError?.code === "42703") {
+    ({ data: workoutData } = await supabase
+      .from("workouts")
+      .select("id, name, workout_exercises ( position, exercises ( name, instructions, media_url ) )")
+      .eq("id", workoutId)
+      .maybeSingle());
+  }
   if (!workoutData) redirect("/patient");
   const workout = workoutData as unknown as {
     id: string;
@@ -54,6 +68,7 @@ export default async function SeancePage({
       name: we.exercises?.name ?? "Exercice",
       instructions: we.exercises?.instructions ?? null,
       mediaUrl: we.exercises?.media_url ?? null,
+      mediaStartSeconds: we.exercises?.media_start_seconds ?? 0,
     }));
 
   const prescription = recommendPrescription(profileToContext(profile!));
@@ -87,15 +102,6 @@ export default async function SeancePage({
     (recentDifficulty[name] ??= []).push(r.difficulty as number);
   }
 
-  // How far this patient may push the in-session dial: the lowest ceiling among
-  // their age, their activity level and their rehab phase. Easing is never capped.
-  const maxIntensityLevel = maxLevelFor(profileToContext(profile!));
-
-  // The in-session adaptation suggestion is a premium feature — free-floor
-  // patients (trial ended, not subscribed) don't see it.
-  const showAdaptation =
-    access.role === "patient" ? access.access.capabilities.adaptationEngine : false;
-
   return (
     <main className="min-h-screen p-6 sm:p-8">
       <div className="mx-auto max-w-xl">
@@ -107,8 +113,6 @@ export default async function SeancePage({
           prescription={prescription}
           repOverrides={repOverrides}
           recentDifficulty={recentDifficulty}
-          showAdaptation={showAdaptation}
-          maxIntensityLevel={maxIntensityLevel}
         />
       </div>
     </main>
