@@ -15,9 +15,9 @@ drop policy if exists patient_messages_patient_write on public.patient_messages;
 create policy patient_messages_patient_write on public.patient_messages
   for insert to authenticated
   with check (
-    patient_id = auth.uid()
+    patient_id = public.current_app_user_id()
     and sender = 'patient'
-    and instructor_id = (select instructor_id from public.patients where id = auth.uid())
+    and instructor_id = (select instructor_id from public.patients where id = public.current_app_user_id())
   );
 
 -- The instructor may mark a thread read on their own side only. This is a
@@ -27,10 +27,10 @@ create policy patient_messages_patient_write on public.patient_messages
 drop policy if exists patient_messages_instructor_mark_read on public.patient_messages;
 create policy patient_messages_instructor_mark_read on public.patient_messages
   for update to authenticated
-  using (instructor_id = auth.uid())
-  with check (instructor_id = auth.uid());
+  using (instructor_id = public.current_app_user_id())
+  with check (instructor_id = public.current_app_user_id());
 
--- Re-create the existing instructor-insert policy (migration 0015) with one
+-- Re-create the existing instructor-insert policy (migration 0031) with one
 -- added clause, so an instructor can never insert a row claiming to be
 -- patient-authored. Everything else about this policy is unchanged.
 drop policy if exists patient_messages_instructor_write on public.patient_messages;
@@ -38,9 +38,9 @@ create policy patient_messages_instructor_write on public.patient_messages
   for insert to authenticated
   with check (
     sender = 'instructor'
-    and instructor_id = auth.uid()
+    and instructor_id = public.current_app_user_id()
     and exists (select 1 from public.patients p
-                where p.id = patient_messages.patient_id and p.instructor_id = auth.uid())
+                where p.id = patient_messages.patient_id and p.instructor_id = public.current_app_user_id())
   );
 
 -- Both the patient's own read_at marker (migration 0015) and the
