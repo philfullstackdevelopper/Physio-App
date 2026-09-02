@@ -55,3 +55,6 @@ graphify-out/
 
 # MCP server config — contains a live Supabase access token
 .mcp.json
+
+# subagent-driven-development scratch workspace — not source
+.superpowers/
