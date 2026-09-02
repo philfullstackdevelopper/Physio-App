@@ -35,6 +35,19 @@ alter table public.patient_messages
 
 ## RLS changes
 
+**Every policy below uses `public.current_app_user_id()`, never bare
+`auth.uid()`.** Migration `0031_rls_clerk_identity.sql` already replaced
+`auth.uid()` with this helper across every policy on this table (and
+the whole schema), because `auth.uid()` casts the Clerk session's `sub`
+claim straight to `uuid` and fails for every real request under this
+app's Clerk-based auth — see 0031's own header comment. `0031` is the
+*live* version of every `patient_messages` policy today, not `0015`'s
+original text. Writing this migration against `0015`'s stale
+`auth.uid()` form would ship patient-write and instructor-mark-read
+policies that silently match zero rows for every real session, and
+would regress the currently-working instructor-write policy back to
+its broken pre-0031 form.
+
 Add, alongside the existing policies (none of which are removed or altered):
 
 ```sql
@@ -42,22 +55,23 @@ Add, alongside the existing policies (none of which are removed or altered):
 create policy patient_messages_patient_write on public.patient_messages
   for insert to authenticated
   with check (
-    patient_id = auth.uid()
+    patient_id = public.current_app_user_id()
     and sender = 'patient'
-    and instructor_id = (select instructor_id from public.patients where id = auth.uid())
+    and instructor_id = (select instructor_id from public.patients where id = public.current_app_user_id())
   );
 
 -- The instructor may mark a thread read on their own side, nothing else.
 create policy patient_messages_instructor_mark_read on public.patient_messages
   for update to authenticated
-  using (instructor_id = auth.uid())
-  with check (instructor_id = auth.uid());
+  using (instructor_id = public.current_app_user_id())
+  with check (instructor_id = public.current_app_user_id());
 ```
 
 The existing `patient_messages_instructor_write` policy already constrains
-who can use it (`instructor_id = auth.uid()`), but must be dropped and
-recreated (RLS policies can't be altered in place) to add one clause so an
-instructor can never insert a row claiming to be patient-authored:
+who can use it (`instructor_id = public.current_app_user_id()`), but must be
+dropped and recreated (RLS policies can't be altered in place) to add one
+clause so an instructor can never insert a row claiming to be
+patient-authored:
 
 ```sql
 drop policy if exists patient_messages_instructor_write on public.patient_messages;
@@ -65,18 +79,54 @@ create policy patient_messages_instructor_write on public.patient_messages
   for insert to authenticated
   with check (
     sender = 'instructor'
-    and instructor_id = auth.uid()
+    and instructor_id = public.current_app_user_id()
     and exists (select 1 from public.patients p
-                where p.id = patient_messages.patient_id and p.instructor_id = auth.uid())
+                where p.id = patient_messages.patient_id and p.instructor_id = public.current_app_user_id())
   );
 ```
 
-This is the original policy's exact condition (migration `0015`) plus the
-one added `sender = 'instructor'` clause — nothing else about it changes.
+This is the *live* policy's exact condition — migration `0031`'s version
+(`0031_rls_clerk_identity.sql:204-213`), not `0015`'s original — plus the
+one added `sender = 'instructor'` clause. Nothing else about it changes.
 
 `patients.instructor_id` is a stable FK set at patient creation (CLAUDE.md
 §3), so the subquery above is safe and matches the pattern already used by
 `patient_messages_instructor_write`.
+
+**RLS UPDATE policies restrict rows, not columns.** Both
+`patient_messages_instructor_mark_read` above and the pre-existing
+`patient_messages_patient_mark_read` (migration 0015, unchanged) grant
+UPDATE on the whole row for any qualifying row — nothing in RLS stops
+either party from rewriting `body`, `sender`, or `created_at` while
+"marking read". Add a `before update` trigger that rejects any update
+touching a column other than the two read-marker columns, applying to
+both directions at once without needing to touch 0015's already-applied
+file:
+
+```sql
+create or replace function public.patient_messages_guard_read_marker_only()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.id is distinct from old.id
+     or new.patient_id is distinct from old.patient_id
+     or new.instructor_id is distinct from old.instructor_id
+     or new.sender is distinct from old.sender
+     or new.body is distinct from old.body
+     or new.created_at is distinct from old.created_at then
+    raise exception 'patient_messages rows may only have their read marker updated, not their content';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists patient_messages_read_marker_guard on public.patient_messages;
+create trigger patient_messages_read_marker_guard
+  before update on public.patient_messages
+  for each row
+  execute function public.patient_messages_guard_read_marker_only();
+```
 
 ## UI changes
 

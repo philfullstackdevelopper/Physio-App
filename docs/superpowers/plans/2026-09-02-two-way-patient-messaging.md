@@ -30,13 +30,24 @@
 
 - [ ] **Step 1: Write the migration file**
 
+**Use `public.current_app_user_id()` throughout, never bare `auth.uid()`.**
+Migration `0031_rls_clerk_identity.sql` already replaced `auth.uid()` with
+this helper across every policy on this table (and the whole schema),
+because `auth.uid()` casts the Clerk session's `sub` claim straight to
+`uuid` and fails for every real request under this app's Clerk-based auth —
+see 0031's own header comment. `0031` is the *live* version of every
+`patient_messages` policy today, not `0015`'s original text — in
+particular, `patient_messages_instructor_write` below is being re-created
+from its `0031` form (`0031_rls_clerk_identity.sql:204-213`), not `0015`'s.
+
 ```sql
 -- Physio-App — Migration 0039: two-way patient messaging
 -- Run once in Supabase: SQL Editor -> New query -> paste -> Run. Safe to re-run.
 --
--- ADDITIVE — extends patient_messages (migration 0015) so a patient can send
--- to their own instructor, not just receive. No new table: a patient has
--- exactly one instructor, so one thread per patient is all this ever needs.
+-- ADDITIVE — extends patient_messages (migration 0015, RLS updated 0031) so
+-- a patient can send to their own instructor, not just receive. No new
+-- table: a patient has exactly one instructor, so one thread per patient is
+-- all this ever needs.
 
 alter table public.patient_messages
   add column if not exists sender text not null default 'instructor'
@@ -48,9 +59,9 @@ drop policy if exists patient_messages_patient_write on public.patient_messages;
 create policy patient_messages_patient_write on public.patient_messages
   for insert to authenticated
   with check (
-    patient_id = auth.uid()
+    patient_id = public.current_app_user_id()
     and sender = 'patient'
-    and instructor_id = (select instructor_id from public.patients where id = auth.uid())
+    and instructor_id = (select instructor_id from public.patients where id = public.current_app_user_id())
   );
 
 -- The instructor may mark a thread read on their own side only. This is a
@@ -60,26 +71,56 @@ create policy patient_messages_patient_write on public.patient_messages
 drop policy if exists patient_messages_instructor_mark_read on public.patient_messages;
 create policy patient_messages_instructor_mark_read on public.patient_messages
   for update to authenticated
-  using (instructor_id = auth.uid())
-  with check (instructor_id = auth.uid());
+  using (instructor_id = public.current_app_user_id())
+  with check (instructor_id = public.current_app_user_id());
 
--- Re-create the existing instructor-insert policy (migration 0015) with one
--- added clause, so an instructor can never insert a row claiming to be
--- patient-authored. Everything else about this policy is unchanged.
+-- Re-create the existing instructor-insert policy — its LIVE form is
+-- migration 0031's version, not 0015's — with one added clause, so an
+-- instructor can never insert a row claiming to be patient-authored.
+-- Everything else about this policy is unchanged from 0031.
 drop policy if exists patient_messages_instructor_write on public.patient_messages;
 create policy patient_messages_instructor_write on public.patient_messages
   for insert to authenticated
   with check (
     sender = 'instructor'
-    and instructor_id = auth.uid()
+    and instructor_id = public.current_app_user_id()
     and exists (select 1 from public.patients p
-                where p.id = patient_messages.patient_id and p.instructor_id = auth.uid())
+                where p.id = patient_messages.patient_id and p.instructor_id = public.current_app_user_id())
   );
+
+-- RLS UPDATE policies restrict which ROWS qualify, not which COLUMNS
+-- change — both patient_messages_instructor_mark_read above and the
+-- pre-existing patient_messages_patient_mark_read (migration 0015,
+-- unchanged) grant UPDATE on the whole row. This trigger closes that gap
+-- for both directions at once: whichever side is updating may only move
+-- their own read-marker column, nothing else.
+create or replace function public.patient_messages_guard_read_marker_only()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.id is distinct from old.id
+     or new.patient_id is distinct from old.patient_id
+     or new.instructor_id is distinct from old.instructor_id
+     or new.sender is distinct from old.sender
+     or new.body is distinct from old.body
+     or new.created_at is distinct from old.created_at then
+    raise exception 'patient_messages rows may only have their read marker updated, not their content';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists patient_messages_read_marker_guard on public.patient_messages;
+create trigger patient_messages_read_marker_guard
+  before update on public.patient_messages
+  for each row
+  execute function public.patient_messages_guard_read_marker_only();
 ```
 
 - [ ] **Step 2: Self-check the SQL reads correctly**
 
-Read the file back once. Confirm: the `alter table` uses `if not exists` on both columns (safe to re-run), every `drop policy if exists` is immediately followed by the matching `create policy` (never left dropped), and the check constraint on `sender` only allows the two documented values.
+Read the file back once. Confirm: every policy uses `public.current_app_user_id()`, never bare `auth.uid()` (check this specifically — it is the single most common way this migration goes wrong). Confirm the `alter table` uses `if not exists` on both columns (safe to re-run), every `drop policy if exists` / `drop trigger if exists` is immediately followed by the matching `create` (never left dropped), the check constraint on `sender` only allows the two documented values, and the trigger's column list covers every column except `read_at`/`read_by_instructor_at`.
 
 - [ ] **Step 3: Commit**
 
@@ -89,8 +130,12 @@ git commit -m "$(cat <<'EOF'
 Add sender + read_by_instructor_at to patient_messages
 
 Lets a patient insert into their own thread (RLS-checked against their
-own instructor_id) and gives the instructor an independent read-marker,
-without touching the existing patient-side read_at column or policy.
+own instructor_id, using public.current_app_user_id() to match this
+schema's live Clerk-identity policies from migration 0031, not the
+stale auth.uid() form from 0015) and gives the instructor an
+independent read-marker. A guard trigger keeps both read-marker update
+policies restricted to their own column, since RLS UPDATE grants
+restrict rows, not columns.
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_011JRGK1q9vP21g7m98MeEx7
@@ -120,6 +165,17 @@ select policyname, cmd from pg_policies where tablename = 'patient_messages' ord
 -- Expected: patient_messages_instructor_mark_read (UPDATE), patient_messages_instructor_read (SELECT),
 --           patient_messages_instructor_write (INSERT), patient_messages_patient_mark_read (UPDATE),
 --           patient_messages_patient_read (SELECT), patient_messages_patient_write (INSERT)
+
+-- Confirm no policy on this table still references the broken auth.uid()
+-- (every policy must use public.current_app_user_id() instead).
+select policyname from pg_policies
+where tablename = 'patient_messages'
+  and (qual ilike '%auth.uid()%' or with_check ilike '%auth.uid()%');
+-- Expected: 0 rows
+
+-- Confirm the read-marker guard trigger exists.
+select tgname from pg_trigger where tgrelid = 'public.patient_messages'::regclass and tgname = 'patient_messages_read_marker_guard';
+-- Expected: one row, patient_messages_read_marker_guard
 ```
 
 ---
