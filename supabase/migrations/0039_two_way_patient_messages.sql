@@ -42,3 +42,36 @@ create policy patient_messages_instructor_write on public.patient_messages
     and exists (select 1 from public.patients p
                 where p.id = patient_messages.patient_id and p.instructor_id = auth.uid())
   );
+
+-- Both the patient's own read_at marker (migration 0015) and the
+-- instructor's read_by_instructor_at marker (above) grant UPDATE on the
+-- whole row via RLS, which only restricts which ROWS qualify, not which
+-- COLUMNS change. A trigger closes that gap structurally: whichever side is
+-- updating may only move their own read-marker column, nothing else —
+-- preventing either party from silently rewriting message content,
+-- authorship, or timestamps on a thread they can otherwise write to. This
+-- also retroactively protects the pre-existing patient-side policy from
+-- migration 0015, since the trigger applies to every update on this table
+-- going forward regardless of which policy let the row through RLS.
+create or replace function public.patient_messages_guard_read_marker_only()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.id is distinct from old.id
+     or new.patient_id is distinct from old.patient_id
+     or new.instructor_id is distinct from old.instructor_id
+     or new.sender is distinct from old.sender
+     or new.body is distinct from old.body
+     or new.created_at is distinct from old.created_at then
+    raise exception 'patient_messages rows may only have their read marker updated, not their content';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists patient_messages_read_marker_guard on public.patient_messages;
+create trigger patient_messages_read_marker_guard
+  before update on public.patient_messages
+  for each row
+  execute function public.patient_messages_guard_read_marker_only();
