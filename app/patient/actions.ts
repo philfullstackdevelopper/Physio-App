@@ -42,3 +42,33 @@ export async function markMessageRead(formData: FormData) {
   revalidatePath("/patient");
   redirect("/patient");
 }
+
+// Patient sends a message to their own instructor. No rate limiting: patients
+// are known to their kiné, this is not an open public inbox.
+export async function sendPatientMessage(formData: FormData) {
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) redirect(`/patient?error=${encodeURIComponent("Le message ne peut pas être vide.")}`);
+
+  const { data: patient } = await supabase
+    .from("patients")
+    .select("instructor_id")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!patient?.instructor_id) {
+    redirect(`/patient?error=${encodeURIComponent("Kiné introuvable.")}`);
+  }
+
+  const { error } = await supabase.from("patient_messages").insert({
+    patient_id: user.id,
+    instructor_id: patient!.instructor_id,
+    sender: "patient",
+    body,
+  });
+  if (error) redirect(`/patient?error=${encodeURIComponent(error.message)}`);
+
+  revalidatePath("/patient");
+  redirect("/patient");
+}
