@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS } from "@/lib/exercise/prescription";
 import { loadPatientHome } from "@/lib/patient/home-data";
-import { markMessageRead } from "./actions";
+import { markMessageRead, sendPatientMessage } from "./actions";
 
 /** Today's progress, for the patient's own eyes only — never a comparison to anyone else. */
 function ProgressRing({ done, total }: { done: number; total: number }) {
@@ -60,7 +60,7 @@ export default async function PatientDashboard() {
   // Short notes from the practitioner (e.g. reacting to a recent session).
   const { data: messages } = await supabase
     .from("patient_messages")
-    .select("id, body, created_at, read_at")
+    .select("id, body, created_at, read_at, sender")
     .eq("patient_id", user.id)
     .order("created_at", { ascending: false })
     .limit(10);
@@ -167,33 +167,55 @@ export default async function PatientDashboard() {
           <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
             <h2 className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
               <MessageCircle className="h-4 w-4 text-blue-600" strokeWidth={1.75} />
-              Messages de votre kiné
+              Messages avec votre kiné
             </h2>
-            <ul className="mt-3 space-y-3">
-              {messages.map((m) => (
-                <li
-                  key={m.id as string}
-                  className={`rounded-xl border border-slate-200 p-3 text-sm ${
-                    m.read_at ? "text-slate-500" : "border-l-2 border-l-blue-600 font-medium text-slate-900"
-                  }`}
-                >
-                  <p>{m.body as string}</p>
-                  <div className="mt-1.5 flex items-center justify-between">
-                    <span className="text-xs text-slate-400">
-                      {new Date(m.created_at as string).toLocaleString("fr-FR")}
-                    </span>
-                    {!m.read_at && (
-                      <form action={markMessageRead}>
-                        <input type="hidden" name="message_id" value={m.id as string} />
-                        <button type="submit" className="text-xs font-medium text-blue-700 hover:underline">
-                          Marquer comme lu
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                </li>
-              ))}
+            <ul className="mt-3 flex flex-col gap-2">
+              {[...messages].reverse().map((m) => {
+                const mine = m.sender === "patient";
+                return (
+                  <li key={m.id as string} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
+                        mine
+                          ? "rounded-br-md bg-blue-600 text-white"
+                          : !m.read_at
+                            ? "rounded-bl-md border-l-2 border-l-blue-600 bg-slate-50 font-medium text-slate-900"
+                            : "rounded-bl-md bg-slate-50 text-slate-500"
+                      }`}
+                    >
+                      <p>{m.body as string}</p>
+                      <div className="mt-1 flex items-center justify-between gap-3">
+                        <span className={`text-xs ${mine ? "text-blue-100" : "text-slate-400"}`}>
+                          {new Date(m.created_at as string).toLocaleString("fr-FR")}
+                        </span>
+                        {!mine && !m.read_at && (
+                          <form action={markMessageRead}>
+                            <input type="hidden" name="message_id" value={m.id as string} />
+                            <button type="submit" className="text-xs font-medium text-blue-700 hover:underline">
+                              Marquer comme lu
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
+            <form action={sendPatientMessage} className="mt-3 flex gap-2">
+              <input
+                name="body"
+                required
+                placeholder="Écrire un message…"
+                className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              />
+              <button
+                type="submit"
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-95"
+              >
+                Envoyer
+              </button>
+            </form>
           </section>
         )}
 
