@@ -43,7 +43,11 @@ export default function AdjustWorkoutModal({
 
   const groups = useMemo(() => {
     const m = new Map<Category, ModalExercise[]>();
-    for (const ex of addable) (m.get(categoryFor(ex.name)) ?? m.set(categoryFor(ex.name), []).get(categoryFor(ex.name))!).push(ex);
+    for (const ex of addable) {
+      const cat = categoryFor(ex.name);
+      if (!m.has(cat)) m.set(cat, []);
+      m.get(cat)!.push(ex);
+    }
     return m;
   }, [addable]);
   const query = q.trim().toLowerCase();
@@ -183,7 +187,7 @@ export default function AdjustWorkoutModal({
                   <button type="button" onClick={close} className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg">Annuler</button>
                   <SubmitButton
                     pendingText="Enregistrement…"
-                    disabled={noChanges || undefined}
+                    disabled={noChanges}
                     className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
                   >
                     Enregistrer les modifications
