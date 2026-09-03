@@ -25,21 +25,49 @@ export default function AdjustWorkoutModal({
   const [addIds, setAddIds] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    panelRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const close = () => {
     setOpen(false);
     setRemoveIds(new Set());
     setAddIds(new Set());
     setQ("");
+    triggerRef.current?.focus();
   };
+
+  useEffect(() => {
+    if (!open) return;
+    panelRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        close();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+      ).filter((el) => !el.hasAttribute("disabled"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const activeEl = document.activeElement;
+      if (e.shiftKey) {
+        if (activeEl === first || !panel.contains(activeEl)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (activeEl === last || !panel.contains(activeEl)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   const groups = useMemo(() => {
     const m = new Map<Category, ModalExercise[]>();
@@ -62,10 +90,14 @@ export default function AdjustWorkoutModal({
   const removed = removeIds.size;
   const added = addIds.size;
   const noChanges = removed === 0 && added === 0;
+  const wouldBeEmpty = Boolean(
+    workout && workout.exercises.every((e) => removeIds.has(e.id)) && addIds.size === 0,
+  );
 
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
         disabled={!workout}
@@ -183,11 +215,14 @@ export default function AdjustWorkoutModal({
                     {added > 0 && <span className="rounded-full bg-ok-soft px-3 py-1 text-xs font-medium text-ok">{added} exercice{added > 1 ? "s" : ""} ajouté{added > 1 ? "s" : ""}</span>}
                   </div>
                 )}
+                {wouldBeEmpty && (
+                  <p className="mb-3 text-xs text-danger">Une séance doit garder au moins un exercice.</p>
+                )}
                 <div className="flex justify-end gap-2">
                   <button type="button" onClick={close} className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg">Annuler</button>
                   <SubmitButton
                     pendingText="Enregistrement…"
-                    disabled={noChanges}
+                    disabled={noChanges || wouldBeEmpty}
                     className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
                   >
                     Enregistrer les modifications

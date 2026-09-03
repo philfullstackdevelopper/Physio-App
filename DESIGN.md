@@ -56,6 +56,7 @@ Motion is restrained and purposeful: gentle staggered entrance (`fadeInUp`, ofte
 **Key Characteristics:**
 - Warm display serif for headings, humanist sans for everything else — never a system-default stack.
 - One token palette for the instructor app (app-bg, surface, line, ink, muted, brand, ok/warn/danger); the marketing site keeps its slate palette and Fraunces headings.
+- Exception: the « Tarif & paiements » page (`/dashboard/facturation`) was deliberately left on its previous stone styling at Philippe's request (2026-09-03); retoken it only when its content changes.
 - Generous, consistent rounding (never sharp corners) — pill buttons, xl–3xl cards.
 - Mostly flat cards (`shadow-sm`) that lift only on hover with soft, colored, directional shadows — never ambient drop-shadows at rest.
 - Left-accent-border cards (3px colored border-left) for triage/alert rows instead of full-color alert boxes.

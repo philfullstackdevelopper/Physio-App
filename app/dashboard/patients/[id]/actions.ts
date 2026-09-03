@@ -215,6 +215,7 @@ export async function adjustPatientWorkout(formData: FormData) {
     .eq("workout_id", targetId);
   const current = (currentRows ?? []).map((r) => ({ exerciseId: r.exercise_id as string, position: r.position as number }));
   const next = applyAdjustment(current, removeIds, addIds);
+  if (next.length === 0) return fail("Une séance doit garder au moins un exercice.");
 
   const removedCount = current.filter((s) => removeIds.includes(s.exerciseId)).length;
   const addedCount = next.length - (current.length - removedCount);
@@ -224,7 +225,15 @@ export async function adjustPatientWorkout(formData: FormData) {
     const { error: insertError } = await supabase
       .from("workout_exercises")
       .insert(next.map((s) => ({ workout_id: targetId, exercise_id: s.exerciseId, position: s.position })));
-    if (insertError) return fail(insertError.message);
+    if (insertError) {
+      // Pas de transaction ici : on vient de vider la table, donc on
+      // réinsère les lignes précédentes en meilleur effort (compensating
+      // write) pour ne pas laisser la séance vide si l'insertion échoue.
+      await supabase
+        .from("workout_exercises")
+        .insert(current.map((s) => ({ workout_id: targetId, exercise_id: s.exerciseId, position: s.position })));
+      return fail(insertError.message);
+    }
   }
 
   if (removedCount + addedCount > 0) {

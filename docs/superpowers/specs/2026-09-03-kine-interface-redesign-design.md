@@ -220,10 +220,12 @@ Ouverte par le bouton § 6.1, sur la séance « en cours ». Modale large
 
 ### 7.2 Mécanique — copie personnelle
 
+Numéro effectif : 0044 (0042 et 0043 étaient déjà pris).
+
 Une séance ajustée pour un patient devient **sa** séance : une copie de la
 séance d'origine, rattachée à lui, invisible ailleurs.
 
-**Migration `supabase/migrations/0042_patient_workouts.sql`** :
+**Migration `supabase/migrations/0044_patient_workouts.sql`** :
 
 ```sql
 alter table public.workouts
@@ -397,7 +399,7 @@ Remplace la section actuelle (`KineDemoMockup`). Structure, dans l'ordre :
 - Tests unitaires (Vitest si présent, sinon `node --test` sur des modules
   purs) pour `computeAdherence`, `computeSignal`, `relativeDay`, et la
   renumérotation des positions.
-- Migration 0042 : Philippe l'applique lui-même ; vérification manuelle
+- Migration 0044 : Philippe l'applique lui-même ; vérification manuelle
   ensuite avec sa session patient (ne voit que ses copies) et une session
   kiné (ne voit pas les copies d'un autre cabinet).
 - Smoke test navigateur (Chrome) des quatre pages kiné + accueil, desktop
