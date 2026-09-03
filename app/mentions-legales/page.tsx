@@ -36,7 +36,7 @@ export default function MentionsLegalesPage() {
           <section>
             <h2 className="font-display font-semibold text-slate-900">Propriété intellectuelle</h2>
             <p className="mt-1">
-              L&apos;ensemble des contenus présents sur Physio-App est la propriété de son
+              L&apos;ensemble des contenus présents sur EasyPhysio est la propriété de son
               éditeur, sauf mention contraire.
             </p>
           </section>

@@ -132,14 +132,43 @@ export async function duplicateSeance(formData: FormData) {
   redirect(`/dashboard/seances/${created.id}`);
 }
 
+// Deleting a workout cascades in the database to its recommendations
+// (patient_recommended_workouts) and completed-session history (workout_logs)
+// — real adherence data, not just a pointer. So a séance currently
+// recommended to a patient, or with any logged session, is never deletable:
+// the kiné must unassign/reassign it first. Only unused séances (the common
+// case for the broken/empty ones this button exists for) can go straight.
 export async function deleteSeance(formData: FormData) {
   const supabase = await createClient();
   const userId = await requireInstructor(supabase);
   const id = String(formData.get("workout_id") ?? "");
-  const { data: wk } = await supabase.from("workouts").select("created_by").eq("id", id).maybeSingle();
-  if (wk && wk.created_by === userId) {
-    await supabase.from("workouts").delete().eq("id", id);
+  if (!id) redirect("/dashboard/seances");
+
+  const { data: wk } = await supabase.from("workouts").select("created_by, name").eq("id", id).maybeSingle();
+  if (!wk || wk.created_by !== userId) {
+    redirect(`/dashboard/seances?error=${encodeURIComponent("Séance non trouvée.")}`);
   }
+
+  const [{ count: recCount }, { count: logCount }] = await Promise.all([
+    supabase
+      .from("patient_recommended_workouts")
+      .select("id", { count: "exact", head: true })
+      .eq("workout_id", id),
+    supabase.from("workout_logs").select("id", { count: "exact", head: true }).eq("workout_id", id),
+  ]);
+
+  if ((recCount ?? 0) > 0 || (logCount ?? 0) > 0) {
+    const reasons: string[] = [];
+    if (recCount) reasons.push(`recommandée à ${recCount} patient${recCount > 1 ? "s" : ""}`);
+    if (logCount) reasons.push(`${logCount} séance${logCount > 1 ? "s" : ""} déjà enregistrée${logCount > 1 ? "s" : ""}`);
+    redirect(
+      `/dashboard/seances?error=${encodeURIComponent(
+        `« ${wk.name} » ne peut pas être supprimée (${reasons.join(", ")}). Retirez-la des recommandations de ces patients d'abord.`,
+      )}`,
+    );
+  }
+
+  await supabase.from("workouts").delete().eq("id", id);
   revalidatePath("/dashboard/seances");
   redirect("/dashboard/seances");
 }

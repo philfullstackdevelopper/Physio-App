@@ -1,31 +1,22 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Flame, FileText, MessageCircle } from "lucide-react";
+import { Flame, FileText, MessageCircle, ChevronUp, ChevronDown, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { startOfWeekISO, daysAgoISO } from "@/lib/week";
-import { autoEaseGoalReps } from "@/lib/exercise/autoEase";
-import {
-  STAGE_LABELS,
-  DEFAULT_SQUAT,
-  recommendPrescription,
-  type InjuryStage,
-} from "@/lib/exercise/prescription";
-import { ageFromDob, profileToContext } from "@/lib/exercise/patientProfile";
-import {
-  effectiveGoalReps,
-  isLapsedIncrease,
-  type RepOverrideMap,
-} from "@/lib/exercise/overrides";
+import { startOfWeekISO, resolveMonthInfo } from "@/lib/week";
+import { gradeDay } from "@/lib/exercise/dayGrade";
+import { pickActiveWorkout } from "@/lib/exercise/activeRecommendation";
+import { type CalendarDay } from "@/components/PatientCalendar";
+import PatientOverviewPanel from "@/components/PatientOverviewPanel";
+import AddWorkoutModal, { type AddableWorkout } from "@/components/AddWorkoutModal";
+import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
+import { ageFromDob } from "@/lib/exercise/patientProfile";
 import { computeStreak } from "@/lib/exercise/streak";
-import { categoryFor } from "@/lib/exercise/category";
-import { STAGE_START_WEEK } from "@/lib/exercise/stageProgress";
-import { suggestAdaptation } from "@/lib/exercise/adaptation";
 import {
   assignCondition,
-  recommendWorkout,
-  applyAdaptation,
-  resetAdaptation,
+  addRecommendedWorkout,
+  removeRecommendedWorkout,
+  moveRecommendedWorkout,
   sendMessage,
 } from "./actions";
 
@@ -40,6 +31,8 @@ type Workout = {
   duration_minutes: number | null;
   times_per_week: number | null;
   stage: string | null;
+  created_by: string | null;
+  condition_id: string | null;
   workout_exercises: WorkoutExercise[];
 };
 
@@ -49,37 +42,22 @@ const ACTIVITY_LABELS: Record<string, string> = {
   active: "Active",
 };
 
-type ExerciseSummary = {
-  name: string;
-  count: number;
-  diffSum: number;
-  diffCount: number;
-  lastNote: string | null;
-};
-
-// Mean difficulty on the 1-10 scale of migration 0008. Returns -1 when the patient
-// left every rating blank, which sorts those exercises to the bottom.
-const avgDifficulty = (e: ExerciseSummary) => (e.diffCount ? e.diffSum / e.diffCount : -1);
-
-// Bucket a 1-10 average into a plain word.
-const difficultyLabel = (avg: number) => (avg < 4 ? "Facile" : avg < 7 ? "Moyen" : "Difficile");
-
 export default async function PatientDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; month?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, month: monthParam } = await searchParams;
 
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
   const { data: patient } = await supabase
     .from("patients")
-    .select("id, full_name, email, condition_id, recommended_workout_id")
+    .select("id, full_name, email, condition_id")
     .eq("id", id)
     .maybeSingle();
   if (!patient) redirect("/dashboard/patients");
@@ -135,197 +113,299 @@ export default async function PatientDetailPage({
     docLinks.push({ id: d.id, file_name: d.file_name, url: data?.signedUrl ?? null });
   }
 
-  // Adherence.
+  // Adherence + this week's completions per workout (used both by the
+  // recommended list and to decide which one is "active").
   const { data: allLogs } = await supabase
     .from("workout_logs")
-    .select("completed_at")
+    .select("completed_at, workout_id")
     .eq("patient_id", id);
   const totalSessions = allLogs?.length ?? 0;
   const weekStart = startOfWeekISO();
   const weekSessions = (allLogs ?? []).filter((l) => (l.completed_at as string) >= weekStart).length;
   const streak = computeStreak((allLogs ?? []).map((l) => l.completed_at as string));
-
-  // Symptom feedback (pain / difficulty).
-  const { data: feedback } = await supabase
-    .from("patient_feedback")
-    .select("pain_score, difficulty, completed, recorded_for, notes")
-    .eq("patient_id", id)
-    .order("recorded_for", { ascending: false })
-    .limit(7);
-  const avgPain = feedback && feedback.length
-    ? Math.round((feedback.reduce((s, f) => s + (f.pain_score as number), 0) / feedback.length) * 10) / 10
-    : null;
-
-  // Per-exercise feeling. Until migration 0008 is run the table is absent, the query
-  // errors, `data` is null — and the section below simply doesn't render.
-  const { data: exFeedback } = await supabase
-    .from("exercise_feedback")
-    .select("exercise_name, difficulty, notes, created_at")
-    .eq("patient_id", id)
-    .order("created_at", { ascending: false })
-    .limit(100);
-
-  // Collapse the raw rows into one entry per exercise, hardest first.
-  const exSummary = Object.values(
-    (exFeedback ?? []).reduce<Record<string, ExerciseSummary>>((acc, r) => {
-      const name = r.exercise_name as string;
-      const entry = (acc[name] ??= { name, count: 0, diffSum: 0, diffCount: 0, lastNote: null });
-      entry.count += 1;
-      if (r.difficulty != null) {
-        entry.diffSum += r.difficulty as number;
-        entry.diffCount += 1;
-      }
-      // Rows arrive newest-first, so the first note we meet is the most recent one.
-      if (entry.lastNote === null && r.notes) entry.lastNote = r.notes as string;
-      return acc;
-    }, {}),
-  ).sort((a, b) => avgDifficulty(b) - avgDifficulty(a));
-
-  // The patient's real rep target today — the baseline every suggestion and every
-  // stored override is measured against. Previously this page assumed a flat 10.
-  const baseReps = profile
-    ? recommendPrescription(profileToContext(profile)).goalReps
-    : DEFAULT_SQUAT.goalReps;
-
-  // Overrides the instructor has already applied, keyed by exercise name.
-  const { data: overrideRows } = await supabase
-    .from("exercise_overrides")
-    .select("exercise_name, goal_reps, base_reps")
-    .eq("patient_id", id);
-  const overrides: RepOverrideMap = Object.fromEntries(
-    (overrideRows ?? []).map((r) => [
-      r.exercise_name as string,
-      { goalReps: r.goal_reps as number, baseReps: r.base_reps as number },
-    ]),
-  );
-
-  // The same recent ratings the patient's session uses for automatic easing, so
-  // this page never shows a rep target the patient isn't actually being given.
-  const recentCutoff = daysAgoISO(14);
-  const recentDifficulty: Record<string, number[]> = {};
-  for (const r of exFeedback ?? []) {
-    if (r.difficulty == null || (r.created_at as string) < recentCutoff) continue;
-    (recentDifficulty[r.exercise_name as string] ??= []).push(r.difficulty as number);
-  }
-
-  // Workouts of the ASSIGNED condition (kiné-driven), with weekly completions.
-  let workouts: Workout[] = [];
   const weekCount: Record<string, number> = {};
-  if (patient.condition_id) {
-    const { data: workoutsData } = await supabase
-      .from("workouts")
-      .select(
-        "id, name, description, duration_minutes, times_per_week, stage, workout_exercises ( position, exercises ( name ) )",
-      )
-      .eq("condition_id", patient.condition_id)
-      .order("duration_minutes");
-    // Sort by recovery-phase order (Protection -> Mobilité -> Renforcement ->
-    // Reprise), not alphabetically by the raw stage value — .order("stage")
-    // above sorted text, not sequence, which scattered phases out of order.
-    const stageOrder = new Map(Object.keys(STAGE_LABELS).map((s, i) => [s, i]));
-    workouts = ((workoutsData ?? []) as unknown as Workout[]).sort(
-      (a, b) => (stageOrder.get(a.stage ?? "") ?? 99) - (stageOrder.get(b.stage ?? "") ?? 99),
-    );
-
-    const { data: logs } = await supabase
-      .from("workout_logs")
-      .select("workout_id")
-      .eq("patient_id", id)
-      .gte("completed_at", weekStart);
-    for (const l of logs ?? []) weekCount[l.workout_id] = (weekCount[l.workout_id] ?? 0) + 1;
-  }
-
-  // Substitution pool for the adaptation suggestions: each exercise's body-area
-  // category and its gentlest stage rank (by the workout it appears in), so we
-  // can offer a comparable easier/harder alternative from the same condition.
-  const exStageRank: Record<string, number> = {};
-  const exCategory: Record<string, string> = {};
-  for (const w of workouts) {
-    const rank = w.stage ? STAGE_START_WEEK[w.stage as InjuryStage] ?? 99 : 99;
-    for (const we of w.workout_exercises ?? []) {
-      const n = we.exercises?.name;
-      if (!n) continue;
-      if (exStageRank[n] == null || rank < exStageRank[n]) exStageRank[n] = rank;
-      exCategory[n] = categoryFor(n);
+  for (const l of allLogs ?? []) {
+    if ((l.completed_at as string) >= weekStart) {
+      weekCount[l.workout_id as string] = (weekCount[l.workout_id as string] ?? 0) + 1;
     }
   }
-  const candidatesFor = (name: string) =>
-    Object.keys(exStageRank)
-      .filter((n) => n !== name && exCategory[n] === categoryFor(name))
-      .sort((a, b) => exStageRank[a] - exStageRank[b]); // gentle → hard
 
-  const stageLabel = profile?.injury_stage
-    ? STAGE_LABELS[profile.injury_stage as InjuryStage]
-    : null;
+  // Calendar — one color per day of the viewed month (defaults to the current
+  // one; ?month=YYYY-MM navigates). A day's color comes from the worst
+  // pain/difficulty reported for a session completed that day (see
+  // lib/exercise/dayGrade.ts); no session that day = grey.
+  const month = resolveMonthInfo(monthParam);
+  const { data: monthLogs } = await supabase
+    .from("workout_logs")
+    .select("id, completed_at, workouts ( name )")
+    .eq("patient_id", id)
+    .gte("completed_at", month.startISO)
+    .lt("completed_at", month.endISO);
+  const monthLogIds = (monthLogs ?? []).map((l) => l.id as string);
+  const { data: monthFeedback } = monthLogIds.length
+    ? await supabase
+        .from("patient_feedback")
+        .select("workout_log_id, pain_score, difficulty, notes")
+        .in("workout_log_id", monthLogIds)
+    : { data: [] };
+
+  const logsByDay = new Map<number, { id: string; workoutName: string | null; time: string }[]>();
+  for (const l of monthLogs ?? []) {
+    const completedAt = new Date(l.completed_at as string);
+    const day = completedAt.getDate();
+    const entry = {
+      id: l.id as string,
+      workoutName: (l.workouts as unknown as { name: string } | null)?.name ?? null,
+      time: completedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+    };
+    if (!logsByDay.has(day)) logsByDay.set(day, []);
+    logsByDay.get(day)!.push(entry);
+  }
+  type MonthFeedback = { pain_score: number | null; difficulty: number | null; notes: string | null };
+  const feedbackByLogId = new Map<string, MonthFeedback>();
+  for (const f of monthFeedback ?? []) {
+    if (f.workout_log_id) {
+      feedbackByLogId.set(f.workout_log_id as string, {
+        pain_score: f.pain_score as number | null,
+        difficulty: f.difficulty as number | null,
+        notes: f.notes as string | null,
+      });
+    }
+  }
+
+  const calendarDays: CalendarDay[] = Array.from({ length: month.daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const logsThatDay = logsByDay.get(day) ?? [];
+    const feedbackThatDay = logsThatDay.map((l) => {
+      const f = feedbackByLogId.get(l.id);
+      return { painScore: f?.pain_score ?? null, difficulty: f?.difficulty ?? null };
+    });
+    const grade = gradeDay(logsThatDay.length > 0, feedbackThatDay);
+    const detail = logsThatDay.length
+      ? logsThatDay
+          .map((l) => {
+            const f = feedbackByLogId.get(l.id);
+            const parts = [l.workoutName ?? "Séance", `terminée à ${l.time}`];
+            if (f?.pain_score != null) parts.push(`douleur ${f.pain_score}/10`);
+            if (f?.difficulty != null) parts.push(`difficulté ${f.difficulty}/10`);
+            if (f?.notes) parts.push(`« ${f.notes} »`);
+            return parts.join(" · ");
+          })
+          .join(" ; ")
+      : null;
+    return { day, grade, detail };
+  });
+
+  // Every séance the kiné can prescribe: their own (any condition) plus the
+  // read-only platform templates — same pool as "Mes séances", not narrowed
+  // to the patient's assigned condition (that field is informational only;
+  // see lib/patient/home-data.ts, which reads recommendations directly and
+  // never filters by condition).
+  const WORKOUT_FIELDS =
+    "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, workout_exercises ( position, exercises ( name ) )";
+  const [{ data: ownWorkoutsData }, { data: platformWorkoutsData }] = await Promise.all([
+    supabase.from("workouts").select(WORKOUT_FIELDS).eq("created_by", user.id),
+    supabase.from("workouts").select(WORKOUT_FIELDS).is("created_by", null),
+  ]);
+  const stageOrder = new Map(Object.keys(STAGE_LABELS).map((s, i) => [s, i]));
+  const workouts = ([...(ownWorkoutsData ?? []), ...(platformWorkoutsData ?? [])] as unknown as Workout[]).sort(
+    (a, b) =>
+      (conditionName(a.condition_id) ?? "").localeCompare(conditionName(b.condition_id) ?? "", "fr") ||
+      (stageOrder.get(a.stage ?? "") ?? 99) - (stageOrder.get(b.stage ?? "") ?? 99),
+  );
+
+  // The kiné's ordered recommendation list, in priority order.
+  const { data: recRows } = await supabase
+    .from("patient_recommended_workouts")
+    .select("id, priority, workout_id")
+    .eq("patient_id", id)
+    .order("priority");
+  const workoutById = new Map(workouts.map((w) => [w.id, w]));
+  const recommended = (recRows ?? [])
+    .map((r) => ({ recId: r.id as string, priority: r.priority as number, workout: workoutById.get(r.workout_id as string) }))
+    .filter((r): r is { recId: string; priority: number; workout: Workout } => r.workout != null);
+
+  const activeWorkoutId = pickActiveWorkout(
+    recommended.map((r) => ({ workoutId: r.workout.id, priority: r.priority, timesPerWeek: r.workout.times_per_week })),
+    weekCount,
+  );
+
+  const recommendedIds = new Set(recommended.map((r) => r.workout.id));
+  const addableWorkouts: AddableWorkout[] = workouts
+    .filter((w) => !recommendedIds.has(w.id))
+    .map((w) => ({
+      id: w.id,
+      name: w.name,
+      description: w.description,
+      durationMinutes: w.duration_minutes,
+      timesPerWeek: w.times_per_week,
+      stageLabel: w.stage ? STAGE_LABELS[w.stage as InjuryStage] : null,
+      conditionName: conditionName(w.condition_id) ?? null,
+      editHref: w.created_by === user.id ? `/dashboard/seances/${w.id}` : null,
+      exerciseNames: (w.workout_exercises ?? [])
+        .slice()
+        .sort((a, b) => a.position - b.position)
+        .map((we) => we.exercises?.name)
+        .filter((n): n is string => !!n),
+    }));
+
+  const stageLabel = profile?.injury_stage ? STAGE_LABELS[profile.injury_stage as InjuryStage] : null;
+
+  const recommendedPanel = (
+    <div>
+      <h2 className="font-display text-xl font-semibold text-[color:var(--ink)]">Séances recommandées</h2>
+      {recommended.length === 0 ? (
+        <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+          Aucune séance recommandée pour l&apos;instant — ajoutez-en une ci-dessous.
+        </p>
+      ) : (
+        <ul className="mt-3">
+          {recommended.map((r, i) => {
+            const isActive = r.workout.id === activeWorkoutId;
+            const done = weekCount[r.workout.id] ?? 0;
+            const target = r.workout.times_per_week;
+            return (
+              <li
+                key={r.recId}
+                className={`flex items-start gap-3 border-t border-[color:var(--hairline)] py-3 first:border-t-0 first:pt-0 ${
+                  isActive ? "-mx-3 rounded-xl border-t-0 bg-[color:var(--ink-accent)]/[0.06] px-3" : ""
+                }`}
+              >
+                <span className="font-display mt-0.5 w-5 shrink-0 text-lg text-[color:var(--ink-muted)]">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  {r.workout.created_by === user.id ? (
+                    <Link
+                      href={`/dashboard/seances/${r.workout.id}`}
+                      className="truncate text-sm font-semibold text-[color:var(--ink)] underline decoration-[color:var(--hairline)] underline-offset-2 hover:decoration-[color:var(--ink-accent)]"
+                    >
+                      {r.workout.name}
+                    </Link>
+                  ) : (
+                    <p className="truncate text-sm font-semibold text-[color:var(--ink)]">{r.workout.name}</p>
+                  )}
+                  <p className="text-xs text-[color:var(--ink-muted)]">
+                    {r.workout.duration_minutes} min · {target ? `${target}×/semaine` : "objectif libre"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-[color:var(--ink-muted)]">
+                    Cette semaine : {done}
+                    {target ? `/${target}` : ""}
+                    {isActive && <span className="ml-1.5 font-medium text-[color:var(--ink-accent)]">· en cours</span>}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <div className="flex gap-0.5">
+                    <form action={moveRecommendedWorkout}>
+                      <input type="hidden" name="patient_id" value={patient.id} />
+                      <input type="hidden" name="rec_id" value={r.recId} />
+                      <input type="hidden" name="direction" value="up" />
+                      <button
+                        type="submit"
+                        disabled={i === 0}
+                        aria-label="Monter"
+                        className="rounded p-1 text-[color:var(--ink-muted)] hover:bg-black/5 hover:text-[color:var(--ink)] disabled:opacity-30"
+                      >
+                        <ChevronUp className="h-3.5 w-3.5" strokeWidth={2} />
+                      </button>
+                    </form>
+                    <form action={moveRecommendedWorkout}>
+                      <input type="hidden" name="patient_id" value={patient.id} />
+                      <input type="hidden" name="rec_id" value={r.recId} />
+                      <input type="hidden" name="direction" value="down" />
+                      <button
+                        type="submit"
+                        disabled={i === recommended.length - 1}
+                        aria-label="Descendre"
+                        className="rounded p-1 text-[color:var(--ink-muted)] hover:bg-black/5 hover:text-[color:var(--ink)] disabled:opacity-30"
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
+                      </button>
+                    </form>
+                  </div>
+                  <form action={removeRecommendedWorkout}>
+                    <input type="hidden" name="patient_id" value={patient.id} />
+                    <input type="hidden" name="rec_id" value={r.recId} />
+                    <button
+                      type="submit"
+                      aria-label="Retirer"
+                      className="rounded p-1 text-[color:var(--ink-muted)] hover:bg-[color:var(--grade-red-bg)] hover:text-[color:var(--grade-red-fg)]"
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={2} />
+                    </button>
+                  </form>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <AddWorkoutModal patientId={patient.id} addable={addableWorkouts} addAction={addRecommendedWorkout} />
+    </div>
+  );
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6 sm:p-8">
-      <div className="mx-auto max-w-2xl">
-        <Link href="/dashboard/patients" className="text-sm text-slate-500 hover:underline">
-          ← Mes patients
-        </Link>
-        <div className="mt-1 text-center">
-          <h1 className="text-2xl font-semibold text-slate-900">{patient.full_name}</h1>
-          <p className="text-sm text-slate-500">{patient.email}</p>
+    <main className="rehab-panel min-h-screen">
+      <div className="mx-auto max-w-4xl p-6 sm:p-8">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <div>
+            <Link href="/dashboard/patients" className="text-sm text-[color:var(--ink-muted)] transition-colors duration-150 hover:text-[color:var(--ink)]">
+              ← Mes patients
+            </Link>
+            <h1 className="font-display text-2xl font-semibold leading-tight text-[color:var(--ink)]">
+              {patient.full_name} <span className="text-base font-normal text-[color:var(--ink-muted)]">{patient.email}</span>
+            </h1>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-[color:var(--ink-soft)]">
+            <span>{totalSessions} séance{totalSessions > 1 ? "s" : ""}</span>
+            <span className="text-[color:var(--hairline)]">/</span>
+            <span>{weekSessions} cette semaine</span>
+            <span className="text-[color:var(--hairline)]">/</span>
+            <span className="flex items-center gap-1">
+              <Flame className="h-3.5 w-3.5 text-[color:var(--ink-muted)]" strokeWidth={1.5} />
+              {streak}
+            </span>
+          </div>
         </div>
 
-        {error && <p className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {error && (
+          <p className="mt-4 rounded-xl p-3 text-sm" style={{ background: "var(--grade-red-bg)", color: "var(--grade-red-fg)" }}>
+            {error}
+          </p>
+        )}
 
-        {/* Suivi — quick stats */}
-        <section className="mt-6 grid grid-cols-3 gap-3">
-          {[
-            { label: "Séances totales", value: totalSessions, icon: null },
-            { label: "Cette semaine", value: weekSessions, icon: null },
-            { label: "Jours d'affilée", value: streak, icon: Flame },
-          ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-slate-100 bg-white p-4 text-center shadow-sm">
-              <div className="flex items-center justify-center gap-1 text-2xl font-semibold text-slate-900 tabular-nums">
-                {s.value}
-                {s.icon && <s.icon className="h-4 w-4 text-orange-500" strokeWidth={2} />}
-              </div>
-              <div className="mt-0.5 text-xs text-slate-500">{s.label}</div>
-            </div>
-          ))}
-        </section>
+        <PatientOverviewPanel
+          recommendedPanel={recommendedPanel}
+          monthLabel={month.label}
+          prevMonthKey={month.prevMonthKey}
+          nextMonthKey={month.nextMonthKey}
+          leadingBlanks={month.leadingBlanks}
+          days={calendarDays}
+          todayDay={month.todayDay}
+        />
 
         {/* Messages au patient */}
-        <section className="mt-6 rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h2 className="flex items-center gap-2 text-lg font-medium text-slate-900">
-            <MessageCircle className="h-5 w-5 text-blue-600" strokeWidth={1.75} />
+        <section className="mt-6">
+          <h2 className="flex items-center gap-1.5 font-medium text-[color:var(--ink)]">
+            <MessageCircle className="h-4 w-4 text-[color:var(--ink-muted)]" strokeWidth={1.5} />
             Messages
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Un mot pour votre patient — par exemple après sa dernière séance.
-          </p>
-          <form action={sendMessage} className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <input type="hidden" name="patient_id" value={patient.id} />
-            <textarea
-              name="body"
-              required
-              rows={2}
-              placeholder="Écrire un message…"
-              className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="self-end rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 sm:self-auto"
-            >
-              Envoyer
-            </button>
-          </form>
           {messages && messages.length > 0 && (
-            <ul className="mt-4 flex max-h-56 flex-col gap-2 overflow-y-auto text-sm">
+            <ul className="mt-3 flex max-h-56 flex-col gap-2 overflow-y-auto">
               {[...messages].reverse().map((m) => {
                 const mine = m.sender === "instructor";
                 return (
                   <li key={m.id as string} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                        mine ? "rounded-br-md bg-blue-600 text-white" : "rounded-bl-md bg-slate-50 text-slate-700"
+                        mine
+                          ? "rounded-br-md bg-[color:var(--ink-accent)] text-white"
+                          : "rounded-bl-md bg-[color:var(--hairline)]/40 text-[color:var(--ink-soft)]"
                       }`}
                     >
                       <p>{m.body as string}</p>
-                      <p className={`mt-0.5 text-xs ${mine ? "text-blue-100" : "text-slate-400"}`}>
+                      <p className={`mt-0.5 text-xs ${mine ? "text-white/70" : "text-[color:var(--ink-muted)]"}`}>
                         {new Date(m.created_at as string).toLocaleString("fr-FR")}
                       </p>
                     </div>
@@ -334,238 +414,41 @@ export default async function PatientDetailPage({
               })}
             </ul>
           )}
+          <form action={sendMessage} className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <input type="hidden" name="patient_id" value={patient.id} />
+            <textarea
+              name="body"
+              required
+              rows={2}
+              placeholder="Écrire un message…"
+              className="flex-1 rounded-lg border border-[color:var(--hairline)] bg-white px-3 py-2 text-sm text-[color:var(--ink)] focus:border-[color:var(--ink-accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ink-accent)]/20"
+            />
+            <button
+              type="submit"
+              className="self-end rounded-lg bg-[color:var(--ink-accent)] px-4 py-2 text-sm font-medium text-white transition-opacity duration-150 hover:opacity-90 sm:self-auto"
+            >
+              Envoyer
+            </button>
+          </form>
         </section>
 
-        {/* Situation & profil déclarés par le patient */}
-        <section className="mt-6 rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-medium text-slate-900">Situation déclarée</h2>
-          {profile ? (
-            <div className="mt-3 space-y-2 text-sm">
-              <p className="text-slate-600">
-                <span className="text-slate-400">Ce que le patient déclare :</span>{" "}
-                <span className="font-medium text-slate-800">{conditionName(profile.condition_id) ?? "—"}</span>
-                {stageLabel && <span className="text-slate-500"> · {stageLabel}</span>}
-              </p>
-              <p className="text-slate-600">
-                <span className="text-slate-400">Profil :</span>{" "}
-                {ageFromDob(profile.date_of_birth) ?? "—"} ans · {profile.height_cm ?? "—"} cm ·{" "}
-                {profile.weight_kg ?? "—"} kg · activité {ACTIVITY_LABELS[profile.activity_level ?? ""] ?? "—"}
-              </p>
-              {profile.rehab_progress && (
-                <p className="text-slate-600">
-                  <span className="text-slate-400">
-                    Avancement{profileUpdated ? ` (mis à jour le ${profileUpdated})` : ""} :
-                  </span>{" "}
-                  {profile.rehab_progress}
-                </p>
-              )}
-              {profile.history && (
-                <p className="text-slate-600">
-                  <span className="text-slate-400">Historique :</span> {profile.history}
-                </p>
-              )}
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-slate-500">
-              Le patient n&apos;a pas encore complété son admission.
-            </p>
-          )}
+        {/* Condition + situation déclarée — collapsed by default to keep the
+            page short; the kiné opens it when they need the intake detail. */}
+        <details className="mt-6 border-t border-[color:var(--hairline)] pt-4">
+          <summary className="cursor-pointer list-none font-display text-lg font-semibold text-[color:var(--ink)]">
+            Condition &amp; situation déclarée
+            <span className="ml-2 font-sans text-sm font-normal text-[color:var(--ink-muted)]">
+              {conditionName(patient.condition_id) ?? "Aucune condition assignée"}
+            </span>
+          </summary>
 
-          {/* Documents */}
-          {docLinks.length > 0 && (
-            <div className="mt-4 border-t border-slate-100 pt-4">
-              <p className="text-sm font-medium text-slate-700">Documents médicaux</p>
-              <ul className="mt-2 space-y-1.5">
-                {docLinks.map((d) => (
-                  <li key={d.id}>
-                    {d.url ? (
-                      <a
-                        href={d.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:underline"
-                      >
-                        <FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                        {d.file_name}
-                      </a>
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-sm text-slate-500">
-                        <FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                        {d.file_name}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
-
-        {/* Feedback douleur / difficulté */}
-        {feedback && feedback.length > 0 && (
-          <section className="mt-6 rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-            <div className="flex items-baseline justify-between">
-              <h2 className="text-lg font-medium text-slate-900">Ressenti récent</h2>
-              {avgPain !== null && (
-                <span className="text-sm text-slate-500">
-                  Douleur moyenne : <span className="font-semibold text-slate-800">{avgPain}/10</span>
-                </span>
-              )}
-            </div>
-            <ul className="mt-3 divide-y divide-slate-100 text-sm">
-              {feedback.map((f, i) => (
-                <li key={i} className="py-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">{f.recorded_for as string}</span>
-                    <span className="text-slate-700">
-                      Douleur <span className="font-semibold">{f.pain_score}/10</span>
-                      {f.difficulty != null && <> · Difficulté {f.difficulty}/10</>}
-                    </span>
-                  </div>
-                  {f.notes ? <p className="mt-0.5 italic text-slate-600">« {f.notes as string} »</p> : null}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {/* Ressenti par exercice — quels mouvements sont les plus durs */}
-        {exSummary.length > 0 && (
-          <section className="mt-6 rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-medium text-slate-900">Ressenti par exercice</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Du plus difficile au plus facile, pour adapter le prochain programme.
-            </p>
-            <ul className="mt-3 divide-y divide-slate-100 text-sm">
-              {exSummary.map((e) => {
-                const avg = avgDifficulty(e);
-                const rated = avg >= 0;
-                const ov = overrides[e.name] ?? null;
-                // Exactly what the patient's session computes: baseline, then the
-                // instructor's decision, then automatic easing.
-                const decidedReps = effectiveGoalReps(baseReps, ov);
-                const auto = autoEaseGoalReps(decidedReps, recentDifficulty[e.name] ?? []);
-                const currentReps = auto.goalReps;
-                const lapsed = isLapsedIncrease(baseReps, ov);
-                const suggestion = rated
-                  ? suggestAdaptation({
-                      difficulty: Math.round(avg),
-                      goalReps: currentReps,
-                      candidates: candidatesFor(e.name),
-                    })
-                  : null;
-                const adapt = suggestion && suggestion.direction !== "none" ? suggestion : null;
-                return (
-                  <li key={e.name} className="py-2.5">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-medium text-slate-800">{e.name}</span>
-                      <span className="whitespace-nowrap text-slate-700">
-                        {rated ? (
-                          <>
-                            <span className="font-semibold">{Math.round(avg * 10) / 10}/10</span>{" "}
-                            <span className="text-slate-500">{difficultyLabel(avg)}</span>
-                          </>
-                        ) : (
-                          <span className="text-slate-400">Pas de note</span>
-                        )}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 flex items-center gap-2">
-                      <span className="text-xs text-slate-400">
-                        {e.count} retour{e.count > 1 ? "s" : ""}
-                      </span>
-                      {adapt && (
-                        <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-600">
-                          À adapter
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Prescription actuelle : <span className="font-semibold">{currentReps} rép.</span>
-                      {auto.eased && (
-                        <span className="text-amber-700">
-                          {" "}
-                          — allégée automatiquement depuis {decidedReps} rép. ({auto.reason})
-                        </span>
-                      )}
-                      {ov && !lapsed && !auto.eased && (
-                        <span className="text-slate-400"> (ajustée par vous)</span>
-                      )}
-                      {lapsed && (
-                        <span className="text-amber-700">
-                          {" "}
-                          — votre augmentation à {ov?.goalReps} rép. est suspendue : le patient a
-                          régressé
-                        </span>
-                      )}
-                    </p>
-
-                    {adapt && (
-                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                        <p className="text-sm text-slate-600">
-                          → {adapt.direction === "easier" ? "Alléger" : "Intensifier"} :{" "}
-                          {adapt.newReps ? (
-                            <span className="font-medium">
-                              {adapt.newReps} rép. au lieu de {currentReps}
-                            </span>
-                          ) : (
-                            "ajuster l'intensité"
-                          )}
-                          {adapt.substitute && <> · ou proposer « {adapt.substitute} »</>}
-                        </p>
-                        {adapt.newReps && (
-                          <form action={applyAdaptation}>
-                            <input type="hidden" name="patient_id" value={patient.id} />
-                            <input type="hidden" name="exercise_name" value={e.name} />
-                            <input type="hidden" name="goal_reps" value={adapt.newReps} />
-                            <input type="hidden" name="base_reps" value={baseReps} />
-                            <button
-                              type="submit"
-                              className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
-                            >
-                              Appliquer
-                            </button>
-                          </form>
-                        )}
-                      </div>
-                    )}
-
-                    {ov && (
-                      <form action={resetAdaptation} className="mt-1">
-                        <input type="hidden" name="patient_id" value={patient.id} />
-                        <input type="hidden" name="exercise_name" value={e.name} />
-                        <button
-                          type="submit"
-                          className="text-xs font-medium text-slate-500 hover:underline"
-                        >
-                          Revenir à la prescription standard ({baseReps} rép.)
-                        </button>
-                      </form>
-                    )}
-
-                    {e.lastNote && <p className="mt-0.5 italic text-slate-600">« {e.lastNote} »</p>}
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-
-        {/* Assign a condition (kiné decides) */}
-        <section className="mt-6 rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-medium text-slate-900">Condition assignée</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            {conditionName(patient.condition_id)
-              ? `Condition actuelle : ${conditionName(patient.condition_id)}`
-              : "Aucune condition assignée pour l'instant."}
-          </p>
           <form action={assignCondition} className="mt-4 flex flex-col gap-3 sm:flex-row">
             <input type="hidden" name="patient_id" value={patient.id} />
             <select
               name="condition_id"
               defaultValue={patient.condition_id ?? ""}
               required
-              className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none"
+              className="flex-1 rounded-lg border border-[color:var(--hairline)] bg-white px-3 py-2 text-[color:var(--ink)] focus:border-[color:var(--ink-accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ink-accent)]/20"
             >
               <option value="" disabled>
                 Choisir une condition…
@@ -578,89 +461,72 @@ export default async function PatientDetailPage({
             </select>
             <button
               type="submit"
-              className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+              className="rounded-lg bg-[color:var(--ink-accent)] px-4 py-2 font-medium text-white transition-opacity duration-150 hover:opacity-90"
             >
               Assigner
             </button>
           </form>
-        </section>
 
-        {/* Workout alternatives */}
-        {patient.condition_id && (
-          <section className="mt-6">
-            <h2 className="text-lg font-medium text-slate-900">Séances disponibles</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Recommandez une séance (par phase de récupération).
-            </p>
-            <div className="mt-4 space-y-4">
-              {workouts.map((w) => {
-                const isRecommended = w.id === patient.recommended_workout_id;
-                const done = weekCount[w.id] ?? 0;
-                const wStage = w.stage ? STAGE_LABELS[w.stage as InjuryStage] : null;
-                return (
-                  <div
-                    key={w.id}
-                    className={`rounded-xl border bg-white p-5 shadow-sm ${
-                      isRecommended ? "border-blue-500 ring-1 ring-blue-500" : "border-slate-100"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold text-slate-900">{w.name}</h3>
-                          {isRecommended && (
-                            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-                              Recommandée
-                            </span>
-                          )}
-                        </div>
-                        {wStage && <p className="mt-0.5 text-xs font-medium text-blue-700">{wStage}</p>}
-                        <p className="mt-1 text-sm text-slate-500">
-                          {w.duration_minutes} min · {w.times_per_week}×/semaine
-                        </p>
-                        {w.description && (
-                          <p className="mt-1 text-sm text-slate-500">{w.description}</p>
-                        )}
-                      </div>
-                      <form action={recommendWorkout}>
-                        <input type="hidden" name="patient_id" value={patient.id} />
-                        <input type="hidden" name="workout_id" value={isRecommended ? "" : w.id} />
-                        <button
-                          type="submit"
-                          className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ${
-                            isRecommended
-                              ? "border border-slate-300 text-slate-600 hover:bg-slate-50"
-                              : "bg-blue-600 text-white hover:bg-blue-700"
-                          }`}
-                        >
-                          {isRecommended ? "Retirer" : "Recommander"}
-                        </button>
-                      </form>
-                    </div>
-
-                    <ul className="mt-3 flex flex-wrap gap-2">
-                      {w.workout_exercises
-                        ?.slice()
-                        .sort((a, b) => a.position - b.position)
-                        .map((we, i) => (
-                          <li
-                            key={i}
-                            className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
-                          >
-                            {we.exercises?.name}
-                          </li>
-                        ))}
-                    </ul>
-
-                    {done > 0 && (
-                      <p className="mt-3 text-xs text-slate-400">Cette semaine : {done} réalisée(s)</p>
-                    )}
-                  </div>
-                );
-              })}
+          {profile ? (
+            <div className="mt-4 space-y-2 border-t border-[color:var(--hairline)] pt-4 text-sm">
+              <p className="text-[color:var(--ink-soft)]">
+                <span className="text-[color:var(--ink-muted)]">Ce que le patient déclare :</span>{" "}
+                <span className="font-medium text-[color:var(--ink)]">{conditionName(profile.condition_id) ?? "—"}</span>
+                {stageLabel && <span className="text-[color:var(--ink-muted)]"> · {stageLabel}</span>}
+              </p>
+              <p className="text-[color:var(--ink-soft)]">
+                <span className="text-[color:var(--ink-muted)]">Profil :</span>{" "}
+                {ageFromDob(profile.date_of_birth) ?? "—"} ans · {profile.height_cm ?? "—"} cm ·{" "}
+                {profile.weight_kg ?? "—"} kg · activité {ACTIVITY_LABELS[profile.activity_level ?? ""] ?? "—"}
+              </p>
+              {profile.rehab_progress && (
+                <p className="text-[color:var(--ink-soft)]">
+                  <span className="text-[color:var(--ink-muted)]">
+                    Avancement{profileUpdated ? ` (mis à jour le ${profileUpdated})` : ""} :
+                  </span>{" "}
+                  {profile.rehab_progress}
+                </p>
+              )}
+              {profile.history && (
+                <p className="text-[color:var(--ink-soft)]">
+                  <span className="text-[color:var(--ink-muted)]">Historique :</span> {profile.history}
+                </p>
+              )}
             </div>
-          </section>
-        )}
+          ) : (
+            <p className="mt-4 border-t border-[color:var(--hairline)] pt-4 text-sm text-[color:var(--ink-muted)]">
+              Le patient n&apos;a pas encore complété son admission.
+            </p>
+          )}
+
+          {docLinks.length > 0 && (
+            <div className="mt-4 border-t border-[color:var(--hairline)] pt-4">
+              <p className="text-sm font-medium text-[color:var(--ink-soft)]">Documents médicaux</p>
+              <ul className="mt-2 space-y-1.5">
+                {docLinks.map((d) => (
+                  <li key={d.id}>
+                    {d.url ? (
+                      <a
+                        href={d.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-sm font-medium text-[color:var(--ink-accent)] transition-opacity duration-150 hover:underline"
+                      >
+                        <FileText className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                        {d.file_name}
+                      </a>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-sm text-[color:var(--ink-muted)]">
+                        <FileText className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                        {d.file_name}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </details>
       </div>
     </main>
   );

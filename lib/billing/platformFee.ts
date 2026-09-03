@@ -1,5 +1,5 @@
 // =============================================================================
-// Platform fee — pure logic (no DB, no Stripe). What a kiné owes Physio-App
+// Platform fee — pure logic (no DB, no Stripe). What a kiné owes EasyPhysio
 // each month: 15% of his own declared patient price, per patient, prorated
 // for how many days of that month the patient was enrolled.
 //

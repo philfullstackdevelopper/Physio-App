@@ -23,12 +23,12 @@ export default function DashboardSidebar() {
   return (
     <>
       {/* Desktop: fixed left column */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-slate-200 bg-white/90 p-4 backdrop-blur sm:flex">
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-stone-200 bg-white p-4 sm:flex">
         <Link
           href="/"
-          className="font-display px-2 text-lg font-semibold text-slate-900 transition hover:text-blue-700"
+          className="font-display px-2 text-lg font-semibold text-stone-900 transition-colors duration-150 hover:text-blue-700"
         >
-          Physio-App
+          EasyPhysio
         </Link>
         <nav className="mt-6 flex flex-1 flex-col gap-1">
           {LINKS.map((link) => {
@@ -37,13 +37,13 @@ export default function DashboardSidebar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ${
                   active
                     ? "bg-blue-50 text-blue-700"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
                 }`}
               >
-                <link.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                <link.icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
                 {link.label}
               </Link>
             );
@@ -52,17 +52,17 @@ export default function DashboardSidebar() {
         <SignOutButton redirectUrl="/login">
           <button
             type="button"
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-stone-500 transition-colors duration-150 hover:bg-stone-50 hover:text-stone-900"
           >
-            <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+            <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.5} />
             Se déconnecter
           </button>
         </SignOutButton>
       </aside>
 
       {/* Mobile: horizontal scrollable bar instead of a hidden sidebar */}
-      <nav className="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white/90 p-2 backdrop-blur sm:hidden">
-        <Link href="/" className="flex shrink-0 items-center px-2 py-2" aria-label="Retour au site Physio-App">
+      <nav className="flex items-center gap-1 overflow-x-auto border-b border-stone-200 bg-white p-2 sm:hidden">
+        <Link href="/" className="flex shrink-0 items-center px-2 py-2" aria-label="Retour au site EasyPhysio">
           <LogoMark size={22} />
         </Link>
         {LINKS.map((link) => {
@@ -71,11 +71,11 @@ export default function DashboardSidebar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${
-                active ? "bg-blue-50 text-blue-700" : "text-slate-600"
+              className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ${
+                active ? "bg-blue-50 text-blue-700" : "text-stone-600"
               }`}
             >
-              <link.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+              <link.icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
               {link.label}
             </Link>
           );
@@ -83,9 +83,9 @@ export default function DashboardSidebar() {
         <SignOutButton redirectUrl="/login">
           <button
             type="button"
-            className="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-500"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-stone-500"
           >
-            <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+            <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.5} />
             Se déconnecter
           </button>
         </SignOutButton>

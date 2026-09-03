@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# Physio-App — Project Specification
+# EasyPhysio — Project Specification
 
 This file is the source of truth for this project. Read it fully before making changes. If a request conflicts with this spec, flag the conflict instead of silently deviating. If you notice the *code* has drifted from what this file says, flag that too and propose a correction to this file rather than silently trusting either one — this file has gone stale before and caused an agent to treat live features as forbidden.
 
@@ -58,7 +58,7 @@ Conceptually, the schema is organized around:
 3. Open a workout, do the guided session (adaptive difficulty via `lib/exercise/autoEase.ts`, pain/difficulty feedback), and mark it done → `workout_logs`.
 4. Message their instructor; from `/patient/compte`, export their data (JSON) or delete their account.
 
-**Billing (money flow)** — two flows kept strictly separate: patients pay their instructor directly via the instructor's own Stripe Connect account (Physio-App never touches that money — avoids compérage risk); the platform separately bills the instructor a prorated 15% fee per active patient (`lib/billing/platformFee.ts`). There is no flat subscription plan anymore — the old "Kiné Pro" flat plan was removed in favor of this per-patient model.
+**Billing (money flow)** — two flows kept strictly separate: patients pay their instructor directly via the instructor's own Stripe Connect account (EasyPhysio never touches that money — avoids compérage risk); the platform separately bills the instructor a prorated 15% fee per active patient (`lib/billing/platformFee.ts`). There is no flat subscription plan anymore — the old "Kiné Pro" flat plan was removed in favor of this per-patient model.
 
 ## 5. Explicitly out of scope (still not built)
 

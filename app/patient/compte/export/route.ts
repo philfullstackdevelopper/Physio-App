@@ -3,19 +3,19 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 
 // RGPD droit d'accès / à la portabilité: a patient downloads everything
-// Physio-App holds about them, as one JSON file. Extend this as new
+// EasyPhysio holds about them, as one JSON file. Extend this as new
 // patient-owned tables are added — it's a flat list of "select * where
 // patient_id/id = me", nothing clever.
 export async function GET() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const [profile, patientRow, feedback, exerciseFeedback, workoutLogs, documents, messages] =
+  const [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, documents, messages] =
     await Promise.all([
       supabase.from("patient_profiles").select("*").eq("id", user.id).maybeSingle(),
       supabase.from("patients").select("*").eq("id", user.id).maybeSingle(),
       supabase.from("patient_feedback").select("*").eq("patient_id", user.id),
-      supabase.from("exercise_feedback").select("*").eq("patient_id", user.id),
+      supabase.from("patient_recommended_workouts").select("*").eq("patient_id", user.id),
       supabase.from("workout_logs").select("*").eq("patient_id", user.id),
       // File names/paths only — not the file bytes themselves.
       supabase
@@ -31,7 +31,7 @@ export async function GET() {
     profile: profile.data,
     patient_record: patientRow.data,
     feedback: feedback.data,
-    exercise_feedback: exerciseFeedback.data,
+    recommended_workouts: recommendedWorkouts.data,
     workout_logs: workoutLogs.data,
     documents: documents.data,
     messages: messages.data,

@@ -7,13 +7,13 @@
 // Business model (see CLAUDE.md / the build brief):
 //   PATIENT:  free floor  ->  2-month trial (full)  ->  premium €10/mo (full)
 //   KINÉ:     free  ->  "pro" once he has set his own patient price and pays
-//             Physio-App a prorated 15% platform fee per active patient
+//             EasyPhysio a prorated 15% platform fee per active patient
 //             (lib/billing/platformFee.ts) — there is no separate flat
 //             instructor subscription anymore (the old "kine_pro" €30/mo
 //             plan was removed). Fees ARE now proportional to how many
 //             patients a kiné brings — that was a deliberate, carefully
 //             reasoned choice (see the project's plan docs): the money only
-//             ever flows kiné -> Physio-App, never the reverse, which is
+//             ever flows kiné -> EasyPhysio, never the reverse, which is
 //             what avoids the compérage risk a reversed flow would create.
 // =============================================================================
 
@@ -46,7 +46,9 @@ export interface PatientBilling {
 export interface PatientCapabilities {
   /** Browse/prescribe from the full library, not just kiné-assigned exercises. */
   selfServiceLibrary: boolean;
-  /** The adaptive-suggestion engine surfaced in the patient UI. */
+  /** The program adapting (stage held/advanced) from the patient's post-session
+   *  feedback — see lib/exercise/stageProgress.ts. Per-exercise adaptation was
+   *  removed; this flag now describes only the stage-level brake. */
   adaptationEngine: boolean;
 }
 
@@ -86,7 +88,8 @@ export interface InstructorBilling {
 }
 
 export interface InstructorCapabilities {
-  /** Adaptation-suggestion engine surfaced in full detail in the dashboard. */
+  /** Stage-level adaptation detail surfaced in the dashboard (see
+   *  PatientCapabilities.adaptationEngine — per-exercise adaptation was removed). */
   adaptationDetail: boolean;
   /** Advanced roster dashboards (flagged-first, trend charts). */
   advancedDashboards: boolean;

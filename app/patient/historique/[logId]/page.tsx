@@ -37,14 +37,14 @@ export default async function HistoriqueDetailPage({
 
   // Feedback recorded for THIS specific session, not just "around that time" —
   // linked by workout_log_id (older sessions predating that link show none).
-  const [{ data: sessionFeedback }, { data: exerciseFeedback }] = await Promise.all([
-    supabase.from("patient_feedback").select("pain_score, notes").eq("workout_log_id", logId).maybeSingle(),
-    supabase.from("exercise_feedback").select("exercise_name, difficulty, notes").eq("workout_log_id", logId),
-  ]);
+  const { data: sessionFeedback } = await supabase
+    .from("patient_feedback")
+    .select("pain_score, notes")
+    .eq("workout_log_id", logId)
+    .maybeSingle();
 
   const exercises = [...(log.workouts?.workout_exercises ?? [])].sort((a, b) => a.position - b.position);
-  const feedbackByExercise = new Map((exerciseFeedback ?? []).map((f) => [f.exercise_name as string, f]));
-  const hasFeedback = !!sessionFeedback || (exerciseFeedback ?? []).length > 0;
+  const hasFeedback = !!sessionFeedback;
 
   return (
     <main className="min-h-screen p-6 sm:p-8">
@@ -85,20 +85,13 @@ export default async function HistoriqueDetailPage({
         <ol className="mt-3 space-y-2">
           {exercises.map((we, i) => {
             const name = we.exercises?.name ?? "Exercice";
-            const fb = feedbackByExercise.get(name);
             return (
               <li
                 key={i}
                 className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
               >
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} />
-                <div className="flex-1">
-                  <p className="font-medium text-slate-900">{name}</p>
-                  {fb?.difficulty != null && (
-                    <p className="mt-0.5 text-xs text-slate-500">Difficulté ressentie : {fb.difficulty}/10</p>
-                  )}
-                  {fb?.notes && <p className="mt-0.5 text-xs text-slate-500">« {fb.notes} »</p>}
-                </div>
+                <p className="flex-1 font-medium text-slate-900">{name}</p>
               </li>
             );
           })}

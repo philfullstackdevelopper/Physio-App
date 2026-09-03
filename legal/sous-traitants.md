@@ -1,4 +1,4 @@
-# Suivi des sous-traitants (DPA) — Physio-App
+# Suivi des sous-traitants (DPA) — EasyPhysio
 
 > Liste de travail à présenter à l'avocat. Chaque ligne = un prestataire qui
 > touche une donnée personnelle, et ce qu'il reste à vérifier/signer avant

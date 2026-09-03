@@ -14,6 +14,10 @@
   --color-brand-dark: var(--brand-dark);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -24,6 +28,26 @@ body {
 /* Warm display serif for headings (opt-in via className). */
 .font-display {
   font-family: var(--font-display), Georgia, "Times New Roman", serif;
+}
+
+/* Scoped palette for the kiné's patient overview (dashboard/patients/[id]) —
+ * a warmer paper/ink pairing than the app-wide stone/blue defaults, so the
+ * page reads as a considered clinical record rather than a generic dashboard.
+ * Kept local to this page (not merged into :root) so nothing else shifts. */
+.rehab-panel {
+  --paper: #fbf8f3;
+  --ink: #2b2622;
+  --ink-soft: #5b5349;
+  --ink-muted: #8c8377;
+  --ink-accent: var(--brand);
+  --hairline: #e7e1d6;
+  --grade-green-bg: #e1e8d9;
+  --grade-green-fg: #3f5a34;
+  --grade-yellow-bg: #f1e3c2;
+  --grade-yellow-fg: #7c5a1b;
+  --grade-red-bg: #ead1cb;
+  --grade-red-fg: #7a3b30;
+  background: var(--paper);
 }
 
 @keyframes fadeInUp {
@@ -43,6 +67,27 @@ body {
   }
 }
 
+@keyframes gentlePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.5;
+  }
+}
+
+/* Faint paper grain — an ambient background texture (colorless noise, tints
+   with whatever sits under it), kept subtle enough to read as tactile rather
+   than "background pattern." Shared by the dashboard's warm background and
+   the marketing site's cooler one. */
+.grain {
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 140px 140px;
+}
+
 /* ExerciseIllustration's 3-frame motion cross-fade. Global (not injected per
    component instance) — a workout screen can render this many times over,
    and every instance would otherwise re-declare the same @keyframes. */
@@ -52,3 +97,24 @@ body {
 .ei-frame-1 { animation: ei-frame-1 3.6s ease-in-out infinite; }
 .ei-frame-2 { animation: ei-frame-2 3.6s ease-in-out infinite; }
 .ei-frame-3 { animation: ei-frame-3 3.6s ease-in-out infinite; }
+
+/* Motion-sensitive users: entrance/pulse/cross-fade animations are decorative
+   pacing, not state carriers, so they can simply stop — nothing they convey
+   is lost by showing the end state immediately. The exercise cross-fade is
+   the one exception worth a comment: freezing it on frame 1 still shows a
+   real (if static) demonstration frame, never a blank state. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    /* Without forwards, elements with no explicit fill-mode (like the
+       .ei-frame-* cross-fade below) would snap back to their un-animated
+       default the instant the single iteration ends — for three stacked,
+       identically-positioned frames that default is opacity:1 on all three,
+       i.e. a garbled triple exposure instead of one clean static frame. */
+    animation-fill-mode: forwards !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

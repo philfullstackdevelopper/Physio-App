@@ -30,15 +30,15 @@ export default function SiteHeader() {
     <header
       className={`fixed left-1/2 z-50 -translate-x-1/2 transition-all duration-500 ease-in-out ${
         scrolled
-          ? "top-3 w-[min(1080px,calc(100vw-24px))] rounded-full border border-blue-100/70 bg-white px-3 py-2 shadow-lg shadow-blue-900/5"
+          ? "top-3 w-[min(1080px,calc(100vw-24px))] rounded-full border border-blue-100/70 bg-white/70 px-6 py-3 shadow-lg shadow-blue-900/5 backdrop-blur-xl"
           : "top-0 w-full rounded-none border-b border-transparent bg-[#f6f8fd] px-6 py-4"
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
         <Link href="/" className="flex items-center gap-2.5">
-          <LogoMark size={scrolled ? 30 : 34} />
+          <LogoMark size={scrolled ? 32 : 34} />
           <span className="hidden font-display text-base font-semibold text-slate-900 sm:inline">
-            Physio-App
+            EasyPhysio
           </span>
         </Link>
 
@@ -69,7 +69,7 @@ export default function SiteHeader() {
               correctly) — either way this link takes you somewhere real. */}
           <Link
             href="/login"
-            className={`hidden items-center justify-center rounded-full border px-4 py-2 text-sm font-medium transition sm:inline-flex ${
+            className={`hidden items-center justify-center rounded-full border px-4 py-2 text-sm font-medium transition active:scale-[0.97] sm:inline-flex ${
               scrolled
                 ? "border-slate-300 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50/50"
                 : "border-slate-300 bg-white/60 text-slate-700 hover:border-blue-200 hover:bg-white"
@@ -81,7 +81,7 @@ export default function SiteHeader() {
           {isLoaded && !isSignedIn && (
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition active:scale-[0.97] hover:bg-blue-700"
             >
               Créer un compte
             </Link>
@@ -91,7 +91,7 @@ export default function SiteHeader() {
             <SignOutButton redirectUrl="/login">
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition active:scale-[0.97] hover:bg-blue-700"
               >
                 <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                 Se déconnecter

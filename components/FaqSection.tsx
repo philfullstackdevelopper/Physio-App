@@ -33,7 +33,7 @@ const QUESTIONS = [
   {
     question: "Combien coûte l'application pour moi, patient ?",
     answer:
-      "Rien. Physio-App est gratuite pour les patients : c'est votre praticien qui l'utilise pour construire et suivre votre programme.",
+      "Rien. EasyPhysio est gratuite pour les patients : c'est votre praticien qui l'utilise pour construire et suivre votre programme.",
   },
   {
     question: "Je suis praticien : comment essayer avec mes patients ?",

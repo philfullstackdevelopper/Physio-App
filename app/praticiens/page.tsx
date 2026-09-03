@@ -101,7 +101,7 @@ export default function PraticiensPage() {
               Vos programmes suivis, même quand vos patients sont chez eux.
             </h1>
             <p className="mt-5 max-w-lg text-lg leading-relaxed text-slate-600">
-              Physio-App distribue vos programmes sur le téléphone du patient, le guide
+              EasyPhysio distribue vos programmes sur le téléphone du patient, le guide
               exercice par exercice, et vous remontre ce qui se passe vraiment entre deux
               rendez-vous.
             </p>
@@ -140,7 +140,7 @@ export default function PraticiensPage() {
         <section className="my-24 sm:my-32">
           <div className="rounded-[2rem] border border-slate-200/70 bg-white p-8 shadow-sm sm:p-12">
             <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-              Ce que Physio-App fait pour vous
+              Ce que EasyPhysio fait pour vous
             </p>
             <h2 className="font-display mt-2 max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
               Le suivi continue là où la séance s&apos;arrête

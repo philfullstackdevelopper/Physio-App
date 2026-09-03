@@ -4,7 +4,7 @@
 // IDs to manage.
 //
 // "kine_pro" (a flat €30/mo instructor subscription) was removed: kinés now
-// set their own patient price and pay Physio-App a prorated 15% platform fee
+// set their own patient price and pay EasyPhysio a prorated 15% platform fee
 // per active patient instead — see lib/billing/platformFee.ts. The
 // 'kine_platform_fee' subscriptions.plan value (migration 0020) represents
 // that new relationship, but it isn't a fixed-price plan like the ones below
@@ -23,7 +23,7 @@ export interface Plan {
 export const PLANS: Record<PlanKey, Plan> = {
   patient_monthly: {
     key: "patient_monthly",
-    label: "Physio-App — Abonnement patient",
+    label: "EasyPhysio — Abonnement patient",
     amount: 1000, // €10 / mois
     currency: "eur",
     audience: "patient",

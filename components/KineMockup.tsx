@@ -49,7 +49,7 @@ export default function KineMockup() {
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
           </span>
           <span className="flex-1 truncate rounded-full bg-white px-3 py-1 text-center text-[10px] text-slate-400">
-            app.physio-app.fr/cabinet
+            app.easyphysio.fr/cabinet
           </span>
         </div>
 

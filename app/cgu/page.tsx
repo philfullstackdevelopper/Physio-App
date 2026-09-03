@@ -26,7 +26,7 @@ export default function CguPage() {
             <h2 className="font-display font-semibold text-slate-900">1. Objet</h2>
             <p className="mt-1">
               Les présentes conditions générales d&apos;utilisation régissent l&apos;accès et
-              l&apos;usage de la plateforme Physio-App par les kinésithérapeutes et leurs
+              l&apos;usage de la plateforme EasyPhysio par les kinésithérapeutes et leurs
               patients.
             </p>
           </section>
@@ -34,8 +34,8 @@ export default function CguPage() {
           <section>
             <h2 className="font-display font-semibold text-slate-900">2. Description du service</h2>
             <p className="mt-1">
-              Physio-App met à disposition des kinésithérapeutes un outil de suivi
-              d&apos;exercices à distance pour leurs patients. Physio-App n&apos;est pas un
+              EasyPhysio met à disposition des kinésithérapeutes un outil de suivi
+              d&apos;exercices à distance pour leurs patients. EasyPhysio n&apos;est pas un
               dispositif médical et ne dispense pas de soin : le programme d&apos;exercices est
               établi et validé par le kinésithérapeute, qui reste seul responsable du suivi
               clinique de son patient.
@@ -45,7 +45,7 @@ export default function CguPage() {
           <section>
             <h2 className="font-display font-semibold text-slate-900">3. Statut du service</h2>
             <p className="mt-1">
-              L&apos;abonnement patient à Physio-App n&apos;est jamais pris en charge ni
+              L&apos;abonnement patient à EasyPhysio n&apos;est jamais pris en charge ni
               remboursé par l&apos;Assurance Maladie. Il s&apos;agit d&apos;un service
               complémentaire au suivi kinésithérapique, facturé directement au patient.
             </p>
@@ -54,7 +54,7 @@ export default function CguPage() {
           <section>
             <h2 className="font-display font-semibold text-slate-900">4. Inscription et comptes</h2>
             <p className="mt-1">
-              L&apos;usage de Physio-App par le patient est libre et volontaire — le
+              L&apos;usage d'EasyPhysio par le patient est libre et volontaire — le
               kinésithérapeute ne peut conditionner la poursuite du suivi kinésithérapique
               classique à la souscription du patient.
             </p>

@@ -1,4 +1,4 @@
-# Mentions légales — Physio-App
+# Mentions légales — EasyPhysio
 
 > **⚠️ BROUILLON.** Obligatoire sur tout site professionnel français
 > (article 6-III de la LCEN), mais les champs `[...]` doivent être complétés
@@ -21,7 +21,7 @@ France — à confirmer une fois le compte créé].
 
 ## Propriété intellectuelle
 
-L'ensemble des contenus présents sur Physio-App (textes, logo, charte
+L'ensemble des contenus présents sur EasyPhysio (textes, logo, charte
 graphique) est la propriété de [raison sociale], sauf mention contraire.
 Toute reproduction non autorisée est interdite.
 
@@ -29,8 +29,9 @@ Toute reproduction non autorisée est interdite.
 
 Certaines illustrations d'exercices proviennent du projet
 [Everkinetic](https://github.com/everkinetic/data), enrichi par
-[bryllim/workout-guide](https://github.com/bryllim/workout-guide), sous
-licence [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+[bryllim/workout-guide](https://github.com/bryllim/workout-guide) — illustrations
+créées par **Bryl Lim** ([bryllim.com](https://bryllim.com)) — sous licence
+[Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
 ## Données personnelles
 

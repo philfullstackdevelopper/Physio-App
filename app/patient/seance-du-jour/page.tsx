@@ -58,58 +58,35 @@ export default async function SeanceDuJourPage() {
   const user = await requireUser(supabase);
 
   const home = await loadPatientHome(supabase, user.id);
-  const { ordered, doneWorkouts, remainingWorkouts, doneToday, recId } = home;
+  const { activeWorkout, doneToday, weekComplete } = home;
 
   return (
     <main className="min-h-screen p-6 sm:p-8">
       <div className="mx-auto max-w-2xl">
         <h1 className="font-display text-3xl font-semibold text-slate-900">Séance du jour</h1>
-        <p className="mt-1 text-sm text-slate-500">Vos routines suggérées pour aujourd&apos;hui.</p>
+        <p className="mt-1 text-sm text-slate-500">La séance suggérée par votre praticien en ce moment.</p>
 
-        {doneToday && (
-          <>
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 pl-4 border-l-2 border-l-blue-600">
-              <p className="flex items-center gap-1.5 font-display text-xl font-semibold text-slate-900">
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-blue-600" strokeWidth={1.75} />
-                Séance faite aujourd&apos;hui
-              </p>
-              <p className="mt-1 text-sm text-slate-600">
-                Beau travail — revenez demain pour garder votre série.
-              </p>
-            </div>
-            {doneWorkouts.length > 0 && (
-              <div className="mt-4 space-y-4">
-                {doneWorkouts.map((w) => (
-                  <WorkoutCard key={w.id} w={w} isRec={w.id === recId} done />
-                ))}
-              </div>
-            )}
-          </>
+        {doneToday && activeWorkout && (
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 pl-4 border-l-2 border-l-blue-600">
+            <p className="flex items-center gap-1.5 font-display text-xl font-semibold text-slate-900">
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-blue-600" strokeWidth={1.75} />
+              Séance faite aujourd&apos;hui
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Beau travail — revenez demain pour garder votre série.
+            </p>
+          </div>
         )}
 
-        {ordered.length === 0 ? (
-          <div className="mt-8 rounded-xl border border-slate-100 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
-            Votre praticien n&apos;a pas encore configuré votre programme. Revenez bientôt !
+        {activeWorkout ? (
+          <div className="mt-6">
+            <WorkoutCard w={activeWorkout} isRec done={doneToday} />
           </div>
-        ) : doneToday ? (
-          remainingWorkouts.length > 0 && (
-            <>
-              <h2 className="mt-8 text-lg font-medium text-slate-900">Pour continuer aujourd&apos;hui</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Optionnel — d&apos;autres séances, si vous vous sentez d&apos;attaque.
-              </p>
-              <div className="mt-4 space-y-4">
-                {remainingWorkouts.map((w) => (
-                  <WorkoutCard key={w.id} w={w} isRec={w.id === recId} />
-                ))}
-              </div>
-            </>
-          )
         ) : (
-          <div className="mt-6 space-y-4">
-            {ordered.map((w) => (
-              <WorkoutCard key={w.id} w={w} isRec={w.id === recId} />
-            ))}
+          <div className="mt-8 rounded-xl border border-slate-100 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
+            {weekComplete
+              ? "Bravo, vous avez fait toutes vos séances de la semaine !"
+              : "Votre praticien n'a pas encore configuré votre programme. Revenez bientôt !"}
           </div>
         )}
       </div>

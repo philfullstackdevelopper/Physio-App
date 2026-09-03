@@ -38,7 +38,7 @@ export default function ExercisePicker({
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Rechercher un exercice…"
-        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none"
+        className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
       />
 
       <div className="mt-3 max-h-[28rem] space-y-4 overflow-y-auto">
@@ -50,8 +50,8 @@ export default function ExercisePicker({
             : list.length;
           return (
             <div key={cat} className={visibleCount === 0 ? "hidden" : ""}>
-              <p className="sticky top-0 bg-white py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
-                {cat} <span className="font-normal text-slate-400">({list.length})</span>
+              <p className="sticky top-0 bg-white py-1 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                {cat} <span className="font-normal text-stone-400">({list.length})</span>
               </p>
               <div className="mt-1 space-y-0.5">
                 {list.map((ex) => {
@@ -59,16 +59,16 @@ export default function ExercisePicker({
                   return (
                     <label
                       key={ex.id}
-                      className={`flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 hover:bg-slate-50 ${show ? "" : "hidden"}`}
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 transition-colors duration-150 hover:bg-stone-50 ${show ? "" : "hidden"}`}
                     >
                       <input
                         type="checkbox"
                         name="exercise_ids"
                         value={ex.id}
                         defaultChecked={selected.has(ex.id)}
-                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-slate-700">{ex.name}</span>
+                      <span className="text-sm text-stone-700">{ex.name}</span>
                     </label>
                   );
                 })}

@@ -38,7 +38,7 @@ export default function SiteFooter() {
         <div>
           <Link href="/" className="flex items-center gap-2.5">
             <LogoMark size={32} />
-            <span className="font-display text-base font-semibold text-slate-900">Physio-App</span>
+            <span className="font-display text-base font-semibold text-slate-900">EasyPhysio</span>
           </Link>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-slate-500">
             Les programmes de rééducation de votre kiné, suivis sérieusement à la maison.
@@ -72,7 +72,7 @@ export default function SiteFooter() {
 
       <div className="border-t border-slate-100 py-5">
         <p className="text-center text-xs text-slate-400">
-          © 2026 Physio-App, conçu avec des cabinets de kinésithérapie libéraux
+          © 2026 EasyPhysio, conçu avec des cabinets de kinésithérapie libéraux
         </p>
       </div>
     </footer>

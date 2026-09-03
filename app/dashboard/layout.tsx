@@ -66,9 +66,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="flex min-h-screen flex-col sm:flex-row">
+    <div className="flex min-h-screen flex-col bg-[#faf7f2] sm:flex-row">
       <DashboardSidebar />
-      <div className="flex-1">{children}</div>
+      <div className="relative flex-1 overflow-hidden">
+        {/* Shared ambient background for every /dashboard/* page: one soft warm
+            corner glow plus a faint paper grain, defined once here instead of
+            duplicated per page. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-20"
+          style={{
+            background:
+              "radial-gradient(1100px 700px at 88% -12%, rgba(251, 191, 128, 0.20) 0%, transparent 60%)",
+          }}
+        />
+        <div aria-hidden className="grain pointer-events-none absolute inset-0 -z-10" />
+        {children}
+      </div>
     </div>
   );
 }

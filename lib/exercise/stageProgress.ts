@@ -77,7 +77,7 @@ export interface Rating {
 export interface ProgressSignals {
   /** pain_score from patient_feedback. */
   painScores: Rating[];
-  /** difficulty from exercise_feedback / patient_feedback. */
+  /** difficulty from patient_feedback. */
   difficulties: Rating[];
 }
 
@@ -102,10 +102,12 @@ const MIN_SAMPLES = 2;
 
 // "Concerning" → hold one stage back. "Severe" → drop all the way to the stage
 // the patient themselves declared, and go no further until things improve.
-const PAIN_HOLD = 6;
-const PAIN_STOP = 8;
-const DIFF_HOLD = 8; // matches TOO_HARD in adaptation.ts
-const DIFF_STOP = 9;
+// Exported so other views (e.g. the patient calendar's day colors) can reuse
+// the exact same cutoffs instead of drifting out of sync with this alert.
+export const PAIN_HOLD = 6;
+export const PAIN_STOP = 8;
+export const DIFF_HOLD = 8;
+export const DIFF_STOP = 9;
 
 /** Only ratings that really sit on the 1-10 scale. */
 const onScale = (ratings: Rating[]) =>

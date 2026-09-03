@@ -2,7 +2,7 @@
 
 import { useRef, useState, type MouseEvent } from "react";
 import { motion } from "motion/react";
-import { Wifi, BatteryFull, Home, ClipboardList, History, CheckCircle2 } from "lucide-react";
+import { Wifi, BatteryFull, Home, ClipboardList, History } from "lucide-react";
 import { usePhoneDemo, PhoneDemoBody } from "@/components/PhoneDemoScreens";
 
 // Resting 3D tilt when the cursor isn't over the phone — angled, not flat,
@@ -78,12 +78,6 @@ export default function PhoneMockup() {
               <History className={`h-4 w-4 ${step.screen === 2 ? "text-blue-600" : "text-slate-300"}`} strokeWidth={1.75} />
             </div>
           </div>
-        </div>
-
-        {/* Floating callout — hangs below the frame so it can never overlap the screen content */}
-        <div className="absolute -bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-md">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} />
-          <span className="text-xs font-semibold text-slate-900">5 jours de suite</span>
         </div>
       </motion.div>
     </div>

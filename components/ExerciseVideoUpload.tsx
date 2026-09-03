@@ -10,6 +10,7 @@
 
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getYoutubeEmbedId, isVideoFileUrl } from "@/lib/exercise/media";
 
 const BUCKET = "exercise-media";
 const MAX_MB = 100;
@@ -84,9 +85,33 @@ export default function ExerciseVideoUpload({
     }
   };
 
+  const ytId = url ? getYoutubeEmbedId(url) : null;
+  const isFile = url ? isVideoFileUrl(url) : false;
+
   return (
     <div>
-      {url && (
+      {url && ytId && (
+        <iframe
+          className="mt-2 aspect-video w-full max-w-xs rounded-lg"
+          src={`https://www.youtube.com/embed/${ytId}`}
+          title="Aperçu de la démonstration"
+          allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      )}
+
+      {url && !ytId && !isFile && (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-block text-sm font-medium text-blue-700 hover:underline"
+        >
+          Voir la vidéo actuelle
+        </a>
+      )}
+
+      {url && isFile && (
         <>
           <video
             ref={videoRef}

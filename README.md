@@ -1,4 +1,4 @@
-# Physio-App
+# EasyPhysio
 
 Suivi de rééducation entre kinésithérapeutes et leurs patients : programmes d'exercices sur mesure, séances guidées en vidéo, suivi d'assiduité et retours de douleur en continu.
 

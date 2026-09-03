@@ -1,15 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  ChevronDown,
-  Bone,
-  Activity,
-  PersonStanding,
-  Footprints,
-  HeartPulse,
-  Dumbbell,
-} from "lucide-react";
+import { Bone, Activity, PersonStanding, Footprints, HeartPulse, Dumbbell } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 
 const CONDITIONS = [
@@ -47,48 +39,52 @@ const CONDITIONS = [
 
 export default function ConditionsShowcase() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const active = openIndex !== null ? CONDITIONS[openIndex] : null;
 
   return (
     <>
-      <RevealGroup className="mx-auto mt-10 grid max-w-4xl items-start gap-4 sm:grid-cols-3">
+      {/* A flowing tag row instead of a 6-box grid: each pill takes only the
+          width its own label needs, so the row reads as a natural set of
+          choices rather than six identically-sized cards. One shared panel
+          below shows whichever category is selected, instead of six
+          independent accordions stacked on the page. */}
+      <RevealGroup className="mt-10 flex flex-wrap gap-2.5">
         {CONDITIONS.map((c, i) => {
           const open = openIndex === i;
           return (
-            <RevealItem
-              key={c.label}
-              className={`flex flex-col rounded-2xl border bg-white p-5 text-left shadow-sm transition ${
-                open ? "border-blue-200" : "border-slate-100 hover:border-blue-100"
-              }`}
-            >
+            <RevealItem key={c.label} as="span">
               <button
                 type="button"
                 onClick={() => setOpenIndex(open ? null : i)}
                 aria-expanded={open}
-                className="flex items-center gap-2.5"
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+                  open
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-200"
+                }`}
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                  <c.icon className="h-5 w-5" strokeWidth={1.75} />
-                </span>
-                <span className="flex-1 text-sm font-medium text-slate-700">{c.label}</span>
-                <ChevronDown
-                  className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
-                  strokeWidth={2}
-                />
+                <c.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                {c.label}
               </button>
-              {open && (
-                <ul className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
-                  {c.examples.map((ex) => (
-                    <li key={ex} className="flex items-center gap-2 text-sm text-slate-600">
-                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-                      {ex}
-                    </li>
-                  ))}
-                </ul>
-              )}
             </RevealItem>
           );
         })}
       </RevealGroup>
+
+      {active && (
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+          <p className="text-sm font-semibold text-slate-900">{active.label}</p>
+          <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-1.5">
+            {active.examples.map((ex) => (
+              <li key={ex} className="flex items-center gap-2 text-sm text-slate-600">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                {ex}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <p className="mt-6 text-center text-xs text-slate-400">
         Exemples indicatifs. Le programme exact est toujours défini par votre kinésithérapeute.
       </p>

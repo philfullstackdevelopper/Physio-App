@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Bell, Play, CheckCircle2, ChevronLeft, Star } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
+import ExerciseIllustration from "@/components/ExerciseIllustration";
 
 // Shared choreography for the "watch someone use the app" demo — tap
 // dashboard's CTA, start an exercise, tap play, advance a set, check
@@ -142,7 +143,7 @@ export function DashboardScreen({ pressed }: { pressed: boolean }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <LogoMark size={26} />
-          <span className="font-display text-sm font-semibold text-slate-900">Physio-App</span>
+          <span className="font-display text-sm font-semibold text-slate-900">EasyPhysio</span>
         </div>
         <Bell className="h-4 w-4 text-slate-400" strokeWidth={1.75} />
       </div>
@@ -197,24 +198,22 @@ export function ExerciseScreen({
     <>
       <div className="flex items-center gap-2.5">
         <ChevronLeft className="h-4 w-4 text-slate-700" strokeWidth={2} />
-        <span className="text-xs font-semibold text-slate-700">Rotation externe</span>
+        <span className="text-xs font-semibold text-slate-700">Cercles d&apos;épaules</span>
         <span className="ml-auto text-[11px] font-semibold text-slate-400">2 / 3</span>
       </div>
 
-      <div className="relative mt-3 flex h-[190px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800">
+      <div className="relative mt-3 flex h-[190px] items-center justify-center overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white">
+        <ExerciseIllustration name="Cercles d'épaules" className="h-[150px] w-[150px] text-blue-600" />
         <div
-          className="flex h-13 w-13 items-center justify-center rounded-full bg-white/15 backdrop-blur transition-transform duration-150"
+          className="absolute bottom-2.5 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 shadow-lg shadow-blue-600/25 transition-transform duration-150"
           style={{ transform: playPressed ? "scale(0.85)" : "scale(1)" }}
         >
-          <Play className="h-5 w-5 fill-white text-white" strokeWidth={0} />
+          <Play className="h-3.5 w-3.5 fill-white text-white" strokeWidth={0} />
         </div>
-        <span className="absolute bottom-2.5 right-3 rounded-full bg-black/35 px-2 py-0.5 text-[10px] font-semibold text-white">
-          0:22 / 0:45
-        </span>
       </div>
 
       <p className="mt-4 text-xs leading-relaxed text-slate-600">
-        Debout, coude au corps à 90°. Tournez l&apos;avant-bras vers l&apos;extérieur, lentement, sans forcer.
+        Debout, bras tendus sur les côtés, dessinez de petits cercles vers l&apos;avant, puis vers l&apos;arrière.
       </p>
 
       <div className="mt-4 flex items-center justify-center gap-2">

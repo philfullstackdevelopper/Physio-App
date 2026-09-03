@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { UserPlus } from "lucide-react";
+import { ArrowRight, UserPlus } from "lucide-react";
 
 type Patient = {
   id: string;
@@ -46,12 +46,12 @@ export default function PatientsFilter({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Rechercher un patient…"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none sm:flex-1"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100 sm:flex-1"
         />
         <select
           value={conditionFilter}
           onChange={(e) => setConditionFilter(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none sm:w-48"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100 sm:w-48"
         >
           <option value="">Toutes conditions</option>
           {conditions.map((c) => (
@@ -63,7 +63,7 @@ export default function PatientsFilter({
         <select
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-600 focus:outline-none sm:w-40"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100 sm:w-40"
         >
           <option value="">Toutes phases</option>
           {stages.map((s) => (
@@ -74,48 +74,48 @@ export default function PatientsFilter({
         </select>
       </div>
 
-      <div className="mt-3 rounded-xl bg-white p-2 shadow-sm">
+      <div className="mt-3 rounded-xl border border-stone-200 bg-white p-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-8px_rgba(120,53,15,0.16)]">
         {patients.length === 0 ? (
           <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
-              <UserPlus className="h-6 w-6 text-blue-600" strokeWidth={1.75} />
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-stone-100">
+              <UserPlus className="h-6 w-6 text-stone-500" strokeWidth={1.5} />
             </span>
             <div>
-              <p className="font-medium text-slate-900">Aucun patient pour le moment</p>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="font-medium text-stone-900">Aucun patient pour le moment</p>
+              <p className="mt-1 text-sm text-stone-500">
                 Ajoutez votre premier patient pour lui assigner une condition et un programme
                 d&rsquo;exercices.
               </p>
             </div>
             <Link
               href="/dashboard/patients/new"
-              className="mt-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="mt-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-blue-700"
             >
               Ajouter un patient
             </Link>
           </div>
         ) : filtered.length === 0 ? (
-          <p className="p-6 text-center text-sm text-slate-500">
+          <p className="p-6 text-center text-sm text-stone-500">
             {hasActiveFilters
               ? "Aucun patient ne correspond à ces critères."
               : "Aucun patient pour le moment."}
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-stone-100">
             {filtered.map((p) => (
               <li key={p.id}>
                 <Link
                   href={`/dashboard/patients/${p.id}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
+                  className="group flex items-center justify-between gap-3 rounded-lg px-4 py-3 transition-colors duration-150 hover:bg-stone-50"
                 >
                   <div>
-                    <p className="font-medium text-slate-900">{p.name}</p>
-                    <p className="text-sm text-slate-500">
+                    <p className="font-medium text-stone-800">{p.name}</p>
+                    <p className="text-sm text-stone-500">
                       {p.conditionName ?? "Condition non assignée"}
-                      {p.stageLabel && <span className="text-slate-400"> · {p.stageLabel}</span>}
+                      {p.stageLabel && <span className="text-stone-400"> · {p.stageLabel}</span>}
                     </p>
                   </div>
-                  <span className="text-slate-400">→</span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-stone-400 transition-transform duration-150 group-hover:translate-x-0.5" />
                 </Link>
               </li>
             ))}

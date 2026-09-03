@@ -16,20 +16,20 @@ export default function ConfidentialitePage() {
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           <strong>Brouillon.</strong> Ce document est en cours de rédaction et n&apos;a pas
           encore été validé par un avocat. Il ne constitue pas encore un engagement juridique
-          définitif de Physio-App.
+          définitif d'EasyPhysio.
         </div>
 
         <h1 className="font-display mt-6 text-2xl font-semibold text-slate-900">
-          Politique de confidentialité — Physio-App
+          Politique de confidentialité — EasyPhysio
         </h1>
 
         <div className="mt-6 space-y-6 text-sm leading-relaxed text-slate-700">
           <section>
             <h2 className="font-display font-semibold text-slate-900">1. Qui sommes-nous</h2>
             <p className="mt-1">
-              Physio-App est un outil mis à disposition des masseurs-kinésithérapeutes pour
+              EasyPhysio est un outil mis à disposition des masseurs-kinésithérapeutes pour
               le suivi d&apos;exercices de leurs patients. Le kinésithérapeute reste le
-              professionnel de santé responsable du suivi clinique ; Physio-App est
+              professionnel de santé responsable du suivi clinique ; EasyPhysio est
               l&apos;éditeur de l&apos;outil logiciel.
             </p>
           </section>
@@ -60,7 +60,7 @@ export default function ConfidentialitePage() {
             <p className="mt-1">
               Le kinésithérapeute qui vous suit — jamais un autre kinésithérapeute ni un autre
               patient. Cette séparation est appliquée techniquement au niveau de la base de
-              données, pas seulement dans l&apos;affichage. Physio-App ne vend ni ne loue
+              données, pas seulement dans l&apos;affichage. EasyPhysio ne vend ni ne loue
               aucune donnée.
             </p>
           </section>
@@ -96,7 +96,7 @@ export default function ConfidentialitePage() {
           <section>
             <h2 className="font-display font-semibold text-slate-900">8. Intelligence artificielle</h2>
             <p className="mt-1">
-              Physio-App n&apos;utilise actuellement aucune intelligence artificielle
+              EasyPhysio n&apos;utilise actuellement aucune intelligence artificielle
               générative traitant vos données de santé personnelles.
             </p>
           </section>

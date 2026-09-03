@@ -1,4 +1,4 @@
-import { Check, Minus } from "lucide-react";
+import { Check } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 
@@ -42,69 +42,40 @@ const ROWS: {
   },
 ];
 
-function Cell({ value }: { value: string | { check: true } }) {
+function Value({ value }: { value: string | { check: true } }) {
   if (typeof value === "object") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-700">
+      <span className="inline-flex items-center gap-1.5">
         <Check className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={2.5} />
         Gratuit
       </span>
     );
   }
-  return (
-    <span className="flex items-center gap-1.5 text-sm leading-snug text-slate-600">
-      {value === "—" && <Minus className="h-4 w-4 shrink-0 text-slate-300" strokeWidth={2} />}
-      {value !== "—" ? value : null}
-    </span>
-  );
+  return <>{value}</>;
 }
 
+// A literal 3-column spreadsheet table is the classic "AI comparison page"
+// signature. The same information reads as a comparison without the grid:
+// each row leads with the criterion, then Papier/SMS trail off in quiet
+// text while EasyPhysio's answer is the one thing styled to stand out —
+// the eye still lands on the same "we win" story a table would tell.
 export default function ComparisonTable() {
-  const cols = ["Programme papier", "Rappels SMS", "Physio-App"];
-
   return (
-    <div className="overflow-x-auto rounded-3xl border border-slate-200/70 bg-white shadow-sm">
-      <table className="w-full min-w-[640px] border-collapse text-left">
-        <thead>
-          <tr className="border-b border-slate-100">
-            <th className="px-6 py-5" />
-            {cols.map((c) => (
-              <th
-                key={c}
-                scope="col"
-                className={`px-6 py-5 text-sm font-semibold ${
-                  c === "Physio-App"
-                    ? "bg-blue-50/70 text-blue-700"
-                    : "text-slate-500"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  {c === "Physio-App" && <LogoMark size={20} />}
-                  {c}
-                </span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <RevealGroup as="tbody">
-          {ROWS.map((row) => (
-            <RevealItem as="tr" key={row.label} className="border-b border-slate-50 last:border-0">
-              <th scope="row" className="px-6 py-4 text-sm font-medium text-slate-800">
-                {row.label}
-              </th>
-              <td className="px-6 py-4 pr-10">
-                <Cell value={row.paper} />
-              </td>
-              <td className="px-6 py-4">
-                <Cell value={row.sms} />
-              </td>
-              <td className="bg-blue-50/40 px-6 py-4">
-                <Cell value={row.app} />
-              </td>
-            </RevealItem>
-          ))}
-        </RevealGroup>
-      </table>
+    <div className="divide-y divide-slate-200">
+      <RevealGroup>
+        {ROWS.map((row) => (
+          <RevealItem key={row.label} className="py-6 first:pt-0 last:pb-0">
+            <p className="font-display text-base font-semibold text-slate-900">{row.label}</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
+              Papier : <Value value={row.paper} /> · SMS : <Value value={row.sms} />
+            </p>
+            <p className="mt-1.5 flex items-center gap-2 text-sm font-medium text-blue-700">
+              <LogoMark size={16} />
+              <Value value={row.app} />
+            </p>
+          </RevealItem>
+        ))}
+      </RevealGroup>
     </div>
   );
 }

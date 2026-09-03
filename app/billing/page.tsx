@@ -88,7 +88,7 @@ export default async function BillingPage({
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} />
-                        Suggestions d&apos;adaptation personnalisées
+                        Programme qui s&apos;adapte à votre ressenti après chaque séance
                       </li>
                     </ul>
                     <form action={startCheckout} className="mt-5">

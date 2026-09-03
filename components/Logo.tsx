@@ -29,7 +29,7 @@ export default function Logo({
     <Link href="/" className={`flex items-center gap-2.5 ${className}`}>
       <LogoMark size={size} />
       {wordmark && (
-        <span className="font-display text-base font-semibold text-slate-900">Physio-App</span>
+        <span className="font-display text-base font-semibold text-slate-900">EasyPhysio</span>
       )}
     </Link>
   );

@@ -25,7 +25,7 @@ export default async function CompteePage({
         <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="font-medium text-slate-900">Télécharger mes données</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Récupérez un fichier avec toutes les données que Physio-App conserve à votre sujet
+            Récupérez un fichier avec toutes les données que EasyPhysio conserve à votre sujet
             (profil, ressenti, séances, messages).
           </p>
           <Link
@@ -49,7 +49,7 @@ export default async function CompteePage({
               name="confirmation"
               placeholder="SUPPRIMER"
               required
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-red-600 focus:outline-none"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-100"
             />
             <button
               type="submit"

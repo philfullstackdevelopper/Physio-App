@@ -26,11 +26,31 @@ function VendoredIllustration({
   slug,
   name,
   className,
+  animate,
 }: {
   slug: string;
   name: string;
   className: string;
+  animate: boolean;
 }) {
+  if (!animate) {
+    // A single fixed frame — used where the movement doesn't need to be
+    // demonstrated in motion, just recognized at a glance (e.g. a séance
+    // card in a list).
+    return (
+      <div className={`relative ${className}`} role="img" aria-label={`Démonstration : ${name}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- static local SVG, no next/image benefit */}
+        <img
+          src={`/exercise-illustrations/${slug}/frame-1.svg`}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-contain"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={`relative ${className}`} role="img" aria-label={`Démonstration : ${name}`}>
       {[1, 2, 3].map((frame) => (
@@ -67,13 +87,18 @@ function NoIllustration({ name, className }: { name: string; className: string }
 export default function ExerciseIllustration({
   name,
   className = "h-28 w-full text-blue-600",
+  animate = true,
 }: {
   name: string;
   className?: string;
+  /** false renders a single fixed frame instead of the cross-fading 3-frame loop. */
+  animate?: boolean;
 }) {
   const vendoredSlug = EXERCISE_ILLUSTRATION_MAP[name];
   if (vendoredSlug) {
-    return <VendoredIllustration slug={vendoredSlug} name={name} className={className} />;
+    return (
+      <VendoredIllustration slug={vendoredSlug} name={name} className={className} animate={animate} />
+    );
   }
 
   return <NoIllustration name={name} className={className} />;

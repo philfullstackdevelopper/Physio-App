@@ -8,14 +8,11 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Flame, CheckCircle2, Lightbulb, Check, Play, Pause } from "lucide-react";
+import { Flame, CheckCircle2, Check, Play, Pause } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Prescription } from "@/lib/exercise/prescription";
 import { fetchStreak } from "@/lib/exercise/streak";
-import { categoryFor } from "@/lib/exercise/category";
-import { suggestAdaptation } from "@/lib/exercise/adaptation";
-import { effectiveGoalReps, type RepOverrideMap } from "@/lib/exercise/overrides";
-import { autoEaseGoalReps } from "@/lib/exercise/autoEase";
+import { getYoutubeEmbedId, isVideoFileUrl, isImageFileUrl } from "@/lib/exercise/media";
 import { parseSteps } from "@/lib/exercise/steps";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 
@@ -28,17 +25,6 @@ export interface SessionExercise {
 }
 
 type Phase = "exercise" | "celebrate" | "finished";
-
-// Coarse difficulty scale for the end-of-session recap — five labelled levels
-// instead of 1-10 buttons repeated per exercise, which got cluttered fast.
-// Values still line up with the adaptation engine's 1-10 thresholds.
-const DIFFICULTY_LEVELS: { value: number; label: string }[] = [
-  { value: 2, label: "Très facile" },
-  { value: 4, label: "Facile" },
-  { value: 5, label: "Normal" },
-  { value: 8, label: "Difficile" },
-  { value: 10, label: "Très difficile" },
-];
 
 /** A self-hosted demo clip: loops automatically so the movement is always
  *  visible, with one custom play/pause control (Physitrack-style) instead of
@@ -122,12 +108,12 @@ function IllustrationDemo({ name }: { name: string }) {
  *  URL) falls back to the illustration rather than showing a broken embed. */
 function Demo({ url, name, startSeconds = 0 }: { url: string | null; name: string; startSeconds?: number }) {
   if (url) {
-    const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{11})/);
-    if (yt) {
+    const ytId = getYoutubeEmbedId(url);
+    if (ytId) {
       return (
         <iframe
           className="aspect-video w-full rounded-xl"
-          src={`https://www.youtube.com/embed/${yt[1]}?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&start=${startSeconds}`}
+          src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&start=${startSeconds}`}
           title="Démonstration"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
@@ -136,10 +122,10 @@ function Demo({ url, name, startSeconds = 0 }: { url: string | null; name: strin
     }
     // Same extensions the overview list and ExerciseVideoUpload produce —
     // phone-filmed clips are often .mov/.m4v.
-    if (/\.(mp4|webm|mov|m4v|ogg)$/i.test(url)) {
+    if (isVideoFileUrl(url)) {
       return <VideoDemo key={url} url={url} name={name} startSeconds={startSeconds} />;
     }
-    if (/\.(png|jpe?g|gif|webp)$/i.test(url)) {
+    if (isImageFileUrl(url)) {
       // eslint-disable-next-line @next/next/no-img-element
       return <img src={url} alt="Démonstration" className="w-full rounded-xl" />;
     }
@@ -185,18 +171,12 @@ export default function WorkoutSession({
   workoutName,
   exercises,
   prescription,
-  repOverrides = {},
-  recentDifficulty = {},
 }: {
   workoutId: string;
   patientId: string;
   workoutName: string;
   exercises: SessionExercise[];
   prescription: Prescription;
-  /** Instructor decisions, per exercise name. Absent = standard prescription. */
-  repOverrides?: RepOverrideMap;
-  /** Recent 1-10 difficulty ratings, per exercise name. Drives automatic easing. */
-  recentDifficulty?: Record<string, number[]>;
 }) {
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<Phase>("exercise");
@@ -210,48 +190,15 @@ export default function WorkoutSession({
   // timestamp), so the patient's history can show what they felt for it.
   const [logId, setLogId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState(false);
-  // End-of-session feeling capture.
+  // End-of-session feeling capture — the only feedback this app collects.
   const [pain, setPain] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [fbSent, setFbSent] = useState(false);
   const [fbBusy, setFbBusy] = useState(false);
-  // Per-exercise feeling, filled in on the end-of-session recap (optional, per exercise) —
-  // no longer asked between exercises, to keep the workout's rhythm.
-  const [perExerciseFeedback, setPerExerciseFeedback] = useState<
-    Record<string, { difficulty: number | null; note: string }>
-  >({});
-  const [perExerciseOpen, setPerExerciseOpen] = useState<Record<string, boolean>>({});
 
   const total = exercises.length;
   const current = exercises[idx];
-
-  // The prescription THIS exercise runs under: the standard prescription from
-  // the patient's profile and stage, adjusted by the instructor's stored
-  // decision if any, then automatically eased from the patient's own recent
-  // ratings (which can only ever lower the result).
-  const decided = current
-    ? effectiveGoalReps(prescription.goalReps, repOverrides[current.name])
-    : prescription.goalReps;
-  const autoEased = current
-    ? autoEaseGoalReps(decided, recentDifficulty[current.name] ?? [])
-    : { goalReps: decided, eased: false, reason: "" };
-  const goalText = `${prescription.goalSets} séries × ${autoEased.goalReps} répétitions`;
-
-  // Non-binding adaptation suggestion for a given exercise, computed on demand
-  // from whatever difficulty the patient enters on the end-of-session recap.
-  const suggestionFor = (name: string) => {
-    const difficulty = perExerciseFeedback[name]?.difficulty;
-    if (difficulty == null) return null;
-    const decided = effectiveGoalReps(prescription.goalReps, repOverrides[name]);
-    const eased = autoEaseGoalReps(decided, recentDifficulty[name] ?? []);
-    return suggestAdaptation({
-      difficulty,
-      goalReps: eased.goalReps,
-      candidates: exercises
-        .filter((e) => e.name !== name && categoryFor(e.name) === categoryFor(name))
-        .map((e) => e.name),
-    });
-  };
+  const goalText = `${prescription.goalSets} séries × ${prescription.goalReps} répétitions`;
 
   const finish = async () => {
     // Log the completed workout (RLS: patient can insert their own logs),
@@ -292,23 +239,6 @@ export default function WorkoutSession({
         completed: true,
       });
       if (error) throw error;
-      // One row per exercise that has something worth recording: a rating or a
-      // note. Sent all together at session end, instead of one round-trip per
-      // exercise.
-      await Promise.all(
-        exercises.map(async (e) => {
-          const fb = perExerciseFeedback[e.name];
-          if (fb?.difficulty == null && !fb?.note?.trim()) return;
-          await supabase.from("exercise_feedback").insert({
-            patient_id: patientId,
-            workout_id: workoutId,
-            workout_log_id: logId,
-            exercise_name: e.name,
-            difficulty: fb?.difficulty ?? null,
-            notes: fb?.note?.trim() || null,
-          });
-        }),
-      );
       setFbSent(true);
     } catch {
       setFbError(true);
@@ -421,85 +351,6 @@ export default function WorkoutSession({
               placeholder="Un mot sur votre ressenti (optionnel)…"
               className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
             />
-            <div className="mt-5 border-t border-slate-200 pt-4">
-              <p className="text-sm font-medium text-slate-800">Vos exercices</p>
-              <p className="text-xs text-slate-500">
-                Une note ou une difficulté pour un exercice en particulier, si besoin (optionnel)
-              </p>
-              <div className="mt-2 space-y-1.5">
-                {exercises.map((e) => {
-                  const open = !!perExerciseOpen[e.name];
-                  const fb = perExerciseFeedback[e.name];
-                  const suggestion = suggestionFor(e.name);
-                  return (
-                    <div key={e.name} className="rounded-xl border border-slate-200 bg-white">
-                      <button
-                        type="button"
-                        onClick={() => setPerExerciseOpen((m) => ({ ...m, [e.name]: !open }))}
-                        className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-medium text-slate-700"
-                      >
-                        <span className="flex items-center gap-2">
-                          {e.name}
-                          {(fb?.difficulty != null || fb?.note?.trim()) && (
-                            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                          )}
-                        </span>
-                        <span className="text-slate-400">{open ? "−" : "+"}</span>
-                      </button>
-                      {open && (
-                        <div className="border-t border-slate-100 px-3 pb-3 pt-2">
-                          <div className="flex flex-wrap gap-1.5">
-                            {DIFFICULTY_LEVELS.map((lvl) => (
-                              <button
-                                key={lvl.value}
-                                type="button"
-                                onClick={() =>
-                                  setPerExerciseFeedback((m) => ({
-                                    ...m,
-                                    [e.name]: {
-                                      difficulty: m[e.name]?.difficulty === lvl.value ? null : lvl.value,
-                                      note: m[e.name]?.note ?? "",
-                                    },
-                                  }))
-                                }
-                                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                  fb?.difficulty === lvl.value
-                                    ? "bg-blue-600 text-white"
-                                    : "border border-slate-300 text-slate-600 hover:bg-slate-100"
-                                }`}
-                              >
-                                {lvl.label}
-                              </button>
-                            ))}
-                          </div>
-                          <textarea
-                            value={fb?.note ?? ""}
-                            onChange={(ev) =>
-                              setPerExerciseFeedback((m) => ({
-                                ...m,
-                                [e.name]: { difficulty: m[e.name]?.difficulty ?? null, note: ev.target.value },
-                              }))
-                            }
-                            rows={2}
-                            placeholder="Une douleur, une gêne… (optionnel)"
-                            className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
-                          />
-                          {suggestion && suggestion.direction !== "none" && (
-                            <p className="mt-2 flex items-start gap-1.5 border-l-2 border-l-blue-600 pl-2 text-xs text-slate-600">
-                              <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" strokeWidth={1.75} />
-                              {suggestion.direction === "easier"
-                                ? "Cet exercice vous a paru difficile — vous pourriez réduire l'intensité la prochaine fois."
-                                : "Cet exercice vous a paru facile — vous pourriez augmenter l'intensité la prochaine fois."}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
             {fbError && (
               <p className="mt-3 text-sm text-red-700">
                 L&apos;envoi a échoué. Vérifiez votre connexion et réessayez.
@@ -580,15 +431,6 @@ export default function WorkoutSession({
           <h2 className="font-display mt-1 text-2xl font-semibold text-slate-900">
             {current.name}
           </h2>
-
-          {/* A shorter series than usual is not a bug — say why, gently. */}
-          {autoEased.eased && (
-            <p className="mt-2 border-l-2 border-l-amber-500 pl-3 text-sm text-slate-600">
-              Série allégée à <span className="font-semibold text-slate-900">{autoEased.goalReps} répétitions</span>{" "}
-              — vous avez trouvé cet exercice difficile récemment. Écoutez votre corps, et parlez-en
-              à votre praticien.
-            </p>
-          )}
 
           <div className="mt-4">
             <Demo url={current.mediaUrl} name={current.name} startSeconds={current.mediaStartSeconds ?? 0} />

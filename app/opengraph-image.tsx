@@ -65,7 +65,7 @@ export default function OpengraphImage() {
             display: "flex",
             alignItems: "center",
             gap: 12,
-            background: "#2563eb",
+            background: "#155dfc",
             borderRadius: 9999,
             padding: "14px 32px",
             color: "#ffffff",

@@ -1,4 +1,4 @@
-# Conditions Générales d'Utilisation — Physio-App
+# Conditions Générales d'Utilisation — EasyPhysio
 
 > **⚠️ BROUILLON — NE PAS PUBLIER EN L'ÉTAT.**
 > Base de travail pour accélérer une revue juridique, pas un document
@@ -10,7 +10,7 @@ _Dernière mise à jour : [date]_
 ## 1. Objet
 
 Les présentes conditions générales d'utilisation (CGU) régissent l'accès
-et l'usage de la plateforme Physio-App par les kinésithérapeutes
+et l'usage de la plateforme EasyPhysio par les kinésithérapeutes
 ("praticiens") et leurs patients.
 
 ## 2. Éditeur
@@ -21,16 +21,16 @@ politique de confidentialité, section 5.
 
 ## 3. Description du service
 
-Physio-App met à disposition des kinésithérapeutes un outil de suivi
+EasyPhysio met à disposition des kinésithérapeutes un outil de suivi
 d'exercices à distance pour leurs patients (programmes, adhérence,
-messagerie). **Physio-App n'est pas un dispositif médical et ne dispense
+messagerie). **EasyPhysio n'est pas un dispositif médical et ne dispense
 pas de soin** : le programme d'exercices est établi et validé par le
 kinésithérapeute, qui reste seul responsable du suivi clinique de son
 patient.
 
 ## 4. Statut du service — hors nomenclature
 
-L'abonnement patient à Physio-App n'est **jamais pris en charge ni
+L'abonnement patient à EasyPhysio n'est **jamais pris en charge ni
 remboursé par l'Assurance Maladie**. Il s'agit d'un service complémentaire
 au suivi kinésithérapique, facturé directement au patient, distinct de
 tout acte coté à la nomenclature (NGAP) ou de télésoin.
@@ -46,7 +46,7 @@ sans ambiguïté que ce n'est jamais présenté comme un acte remboursé.)*
   RPPS à définir avec l'avocat — actuellement non vérifié techniquement.]
 - **Patients** : le compte patient est créé par le kinésithérapeute qui
   l'invite, ou par le patient lui-même selon le parcours produit retenu.
-  L'usage de Physio-App par le patient est libre et volontaire — le
+  L'usage d'EasyPhysio par le patient est libre et volontaire — le
   kinésithérapeute ne peut conditionner la poursuite du suivi
   kinésithérapique classique à la souscription du patient.
 
@@ -58,24 +58,24 @@ sans ambiguïté que ce n'est jamais présenté comme un acte remboursé.)*
 
 ## 7. Relation commerciale avec le kinésithérapeute
 
-Le kinésithérapeute paie Physio-App pour l'usage de la plateforme, à
+Le kinésithérapeute paie EasyPhysio pour l'usage de la plateforme, à
 raison de [tarif] par patient actif inscrit. **Aucune somme n'est jamais
-versée par Physio-App au kinésithérapeute** en contrepartie de
-l'inscription de patients — l'usage de Physio-App par le kinésithérapeute
+versée par EasyPhysio au kinésithérapeute** en contrepartie de
+l'inscription de patients — l'usage d'EasyPhysio par le kinésithérapeute
 reste à sa seule initiative professionnelle et ne doit jamais influencer
 le choix clinique fait dans l'intérêt du patient.
 
 ## 8. Propriété du contenu d'exercices
 
 Le contenu de la bibliothèque d'exercices (descriptions, vidéos) est soit
-la propriété de Physio-App (contenu original), soit celle du
+la propriété d'EasyPhysio (contenu original), soit celle du
 kinésithérapeute qui l'a créé pour ses propres patients. [Point à
 clarifier : droits d'usage du contenu créé par un kinésithérapeute en cas
 de résiliation de son compte.]
 
 ## 9. Responsabilité
 
-Physio-App fournit un outil logiciel ; il n'intervient pas dans la
+EasyPhysio fournit un outil logiciel ; il n'intervient pas dans la
 décision clinique. Le kinésithérapeute reste seul responsable de
 l'adéquation du programme prescrit à l'état de son patient. [Section à
 construire avec l'avocat — limitation de responsabilité, cas de force

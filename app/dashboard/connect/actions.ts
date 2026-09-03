@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 
 // Sets the kiné's own declared monthly patient price. This is what a patient
-// pays HIM directly (Flow A) and what Physio-App's 15% platform fee (Flow B)
+// pays HIM directly (Flow A) and what EasyPhysio's 15% platform fee (Flow B)
 // is calculated from — see lib/billing/platformFee.ts.
 export async function setPatientPrice(formData: FormData) {
   const supabase = await createClient();
@@ -33,7 +33,7 @@ export async function setPatientPrice(formData: FormData) {
 
 // Starts (or resumes) Stripe Connect onboarding for the kiné — this is the
 // account that will receive his patients' payments directly (Flow A).
-// Physio-App's own Stripe account never touches that money.
+// EasyPhysio's own Stripe account never touches that money.
 //
 // NOT YET TESTABLE end-to-end: needs Stripe Connect turned on in the Stripe
 // dashboard first (see the project's plan doc). The code itself is ready.

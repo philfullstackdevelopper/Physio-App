@@ -58,7 +58,7 @@ export default function PatientNav({ instructorName }: { instructorName: string 
       {/* Desktop: slim top bar */}
       <header className="hidden items-center justify-between border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur sm:flex">
         <Link href="/" className="font-display text-lg font-semibold text-slate-900 transition hover:text-blue-700">
-          Physio-App
+          EasyPhysio
         </Link>
         <div className="flex items-center gap-4">
           {instructorName && <InstructorBadge name={instructorName} />}
@@ -103,7 +103,7 @@ export default function PatientNav({ instructorName }: { instructorName: string 
         <Link
           href="/"
           className="flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium text-slate-500"
-          aria-label="Retour au site Physio-App"
+          aria-label="Retour au site EasyPhysio"
         >
           <LogoMark size={22} />
         </Link>

@@ -17,7 +17,7 @@ export default async function ForgotPasswordPage({
       <div className="relative w-full max-w-sm">
         <Link href="/" className="mb-6 flex items-center justify-center gap-2.5">
           <LogoMark size={36} />
-          <span className="font-display text-xl font-semibold text-slate-900">Physio-App</span>
+          <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
         </Link>
 
         <div className="rounded-3xl border border-blue-100 bg-white/90 p-8 shadow-sm backdrop-blur">

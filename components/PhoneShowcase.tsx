@@ -7,7 +7,7 @@ import { usePhoneDemo, PhoneDemoBody } from "@/components/PhoneDemoScreens";
 
 // A believable, looping "watch someone use the app" demo — inspired by the
 // silent auto-playing product-demo clips on sites like roadtooffer.com.
-// Physio-App's screens are illustrative mockups, not a real shippable app
+// EasyPhysio's screens are illustrative mockups, not a real shippable app
 // yet, so instead of screen-recorded video, this choreographs the SAME
 // mockups (tap → screen change → play → progress) as an animated sequence,
 // autoplaying on a loop once the phone scrolls into view. Same choreography

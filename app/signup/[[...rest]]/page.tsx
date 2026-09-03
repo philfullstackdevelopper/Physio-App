@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FolderOpen, ClipboardList, Lock } from "lucide-react";
+import { ArrowLeft, FolderOpen, ClipboardList, Lock } from "lucide-react";
 import { SignUp } from "@clerk/nextjs";
 import RandomLine from "@/components/RandomLine";
 import { LogoMark } from "@/components/Logo";
@@ -35,29 +35,28 @@ export default function SignupPage() {
     <main className="relative min-h-screen overflow-hidden bg-[#f6f8fd]">
       <DotCanvas />
 
+      <Link
+        href="/"
+        className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm backdrop-blur transition-colors hover:text-slate-900 lg:left-6 lg:top-6"
+      >
+        <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
+        Retour
+      </Link>
+
       <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col lg:flex-row lg:items-center">
         {/* Left: signup form */}
         <div className="flex flex-1 items-center justify-center p-4 py-16 lg:p-16">
           <div className="w-full max-w-sm">
             <Link href="/" className="mb-6 flex items-center justify-center gap-2.5 lg:hidden">
               <LogoMark size={36} />
-              <span className="font-display text-xl font-semibold text-slate-900">Physio-App</span>
+              <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
             </Link>
 
-            <div className="rounded-3xl border border-blue-100 bg-white/90 p-8 shadow-sm backdrop-blur">
-              <h1 className="font-display text-2xl font-semibold text-slate-900">
-                Créer un compte
-              </h1>
-              <p className="mb-6 mt-1.5 text-sm leading-relaxed text-slate-500 lg:hidden">
-                <RandomLine options={ENCOURAGEMENTS} />
-              </p>
-              <p className="mb-6 mt-1.5 hidden text-sm leading-relaxed text-slate-500 lg:block">
-                Espace physiothérapeute — quelques informations suffisent.
-              </p>
-
-            {/* Clerk sign-up component (French via ClerkProvider).
-                On success it lands on /signup/finalize, which records the
-                instructor profile (status "pending") before the approval gate. */}
+            {/* Clerk sign-up component (French via ClerkProvider) — its own
+                widget already renders a card with a heading, so nothing here
+                wraps it in a second one. On success it lands on
+                /signup/finalize, which records the instructor profile
+                (status "pending") before the approval gate. */}
             <SignUp
               fallbackRedirectUrl="/signup/finalize"
               signInUrl="/login"
@@ -76,7 +75,6 @@ export default function SignupPage() {
                 Se connecter
               </Link>
             </p>
-            </div>
           </div>
         </div>
 
@@ -84,7 +82,7 @@ export default function SignupPage() {
         <div className="hidden flex-1 flex-col justify-center px-16 py-16 lg:flex">
           <Link href="/" className="mb-10 flex items-center gap-2.5">
             <LogoMark size={36} />
-            <span className="font-display text-xl font-semibold text-slate-900">Physio-App</span>
+            <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
           </Link>
 
           <span className="mb-4 inline-flex w-fit items-center rounded-full border border-blue-100 bg-white/70 px-4 py-1.5 text-sm font-medium text-blue-700 shadow-sm backdrop-blur">

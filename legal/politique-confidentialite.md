@@ -1,4 +1,4 @@
-# Politique de confidentialité — Physio-App
+# Politique de confidentialité — EasyPhysio
 
 > **⚠️ BROUILLON — NE PAS PUBLIER EN L'ÉTAT.**
 > Ce document est une base de travail rédigée pour accélérer une revue
@@ -15,13 +15,13 @@ _Dernière mise à jour : [date]_
 immatriculé sous le SIRET [SIRET], dont le siège est situé [adresse].
 Contact : [email de contact], [adresse].
 
-Physio-App est un outil mis à disposition des masseurs-kinésithérapeutes
+EasyPhysio est un outil mis à disposition des masseurs-kinésithérapeutes
 pour le suivi d'exercices de leurs patients. Le kinésithérapeute reste le
-professionnel de santé responsable du suivi clinique ; Physio-App est
+professionnel de santé responsable du suivi clinique ; EasyPhysio est
 l'éditeur de l'outil logiciel.
 
 *(Point à trancher avec l'avocat : qui est responsable de traitement pour
-les données du patient — Physio-App, le kinésithérapeute, ou les deux
+les données du patient — EasyPhysio, le kinésithérapeute, ou les deux
 conjointement ? La réponse détermine plusieurs sections ci-dessous.)*
 
 ## 2. Données que nous collectons
@@ -41,7 +41,7 @@ l'article 9 du RGPD) :
 - Messages échangés avec le kinésithérapeute
 
 **Données de facturation** (patients et kinésithérapeutes abonnés) :
-gérées par Stripe, voir section Sous-traitants — Physio-App ne stocke pas
+gérées par Stripe, voir section Sous-traitants — EasyPhysio ne stocke pas
 les numéros de carte.
 
 ## 3. Pourquoi nous collectons ces données (base légale)
@@ -58,13 +58,13 @@ les numéros de carte.
 - **Le kinésithérapeute qui suit le patient** — jamais un autre
   kinésithérapeute, jamais un autre patient (isolation technique appliquée
   au niveau de la base de données, pas seulement de l'interface).
-- **L'équipe technique de Physio-App**, en accès minimal et journalisé,
+- **L'équipe technique d'EasyPhysio**, en accès minimal et journalisé,
   pour la maintenance.
 - **Nos sous-traitants techniques**, listés en section 6, qui n'ont accès
   qu'à ce qui est strictement nécessaire à leur prestation et n'utilisent
   jamais la donnée à d'autres fins.
 
-Physio-App ne vend ni ne loue aucune donnée à des tiers.
+EasyPhysio ne vend ni ne loue aucune donnée à des tiers.
 
 ## 5. Hébergement et sécurité
 
@@ -124,7 +124,7 @@ CNIL (cnil.fr).
 
 ## 10. Intelligence artificielle
 
-Physio-App n'utilise actuellement aucune intelligence artificielle
+EasyPhysio n'utilise actuellement aucune intelligence artificielle
 générative traitant vos données de santé personnelles. Si cette
 fonctionnalité était activée à l'avenir, cette politique serait mise à
 jour au préalable pour en détailler le fonctionnement et recueillir, le

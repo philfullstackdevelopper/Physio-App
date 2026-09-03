@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -12,11 +13,9 @@ import ConditionsShowcase from "@/components/ConditionsShowcase";
 import FeaturesShowcase from "@/components/FeaturesShowcase";
 import FaqSection from "@/components/FaqSection";
 import SiteHeader from "@/components/SiteHeader";
-import DotCanvas from "@/components/DotCanvas";
 import SiteFooter from "@/components/SiteFooter";
 import PhoneMockup from "@/components/PhoneMockup";
-import PhoneShowcase from "@/components/PhoneShowcase";
-import KineMockup from "@/components/KineMockup";
+import KineDemoMockup from "@/components/KineDemoMockup";
 import ComparisonTable from "@/components/ComparisonTable";
 import Testimonials from "@/components/Testimonials";
 import Reveal from "@/components/Reveal";
@@ -26,12 +25,6 @@ const HERO_CHIPS = [
   { icon: Sparkles, label: "Gratuit pour les patients" },
   { icon: Video, label: "Vidéos, sans caméra ni capteur" },
   { icon: ShieldCheck, label: "Piloté par votre kiné, jamais par un algorithme seul" },
-];
-
-const PROOF_STATS = [
-  { value: "100 %", label: "des programmes créés par votre praticien" },
-  { value: "0", label: "caméra ni capteur requis chez vous" },
-  { value: "1", label: "seul exercice affiché à l'écran, à la fois" },
 ];
 
 const STEPS = [
@@ -102,7 +95,20 @@ function PrimaryCta({
 export default function Home() {
   return (
     <div className="relative min-h-screen bg-[#f6f8fd] text-slate-800">
-      <DotCanvas />
+      {/* Ambient background: a soft blue glow behind the hero (echoes the
+          dashboard's own corner glow, in the site's accent instead of its
+          warm amber, so the marketing site and the product read as one
+          family) plus a faint paper grain for tactility instead of flat
+          color — no busy pattern, unlike the dot canvas this replaced. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-20"
+        style={{
+          background:
+            "radial-gradient(1200px 800px at 85% -8%, rgba(37, 99, 235, 0.12) 0%, transparent 55%), radial-gradient(900px 650px at 4% 18%, rgba(37, 99, 235, 0.07) 0%, transparent 60%)",
+        }}
+      />
+      <div aria-hidden className="grain pointer-events-none absolute inset-0 -z-10" />
       <div className="relative z-10">
       <SiteHeader />
 
@@ -110,10 +116,7 @@ export default function Home() {
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section className="grid items-center gap-12 pb-16 pt-28 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:pb-24 lg:pt-36">
           <div>
-            <span className="animate-[fadeInUp_0.6s_ease-out_both] inline-block rounded-full border border-blue-100 bg-white px-4 py-1.5 text-sm font-medium text-blue-700 shadow-sm">
-              Conçu avec des kinésithérapeutes en cabinet libéral
-            </span>
-            <h1 className="font-display animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:80ms] mt-6 max-w-xl text-4xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem]">
+            <h1 className="font-display animate-[fadeInUp_0.6s_ease-out_both] max-w-xl text-4xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem]">
               La rééducation ne s&apos;arrête pas en sortant du cabinet.
             </h1>
             <p className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:160ms] mt-5 max-w-lg text-lg leading-relaxed text-slate-600">
@@ -125,7 +128,7 @@ export default function Home() {
               <PrimaryCta href="/signup">Créer un compte praticien</PrimaryCta>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3 font-medium text-slate-700 transition hover:border-blue-200 hover:bg-blue-50/50"
+                className="inline-flex items-center justify-center font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
               >
                 J&apos;ai déjà un programme
               </Link>
@@ -146,105 +149,96 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Phone showcase: pinned phone, screens change as you scroll ── */}
-        <PhoneShowcase />
-
-        {/* ── Proof strip ──────────────────────────────────────── */}
+        {/* ── Côté praticien: what the kiné sees ──────────────────── */}
         <Reveal>
-        <section className="-mx-6 border-y border-slate-200/70 bg-white/70 backdrop-blur">
-          <RevealGroup className="mx-auto grid max-w-6xl gap-6 px-6 py-8 sm:grid-cols-3">
-            {PROOF_STATS.map((stat) => (
-              <RevealItem key={stat.label} className="flex items-baseline gap-3 sm:block">
-                <p className="font-display text-3xl font-semibold text-blue-700">{stat.value}</p>
-                <p className="mt-1 text-sm leading-snug text-slate-600">{stat.label}</p>
-              </RevealItem>
-            ))}
-          </RevealGroup>
+        <section className="py-16 sm:py-20">
+          <div className="rounded-[2rem] border border-slate-200/70 bg-white p-8 shadow-sm sm:p-12">
+            <div className="mx-auto max-w-lg text-center">
+              <h2 className="font-display text-2xl font-semibold text-slate-900 sm:text-3xl">
+                De son tableau de bord à la fiche de chaque patient.
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                Votre kiné voit tout depuis son tableau de bord, et agit en quelques clics — pas
+                besoin d&apos;attendre le prochain rendez-vous.
+              </p>
+            </div>
+
+            <div className="mt-10 grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+              <div>
+                <KineDemoMockup />
+              </div>
+              <div>
+                <p className="text-lg leading-relaxed text-slate-700">
+                  Toute l&apos;assiduité du cabinet, d&apos;un coup d&apos;œil.
+                </p>
+                <ul className="mt-6 space-y-4">
+                  {[
+                    "Chaque patient : programme en cours, phase atteinte, date de la dernière séance.",
+                    "Les douleurs signalées remontent le jour même, plus besoin d'attendre le rendez-vous.",
+                    "Un exercice trop dur ? Allégez-le en deux clics, le patient voit le changement aussitôt.",
+                  ].map((point) => (
+                    <li key={point} className="flex items-start gap-3">
+                      <Check className="mt-1 h-4 w-4 shrink-0 text-blue-600" strokeWidth={2.5} />
+                      <span className="leading-relaxed text-slate-600">{point}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-8">
+                  <PrimaryCta>Créer un compte praticien</PrimaryCta>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
         </Reveal>
 
         {/* ── Comment ça marche ────────────────────────────────── */}
         <Reveal>
         <section id="comment-ca-marche" className="mt-24 scroll-mt-28 sm:mt-32">
-          <div className="rounded-[2rem] border border-slate-200/70 bg-white p-8 shadow-sm sm:p-12">
-            <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-              Le parcours
-            </p>
-            <h2 className="font-display mt-2 max-w-lg text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-              Trois étapes, rien de plus
-            </h2>
+          <h2 className="font-display max-w-lg text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            Trois étapes, rien de plus
+          </h2>
 
-            <RevealGroup className="mt-10 grid gap-8 lg:grid-cols-3">
-              {STEPS.map((step, i) => (
-                <RevealItem key={step.title}>
-                  <div className="flex items-center gap-3">
-                    <span className="font-display flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-base font-semibold text-white">
-                      {i + 1}
-                    </span>
-                    <h3 className="font-display text-lg font-semibold leading-snug text-slate-900">
-                      {step.title}
-                    </h3>
+          {/* A connected diagram instead of three parallel cards: the mini
+              UI-previews lead, arrows do the connecting work, and the copy
+              shrinks to a caption — reads as one mechanism, not a generic
+              3-column feature grid. Picked from a live 3-variant prototype
+              (2026-09-02); see git history for the other two directions. */}
+          <RevealGroup className="mt-10 flex flex-col items-stretch gap-6 lg:flex-row lg:items-center lg:gap-0">
+            {STEPS.map((step, i) => (
+              <Fragment key={step.title}>
+                <RevealItem className="flex-1">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    {step.visual}
                   </div>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600">{step.body}</p>
-                  <div className="mt-5">{step.visual}</div>
+                  <p className="mt-4 text-sm font-semibold text-slate-900">
+                    <span className="text-blue-600">{i + 1}.</span> {step.title}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{step.body}</p>
                 </RevealItem>
-              ))}
-            </RevealGroup>
+                {i < STEPS.length - 1 && (
+                  <div aria-hidden className="hidden shrink-0 px-4 lg:flex">
+                    <ArrowRight className="h-5 w-5 text-blue-300" strokeWidth={1.75} />
+                  </div>
+                )}
+              </Fragment>
+            ))}
+          </RevealGroup>
 
-            <div className="mt-10 border-t border-slate-100 pt-8">
-              <PrimaryCta>Commencer maintenant</PrimaryCta>
-            </div>
-          </div>
-        </section>
-        </Reveal>
-
-        {/* ── Côté praticien : dashboard ───────────────────────── */}
-        <Reveal>
-        <section className="mt-24 grid items-center gap-12 sm:mt-32 lg:grid-cols-2 lg:gap-16">
-          <div className="order-2 lg:order-1">
-            <KineMockup />
-          </div>
-          <div className="order-1 lg:order-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-              Côté praticien
-            </p>
-            <h2 className="font-display mt-2 max-w-md text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-              Toute l&apos;assiduité du cabinet, d&apos;un coup d&apos;œil
-            </h2>
-            <ul className="mt-8 space-y-4">
-              {[
-                "Chaque patient : programme en cours, phase atteinte, date de la dernière séance.",
-                "Les douleurs signalées remontent le jour même, plus besoin d'attendre le rendez-vous.",
-                "Un exercice trop dur ? Allégez-le en deux clics, le patient voit le changement aussitôt.",
-              ].map((point) => (
-                <li key={point} className="flex items-start gap-3">
-                  <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50">
-                    <Check className="h-3 w-3 text-blue-600" strokeWidth={2.5} />
-                  </span>
-                  <span className="leading-relaxed text-slate-600">{point}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-8">
-              <PrimaryCta>Créer un compte praticien</PrimaryCta>
-            </div>
+          <div className="mt-10 border-t border-slate-200 pt-8">
+            <PrimaryCta>Commencer maintenant</PrimaryCta>
           </div>
         </section>
         </Reveal>
 
         {/* ── Fonctionnalités ──────────────────────────────────── */}
         <Reveal>
-        <section id="fonctionnalites" className="mt-24 scroll-mt-28 sm:mt-32">
-          <div className="rounded-[2rem] border border-slate-200/70 bg-white p-8 shadow-sm sm:p-12">
-            <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-              Fonctionnalités
-            </p>
-            <h2 className="font-display mt-2 max-w-lg text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-              Tout ce qu&apos;il faut, rien de superflu
-            </h2>
-            <div className="mt-8 max-w-3xl">
-              <FeaturesShowcase />
-            </div>
+        <section id="fonctionnalites" className="mt-24 scroll-mt-28 text-center sm:mt-32">
+          <h2 className="font-display mx-auto max-w-lg text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            Tout ce qu&apos;il faut, rien de superflu
+          </h2>
+          <div className="mx-auto mt-8 max-w-3xl">
+            <FeaturesShowcase />
           </div>
         </section>
         </Reveal>
@@ -252,10 +246,7 @@ export default function Home() {
         {/* ── Comparaison ──────────────────────────────────────── */}
         <Reveal>
         <section id="comparaison" className="mt-24 scroll-mt-28 sm:mt-32">
-          <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-            Pourquoi pas juste du papier ?
-          </p>
-          <h2 className="font-display mt-2 max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+          <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
             Ce qui change vraiment pour le patient
           </h2>
           <p className="mt-3 max-w-xl leading-relaxed text-slate-600">
@@ -271,25 +262,17 @@ export default function Home() {
         {/* ── Témoignages ──────────────────────────────────────── */}
         <Reveal>
         <section className="mt-24 sm:mt-32">
-          <div className="rounded-[2rem] border border-slate-200/70 bg-white p-8 sm:p-12">
-            <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-              Premiers retours
-            </p>
-            <h2 className="font-display mt-2 max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-              Utilisé au cabinet, et surtout à la maison
-            </h2>
-            <Testimonials />
-          </div>
+          <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            Utilisé au cabinet, et surtout à la maison
+          </h2>
+          <Testimonials />
         </section>
         </Reveal>
 
         {/* ── Conditions couvertes ─────────────────────────────── */}
         <Reveal>
         <section id="conditions" className="mt-24 scroll-mt-28 sm:mt-32">
-          <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-            Conditions couvertes
-          </p>
-          <h2 className="font-display mt-2 max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+          <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
             Des programmes pour chaque situation
           </h2>
           <p className="mt-3 max-w-xl leading-relaxed text-slate-600">
@@ -300,85 +283,79 @@ export default function Home() {
         </Reveal>
 
         {/* ── Tarifs ───────────────────────────────────────────── */}
+        {/* "Big number" direction, picked from a live 3-variant prototype
+            (2026-09-02; see git history for the other two). Money flow is
+            stated plainly (patient pays kiné, kiné pays EasyPhysio) rather
+            than the old "free for everyone" framing, which no longer
+            matched lib/billing/platformFee.ts. */}
         <Reveal>
         <section id="tarifs" className="mt-24 scroll-mt-28 sm:mt-32">
-          <div className="rounded-[2rem] border border-slate-200/70 bg-white p-8 shadow-sm sm:p-12">
-            <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-              Tarifs
-            </p>
-            <h2 className="font-display mt-2 max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-              Gratuite pour les patients, simple pour les cabinets
-            </h2>
+          <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            Le patient paie son kiné. Le kiné paie EasyPhysio.
+          </h2>
 
-            <RevealGroup className="mt-10 grid items-start gap-6 lg:grid-cols-2">
-              <RevealItem className="rounded-3xl border border-slate-200/70 p-8">
-                <p className="text-sm font-semibold text-slate-500">Patients</p>
-                <p className="font-display mt-2 text-4xl font-semibold text-slate-900">
-                  Gratuit<span className="text-lg font-normal text-slate-400">, toujours</span>
-                </p>
-                <ul className="mt-6 space-y-2.5">
-                  {[
-                    "Aucune carte bancaire demandée",
-                    "Accès via l'invitation de votre praticien",
-                    "Historique complet de vos séances conservé",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" strokeWidth={2.5} />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/login"
-                  className="mt-8 inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-300 bg-white px-6 py-3 font-medium text-slate-700 transition hover:border-blue-200 hover:bg-blue-50/50"
-                >
-                  Me connecter
-                  <ArrowRight className="h-4 w-4" strokeWidth={2} />
-                </Link>
-              </RevealItem>
+          <RevealGroup className="mt-10 grid gap-4 sm:grid-cols-2">
+            <RevealItem className="rounded-2xl bg-white/70 p-8">
+              <p className="text-sm font-medium text-slate-500">Patients</p>
+              <p className="font-display mt-3 text-4xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-5xl">
+                Fixé par votre kiné
+              </p>
+              <p className="mt-2 text-sm text-slate-400">
+                réglé directement à votre praticien, via Stripe
+              </p>
+              <ul className="mt-8 space-y-2 text-sm text-slate-600">
+                <li>
+                  Accès uniquement sur invitation d&apos;un kinésithérapeute déjà inscrit sur
+                  EasyPhysio
+                </li>
+                <li>Paiement sécurisé, directement à votre kiné</li>
+                <li>Historique complet de vos séances conservé</li>
+              </ul>
+              <Link
+                href="/login"
+                className="mt-8 inline-flex items-center gap-1 text-sm font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
+              >
+                Me connecter
+                <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              </Link>
+            </RevealItem>
 
-              <RevealItem className="relative rounded-3xl border-2 border-blue-600 bg-blue-50/40 p-8">
-                <span className="absolute -top-3 right-6 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
-                  Bêta
-                </span>
-                <p className="text-sm font-semibold text-blue-700">Cabinets & praticiens</p>
-                <p className="font-display mt-2 text-4xl font-semibold text-slate-900">
-                  Gratuit<span className="text-lg font-normal text-slate-400"> sur invitation</span>
-                </p>
-                <ul className="mt-6 space-y-2.5">
-                  {[
-                    "Patients illimités",
-                    "Bibliothèque d'exercices avec vidéos",
-                    "Suivi d'assiduité et signalements de douleur",
-                    "Ajustement de programme à distance",
-                    "Facturation intégrée",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" strokeWidth={2.5} />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-8">
-                  <PrimaryCta href="/signup">Demander un accès</PrimaryCta>
-                </div>
-                <p className="mt-4 text-xs leading-relaxed text-slate-500">
-                  Le tarif définitif sera annoncé avant la fin de la bêta. Les cabinets pionniers
-                  garderont des conditions avantageuses.
-                </p>
-              </RevealItem>
-            </RevealGroup>
-          </div>
+            <RevealItem className="rounded-2xl bg-blue-600 p-8 text-white">
+              <p className="text-sm font-medium text-blue-100">
+                Cabinets &amp; praticiens · Bêta
+              </p>
+              <p className="font-display mt-3 text-7xl font-semibold tracking-tight">15 %</p>
+              <p className="mt-1 text-sm text-blue-200">
+                prélevés par patient actif, sur le tarif que vous fixez
+              </p>
+              <ul className="mt-8 space-y-2 text-sm text-blue-50">
+                <li>Vous fixez votre tarif mensuel par patient</li>
+                <li>Paiement direct par vos patients, via Stripe Connect</li>
+                <li>Patients illimités</li>
+                <li>Bibliothèque d&apos;exercices avec vidéos</li>
+                <li>Suivi d&apos;assiduité et signalements de douleur</li>
+                <li>Ajustement de programme à distance</li>
+              </ul>
+              <Link
+                href="/signup"
+                className="mt-8 inline-flex items-center gap-1.5 rounded-full bg-white px-6 py-3 text-sm font-medium text-blue-700 shadow-sm transition hover:bg-slate-100 active:scale-[0.97]"
+              >
+                Demander un accès
+                <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              </Link>
+              <p className="mt-4 text-xs leading-relaxed text-blue-100">
+                Aucun abonnement fixe — la commission est prélevée automatiquement, uniquement sur
+                vos patients actifs.
+              </p>
+            </RevealItem>
+          </RevealGroup>
         </section>
         </Reveal>
 
         {/* ── FAQ ──────────────────────────────────────────────── */}
         <Reveal>
         <section id="faq" className="mx-auto mt-24 max-w-2xl scroll-mt-28 sm:mt-32">
-          <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-            Questions fréquentes
-          </p>
-          <h2 className="font-display mt-2 text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+          <h2 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
             Les questions qu&apos;on nous pose le plus
           </h2>
           <div className="mt-8">
@@ -411,7 +388,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center rounded-full border border-slate-600 px-6 py-3 font-medium text-slate-200 transition hover:border-slate-400 hover:text-white"
+                className="inline-flex items-center justify-center font-medium text-slate-300 underline-offset-4 transition hover:text-white hover:underline"
               >
                 Se connecter
               </Link>

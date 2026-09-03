@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
         <span className="flex items-center gap-2 font-display text-lg font-semibold text-slate-900">
           <ShieldCheck className="h-5 w-5 text-blue-600" strokeWidth={1.75} />
-          Physio-App — Admin
+          EasyPhysio — Admin
         </span>
         <SignOutButton redirectUrl="/login">
           <button

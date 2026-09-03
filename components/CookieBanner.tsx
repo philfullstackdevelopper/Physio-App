@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 // Standard, low-key cookie notice — typical pattern on French/EU sites.
-// Physio-App only uses essential authentication cookies today (no
+// EasyPhysio only uses essential authentication cookies today (no
 // analytics/advertising trackers), which under CNIL guidance don't require
 // an opt-in choice, just information. If that ever changes (analytics,
 // etc.), this needs a real accept/reject choice, not just a dismiss button.
