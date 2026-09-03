@@ -295,9 +295,8 @@ export default function SeancesTabs({
 }) {
   const [tab, setTab] = useState<Tab>("mine");
   const [mineQuery, setMineQuery] = useState("");
+  const [templateQuery, setTemplateQuery] = useState("");
   const [templatesShown, setTemplatesShown] = useState(REVEAL_INITIAL);
-
-  const visibleTemplates = templates.slice(0, templatesShown);
 
   const filteredMine = useMemo(() => {
     const q = mineQuery.trim().toLowerCase();
@@ -309,6 +308,19 @@ export default function SeancesTabs({
         s.exerciseNames?.some((n) => n.toLowerCase().includes(q)),
     );
   }, [mine, mineQuery]);
+
+  const filteredTemplates = useMemo(() => {
+    const q = templateQuery.trim().toLowerCase();
+    if (!q) return templates;
+    return templates.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        t.conditionName?.toLowerCase().includes(q) ||
+        t.exerciseNames?.some((n) => n.toLowerCase().includes(q)),
+    );
+  }, [templates, templateQuery]);
+
+  const visibleTemplates = filteredTemplates.slice(0, templatesShown);
 
   return (
     <div className="mt-8">
@@ -414,9 +426,33 @@ export default function SeancesTabs({
             Déjà disponibles pour tous les kinés. Dupliquez-en une pour en faire votre
             propre version modifiable.
           </p>
+          {templates.length > 0 && (
+            <div className="relative mt-3 mb-3">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+                strokeWidth={1.75}
+              />
+              <input
+                type="search"
+                value={templateQuery}
+                onChange={(e) => {
+                  setTemplateQuery(e.target.value);
+                  setTemplatesShown(REVEAL_INITIAL);
+                }}
+                placeholder="Rechercher un modèle…"
+                className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
+              />
+            </div>
+          )}
           {templates.length === 0 ? (
             <div className="mt-3 rounded-xl border border-line bg-surface p-2">
               <p className="p-6 text-center text-sm text-muted">Aucun modèle disponible.</p>
+            </div>
+          ) : filteredTemplates.length === 0 ? (
+            <div className="rounded-xl border border-line bg-surface p-2">
+              <p className="p-6 text-center text-sm text-muted">
+                Aucun modèle ne correspond à &laquo; {templateQuery.trim()} &raquo;.
+              </p>
             </div>
           ) : (
             <>
@@ -446,7 +482,7 @@ export default function SeancesTabs({
                   </div>
                 ))}
               </div>
-              {templatesShown < templates.length && (
+              {templatesShown < filteredTemplates.length && (
                 <VoirPlusButton onClick={() => setTemplatesShown((n) => n + REVEAL_STEP)} />
               )}
             </>
