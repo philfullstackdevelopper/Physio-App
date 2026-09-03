@@ -75,7 +75,7 @@ export default async function PatientDetailPage({
   const { error } = await searchParams;
 
   const supabase = await createClient();
-  await requireUser(supabase);
+  const user = await requireUser(supabase);
 
   const { data: patient } = await supabase
     .from("patients")
@@ -90,10 +90,26 @@ export default async function PatientDetailPage({
   // Messages already sent to this patient (most recent first).
   const { data: messages } = await supabase
     .from("patient_messages")
-    .select("id, body, created_at, read_at")
+    .select("id, body, created_at, read_at, read_by_instructor_at, sender")
     .eq("patient_id", id)
     .order("created_at", { ascending: false })
     .limit(10);
+
+  // Opening this page is what "reading" the thread means for the instructor
+  // — mark any patient-authored messages read right here, rather than adding
+  // a separate button/action for it. This page is already fully dynamic
+  // (auth-gated, no caching), so a write during the GET is a deliberate,
+  // low-stakes simplification, not a caching hazard.
+  const unreadFromPatient = (messages ?? []).filter((m) => m.sender === "patient" && !m.read_by_instructor_at);
+  if (unreadFromPatient.length > 0) {
+    await supabase
+      .from("patient_messages")
+      .update({ read_by_instructor_at: new Date().toISOString() })
+      .eq("patient_id", id)
+      .eq("instructor_id", user.id)
+      .eq("sender", "patient")
+      .is("read_by_instructor_at", null);
+  }
 
   // Patient's declared situation + profile (intake).
   const { data: profile } = await supabase
@@ -298,16 +314,24 @@ export default async function PatientDetailPage({
             </button>
           </form>
           {messages && messages.length > 0 && (
-            <ul className="mt-4 divide-y divide-slate-100 text-sm">
-              {messages.map((m) => (
-                <li key={m.id as string} className="py-2">
-                  <p className="text-slate-700">{m.body as string}</p>
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    {new Date(m.created_at as string).toLocaleString("fr-FR")}
-                    {m.read_at ? " · lu" : " · pas encore lu"}
-                  </p>
-                </li>
-              ))}
+            <ul className="mt-4 flex max-h-56 flex-col gap-2 overflow-y-auto text-sm">
+              {[...messages].reverse().map((m) => {
+                const mine = m.sender === "instructor";
+                return (
+                  <li key={m.id as string} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
+                        mine ? "rounded-br-md bg-blue-600 text-white" : "rounded-bl-md bg-slate-50 text-slate-700"
+                      }`}
+                    >
+                      <p>{m.body as string}</p>
+                      <p className={`mt-0.5 text-xs ${mine ? "text-blue-100" : "text-slate-400"}`}>
+                        {new Date(m.created_at as string).toLocaleString("fr-FR")}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
