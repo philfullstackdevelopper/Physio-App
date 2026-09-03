@@ -1,5 +1,10 @@
 # Dashboard redesign
 
+> **Remplacée le 2026-09-03** par `2026-09-03-kine-interface-redesign-design.md`
+> (refonte complète de l'interface kiné à partir des maquettes de Philippe).
+> Les idées « messages non lus » et « Encourager » ne sont pas reprises
+> pour l'instant ; à ré-évaluer après la refonte.
+
 ## Purpose
 
 Today's dashboard (`app/dashboard/page.tsx`) is a pure triage inbox: patients
