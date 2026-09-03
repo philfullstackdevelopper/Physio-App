@@ -38,7 +38,7 @@ Name is **EasyPhysio** (rebranded from "Physio-App"). No finished logo or brand 
 
 ## Evidence on Hand
 
-- Exercise illustrations: SVG bone-joint icons for all 478 library exercises (Everkinetic import). No real exercise demonstration photos or videos exist yet — do not fabricate or fake these; flag where real video/photo assets would be needed instead.
+- Exercise illustrations: SVG bone-joint icons for all 437 library exercises (Everkinetic import). No real exercise demonstration photos or videos exist yet — do not fabricate or fake these; flag where real video/photo assets would be needed instead.
 - No testimonials, case studies, or press exist. Do not invent any.
 - No finished logo/brand assets exist yet.
 

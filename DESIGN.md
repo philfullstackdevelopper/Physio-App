@@ -47,15 +47,15 @@ components:
 
 **Creative North Star: "The Considered Clinical Record"**
 
-EasyPhysio should feel like a well-kept patient file that happens to be software — not a generic SaaS dashboard wearing a healthcare skin. The instinct throughout the existing implementation is already pointed this way: a warm display serif (Fraunces) paired with a humanist sans (Instrument Sans) instead of system-default type, a deliberately warmer "paper and ink" palette on the patient clinical record (the `.rehab-panel` scope, explicitly commented in code as reading "as a considered clinical record rather than a generic dashboard"), soft rounded forms throughout, and a faint paper-grain texture (`.grain`) that gives otherwise flat surfaces a tactile, handled quality.
+EasyPhysio should feel like a well-kept patient file that happens to be software — not a generic SaaS dashboard wearing a healthcare skin. The instinct throughout the existing implementation is already pointed this way: a warm display serif (Fraunces) paired with a humanist sans (Instrument Sans) instead of system-default type, a deliberately warmer "paper and ink" palette on the patient clinical record (the `.rehab-panel` scope, explicitly commented in code as reading "as a considered clinical record rather than a generic dashboard") — the instructor app has since moved to a single token palette (see below), soft rounded forms throughout, and a faint paper-grain texture (`.grain`) that gives otherwise flat surfaces a tactile, handled quality.
 
-Depuis le 2026-09-03, l'application kiné (/dashboard/*) utilise une seule palette, déclarée en tokens Tailwind dans app/globals.css : fond #f5f7fb, surfaces blanches, bordures #e5e9f0, encre #0f172a, texte secondaire #64748b, accent #155dfc, sidebar #0d1b3e, et trois couleurs sémantiques saturées (vert #16a34a, orange #f59e0b, rouge #dc2626) avec leurs fonds pâles. Le site vitrine garde sa palette slate et Fraunces pour les titres ; l'app est entièrement en Instrument Sans.
+Since 2026-09-03, the instructor app (/dashboard/*) uses one palette declared as Tailwind tokens in app/globals.css: background #f5f7fb, white surfaces, borders #e5e9f0, ink #0f172a, secondary text #64748b, accent #155dfc, sidebar #0d1b3e, and three saturated semantic colours (green #16a34a, orange #f59e0b, red #dc2626) with pale backgrounds; the marketing site keeps its slate palette and Fraunces headings; the app is entirely in Instrument Sans.
 
 Motion is restrained and purposeful: gentle staggered entrance (`fadeInUp`, often chained with `[animation-delay:120ms]` steps), a soft pulse only for genuinely urgent state (a severe patient alert dot), and cross-fading illustration frames for exercise demonstrations. Nothing spins, bounces, or calls attention to itself decoratively.
 
 **Key Characteristics:**
 - Warm display serif for headings, humanist sans for everything else — never a system-default stack.
-- Two-register neutral system: cool slate for marketing, warm stone/paper for clinical work.
+- One token palette for the instructor app (app-bg, surface, line, ink, muted, brand, ok/warn/danger); the marketing site keeps its slate palette and Fraunces headings.
 - Generous, consistent rounding (never sharp corners) — pill buttons, xl–3xl cards.
 - Mostly flat cards (`shadow-sm`) that lift only on hover with soft, colored, directional shadows — never ambient drop-shadows at rest.
 - Left-accent-border cards (3px colored border-left) for triage/alert rows instead of full-color alert boxes.
