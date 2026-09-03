@@ -4,10 +4,13 @@ import {
   ArrowRight,
   Check,
   ClipboardList,
+  Eye,
+  PenSquare,
   Play,
   ShieldCheck,
   Sparkles,
   Video,
+  Zap,
 } from "lucide-react";
 import ConditionsShowcase from "@/components/ConditionsShowcase";
 import FeaturesShowcase from "@/components/FeaturesShowcase";
@@ -15,7 +18,7 @@ import FaqSection from "@/components/FaqSection";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import PhoneMockup from "@/components/PhoneMockup";
-import KineDemoMockup from "@/components/KineDemoMockup";
+import KineJourneyDemo from "@/components/KineJourneyDemo";
 import ComparisonTable from "@/components/ComparisonTable";
 import Testimonials from "@/components/Testimonials";
 import Reveal from "@/components/Reveal";
@@ -149,45 +152,39 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Côté praticien: what the kiné sees ──────────────────── */}
+        {/* ── Côté kiné : tableau de bord → patient → action ─────── */}
         <Reveal>
         <section className="py-16 sm:py-20">
-          <div className="rounded-[2rem] border border-slate-200/70 bg-white p-8 shadow-sm sm:p-12">
-            <div className="mx-auto max-w-lg text-center">
-              <h2 className="font-display text-2xl font-semibold text-slate-900 sm:text-3xl">
-                De son tableau de bord à la fiche de chaque patient.
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                Votre kiné voit tout depuis son tableau de bord, et agit en quelques clics — pas
-                besoin d&apos;attendre le prochain rendez-vous.
-              </p>
-            </div>
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Côté kiné</p>
+            <h2 className="font-display mt-3 text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+              De son tableau de bord à la fiche de chaque patient.
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-slate-600">
+              Tout ce qui se passe entre deux séances, en un coup d&apos;œil. Comprendre, décider, ajuster : 2 clics suffisent.
+            </p>
+          </div>
 
-            <div className="mt-10 grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-              <div>
-                <KineDemoMockup />
-              </div>
-              <div>
-                <p className="text-lg leading-relaxed text-slate-700">
-                  Toute l&apos;assiduité du cabinet, d&apos;un coup d&apos;œil.
-                </p>
-                <ul className="mt-6 space-y-4">
-                  {[
-                    "Chaque patient : programme en cours, phase atteinte, date de la dernière séance.",
-                    "Les douleurs signalées remontent le jour même, plus besoin d'attendre le rendez-vous.",
-                    "Un exercice trop dur ? Allégez-le en deux clics, le patient voit le changement aussitôt.",
-                  ].map((point) => (
-                    <li key={point} className="flex items-start gap-3">
-                      <Check className="mt-1 h-4 w-4 shrink-0 text-blue-600" strokeWidth={2.5} />
-                      <span className="leading-relaxed text-slate-600">{point}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-8">
-                  <PrimaryCta>Créer un compte praticien</PrimaryCta>
-                </div>
-              </div>
-            </div>
+          <RevealGroup className="mx-auto mt-10 grid max-w-4xl gap-6 sm:grid-cols-3">
+            {[
+              { icon: Eye, title: "Tout voir", body: "Assiduité, phases, dernières séances et signaux importants." },
+              { icon: Zap, title: "Comprendre vite", body: "Ouvrez le suivi détaillé, l'historique de douleur et l'adhérence." },
+              { icon: PenSquare, title: "Agir immédiatement", body: "Ajustez le programme en quelques clics, le patient voit le changement aussitôt." },
+            ].map((f) => (
+              <RevealItem key={f.title} className="flex gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600"><f.icon className="h-5 w-5" strokeWidth={1.75} /></span>
+                <span><span className="block font-semibold text-slate-900">{f.title}</span><span className="mt-1 block text-sm leading-relaxed text-slate-600">{f.body}</span></span>
+              </RevealItem>
+            ))}
+          </RevealGroup>
+
+          {/* La démo déborde de la colonne de texte : pleine largeur jusqu'à 1 200 px. */}
+          <div className="mx-auto mt-12 max-w-7xl lg:-mx-16">
+            <KineJourneyDemo />
+          </div>
+
+          <div className="mt-10 text-center">
+            <PrimaryCta>Créer un compte praticien</PrimaryCta>
           </div>
         </section>
         </Reveal>
