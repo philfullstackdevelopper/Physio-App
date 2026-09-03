@@ -7,11 +7,29 @@
   --brand-dark: #1447c9; /* blue-700 */
 }
 
+/* Palette de l'application kiné (/dashboard/*) — une seule, partagée.
+   Le site vitrine garde ses classes slate ; ne pas mélanger. */
+@theme {
+  --color-app-bg: #f5f7fb;
+  --color-surface: #ffffff;
+  --color-line: #e5e9f0;
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-brand: #155dfc;
+  --color-brand-dark: #1447c9;
+  --color-brand-soft: #eaf1ff;
+  --color-sidebar: #0d1b3e;
+  --color-ok: #16a34a;
+  --color-ok-soft: #e8f7ee;
+  --color-warn: #f59e0b;
+  --color-warn-soft: #fff4e0;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fdecec;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-brand: var(--brand);
-  --color-brand-dark: var(--brand-dark);
 }
 
 html {
@@ -28,26 +46,6 @@ body {
 /* Warm display serif for headings (opt-in via className). */
 .font-display {
   font-family: var(--font-display), Georgia, "Times New Roman", serif;
-}
-
-/* Scoped palette for the kiné's patient overview (dashboard/patients/[id]) —
- * a warmer paper/ink pairing than the app-wide stone/blue defaults, so the
- * page reads as a considered clinical record rather than a generic dashboard.
- * Kept local to this page (not merged into :root) so nothing else shifts. */
-.rehab-panel {
-  --paper: #fbf8f3;
-  --ink: #2b2622;
-  --ink-soft: #5b5349;
-  --ink-muted: #8c8377;
-  --ink-accent: var(--brand);
-  --hairline: #e7e1d6;
-  --grade-green-bg: #e1e8d9;
-  --grade-green-fg: #3f5a34;
-  --grade-yellow-bg: #f1e3c2;
-  --grade-yellow-fg: #7c5a1b;
-  --grade-red-bg: #ead1cb;
-  --grade-red-fg: #7a3b30;
-  background: var(--paper);
 }
 
 @keyframes fadeInUp {
