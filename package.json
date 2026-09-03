@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --no-warnings=ExperimentalWarning --test \"lib/**/*.test.ts\""
   },
   "dependencies": {
     "@clerk/localizations": "^4.15.5",

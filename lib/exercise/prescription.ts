@@ -19,6 +19,14 @@ export const STAGE_LABELS: Record<InjuryStage, string> = {
   return_to_sport: "Retour à l'activité / au sport",
 };
 
+/** Libellé court pour les badges (le libellé complet va dans `title`). */
+export const STAGE_SHORT: Record<InjuryStage, string> = {
+  acute: "Phase 1",
+  subacute: "Phase 2",
+  recovery: "Phase 3",
+  return_to_sport: "Phase 4",
+};
+
 export interface Prescription {
   exerciseId: string;
   name: string;
