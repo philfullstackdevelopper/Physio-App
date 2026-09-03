@@ -51,7 +51,12 @@ function ProgressRing({ done, total }: { done: number; total: number }) {
   );
 }
 
-export default async function PatientDashboard() {
+export default async function PatientDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
@@ -65,12 +70,17 @@ export default async function PatientDashboard() {
     .order("created_at", { ascending: false })
     .limit(10);
 
-  const todayCount = home.ordered.length;
-  const doneCount = home.doneWorkouts.length;
+  // The ring now shows THIS WEEK's progress on the active séance (there's at
+  // most one at a time), not a same-day tally across several workouts.
+  const weekTarget = home.activeWorkout?.times_per_week ?? 0;
 
   return (
     <main className="min-h-screen p-6 sm:p-8">
       <div className="mx-auto max-w-2xl">
+        {error && (
+          <p className="mt-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
+        )}
+
         <div className="pt-2 text-center">
           <h1 className="font-display text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
             Bonjour, {home.fullName ? home.fullName.split(" ")[0] : "Bienvenue"}
@@ -78,7 +88,7 @@ export default async function PatientDashboard() {
         </div>
 
         <div className="mt-3 flex items-center justify-center gap-3">
-          <ProgressRing done={doneCount} total={todayCount} />
+          <ProgressRing done={home.weekCount} total={weekTarget} />
           <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
             <Flame className="h-4 w-4 text-blue-600" strokeWidth={2} />
             {home.streak > 0
@@ -153,22 +163,24 @@ export default async function PatientDashboard() {
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-blue-100">Aujourd&apos;hui</p>
             <p className="mt-1 text-lg font-semibold">
-              {todayCount === 0
-                ? "Programme à venir"
-                : doneCount >= todayCount
+              {home.activeWorkout
+                ? home.doneToday
                   ? "Séance du jour terminée !"
-                  : `Séance du jour — ${doneCount}/${todayCount} faite${doneCount > 1 ? "s" : ""}`}
+                  : `Séance du jour — ${home.activeWorkout.name}`
+                : home.weekComplete
+                  ? "Programme de la semaine terminé !"
+                  : "Programme à venir"}
             </p>
           </div>
           <ArrowRight className="h-5 w-5 shrink-0" strokeWidth={2} />
         </Link>
 
-        {messages && messages.length > 0 && (
-          <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-            <h2 className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-              <MessageCircle className="h-4 w-4 text-blue-600" strokeWidth={1.75} />
-              Messages avec votre kiné
-            </h2>
+        <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <h2 className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+            <MessageCircle className="h-4 w-4 text-blue-600" strokeWidth={1.75} />
+            Messages avec votre kiné
+          </h2>
+          {messages && messages.length > 0 && (
             <ul className="mt-3 flex flex-col gap-2">
               {[...messages].reverse().map((m) => {
                 const mine = m.sender === "patient";
@@ -202,22 +214,22 @@ export default async function PatientDashboard() {
                 );
               })}
             </ul>
-            <form action={sendPatientMessage} className="mt-3 flex gap-2">
-              <input
-                name="body"
-                required
-                placeholder="Écrire un message…"
-                className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-              />
-              <button
-                type="submit"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-95"
-              >
-                Envoyer
-              </button>
-            </form>
-          </section>
-        )}
+          )}
+          <form action={sendPatientMessage} className="mt-3 flex gap-2">
+            <input
+              name="body"
+              required
+              placeholder="Écrire un message…"
+              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-95"
+            >
+              Envoyer
+            </button>
+          </form>
+        </section>
 
         <div className="mt-8 text-center">
           <Link

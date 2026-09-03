@@ -56,8 +56,17 @@ create policy patient_messages_instructor_write on public.patient_messages
 create or replace function public.patient_messages_guard_read_marker_only()
 returns trigger
 language plpgsql
+set search_path = public, pg_temp
 as $$
 begin
+  if new.read_at is distinct from old.read_at
+     and old.patient_id is distinct from public.current_app_user_id() then
+    raise exception 'only the patient may move read_at';
+  end if;
+  if new.read_by_instructor_at is distinct from old.read_by_instructor_at
+     and old.instructor_id is distinct from public.current_app_user_id() then
+    raise exception 'only the instructor may move read_by_instructor_at';
+  end if;
   if new.id is distinct from old.id
      or new.patient_id is distinct from old.patient_id
      or new.instructor_id is distinct from old.instructor_id
