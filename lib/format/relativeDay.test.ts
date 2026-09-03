@@ -21,6 +21,10 @@ test("date courte au-delà de 6 jours", () => {
   assert.equal(relativeDay(new Date(2026, 7, 27).toISOString(), now), "Jeu. 27 août");
 });
 
+test("date courte : le point du mois abrégé est conservé (janv., sept., ...)", () => {
+  assert.equal(relativeDay(new Date(2026, 0, 15).toISOString(), now), "Jeu. 15 janv.");
+});
+
 test("jamais quand null", () => {
   assert.equal(relativeDay(null, now), "Jamais");
   assert.equal(relativeDay(undefined, now), "Jamais");

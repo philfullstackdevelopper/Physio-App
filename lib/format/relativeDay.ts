@@ -21,6 +21,8 @@ export function relativeDay(iso: string | null | undefined, now: Date = new Date
   if (days <= 0) return "Aujourd'hui";
   if (days === 1) return "Hier";
   if (days <= 6) return `Il y a ${days} jours`;
-  const s = SHORT_DATE.format(d).replace(/\.?,?\s+/, ". ").replace(/\.$/, "");
+  // Ne pas retirer le point final : il appartient parfois au mois abrégé
+  // (« janv. », « sept. », « nov. »...), pas seulement au jour de semaine.
+  const s = SHORT_DATE.format(d).replace(/\.?,?\s+/, ". ");
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
