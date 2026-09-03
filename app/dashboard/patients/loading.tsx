@@ -1,26 +1,21 @@
 export default function PatientsLoading() {
   return (
     <main className="min-h-screen p-6 sm:p-8">
-      <div className="mx-auto max-w-2xl motion-safe:animate-pulse">
+      <div className="mx-auto max-w-5xl motion-safe:animate-pulse">
         <div className="flex items-center justify-between">
           <div>
-            <div className="h-4 w-28 rounded bg-stone-200" />
-            <div className="mt-2 h-7 w-40 rounded bg-stone-200" />
+            <div className="h-7 w-40 rounded bg-line" />
+            <div className="mt-2 h-4 w-72 rounded bg-line" />
           </div>
-          <div className="h-9 w-28 rounded-lg bg-stone-200" />
+          <div className="h-9 w-40 rounded-full bg-line" />
         </div>
-
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-          <div className="h-10 w-full rounded-lg bg-stone-200 sm:flex-1" />
-          <div className="h-10 w-full rounded-lg bg-stone-200 sm:w-48" />
-          <div className="h-10 w-full rounded-lg bg-stone-200 sm:w-40" />
+        <div className="mt-6 flex gap-3">
+          <div className="h-9 flex-1 rounded-lg bg-line" />
+          <div className="h-9 w-64 rounded-full bg-line" />
+          <div className="h-9 w-9 rounded-lg bg-line" />
         </div>
-
-        <div className="mt-3 space-y-2 rounded-xl border border-stone-200 bg-white p-2">
-          <div className="h-16 rounded-lg bg-stone-100" />
-          <div className="h-16 rounded-lg bg-stone-100" />
-          <div className="h-16 rounded-lg bg-stone-100" />
-          <div className="h-16 rounded-lg bg-stone-100" />
+        <div className="mt-4 divide-y divide-line rounded-xl border border-line bg-surface">
+          {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-14" />)}
         </div>
       </div>
     </main>
