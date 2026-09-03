@@ -19,6 +19,13 @@ test("points ordonnés dans le temps, x entre 0 et 1, notes nulles ignorées", (
   assert.equal(s.previous, 4);
 });
 
+test("fenêtre de 0 jour → pas de division par zéro, x fini", () => {
+  const s = buildPainSeries([{ pain_score: 5, created_at: now.toISOString() }], now, 0);
+  assert.equal(s.points.length, 1);
+  assert.ok(Number.isFinite(s.points[0].x));
+  assert.ok(s.points[0].x >= 0 && s.points[0].x <= 1);
+});
+
 test("sans note → série vide et latest/previous null", () => {
   const s = buildPainSeries([], now);
   assert.deepEqual(s.points, []);
