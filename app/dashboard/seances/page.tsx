@@ -55,6 +55,7 @@ export default async function SeancesPage({
     .from("workouts")
     .select("id, name, stage, condition_id, workout_exercises(position, exercise:exercises(name))")
     .eq("created_by", user.id)
+    .is("patient_id", null)
     .order("created_at", { ascending: false });
   const seances = (mine ?? []) as unknown as OwnSeance[];
   const seanceIds = seances.map((s) => s.id);

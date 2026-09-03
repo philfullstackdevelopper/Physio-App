@@ -50,32 +50,32 @@ export default function AddWorkoutModal({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-4 text-sm font-medium text-[color:var(--ink-accent)] underline decoration-[color:var(--ink-accent)]/30 underline-offset-4 hover:decoration-[color:var(--ink-accent)]"
+        className="mt-4 text-sm font-medium text-brand underline decoration-brand/30 underline-offset-4 hover:decoration-brand"
       >
         + Ajouter une séance
       </button>
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#2B2622]/45 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-4"
           onClick={() => setOpen(false)}
         >
           <div
-            className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-[var(--paper)] p-6 shadow-2xl"
+            className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-surface p-6 shadow-sm"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label="Choisir une séance à recommander"
           >
             <div className="flex items-start justify-between gap-3">
-              <h3 className="font-display text-xl font-semibold text-[color:var(--ink)]">
+              <h3 className="text-base font-semibold text-ink">
                 Choisir une séance
               </h3>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Fermer"
-                className="rounded p-1 text-[color:var(--ink-muted)] hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--ink-accent)]"
+                className="rounded p-1 text-muted hover:bg-app-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
               >
                 <X className="h-4 w-4" strokeWidth={2} />
               </button>
@@ -87,33 +87,33 @@ export default function AddWorkoutModal({
                 return (
                 <li key={w.id}>
                   {newGroup && (
-                    <p className={`text-xs font-semibold uppercase tracking-wide text-[color:var(--ink-muted)] ${i === 0 ? "" : "mt-4"}`}>
+                    <p className={`text-xs font-semibold uppercase tracking-wide text-muted ${i === 0 ? "" : "mt-4"}`}>
                       {w.conditionName ?? "Sans condition"}
                     </p>
                   )}
-                  <div className={`flex items-start justify-between gap-3 border-t border-[color:var(--hairline)] pt-3 ${newGroup ? "mt-2 border-t-0 pt-0" : ""}`}>
+                  <div className={`flex items-start justify-between gap-3 border-t border-line pt-3 ${newGroup ? "mt-2 border-t-0 pt-0" : ""}`}>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="truncate font-semibold text-[color:var(--ink)]">{w.name}</p>
+                        <p className="truncate font-semibold text-ink">{w.name}</p>
                         {w.editHref && (
                           <Link
                             href={w.editHref}
-                            className="shrink-0 text-xs font-medium text-[color:var(--ink-accent)] underline underline-offset-2 hover:no-underline"
+                            className="shrink-0 text-xs font-medium text-brand underline underline-offset-2 hover:no-underline"
                           >
                             Modifier
                           </Link>
                         )}
                       </div>
-                      <p className="mt-0.5 text-xs text-[color:var(--ink-muted)]">
+                      <p className="mt-0.5 text-xs text-muted">
                         {w.stageLabel && `${w.stageLabel} · `}
                         {w.durationMinutes} min
                         {w.timesPerWeek ? ` · ${w.timesPerWeek}×/semaine` : ""}
                       </p>
                       {w.description && (
-                        <p className="mt-1.5 text-sm text-[color:var(--ink-soft)]">{w.description}</p>
+                        <p className="mt-1.5 text-sm text-muted">{w.description}</p>
                       )}
                       {w.exerciseNames.length > 0 && (
-                        <p className="mt-1.5 text-xs text-[color:var(--ink-muted)]">
+                        <p className="mt-1.5 text-xs text-muted">
                           {w.exerciseNames.join(" · ")}
                         </p>
                       )}
@@ -123,7 +123,7 @@ export default function AddWorkoutModal({
                       <input type="hidden" name="workout_id" value={w.id} />
                       <button
                         type="submit"
-                        className="shrink-0 rounded-full border border-[color:var(--ink-accent)]/30 px-3 py-1 text-xs font-medium text-[color:var(--ink-accent)] hover:bg-[color:var(--ink-accent)]/10"
+                        className="shrink-0 rounded-full border border-brand/30 px-3 py-1 text-xs font-medium text-brand hover:bg-brand-soft"
                       >
                         Ajouter
                       </button>
