@@ -53,14 +53,14 @@ export default async function SeanceEditorPage({
     <main className="min-h-screen">
       <div className="mx-auto max-w-2xl p-6 sm:p-8">
         <div className="animate-[fadeInUp_0.6s_ease-out_both]">
-          <Link href="/dashboard/seances" className="text-sm text-stone-500 hover:underline">
+          <Link href="/dashboard/seances" className="text-sm text-muted hover:text-ink">
             ← Mes séances
           </Link>
-          <h1 className="font-display mt-3 text-2xl font-semibold text-stone-900">Composer la séance</h1>
+          <h1 className="mt-3 text-2xl font-semibold text-ink">Composer la séance</h1>
         </div>
 
         {saved && (
-          <div className="animate-[fadeInUp_0.6s_ease-out_both] mt-4 flex items-center gap-1.5 rounded-xl border-y border-r border-stone-200 border-l-[3px] border-l-emerald-600 bg-white px-4 py-3 text-sm font-medium text-emerald-800">
+          <div className="animate-[fadeInUp_0.6s_ease-out_both] mt-4 flex items-center gap-1.5 rounded-xl bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
             <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.5} />
             Séance enregistrée
           </div>
@@ -70,26 +70,26 @@ export default async function SeanceEditorPage({
           <input type="hidden" name="workout_id" value={workout.id} />
 
           {/* Details */}
-          <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] rounded-xl border border-stone-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-8px_rgba(120,53,15,0.16)]">
-            <h2 className="text-sm font-medium text-stone-900">Détails</h2>
+          <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] rounded-xl border border-line bg-surface p-5">
+            <h2 className="text-sm font-medium text-ink">Détails</h2>
             <div className="mt-3 flex flex-col gap-3">
-              <label className="text-sm text-stone-600">
+              <label className="text-sm text-muted">
                 Nom
                 <input
                   name="name"
                   required
                   defaultValue={workout.name}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
                 />
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <label className="text-sm text-stone-600">
+                <label className="text-sm text-muted">
                   Condition
                   <select
                     name="condition_id"
                     required
                     defaultValue={workout.condition_id ?? ""}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
                   >
                     {conditions?.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -98,12 +98,12 @@ export default async function SeanceEditorPage({
                     ))}
                   </select>
                 </label>
-                <label className="text-sm text-stone-600">
+                <label className="text-sm text-muted">
                   Phase
                   <select
                     name="stage"
                     defaultValue={workout.stage ?? ""}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
                   >
                     <option value="">Toutes phases</option>
                     {STAGES.map(([value, label]) => (
@@ -113,20 +113,20 @@ export default async function SeanceEditorPage({
                     ))}
                   </select>
                 </label>
-                <label className="text-sm text-stone-600">
+                <label className="text-sm text-muted">
                   Durée (min)
                   <input
                     type="number" name="duration_minutes" min={1} max={90}
                     defaultValue={workout.duration_minutes ?? 10}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
                   />
                 </label>
-                <label className="text-sm text-stone-600">
+                <label className="text-sm text-muted">
                   Fois / semaine
                   <input
                     type="number" name="times_per_week" min={1} max={14}
                     defaultValue={workout.times_per_week ?? 3}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
                   />
                 </label>
               </div>
@@ -134,9 +134,9 @@ export default async function SeanceEditorPage({
           </section>
 
           {/* Exercises — check to add, uncheck to remove */}
-          <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:200ms] rounded-xl border border-stone-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-8px_rgba(120,53,15,0.16)]">
-            <h2 className="text-sm font-medium text-stone-900">
-              Exercices <span className="font-normal text-stone-400">(par zone du corps — cochez pour ajouter)</span>
+          <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:200ms] rounded-xl border border-line bg-surface p-5">
+            <h2 className="text-sm font-medium text-ink">
+              Exercices <span className="font-normal text-muted">(par zone du corps — cochez pour ajouter)</span>
             </h2>
             <div className="mt-3">
               <ExercisePicker
@@ -149,7 +149,7 @@ export default async function SeanceEditorPage({
           <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:280ms] flex items-center gap-3">
             <button
               type="submit"
-              className="rounded-lg bg-blue-600 px-5 py-2.5 font-medium text-white hover:bg-blue-700"
+              className="rounded-full bg-brand px-5 py-2.5 font-medium text-white hover:bg-brand-dark"
             >
               Enregistrer la séance
             </button>
@@ -161,7 +161,7 @@ export default async function SeanceEditorPage({
           <input type="hidden" name="workout_id" value={workout.id} />
           <button
             type="submit"
-            className="text-sm font-medium text-red-600 hover:underline"
+            className="text-sm font-medium text-danger hover:underline"
           >
             Supprimer cette séance
           </button>
