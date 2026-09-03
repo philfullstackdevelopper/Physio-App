@@ -22,7 +22,7 @@ export default async function ExercisesPage({
   const { data: allExercises } = await supabase
     .from("exercises")
     .select(
-      "id, name, instructions, media_url, media_start_seconds, created_by, exercise_body_parts(body_part_id)",
+      "id, name, instructions, media_url, media_start_seconds, created_by, search_keywords, exercise_body_parts(body_part_id)",
     )
     .order("name");
 
@@ -39,6 +39,7 @@ export default async function ExercisesPage({
     media_url: ex.media_url,
     media_start_seconds: ex.media_start_seconds,
     created_by: ex.created_by,
+    search_keywords: ex.search_keywords ?? [],
     bodyPartIds: (ex.exercise_body_parts ?? []).map((t) => t.body_part_id),
     hidden: hiddenIds.has(ex.id),
   }));

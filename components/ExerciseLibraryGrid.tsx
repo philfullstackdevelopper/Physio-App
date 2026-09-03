@@ -32,6 +32,10 @@ export interface LibraryExercise {
   media_start_seconds: number;
   created_by: string | null;
   bodyPartIds: string[];
+  /** Old French names this exercise was renamed or merged away from
+   *  (migration 0042/0043) — a kiné who still types "Pont fessier" should
+   *  find "Glute Bridge". Searched, never displayed. */
+  search_keywords: string[];
   /** Hidden by the CURRENT instructor from their own search — a personal
    *  filter, not a deletion (see migration 0037). */
   hidden: boolean;
@@ -145,10 +149,22 @@ export default function ExerciseLibraryGrid({
   // A non-empty search searches the whole library regardless of the selected
   // body-part tile — narrowing to a single category first would defeat the
   // point of a search bar. Clearing it falls back to the category filter.
+  //
+  // Matches name, the old French names an exercise was renamed/merged from
+  // (search_keywords — see migration 0043), and instructions text — the
+  // whole library is English-named now, but instructions stay French, so a
+  // kiné typing a French term like "pont" or "mollet" still finds the
+  // matching exercise even with no keyword recorded for it.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (q) {
-      return exercises.filter((ex) => !ex.hidden && ex.name.toLowerCase().includes(q));
+      return exercises.filter(
+        (ex) =>
+          !ex.hidden &&
+          (ex.name.toLowerCase().includes(q) ||
+            ex.instructions?.toLowerCase().includes(q) ||
+            ex.search_keywords.some((k) => k.toLowerCase().includes(q))),
+      );
     }
     return selectedId
       ? exercises.filter((ex) => ex.bodyPartIds.includes(selectedId) && !ex.hidden)
