@@ -26,10 +26,10 @@ All UI is in French, no i18n layer. Instructor and patient data are strictly iso
 
 ## Capabilities and Constraints
 
-- Built and live: instructor signup/approval, patient roster management, condition/workout assignment from a shared exercise library (478 exercises, Everkinetic-sourced), adherence tracking via workout logs, instructor-patient messaging, health-data/CGU consent gates, Stripe Connect billing with a platform fee.
+- Built and live: instructor signup/approval, patient roster management, condition/workout assignment from a shared exercise library (437 exercises, Everkinetic-sourced), adherence tracking via workout logs, instructor-patient messaging, health-data/CGU consent gates, Stripe Connect billing with a platform fee, per-patient séance adjustment (« Ajuster la séance », patient-specific copies).
 - Exercise content and clinical parameters come from a real clinical partner kiné — never invent or extend clinical content solo (`lib/ai/protocol.ts` is an unreviewed placeholder, not real clinical content).
 - Permanently dropped, do not resurrect: télésoin (remote video sessions), camera-based pose-tracking exercise analysis.
-- Explicitly out of scope: email/SMS reminders, rich scheduling/calendars beyond a text frequency field, multi-language support, analytics/charts beyond a simple completion list, any role beyond Admin/Instructor/Patient.
+- Explicitly out of scope: email/SMS reminders, rich scheduling/calendars beyond a text frequency field, multi-language support, analytics beyond the instructor UI's own indicators (adherence %, daily tiles, 30-day pain history), any role beyond Admin/Instructor/Patient.
 - Open gap the product needs: no video demonstrations of exercises exist yet (illustrations only); no easy way yet for the team to add new exercise illustrations/designs when extending the library.
 
 ## Brand Commitments

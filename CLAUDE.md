@@ -27,7 +27,7 @@ The schema lives in `supabase/migrations/` (numbered SQL files, applied in order
 Conceptually, the schema is organized around:
 
 - **Identity**: `instructors`, `patients` (owned by an instructor), and — for the Phase-2 auth migration only (see §7) — `auth.users`, `auth_tokens`, `app_users`.
-- **Exercise library**: `exercises` (shared library, any instructor can use any exercise), `conditions` (named protocols, e.g. "Lombalgie chronique"), `workouts` (session alternatives within a condition), `workout_exercises`, plus staging/override tables (`exercise_overrides`, `exercise_feedback`) that support adaptive difficulty.
+- **Exercise library**: `exercises` (shared library, any instructor can use any exercise), `conditions` (named protocols, e.g. "Lombalgie chronique"), `workouts` (session alternatives within a condition), `workout_exercises`, plus `instructor_hidden_exercises` (per-instructor hide list). A workout with `patient_id` set is a **patient-specific copy** created by « Ajuster la séance » (`source_workout_id` points at the original); it is visible only to that patient and their instructor (migration 0044) and never appears in library lists.
 - **Assignment & adherence**: a patient is assigned a `condition` and optionally a `recommended_workout_id`; completing a session writes a `workout_logs` row. `patient_profiles`, `patient_feedback`, `patient_documents` hold richer per-patient clinical/intake detail beyond the Phase-1 basics.
 - **Billing**: `instructor_connect_accounts` (Stripe Connect account id — deliberately its own table, not a column on `instructors`, so the instructor's own RLS update policy can't let them redirect their own patients' payments — see `lib/billing/platformFee.ts`), `platform_invoices`.
 - **Messaging**: `patient_messages` — instructor-to-patient messaging, already live (dashboard patient detail page and the patient app both use it).
@@ -50,12 +50,13 @@ Conceptually, the schema is organized around:
 3. Assign the patient to a **condition**, which already offers several **workouts** (session alternatives). Optionally recommend a specific workout.
 4. Create their own conditions/workouts/exercises in addition to the pre-loaded platform library.
 5. View a patient's **adherence** (completions vs. recommended times/week), and message the patient directly.
-6. Set their own monthly per-patient price and connect a Stripe account (`/dashboard/facturation`) to get paid directly by patients.
+6. From the patient page, click « Ajuster la séance » to add/remove exercises for that patient only — the app copies the séance for them and sends them an automatic message.
+7. Set their own monthly per-patient price and connect a Stripe account (`/dashboard/facturation`) to get paid directly by patients.
 
 **Patient**
 1. Log in (Clerk), accept CGU and health-data consent on first use.
 2. See workout alternatives for their condition, with the instructor's recommendation highlighted.
-3. Open a workout, do the guided session (adaptive difficulty via `lib/exercise/autoEase.ts`, pain/difficulty feedback), and mark it done → `workout_logs`.
+3. Open a workout, do the guided session (pain feedback at the end; the phase brake in `lib/exercise/stageProgress.ts` only ever slows progression down), and mark it done → `workout_logs`.
 4. Message their instructor; from `/patient/compte`, export their data (JSON) or delete their account.
 
 **Billing (money flow)** — two flows kept strictly separate: patients pay their instructor directly via the instructor's own Stripe Connect account (EasyPhysio never touches that money — avoids compérage risk); the platform separately bills the instructor a prorated 15% fee per active patient (`lib/billing/platformFee.ts`). There is no flat subscription plan anymore — the old "Kiné Pro" flat plan was removed in favor of this per-patient model.
@@ -65,7 +66,7 @@ Conceptually, the schema is organized around:
 - Email/SMS reminders
 - Rich scheduling (calendars, recurring rules beyond a plain text frequency field)
 - Multi-language support
-- Analytics/adherence charts beyond a simple completion list
+- Analytics beyond what the instructor UI shows today (adherence %, day-over-day tiles, 30-day pain history). No exports, no cross-patient reports.
 - Any role beyond Admin / Instructor / Patient
 
 ## 6. Permanently dropped (do not resurrect without being asked)
@@ -83,7 +84,7 @@ Two pieces of scaffolding exist in the repo for future work. Both are intentiona
 ## 8. Technical stack (already set up — do not change without discussion)
 
 - **Next.js 16** (App Router, TypeScript, Tailwind CSS 4, Turbopack) — frontend and backend together. Next.js 16 renamed `middleware.ts` → `proxy.ts` (same job, runs before each request) — this codebase already uses `proxy.ts`.
-- **React 19**, icons via **lucide-react** (no emoji as UI icons — use real icons or flag the need for real photos).
+- **React 19**, icons via **lucide-react** (no emoji as UI icons — use real icons or flag the need for real photos). The instructor app uses one palette, declared as Tailwind `@theme` tokens in `app/globals.css` (`app-bg`, `surface`, `line`, `ink`, `muted`, `brand`, `ok`, `warn`, `danger` + `-soft` variants); Fraunces (`font-display`) is for the marketing site only.
 - **Clerk** (`@clerk/nextjs`) — current authentication for both instructors and patients (frFR localization). This replaced an earlier Supabase-Auth-based system; see §7 for the *next* planned auth migration.
 - **Supabase** — Postgres database and file storage. Client wired up under `lib/supabase/`. Supabase's own Auth product is no longer used (Clerk is), but the Postgres database and Storage remain live.
 - **Stripe** (Connect) — per-patient billing, see §4.

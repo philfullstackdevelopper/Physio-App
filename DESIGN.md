@@ -7,21 +7,15 @@ colors:
   marketing-ink: "#0f172a"
   marketing-body: "#475569"
   marketing-bg: "#f6f8fd"
-  clinical-ink: "#1c1917"
-  clinical-body: "#78716c"
-  clinical-bg: "#f8fafb"
-  paper: "#fbf8f3"
-  paper-ink: "#2b2622"
-  paper-ink-soft: "#5b5349"
-  paper-ink-muted: "#8c8377"
-  paper-hairline: "#e7e1d6"
-  grade-green-bg: "#e1e8d9"
-  grade-green-fg: "#3f5a34"
-  grade-yellow-bg: "#f1e3c2"
-  grade-yellow-fg: "#7c5a1b"
-  grade-red-bg: "#ead1cb"
-  grade-red-fg: "#7a3b30"
-  alert-amber: "#d97706"
+  app-bg: "#f5f7fb"
+  surface: "#ffffff"
+  line: "#e5e9f0"
+  ink: "#0f172a"
+  muted: "#64748b"
+  sidebar: "#0d1b3e"
+  ok: "#16a34a"
+  warn: "#f59e0b"
+  danger: "#dc2626"
 typography:
   display:
     fontFamily: "var(--font-display), Georgia, 'Times New Roman', serif"
@@ -55,7 +49,7 @@ components:
 
 EasyPhysio should feel like a well-kept patient file that happens to be software — not a generic SaaS dashboard wearing a healthcare skin. The instinct throughout the existing implementation is already pointed this way: a warm display serif (Fraunces) paired with a humanist sans (Instrument Sans) instead of system-default type, a deliberately warmer "paper and ink" palette on the patient clinical record (the `.rehab-panel` scope, explicitly commented in code as reading "as a considered clinical record rather than a generic dashboard"), soft rounded forms throughout, and a faint paper-grain texture (`.grain`) that gives otherwise flat surfaces a tactile, handled quality.
 
-The system runs two coordinated registers rather than one flat palette: a cooler **slate** register for marketing/acquisition surfaces (the praticiens landing page, signup, login) that reads as a confident, credible B2B tool, and a warmer **stone/paper** register for the actual clinical work (dashboard, patient program, patient record) that reads as considered and human. Both share the same type pairing, radius language, and blue brand accent, so the app never feels like two different products — only two moods for two different jobs.
+Depuis le 2026-09-03, l'application kiné (/dashboard/*) utilise une seule palette, déclarée en tokens Tailwind dans app/globals.css : fond #f5f7fb, surfaces blanches, bordures #e5e9f0, encre #0f172a, texte secondaire #64748b, accent #155dfc, sidebar #0d1b3e, et trois couleurs sémantiques saturées (vert #16a34a, orange #f59e0b, rouge #dc2626) avec leurs fonds pâles. Le site vitrine garde sa palette slate et Fraunces pour les titres ; l'app est entièrement en Instrument Sans.
 
 Motion is restrained and purposeful: gentle staggered entrance (`fadeInUp`, often chained with `[animation-delay:120ms]` steps), a soft pulse only for genuinely urgent state (a severe patient alert dot), and cross-fading illustration frames for exercise demonstrations. Nothing spins, bounces, or calls attention to itself decoratively.
 
@@ -162,7 +156,7 @@ Instructor dashboard uses a sidebar (`DashboardSidebar`); patients get a bottom 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep the slate/stone register split intentional — slate for marketing, stone/paper for the actual clinical record.
+- **Do** keep the marketing site (slate + Fraunces) and the instructor app (tokens + Instrument Sans) visually distinct — never mix them.
 - **Do** use `font-display` (Fraunces) for headings only, never for body copy or UI chrome.
 - **Do** let shadows appear only on hover or on the single primary action of a screen.
 - **Do** use the 3px left-accent-border pattern for triage/alert cards instead of full-color alert boxes.
@@ -170,6 +164,5 @@ Instructor dashboard uses a sidebar (`DashboardSidebar`); patients get a bottom 
 
 ### Don't:
 - **Don't** use emoji as UI icons — lucide-react only ([[design-taste-no-emoji-icons]]).
-- **Don't** introduce a third neutral scale (e.g. plain gray) alongside slate and stone — it breaks the two-register system.
 - **Don't** apply ambient/ always-on shadows to resting cards — earn them through interaction.
 - **Don't** let the app read as generic AI SaaS: no purple gradient heroes, no default system-font stacks, no stock dashboard-template layouts.
