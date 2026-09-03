@@ -158,12 +158,12 @@ export default function PatientsTable({
             <table className="hidden w-full md:table">
               <thead>
                 <tr className="border-b border-line text-left text-xs font-medium uppercase tracking-wide text-muted">
-                  <th className="px-4 py-3 font-medium">Patient</th>
-                  <th className="px-4 py-3 font-medium">Phase</th>
-                  <th className="px-4 py-3 font-medium">Dernière séance</th>
-                  <th className="px-4 py-3 font-medium">Adhérence</th>
-                  <th className="px-4 py-3 font-medium">Signal</th>
-                  <th className="w-10 px-2 py-3" />
+                  <th scope="col" className="px-4 py-3 font-medium">Patient</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Phase</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Dernière séance</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Adhérence</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Signal</th>
+                  <th scope="col" className="w-10 px-2 py-3" />
                 </tr>
               </thead>
               <tbody>
