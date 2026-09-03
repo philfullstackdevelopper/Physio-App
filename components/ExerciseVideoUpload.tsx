@@ -105,7 +105,7 @@ export default function ExerciseVideoUpload({
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 inline-block text-sm font-medium text-blue-700 hover:underline"
+          className="mt-2 inline-block text-sm font-medium text-brand hover:underline"
         >
           Voir la vidéo actuelle
         </a>
@@ -124,22 +124,22 @@ export default function ExerciseVideoUpload({
             <button
               type="button"
               onClick={useCurrentTimeAsStart}
-              className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-md border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink hover:bg-app-bg"
             >
               Définir l&apos;instant actuel comme départ
             </button>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-muted">
               {savedStart ? "Enregistré ✓" : `Départ actuel : ${startSeconds}s`}
             </span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-muted">
             Avancez la vidéo jusqu&apos;au moment où le mouvement commence, puis cliquez ci-dessus —
             la séance patient démarrera et bouclera pile à cet instant.
           </p>
         </>
       )}
 
-      <label className="mt-2 inline-block cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+      <label className="mt-2 inline-block cursor-pointer rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink hover:bg-app-bg">
         {busy ? "Envoi…" : url ? "Remplacer la vidéo" : "Ajouter une vidéo"}
         <input
           type="file"
@@ -155,7 +155,7 @@ export default function ExerciseVideoUpload({
         />
       </label>
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
     </div>
   );
 }

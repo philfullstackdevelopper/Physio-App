@@ -79,14 +79,14 @@ export default function DocumentUpload({
   };
 
   return (
-    <div className="rounded-lg bg-slate-50 p-3">
-      <p className="text-sm font-medium text-slate-700">Documents médicaux (optionnel)</p>
-      <p className="mt-0.5 text-xs text-slate-500">
+    <div className="rounded-lg bg-surface p-3">
+      <p className="text-sm font-medium text-ink">Documents médicaux (optionnel)</p>
+      <p className="mt-0.5 text-xs text-muted">
         Radios, IRM, comptes-rendus. Stockés de façon privée, visibles par vous et
         votre kinésithérapeute uniquement.
       </p>
 
-      <label className="mt-2 inline-block cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+      <label className="mt-2 inline-block cursor-pointer rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink hover:bg-app-bg">
         {busy ? "Envoi…" : "Ajouter un document"}
         <input
           type="file"
@@ -101,13 +101,13 @@ export default function DocumentUpload({
         />
       </label>
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
 
       {docs.length > 0 && (
         <ul className="mt-3 space-y-1.5">
           {docs.map((doc) => (
-            <li key={doc.id} className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-sm">
-              <span className="flex min-w-0 items-center gap-1.5 truncate text-slate-700">
+            <li key={doc.id} className="flex items-center justify-between rounded-md bg-surface px-3 py-1.5 text-sm">
+              <span className="flex min-w-0 items-center gap-1.5 truncate text-ink">
                 <FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                 {doc.file_name}
               </span>
@@ -115,7 +115,7 @@ export default function DocumentUpload({
                 type="button"
                 onClick={() => remove(doc)}
                 disabled={busy}
-                className="ml-3 shrink-0 text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                className="ml-3 shrink-0 text-xs font-medium text-danger hover:underline disabled:opacity-50"
               >
                 Supprimer
               </button>

@@ -58,14 +58,14 @@ function ExerciseCardMenu({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Options"
-        className="rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+        className="rounded p-1 text-muted hover:bg-app-bg hover:text-ink"
       >
         <MoreVertical className="h-4 w-4" strokeWidth={2} />
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-stone-200 bg-white py-1 shadow-lg">
+          <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-line bg-surface py-1 shadow-sm">
             {hidden ? (
               <button
                 type="button"
@@ -73,7 +73,7 @@ function ExerciseCardMenu({
                   setOpen(false);
                   onUnhide();
                 }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-stone-700 hover:bg-stone-50"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-app-bg"
               >
                 <Eye className="h-3.5 w-3.5" strokeWidth={2} />
                 Réafficher
@@ -85,7 +85,7 @@ function ExerciseCardMenu({
                   setOpen(false);
                   onHide();
                 }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-stone-700 hover:bg-stone-50"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-app-bg"
               >
                 <EyeOff className="h-3.5 w-3.5" strokeWidth={2} />
                 Masquer cet exercice
@@ -173,14 +173,14 @@ export default function ExerciseLibraryGrid({
 
   return (
     <div className="mt-8">
-      <h2 className="font-display text-lg font-semibold text-stone-900">Bibliothèque d&apos;exercices</h2>
-      <p className="mt-1 text-sm text-stone-500">
+      <h2 className="text-lg font-semibold text-ink">Bibliothèque d&apos;exercices</h2>
+      <p className="mt-1 text-sm text-muted">
         {exercises.length - hiddenCount} exercices, classés par zone du corps.
       </p>
 
       <div className="relative mt-4">
         <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
           strokeWidth={1.5}
         />
         <input
@@ -188,7 +188,7 @@ export default function ExerciseLibraryGrid({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Rechercher un exercice…"
-          className="w-full rounded-lg border border-stone-300 py-2 pl-9 pr-3 text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className="w-full rounded-lg border border-line py-2 pl-9 pr-3 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
         />
       </div>
 
@@ -202,13 +202,13 @@ export default function ExerciseLibraryGrid({
               onClick={() => selectBodyPart(bp.id)}
               className={`flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors duration-150 ${
                 active
-                  ? "border-blue-600 bg-blue-50"
-                  : "border-stone-200 bg-white hover:bg-stone-50"
+                  ? "border-brand bg-brand-soft"
+                  : "border-line bg-surface hover:bg-app-bg"
               }`}
             >
               <BodyPartIllustration slug={bp.slug} className="h-8 w-8" active={active} />
-              <span className="text-sm font-medium text-stone-900">{bp.label}</span>
-              <span className="text-xs text-stone-400">{countByBodyPart.get(bp.id) ?? 0} exercices</span>
+              <span className="text-sm font-medium text-ink">{bp.label}</span>
+              <span className="text-xs text-muted">{countByBodyPart.get(bp.id) ?? 0} exercices</span>
             </button>
           );
         })}
@@ -219,7 +219,7 @@ export default function ExerciseLibraryGrid({
           <button
             type="button"
             onClick={() => setShowAllTiles((v) => !v)}
-            className="text-sm font-medium text-blue-700 hover:underline"
+            className="text-sm font-medium text-brand hover:underline"
           >
             {showAllTiles ? "Voir moins" : "Voir plus"}
           </button>
@@ -229,7 +229,7 @@ export default function ExerciseLibraryGrid({
           <button
             type="button"
             onClick={() => setShowCreateForm((v) => !v)}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-95"
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95"
           >
             + Ajouter un nouvel exercice
           </button>
@@ -240,16 +240,16 @@ export default function ExerciseLibraryGrid({
         <form
           key={selectedId}
           action={createExercise}
-          className="mt-3 rounded-xl border border-stone-200 bg-white p-5"
+          className="mt-3 rounded-xl border border-line bg-surface p-5"
         >
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-stone-900">
+            <h3 className="text-sm font-semibold text-ink">
               Nouvel exercice — {bodyParts.find((bp) => bp.id === selectedId)?.label}
             </h3>
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
-              className="text-sm text-stone-400 hover:text-stone-600"
+              className="text-sm text-muted hover:text-ink"
             >
               Annuler
             </button>
@@ -259,22 +259,22 @@ export default function ExerciseLibraryGrid({
               name="name"
               required
               placeholder="Nom de l'exercice"
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
             />
             <textarea
               name="instructions"
               placeholder="Instructions (optionnel)"
               rows={2}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
             />
           </div>
 
-          <p className="mt-4 text-xs font-medium text-stone-500">Zones du corps concernées</p>
+          <p className="mt-4 text-xs font-medium text-muted">Zones du corps concernées</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {bodyParts.map((bp) => (
               <label
                 key={bp.id}
-                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-stone-300 px-3 py-1 text-sm text-stone-700 transition-colors duration-150 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-700"
+                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1 text-sm text-ink transition-colors duration-150 has-[:checked]:border-brand has-[:checked]:bg-brand-soft has-[:checked]:text-brand"
               >
                 <input
                   type="checkbox"
@@ -290,7 +290,7 @@ export default function ExerciseLibraryGrid({
 
           <SubmitButton
             pendingText="Création…"
-            className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-95"
+            className="mt-4 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95"
           >
             Créer
           </SubmitButton>
@@ -299,28 +299,28 @@ export default function ExerciseLibraryGrid({
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {filtered.length === 0 ? (
-          <p className="col-span-full rounded-xl border border-stone-200 bg-white p-6 text-center text-sm text-stone-500">
+          <p className="col-span-full rounded-xl border border-line bg-surface p-6 text-center text-sm text-muted">
             {query.trim()
               ? `Aucun exercice ne correspond à « ${query.trim()} ».`
               : "Aucun exercice dans cette catégorie pour le moment."}
           </p>
         ) : (
           filtered.map((ex) => (
-            <div key={ex.id} className="rounded-xl border border-stone-200 bg-white p-4">
+            <div key={ex.id} className="rounded-xl border border-line bg-surface p-4">
               <div className="flex items-start justify-between gap-2">
-                <ExerciseIllustration name={ex.name} className="h-28 w-full text-blue-600" />
+                <ExerciseIllustration name={ex.name} className="h-28 w-full text-brand" />
                 <ExerciseCardMenu
                   hidden={ex.hidden}
                   onHide={() => runAction(hideExercise, ex.id)}
                   onUnhide={() => runAction(unhideExercise, ex.id)}
                 />
               </div>
-              <p className="mt-3 font-medium text-stone-900">{ex.name}</p>
+              <p className="mt-3 font-medium text-ink">{ex.name}</p>
               {ex.created_by === currentUserId && (
-                <span className="mt-1 inline-block text-xs text-stone-400">Votre exercice</span>
+                <span className="mt-1 inline-block text-xs text-brand">Votre exercice</span>
               )}
               {ex.instructions && (
-                <p className="mt-1 line-clamp-2 text-sm text-stone-500">{ex.instructions}</p>
+                <p className="mt-1 line-clamp-2 text-sm text-muted">{ex.instructions}</p>
               )}
               <ExerciseVideoUpload
                 exerciseId={ex.id}
@@ -333,11 +333,11 @@ export default function ExerciseLibraryGrid({
       </div>
 
       {hiddenCount > 0 && (
-        <div className="mt-6 border-t border-stone-200 pt-4">
+        <div className="mt-6 border-t border-line pt-4">
           <button
             type="button"
             onClick={() => setShowHidden((v) => !v)}
-            className="text-sm font-medium text-stone-500 hover:text-stone-700 hover:underline"
+            className="text-sm font-medium text-muted hover:text-ink hover:underline"
           >
             {showHidden ? "Masquer la liste" : `${hiddenCount} exercice${hiddenCount > 1 ? "s" : ""} masqué${hiddenCount > 1 ? "s" : ""} — afficher`}
           </button>
@@ -348,13 +348,13 @@ export default function ExerciseLibraryGrid({
                 .map((ex) => (
                   <li
                     key={ex.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2"
+                    className="flex items-center justify-between gap-2 rounded-lg border border-line bg-app-bg px-3 py-2"
                   >
-                    <span className="text-sm text-stone-600">{ex.name}</span>
+                    <span className="text-sm text-muted">{ex.name}</span>
                     <button
                       type="button"
                       onClick={() => runAction(unhideExercise, ex.id)}
-                      className="shrink-0 text-xs font-medium text-blue-700 hover:underline"
+                      className="shrink-0 text-xs font-medium text-brand hover:underline"
                     >
                       Réafficher
                     </button>

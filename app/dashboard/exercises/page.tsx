@@ -47,24 +47,16 @@ export default async function ExercisesPage({
   return (
     <main className="min-h-screen">
       <div className="mx-auto max-w-5xl p-6 sm:p-8">
-        <div className="animate-[fadeInUp_0.6s_ease-out_both]">
-          <Link
-            href="/dashboard/seances"
-            className="text-sm text-stone-500 transition-colors duration-150 hover:text-stone-700 hover:underline"
-          >
-            ← Mes séances
-          </Link>
-          <h1 className="font-display mt-1 text-2xl font-semibold text-stone-900">
-            Mes exercices
-          </h1>
-          <p className="mt-1 text-sm text-stone-500">
-            Créez vos propres exercices et filmez-en une démonstration ; elles seront
-            disponibles à ajouter dans vos séances.
-          </p>
+        <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
+            <p className="mt-1 text-sm text-muted">Créez vos propres exercices et filmez-en une démonstration ; elles seront disponibles à ajouter dans vos séances.</p>
+          </div>
+          <Link href="/dashboard/seances" className="text-sm font-medium text-brand hover:underline">← Mes séances</Link>
         </div>
 
         {error && (
-          <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
+          <p className="mt-4 rounded-lg bg-danger-soft p-3 text-sm text-danger">{error}</p>
         )}
 
         <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms]">
