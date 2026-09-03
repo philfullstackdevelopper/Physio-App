@@ -25,8 +25,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (status !== "approved") {
     const pending = status === "pending";
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#faf7f2] p-4">
-        <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <main className="flex min-h-screen items-center justify-center bg-app-bg p-4">
+        <div className="w-full max-w-sm rounded-3xl border border-line bg-white p-8 text-center shadow-sm">
           <span
             className={`mx-auto flex h-14 w-14 items-center justify-center rounded-2xl ${
               pending ? "bg-blue-50 text-blue-700" : "bg-red-50 text-red-600"
@@ -38,10 +38,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <ShieldAlert className="h-7 w-7" strokeWidth={1.75} />
             )}
           </span>
-          <h1 className="font-display mt-4 text-2xl font-semibold text-slate-900">
+          <h1 className="mt-4 text-2xl font-semibold text-ink">
             {pending ? "Compte en cours de validation" : "Compte non validé"}
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          <p className="mt-2 text-sm leading-relaxed text-muted">
             {pending
               ? "Nous vérifions chaque nouveau compte praticien avant de l'activer. Revenez bientôt."
               : "Votre demande n'a pas été validée. Contactez-nous si vous pensez qu'il s'agit d'une erreur."}
@@ -49,14 +49,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <SignOutButton redirectUrl="/login">
             <button
               type="button"
-              className="mt-6 w-full rounded-xl border border-slate-300 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              className="mt-6 w-full rounded-xl border border-line py-2.5 text-sm font-medium text-muted transition hover:bg-app-bg"
             >
               Se déconnecter
             </button>
           </SignOutButton>
           <Link
             href="/"
-            className="mt-3 block text-center text-sm text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline"
+            className="mt-3 block text-center text-sm text-muted underline-offset-2 hover:text-ink hover:underline"
           >
             Retour à l&apos;accueil
           </Link>
@@ -66,23 +66,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#faf7f2] sm:flex-row">
-      <DashboardSidebar />
-      <div className="relative flex-1 overflow-hidden">
-        {/* Shared ambient background for every /dashboard/* page: one soft warm
-            corner glow plus a faint paper grain, defined once here instead of
-            duplicated per page. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-20"
-          style={{
-            background:
-              "radial-gradient(1100px 700px at 88% -12%, rgba(251, 191, 128, 0.20) 0%, transparent 60%)",
-          }}
-        />
-        <div aria-hidden className="grain pointer-events-none absolute inset-0 -z-10" />
-        {children}
-      </div>
+    <div className="flex min-h-screen flex-col bg-app-bg text-ink sm:flex-row">
+      <DashboardSidebar instructorName={instructor.full_name ?? null} />
+      <div className="relative flex-1">{children}</div>
     </div>
   );
 }
