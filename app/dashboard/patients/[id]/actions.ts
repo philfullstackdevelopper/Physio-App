@@ -142,8 +142,16 @@ export async function adjustPatientWorkout(formData: FormData) {
   const addIds = formData.getAll("add_ids").map(String).filter(Boolean);
 
   const fail = (msg: string): never => redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(msg)}`);
-  if (!patientId || !workoutId) fail("Séance introuvable.");
-  if (removeIds.length === 0 && addIds.length === 0) redirect(`/dashboard/patients/${patientId}`);
+  if (!patientId || !workoutId) return fail("Séance introuvable.");
+  if (removeIds.length === 0 && addIds.length === 0) return redirect(`/dashboard/patients/${patientId}`);
+
+  const { data: patient } = await supabase
+    .from("patients")
+    .select("id")
+    .eq("id", patientId)
+    .eq("instructor_id", user.id)
+    .maybeSingle();
+  if (!patient) return fail("Patient introuvable.");
 
   const { data: workout } = await supabase
     .from("workouts")
@@ -151,6 +159,7 @@ export async function adjustPatientWorkout(formData: FormData) {
     .eq("id", workoutId)
     .maybeSingle();
   if (!workout) return fail("Séance introuvable.");
+  if (workout.patient_id && workout.patient_id !== patientId) return fail("Séance introuvable.");
 
   let targetId = workout.id as string;
 
@@ -178,17 +187,26 @@ export async function adjustPatientWorkout(formData: FormData) {
       .select("exercise_id, position")
       .eq("workout_id", workout.id);
     if (originalRows && originalRows.length) {
-      await supabase.from("workout_exercises").insert(
+      const { error: copyExercisesError } = await supabase.from("workout_exercises").insert(
         originalRows.map((r) => ({ workout_id: targetId, exercise_id: r.exercise_id, position: r.position })),
       );
+      if (copyExercisesError) return fail(copyExercisesError.message);
     }
 
-    const { error: recError } = await supabase
+    const { data: repointed, error: recError } = await supabase
       .from("patient_recommended_workouts")
       .update({ workout_id: targetId })
       .eq("patient_id", patientId)
-      .eq("workout_id", workout.id);
-    if (recError) fail(recError.message);
+      .eq("workout_id", workout.id)
+      .select("id");
+    if (recError) {
+      await supabase.from("workouts").delete().eq("id", targetId);
+      return fail(recError.message);
+    }
+    if (!repointed || repointed.length === 0) {
+      await supabase.from("workouts").delete().eq("id", targetId);
+      return fail("Cette séance n'est pas recommandée à ce patient.");
+    }
   }
 
   const { data: currentRows } = await supabase
@@ -206,7 +224,7 @@ export async function adjustPatientWorkout(formData: FormData) {
     const { error: insertError } = await supabase
       .from("workout_exercises")
       .insert(next.map((s) => ({ workout_id: targetId, exercise_id: s.exerciseId, position: s.position })));
-    if (insertError) fail(insertError.message);
+    if (insertError) return fail(insertError.message);
   }
 
   if (removedCount + addedCount > 0) {
@@ -214,7 +232,7 @@ export async function adjustPatientWorkout(formData: FormData) {
       patient_id: patientId,
       instructor_id: user.id,
       sender: "instructor",
-      body: adjustmentMessage(workout.name as string, removedCount, addedCount),
+      body: adjustmentMessage(workout.name, removedCount, addedCount),
     });
   }
 
