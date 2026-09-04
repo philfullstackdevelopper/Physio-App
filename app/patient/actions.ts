@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { isAttachmentPathFor } from "@/lib/messages/attachment";
 
 // Patient marks a whole workout session as completed.
 export async function completeWorkout(formData: FormData) {
@@ -25,19 +26,18 @@ export async function completeWorkout(formData: FormData) {
   redirect(`/patient/${workoutId}?done=1`);
 }
 
-// Patient marks a message from their instructor as read.
-export async function markMessageRead(formData: FormData) {
+// Patient marks every unread message from their instructor as read (the
+// kiné then sees the double check mark on those messages).
+export async function markMessageRead() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
-
-  const messageId = String(formData.get("message_id") ?? "");
-  if (!messageId) redirect("/patient");
 
   await supabase
     .from("patient_messages")
     .update({ read_at: new Date().toISOString() })
-    .eq("id", messageId)
-    .eq("patient_id", user.id);
+    .eq("patient_id", user.id)
+    .eq("sender", "instructor")
+    .is("read_at", null);
 
   revalidatePath("/patient");
   redirect("/patient");
@@ -50,7 +50,14 @@ export async function sendPatientMessage(formData: FormData) {
   const user = await requireUser(supabase);
 
   const body = String(formData.get("body") ?? "").trim();
-  if (!body) redirect(`/patient?error=${encodeURIComponent("Le message ne peut pas être vide.")}`);
+  const attachmentPath = String(formData.get("attachment_path") ?? "") || null;
+  const attachmentName = String(formData.get("attachment_name") ?? "") || null;
+  if (!body && !attachmentPath) {
+    redirect(`/patient?error=${encodeURIComponent("Écrivez un message ou joignez un fichier.")}`);
+  }
+  if (attachmentPath && !isAttachmentPathFor(attachmentPath, user.id)) {
+    redirect(`/patient?error=${encodeURIComponent("Pièce jointe invalide.")}`);
+  }
 
   const { data: patient } = await supabase
     .from("patients")
@@ -66,6 +73,8 @@ export async function sendPatientMessage(formData: FormData) {
     instructor_id: patient!.instructor_id,
     sender: "patient",
     body,
+    attachment_path: attachmentPath,
+    attachment_name: attachmentPath ? (attachmentName ?? "Fichier") : null,
   });
   if (error) redirect(`/patient?error=${encodeURIComponent(error.message)}`);
 

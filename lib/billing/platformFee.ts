@@ -74,3 +74,23 @@ export function computeMonthlyFee(
     perPatient: withActivity,
   };
 }
+
+export interface MonthEstimate {
+  totalCents: number;
+  feeCents: number;
+  netCents: number;
+  feeShare: number;
+}
+
+/**
+ * Simulateur de la page Tarif : ce que N patients abonnés un mois complet
+ * rapportent au kiné, ce qu'EasyPhysio prélève (15 %) et ce qu'il garde.
+ * Pas de prorata ici — c'est une estimation « mois plein ».
+ */
+export function estimateMonth(priceCents: number, patientCount: number): MonthEstimate {
+  const n = Math.max(0, Math.floor(patientCount));
+  const price = Math.max(0, priceCents);
+  const totalCents = price * n;
+  const feeCents = Math.round(totalCents * PLATFORM_FEE_RATE);
+  return { totalCents, feeCents, netCents: totalCents - feeCents, feeShare: PLATFORM_FEE_RATE };
+}

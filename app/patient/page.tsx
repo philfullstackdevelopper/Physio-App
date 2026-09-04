@@ -5,6 +5,9 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS } from "@/lib/exercise/prescription";
 import { loadPatientHome } from "@/lib/patient/home-data";
 import { markMessageRead, sendPatientMessage } from "./actions";
+import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
+import MessageComposer from "@/components/MessageComposer";
+import { ATTACHMENT_BUCKET } from "@/lib/messages/attachment";
 
 /** Today's progress, for the patient's own eyes only — never a comparison to anyone else. */
 function ProgressRing({ done, total }: { done: number; total: number }) {
@@ -65,10 +68,28 @@ export default async function PatientDashboard({
   // Short notes from the practitioner (e.g. reacting to a recent session).
   const { data: messages } = await supabase
     .from("patient_messages")
-    .select("id, body, created_at, read_at, sender")
+    .select("id, body, created_at, read_at, read_by_instructor_at, sender, attachment_path, attachment_name")
     .eq("patient_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(30);
+  const rows = [...(messages ?? [])].reverse();
+  const paths = rows.map((m) => m.attachment_path as string | null).filter((p): p is string => !!p);
+  const signed = new Map<string, string>();
+  if (paths.length > 0) {
+    const { data: urls } = await supabase.storage.from(ATTACHMENT_BUCKET).createSignedUrls(paths, 3600);
+    for (const u of urls ?? []) if (u.path && u.signedUrl) signed.set(u.path, u.signedUrl);
+  }
+  // Pour mes messages (patient), « lu » = ouvert par le kiné.
+  const thread: ThreadMessage[] = rows.map((m) => ({
+    id: m.id as string,
+    body: m.body as string,
+    created_at: m.created_at as string,
+    sender: m.sender as string,
+    read_at: (m.read_by_instructor_at as string | null) ?? null,
+    attachment_name: (m.attachment_name as string | null) ?? null,
+    attachmentUrl: m.attachment_path ? (signed.get(m.attachment_path as string) ?? null) : null,
+  }));
+  const unreadFromKine = rows.filter((m) => m.sender === "instructor" && !m.read_at).length;
 
   // The ring now shows THIS WEEK's progress on the active séance (there's at
   // most one at a time), not a same-day tally across several workouts.
@@ -180,55 +201,19 @@ export default async function PatientDashboard({
             <MessageCircle className="h-4 w-4 text-blue-600" strokeWidth={1.75} />
             Messages avec votre kiné
           </h2>
-          {messages && messages.length > 0 && (
-            <ul className="mt-3 flex flex-col gap-2">
-              {[...messages].reverse().map((m) => {
-                const mine = m.sender === "patient";
-                return (
-                  <li key={m.id as string} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                        mine
-                          ? "rounded-br-md bg-blue-600 text-white"
-                          : !m.read_at
-                            ? "rounded-bl-md border-l-2 border-l-blue-600 bg-slate-50 font-medium text-slate-900"
-                            : "rounded-bl-md bg-slate-50 text-slate-500"
-                      }`}
-                    >
-                      <p>{m.body as string}</p>
-                      <div className="mt-1 flex items-center justify-between gap-3">
-                        <span className={`text-xs ${mine ? "text-blue-100" : "text-slate-400"}`}>
-                          {new Date(m.created_at as string).toLocaleString("fr-FR")}
-                        </span>
-                        {!mine && !m.read_at && (
-                          <form action={markMessageRead}>
-                            <input type="hidden" name="message_id" value={m.id as string} />
-                            <button type="submit" className="text-xs font-medium text-blue-700 hover:underline">
-                              Marquer comme lu
-                            </button>
-                          </form>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+          <div className="mt-3 max-h-[28rem] overflow-y-auto">
+            <MessageThread messages={thread} mineSender="patient" emptyText="Aucun message pour l'instant." />
+          </div>
+          {unreadFromKine > 0 && (
+            <form action={markMessageRead} className="mt-2 text-right">
+              <button type="submit" className="text-xs font-medium text-blue-700 hover:underline">
+                Marquer comme lu
+              </button>
+            </form>
           )}
-          <form action={sendPatientMessage} className="mt-3 flex gap-2">
-            <input
-              name="body"
-              required
-              placeholder="Écrire un message…"
-              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-            />
-            <button
-              type="submit"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-95"
-            >
-              Envoyer
-            </button>
-          </form>
+          <div className="mt-3">
+            <MessageComposer patientId={user.id} action={sendPatientMessage} />
+          </div>
         </section>
 
         <div className="mt-8 text-center">
