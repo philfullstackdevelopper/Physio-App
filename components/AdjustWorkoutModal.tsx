@@ -150,7 +150,7 @@ export default function AdjustWorkoutModal({
                               marked ? "border-danger-soft bg-danger-soft text-danger" : "border-line bg-surface text-ink hover:bg-app-bg"
                             }`}
                           >
-                            <ExerciseIllustration name={ex.name} className={`h-9 w-9 shrink-0 ${marked ? "text-danger" : "text-brand"}`} />
+                            <ExerciseIllustration name={ex.name} animate={false} className={`h-9 w-9 shrink-0 ${marked ? "text-danger" : "text-brand"}`} />
                             <span className="flex-1 truncate">{ex.name}</span>
                             {marked ? (
                               <span className="flex items-center gap-1 text-xs font-medium">À retirer <X className="h-3.5 w-3.5" strokeWidth={2} /></span>
@@ -196,7 +196,7 @@ export default function AdjustWorkoutModal({
                                       marked ? "border-ok-soft bg-ok-soft text-ok" : "border-line bg-surface text-ink hover:bg-app-bg"
                                     }`}
                                   >
-                                    <ExerciseIllustration name={ex.name} className={`h-9 w-9 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
+                                    <ExerciseIllustration name={ex.name} animate={false} className={`h-9 w-9 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
                                     <span className="flex-1 truncate">{ex.name}</span>
                                     {marked ? <span className="text-xs font-medium">À ajouter</span> : <Plus className="h-4 w-4 text-brand" strokeWidth={2} />}
                                   </button>

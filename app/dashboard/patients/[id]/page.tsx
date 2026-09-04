@@ -18,7 +18,7 @@ import CalendarPanel from "@/components/CalendarPanel";
 import PainHistoryChart from "@/components/PainHistoryChart";
 import AdjustWorkoutModal from "@/components/AdjustWorkoutModal";
 import AddWorkoutModal, { type AddableWorkout } from "@/components/AddWorkoutModal";
-import { assignCondition, addRecommendedWorkout, removeRecommendedWorkout, moveRecommendedWorkout, sendMessage, adjustPatientWorkout } from "./actions";
+import { assignCondition, addRecommendedWorkout, removeRecommendedWorkout, moveRecommendedWorkout, adjustPatientWorkout } from "./actions";
 
 type WorkoutExercise = { position: number; exercises: { id: string; name: string } | null };
 type Workout = {
@@ -59,11 +59,11 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const month = resolveMonthInfo(monthParam);
 
   const [
-    { data: conditions }, { data: messages }, { data: profile }, { data: docs }, { data: allLogs }, { data: recentFeedback },
+    { data: conditions }, { data: profile }, { data: docs }, { data: allLogs }, { data: recentFeedback },
     { data: monthLogs }, { data: ownWorkouts }, { data: platformWorkouts }, { data: recRows }, { data: allExercises }, { data: hiddenRows },
+    { count: unreadCount },
   ] = await Promise.all([
     supabase.from("conditions").select("id, name").order("name"),
-    supabase.from("patient_messages").select("id, body, created_at, read_at, read_by_instructor_at, sender").eq("patient_id", id).order("created_at", { ascending: false }).limit(10),
     supabase.from("patient_profiles").select("condition_id, injury_stage, rehab_progress, history, date_of_birth, height_cm, weight_kg, activity_level, updated_at").eq("id", id).maybeSingle(),
     supabase.from("patient_documents").select("id, file_name, storage_path, uploaded_at").eq("patient_id", id).order("uploaded_at", { ascending: false }),
     supabase.from("workout_logs").select("id, completed_at, workout_id").eq("patient_id", id),
@@ -74,12 +74,8 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     supabase.from("patient_recommended_workouts").select("id, priority, workout_id, created_at").eq("patient_id", id).order("priority"),
     supabase.from("exercises").select("id, name").order("name"),
     supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
+    supabase.from("patient_messages").select("id", { count: "exact", head: true }).eq("patient_id", id).eq("sender", "patient").is("read_by_instructor_at", null),
   ]);
-
-  const unreadFromPatient = (messages ?? []).filter((m) => m.sender === "patient" && !m.read_by_instructor_at);
-  if (unreadFromPatient.length > 0) {
-    await supabase.from("patient_messages").update({ read_by_instructor_at: new Date().toISOString() }).eq("patient_id", id).eq("instructor_id", user.id).eq("sender", "patient").is("read_by_instructor_at", null);
-  }
 
   const conditionName = (cid: string | null) => conditions?.find((c) => c.id === cid)?.name;
   const stage = (profile?.injury_stage as InjuryStage | null) ?? null;
@@ -151,8 +147,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   }
   const profileUpdated = profile?.updated_at ? new Date(profile.updated_at as string).toLocaleDateString("fr-FR") : null;
 
-  const inputClass = "rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft";
-
   return (
     <main className="min-h-screen">
       <div className="mx-auto max-w-5xl p-6 sm:p-8">
@@ -160,13 +154,25 @@ export default async function PatientDetailPage({ params, searchParams }: { para
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-ink">{patient.full_name}</h1>
-            <p className="mt-0.5 text-sm text-muted">
-              {conditionName(patient.condition_id) ?? "Condition non assignée"}
-              {stage && <> · <span title={STAGE_LABELS[stage]}>{STAGE_SHORT[stage]}</span></>}
-              <span className="ml-3 inline-flex items-center gap-1 text-xs"><Flame className="h-3.5 w-3.5" strokeWidth={1.75} />{streak} j d&apos;affilée · {totalSessions} séance{totalSessions > 1 ? "s" : ""}</span>
-            </p>
+            <form action={assignCondition} className="mt-2 flex flex-wrap items-center gap-2">
+              <input type="hidden" name="patient_id" value={patient.id} />
+              <select name="condition_id" defaultValue={patient.condition_id ?? ""} className="rounded-lg border border-line bg-surface px-2 py-1 text-sm text-ink">
+                <option value="" disabled={!patient.condition_id}>Choisir une condition…</option>
+                {conditions?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <button type="submit" className="rounded-full border border-line px-3 py-1 text-xs font-medium text-ink hover:bg-app-bg">Changer</button>
+              {stage && <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-ink" title={STAGE_LABELS[stage]}>{STAGE_SHORT[stage]}</span>}
+              <span className="inline-flex items-center gap-1 text-xs text-muted"><Flame className="h-3.5 w-3.5" strokeWidth={1.75} />{streak} j d&apos;affilée · {totalSessions} séance{totalSessions > 1 ? "s" : ""}</span>
+            </form>
           </div>
-          <AdjustWorkoutModal patientId={patient.id} patientFirstName={firstName} workout={active ? { id: active.id, name: active.name, exercises: activeExercises } : null} addable={addableExercises} action={adjustPatientWorkout} />
+          <div className="flex items-center gap-2">
+            <AdjustWorkoutModal patientId={patient.id} patientFirstName={firstName} workout={active ? { id: active.id, name: active.name, exercises: activeExercises } : null} addable={addableExercises} action={adjustPatientWorkout} />
+            <Link href={`/dashboard/messages?patient=${id}`} className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg">
+              <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
+              Messages
+              {!!unreadCount && unreadCount > 0 && <span className="rounded-full bg-brand px-1.5 text-[11px] text-white">{unreadCount}</span>}
+            </Link>
+          </div>
         </div>
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
@@ -191,6 +197,42 @@ export default async function PatientDetailPage({ params, searchParams }: { para
           </div>
         </div>
 
+        {/* Profil déclaré */}
+        <section className="mt-6 rounded-xl border border-line bg-surface p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Profil déclaré</h2>
+          {profile ? (
+            <div className="mt-2 space-y-1">
+              <p className="text-sm text-ink">
+                {[
+                  ageFromDob(profile.date_of_birth as string | null) != null ? `${ageFromDob(profile.date_of_birth as string | null)} ans` : null,
+                  profile.height_cm != null ? `${profile.height_cm} cm` : null,
+                  profile.weight_kg != null ? `${profile.weight_kg} kg` : null,
+                  profile.activity_level ? `activité ${ACTIVITY_LABELS[profile.activity_level as string] ?? profile.activity_level}` : null,
+                  conditionName(profile.condition_id as string | null) ? `déclare : ${conditionName(profile.condition_id as string | null)}` : null,
+                  stage ? STAGE_LABELS[stage] : null,
+                ].filter(Boolean).join(" · ")}
+              </p>
+              {profile.rehab_progress && <p className="text-sm text-muted"><span>Avancement{profileUpdated ? ` (mis à jour le ${profileUpdated})` : ""} :</span> {profile.rehab_progress as string}</p>}
+              {profile.history && <p className="text-sm text-muted"><span>Historique :</span> {profile.history as string}</p>}
+              {docLinks.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-ink">Documents médicaux</p>
+                  <ul className="mt-1 space-y-1.5">
+                    {docLinks.map((d) => (
+                      <li key={d.id}>
+                        {d.url ? <a href={d.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"><FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />{d.file_name}</a>
+                               : <span className="flex items-center gap-1.5 text-sm text-muted"><FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />{d.file_name}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-muted">Le patient n&apos;a pas encore complété son admission.</p>
+          )}
+        </section>
+
         {/* Calendrier + douleur */}
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <CalendarPanel monthLabel={month.label} prevMonthKey={month.prevMonthKey} nextMonthKey={month.nextMonthKey} leadingBlanks={month.leadingBlanks} days={calendarDays} todayDay={month.todayDay} />
@@ -211,7 +253,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
               <ul className="mt-3 divide-y divide-line rounded-lg border border-line">
                 {activeExercises.map((e) => (
                   <li key={e.id} className="flex items-center gap-3 px-3 py-2 text-sm text-ink">
-                    <ExerciseIllustration name={e.name} className="h-10 w-10 shrink-0 text-brand" />
+                    <ExerciseIllustration name={e.name} animate={false} className="h-10 w-10 shrink-0 text-brand" />
                     {e.name}
                   </li>
                 ))}
@@ -243,69 +285,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
           </ul>
           <div className="mt-3"><AddWorkoutModal patientId={patient.id} addable={addableWorkouts} addAction={addRecommendedWorkout} /></div>
         </section>
-
-        {/* Messages */}
-        <section className="mt-6 rounded-xl border border-line bg-surface p-5">
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink"><MessageCircle className="h-4 w-4 text-muted" strokeWidth={1.75} />Messages</h2>
-          {messages && messages.length > 0 && (
-            <ul className="mt-3 flex max-h-56 flex-col gap-2 overflow-y-auto">
-              {[...messages].reverse().map((m) => {
-                const mine = m.sender === "instructor";
-                return (
-                  <li key={m.id as string} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${mine ? "rounded-br-md bg-brand text-white" : "rounded-bl-md bg-app-bg text-ink"}`}>
-                      <p>{m.body as string}</p>
-                      <p className={`mt-0.5 text-xs ${mine ? "text-white/70" : "text-muted"}`}>{new Date(m.created_at as string).toLocaleString("fr-FR")}</p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <form action={sendMessage} className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <input type="hidden" name="patient_id" value={patient.id} />
-            <textarea name="body" required rows={2} placeholder="Écrire un message…" className={`flex-1 ${inputClass}`} />
-            <button type="submit" className="self-end rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark sm:self-auto">Envoyer</button>
-          </form>
-        </section>
-
-        {/* Condition & situation déclarée */}
-        <details className="mt-6 rounded-xl border border-line bg-surface p-5">
-          <summary className="cursor-pointer list-none text-sm font-semibold text-ink">
-            Condition &amp; situation déclarée <span className="ml-2 text-sm font-normal text-muted">{conditionName(patient.condition_id) ?? "Aucune condition assignée"}</span>
-          </summary>
-          <form action={assignCondition} className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <input type="hidden" name="patient_id" value={patient.id} />
-            <select name="condition_id" defaultValue={patient.condition_id ?? ""} required className={`flex-1 ${inputClass}`}>
-              <option value="" disabled>Choisir une condition…</option>
-              {conditions?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <button type="submit" className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">Assigner</button>
-          </form>
-          {profile ? (
-            <div className="mt-4 space-y-2 border-t border-line pt-4 text-sm text-ink">
-              <p><span className="text-muted">Ce que le patient déclare :</span> <span className="font-medium">{conditionName(profile.condition_id as string | null) ?? "—"}</span>{stage && <span className="text-muted"> · {STAGE_LABELS[stage]}</span>}</p>
-              <p><span className="text-muted">Profil :</span> {ageFromDob(profile.date_of_birth as string | null) ?? "—"} ans · {profile.height_cm ?? "—"} cm · {profile.weight_kg ?? "—"} kg · activité {ACTIVITY_LABELS[(profile.activity_level as string) ?? ""] ?? "—"}</p>
-              {profile.rehab_progress && <p><span className="text-muted">Avancement{profileUpdated ? ` (mis à jour le ${profileUpdated})` : ""} :</span> {profile.rehab_progress as string}</p>}
-              {profile.history && <p><span className="text-muted">Historique :</span> {profile.history as string}</p>}
-            </div>
-          ) : (
-            <p className="mt-4 border-t border-line pt-4 text-sm text-muted">Le patient n&apos;a pas encore complété son admission.</p>
-          )}
-          {docLinks.length > 0 && (
-            <div className="mt-4 border-t border-line pt-4">
-              <p className="text-sm font-medium text-ink">Documents médicaux</p>
-              <ul className="mt-2 space-y-1.5">
-                {docLinks.map((d) => (
-                  <li key={d.id}>
-                    {d.url ? <a href={d.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"><FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />{d.file_name}</a>
-                           : <span className="flex items-center gap-1.5 text-sm text-muted"><FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />{d.file_name}</span>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </details>
       </div>
     </main>
   );
