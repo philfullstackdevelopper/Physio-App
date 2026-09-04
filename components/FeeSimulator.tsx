@@ -43,7 +43,7 @@ export default function FeeSimulator({ initialPriceEuros, priceInputName = "pric
         <Info className="h-3.5 w-3.5 text-muted" strokeWidth={1.75} aria-label="Estimation sur un mois complet, sans prorata" />
       </p>
 
-      <div className="mt-4 grid items-center gap-5 sm:grid-cols-[1fr_auto_1fr]">
+      <div className="mt-4 grid items-center gap-5 xl:grid-cols-[auto_1fr_auto]">
         <div>
           <p className="text-xs text-muted">Patients abonnés (mensuel)</p>
           <div className="mt-2 inline-flex items-center rounded-lg border border-line bg-surface">
@@ -90,7 +90,7 @@ export default function FeeSimulator({ initialPriceEuros, priceInputName = "pric
           </div>
         </div>
 
-        <dl className="space-y-3 text-sm">
+        <dl className="grid grid-cols-3 gap-3 text-sm xl:block xl:space-y-3">
           <div>
             <dt className="text-xs text-muted">Tarif total ({patients} × {priceEuros !== null ? EUR.format(priceEuros) : "—"})</dt>
             <dd className="font-semibold text-ink">{ready ? EUR.format(e.totalCents / 100) : "—"}</dd>

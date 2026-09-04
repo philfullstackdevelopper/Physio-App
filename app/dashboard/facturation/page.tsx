@@ -97,7 +97,7 @@ export default async function FacturationPage({
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           {/* 1 — Tarif */}
-          <section className="rounded-2xl border border-line bg-surface p-6">
+          <section className="min-w-0 rounded-2xl border border-line bg-surface p-6">
             <h2 className="flex items-center gap-3 text-lg font-semibold text-ink">
               {stepNumber(1)}
               Votre tarif par patient
@@ -142,7 +142,7 @@ export default async function FacturationPage({
           </section>
 
           {/* 2 — Encaisser */}
-          <section className="rounded-2xl border border-line bg-surface p-6">
+          <section className="min-w-0 rounded-2xl border border-line bg-surface p-6">
             <h2 className="flex items-center gap-3 text-lg font-semibold text-ink">
               {stepNumber(2)}
               Encaisser vos patients
