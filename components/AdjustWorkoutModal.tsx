@@ -8,6 +8,8 @@ import ExerciseIllustration from "@/components/ExerciseIllustration";
 
 export type ModalExercise = { id: string; name: string };
 
+const ILLUSTRATION_LIMIT = 60;
+
 export default function AdjustWorkoutModal({
   patientId,
   patientFirstName,
@@ -81,6 +83,17 @@ export default function AdjustWorkoutModal({
   }, [addable]);
   const query = q.trim().toLowerCase();
 
+  const filteredGroups = useMemo(
+    () =>
+      CATEGORY_ORDER.map((cat) => ({
+        cat,
+        list: (groups.get(cat) ?? []).filter((ex) => !query || ex.name.toLowerCase().includes(query)),
+      })).filter(({ list }) => list.length > 0),
+    [groups, query],
+  );
+  const visibleCount = filteredGroups.reduce((sum, { list }) => sum + list.length, 0);
+  const showIllustrations = visibleCount <= ILLUSTRATION_LIMIT;
+
   const toggle = (set: Set<string>, id: string) => {
     const next = new Set(set);
     if (next.has(id)) next.delete(id);
@@ -92,7 +105,10 @@ export default function AdjustWorkoutModal({
   const added = addIds.size;
   const noChanges = removed === 0 && added === 0;
   const wouldBeEmpty = Boolean(
-    workout && workout.exercises.every((e) => removeIds.has(e.id)) && addIds.size === 0,
+    workout &&
+      workout.exercises.length > 0 &&
+      workout.exercises.every((e) => removeIds.has(e.id)) &&
+      addIds.size === 0,
   );
 
   return (
@@ -177,10 +193,11 @@ export default function AdjustWorkoutModal({
                       className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
                     />
                   </label>
+                  {!showIllustrations && (
+                    <p className="mt-2 text-xs text-muted">Affinez la recherche pour voir les illustrations.</p>
+                  )}
                   <div className="mt-2 max-h-72 space-y-3 overflow-y-auto pr-1 md:max-h-none md:flex-1">
-                    {CATEGORY_ORDER.map((cat) => {
-                      const list = (groups.get(cat) ?? []).filter((ex) => !query || ex.name.toLowerCase().includes(query));
-                      if (list.length === 0) return null;
+                    {filteredGroups.map(({ cat, list }) => {
                       return (
                         <div key={cat}>
                           <p className="sticky top-0 bg-surface py-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{cat}</p>
@@ -196,7 +213,11 @@ export default function AdjustWorkoutModal({
                                       marked ? "border-ok-soft bg-ok-soft text-ok" : "border-line bg-surface text-ink hover:bg-app-bg"
                                     }`}
                                   >
-                                    <ExerciseIllustration name={ex.name} animate={false} className={`h-9 w-9 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
+                                    {showIllustrations ? (
+                                      <ExerciseIllustration name={ex.name} animate={false} className={`h-9 w-9 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
+                                    ) : (
+                                      <span className="h-9 w-9 shrink-0 rounded-lg bg-app-bg" aria-hidden />
+                                    )}
                                     <span className="flex-1 truncate">{ex.name}</span>
                                     {marked ? <span className="text-xs font-medium">À ajouter</span> : <Plus className="h-4 w-4 text-brand" strokeWidth={2} />}
                                   </button>
