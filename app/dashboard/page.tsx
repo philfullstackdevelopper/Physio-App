@@ -5,6 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getInstructor } from "@/lib/dashboard/instructor";
 import { loadDashboardHome, type Tile } from "@/lib/dashboard/homeData";
+import { loadUnreadMessages } from "@/lib/dashboard/unreadMessages";
+import { relativeDay } from "@/lib/format/relativeDay";
+import { initials } from "@/lib/format/initials";
 
 function Delta({ tile }: { tile: Tile }) {
   if (tile.delta === null) return null;
@@ -35,6 +38,14 @@ export default async function DashboardPage() {
   if (!(await getInstructor(supabase, user.id))) redirect("/patient");
 
   const h = await loadDashboardHome(supabase, user.id);
+  const unread = await loadUnreadMessages(supabase, user.id);
+  // Une ligne par patient : on garde le message le plus récent de chacun.
+  const unreadByPatient = new Map<string, (typeof unread)[number]>();
+  for (const m of unread) {
+    const existing = unreadByPatient.get(m.patientId);
+    if (!existing || m.createdAt > existing.createdAt) unreadByPatient.set(m.patientId, m);
+  }
+  const unreadRows = [...unreadByPatient.values()].sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
 
   return (
     <main className="min-h-screen">
@@ -50,6 +61,38 @@ export default async function DashboardPage() {
           <StatTile value={h.inactiveCount} label="Sans activité récente" tone="warn" />
           <StatTile value={h.patientCount} label="Patients suivis" tone="ink" />
         </div>
+
+        {unreadRows.length > 0 && (
+          <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:160ms] mt-8">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-ink">Messages non lus</h2>
+              {unreadRows.length > 5 && (
+                <Link href="/dashboard/messages" className="text-xs font-medium text-brand hover:underline">
+                  Voir tout
+                </Link>
+              )}
+            </div>
+            <ul className="mt-3 divide-y divide-line rounded-xl border border-line bg-surface">
+              {unreadRows.slice(0, 5).map((m) => (
+                <li key={m.patientId}>
+                  <Link
+                    href={`/dashboard/messages?patient=${m.patientId}`}
+                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-app-bg"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[11px] font-semibold text-brand">
+                      {initials(m.patientName)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-ink">{m.patientName}</span>
+                      <span className="block truncate text-xs text-muted">{m.body}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-muted">{relativeDay(m.createdAt)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:200ms] mt-8 grid gap-8 lg:grid-cols-2">
           <section>

@@ -6,6 +6,7 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getInstructor } from "@/lib/dashboard/instructor";
+import { loadUnreadCount } from "@/lib/dashboard/unreadMessages";
 
 // The one shared gate for every /dashboard/* route: not an instructor at all
 // -> back to the patient side; instructor but not yet approved by Philippe
@@ -65,9 +66,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     );
   }
 
+  const unreadCount = await loadUnreadCount(supabase, user.id);
+
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink sm:flex-row">
-      <DashboardSidebar instructorName={instructor.full_name ?? null} />
+      <DashboardSidebar instructorName={instructor.full_name ?? null} unreadCount={unreadCount} />
       <div className="relative flex-1">{children}</div>
     </div>
   );

@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
-import { LayoutDashboard, UsersRound, Dumbbell, ListChecks, Wallet, LogOut } from "lucide-react";
+import { LayoutDashboard, UsersRound, MessageCircle, Dumbbell, ListChecks, Wallet, LogOut } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { initials } from "@/lib/format/initials";
 
 const LINKS = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/patients", label: "Mes patients", icon: UsersRound },
+  { href: "/dashboard/messages", label: "Messages", icon: MessageCircle },
   { href: "/dashboard/seances", label: "Mes séances", icon: Dumbbell },
   { href: "/dashboard/exercises", label: "Mes exercices", icon: ListChecks },
   { href: "/dashboard/facturation", label: "Tarif & paiements", icon: Wallet },
@@ -17,8 +18,14 @@ const LINKS = [
 
 // Une seule barre de navigation pour tout /dashboard/* : colonne sombre à
 // gauche sur desktop, barre horizontale défilable sur mobile. Les mêmes
-// cinq destinations dans les deux cas.
-export default function DashboardSidebar({ instructorName }: { instructorName: string | null }) {
+// six destinations dans les deux cas.
+export default function DashboardSidebar({
+  instructorName,
+  unreadCount,
+}: {
+  instructorName: string | null;
+  unreadCount: number;
+}) {
   const pathname = usePathname();
   const isActive = (href: string, exact?: boolean) => (exact ? pathname === href : pathname.startsWith(href));
 
@@ -40,6 +47,11 @@ export default function DashboardSidebar({ instructorName }: { instructorName: s
             <Link key={link.href} href={link.href} className={linkClass(isActive(link.href, link.exact))}>
               <link.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
               {link.label}
+              {link.href === "/dashboard/messages" && unreadCount > 0 && (
+                <span className="ml-auto rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">
+                  {unreadCount}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
@@ -69,6 +81,11 @@ export default function DashboardSidebar({ instructorName }: { instructorName: s
           <Link key={link.href} href={link.href} className={`shrink-0 ${linkClass(isActive(link.href, link.exact))}`}>
             <link.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
             {link.label}
+            {link.href === "/dashboard/messages" && unreadCount > 0 && (
+              <span className="rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">
+                {unreadCount}
+              </span>
+            )}
           </Link>
         ))}
         <SignOutButton redirectUrl="/login">

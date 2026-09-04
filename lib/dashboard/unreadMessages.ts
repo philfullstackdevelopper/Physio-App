@@ -28,3 +28,16 @@ export async function loadUnreadMessages(
     createdAt: m.created_at as string,
   }));
 }
+
+// Nombre de messages non lus, pour le badge de la barre latérale — mêmes
+// filtres que loadUnreadMessages, sans charger les lignes.
+export async function loadUnreadCount(supabase: SupabaseClient, instructorId: string): Promise<number> {
+  const { count } = await supabase
+    .from("patient_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("instructor_id", instructorId)
+    .eq("sender", "patient")
+    .is("read_by_instructor_at", null);
+
+  return count ?? 0;
+}
