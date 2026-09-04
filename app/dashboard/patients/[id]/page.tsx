@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, ArrowDown, ArrowUp, CheckCircle2, ChevronDown, ChevronUp, Dumbbell, FileText, Flame, MessageCircle, Minus, X } from "lucide-react";
+import { ArrowLeft, ArrowDown, ArrowUp, CheckCircle2, ChevronDown, ChevronUp, FileText, Flame, MessageCircle, Minus, X } from "lucide-react";
+import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { startOfWeekISO, resolveMonthInfo } from "@/lib/week";
@@ -210,7 +211,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
               <ul className="mt-3 divide-y divide-line rounded-lg border border-line">
                 {activeExercises.map((e) => (
                   <li key={e.id} className="flex items-center gap-3 px-3 py-2 text-sm text-ink">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand"><Dumbbell className="h-3.5 w-3.5" strokeWidth={1.75} /></span>
+                    <ExerciseIllustration name={e.name} className="h-10 w-10 shrink-0 text-brand" />
                     {e.name}
                   </li>
                 ))}
