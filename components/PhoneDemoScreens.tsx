@@ -198,12 +198,12 @@ export function ExerciseScreen({
     <>
       <div className="flex items-center gap-2.5">
         <ChevronLeft className="h-4 w-4 text-slate-700" strokeWidth={2} />
-        <span className="text-xs font-semibold text-slate-700">Cercles d&apos;épaules</span>
+        <span className="text-xs font-semibold text-slate-700">Shoulder Circles</span>
         <span className="ml-auto text-[11px] font-semibold text-slate-400">2 / 3</span>
       </div>
 
       <div className="relative mt-3 flex h-[190px] items-center justify-center overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white">
-        <ExerciseIllustration name="Cercles d'épaules" className="h-[150px] w-[150px] text-blue-600" />
+        <ExerciseIllustration name="Shoulder Circles" className="h-[150px] w-[150px] text-blue-600" />
         <div
           className="absolute bottom-2.5 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 shadow-lg shadow-blue-600/25 transition-transform duration-150"
           style={{ transform: playPressed ? "scale(0.85)" : "scale(1)" }}
