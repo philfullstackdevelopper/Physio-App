@@ -42,8 +42,10 @@ d'upload) disparaissent. Déclarée une fois dans `app/globals.css` sous
 | Accent pâle | `--color-brand-soft` | `#eaf1ff` |
 | Sidebar | `--color-sidebar` | `#0d1b3e` |
 | OK | `--color-ok` / `--color-ok-soft` | `#16a34a` / `#e8f7ee` |
-| Attention | `--color-warn` / `--color-warn-soft` | `#f59e0b` / `#fff4e0` |
+| Attention | `--color-warn` / `--color-warn-soft` | `#b45309` / `#fff4e0` |
 | Danger | `--color-danger` / `--color-danger-soft` | `#dc2626` / `#fdecec` |
+
+Note (2026-09-04) : `--color-warn` est passé de #f59e0b à #b45309 pour un contraste AA du texte orange sur fond pâle.
 
 - **Typographie** : Instrument Sans partout dans l'app (titres compris).
   Fraunces (`font-display`) reste réservée au site vitrine. Chiffres en
