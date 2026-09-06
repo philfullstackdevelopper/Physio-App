@@ -8,8 +8,6 @@ import ExerciseIllustration from "@/components/ExerciseIllustration";
 
 export type ModalExercise = { id: string; name: string };
 
-const ILLUSTRATION_LIMIT = 60;
-
 export default function AdjustWorkoutModal({
   patientId,
   patientFirstName,
@@ -91,8 +89,6 @@ export default function AdjustWorkoutModal({
       })).filter(({ list }) => list.length > 0),
     [groups, query],
   );
-  const visibleCount = filteredGroups.reduce((sum, { list }) => sum + list.length, 0);
-  const showIllustrations = visibleCount <= ILLUSTRATION_LIMIT;
 
   const toggle = (set: Set<string>, id: string) => {
     const next = new Set(set);
@@ -193,9 +189,6 @@ export default function AdjustWorkoutModal({
                       className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
                     />
                   </label>
-                  {!showIllustrations && (
-                    <p className="mt-2 text-xs text-muted">Affinez la recherche pour voir les illustrations.</p>
-                  )}
                   <div className="mt-2 max-h-72 space-y-3 overflow-y-auto pr-1 md:max-h-none md:flex-1">
                     {filteredGroups.map(({ cat, list }) => {
                       return (
@@ -213,11 +206,7 @@ export default function AdjustWorkoutModal({
                                       marked ? "border-ok-soft bg-ok-soft text-ok" : "border-line bg-surface text-ink hover:bg-app-bg"
                                     }`}
                                   >
-                                    {showIllustrations ? (
-                                      <ExerciseIllustration name={ex.name} animate={false} className={`h-9 w-9 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
-                                    ) : (
-                                      <span className="h-9 w-9 shrink-0 rounded-lg bg-app-bg" aria-hidden />
-                                    )}
+                                    <ExerciseIllustration name={ex.name} animate={false} className={`h-9 w-9 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
                                     <span className="flex-1 truncate">{ex.name}</span>
                                     {marked ? <span className="text-xs font-medium">À ajouter</span> : <Plus className="h-4 w-4 text-brand" strokeWidth={2} />}
                                   </button>
