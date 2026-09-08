@@ -9,7 +9,6 @@ import { LogoMark } from "@/components/Logo";
 const NAV_LINKS = [
   { href: "/#comment-ca-marche", label: "Comment ça marche" },
   { href: "/praticiens", label: "Praticiens" },
-  { href: "/#fonctionnalites", label: "Fonctionnalités" },
   { href: "/#comparaison", label: "Comparaison" },
   { href: "/#tarifs", label: "Tarifs" },
   { href: "/#faq", label: "FAQ" },

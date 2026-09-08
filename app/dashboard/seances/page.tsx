@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import SeancesTabs from "@/components/SeancesTabs";
-import { createSeance, duplicateSeance, deleteSeance } from "./actions";
+import { createSeance, duplicateSeance, deleteSeance, hideTemplateWorkout, unhideTemplateWorkout } from "./actions";
 
 const STAGES = Object.entries(STAGE_LABELS) as [InjuryStage, string][];
 
@@ -97,6 +97,14 @@ export default async function SeancesPage({
     .order("name");
   const rawTemplates = (templatesData ?? []) as unknown as OwnSeance[];
 
+  // Templates this instructor has personally hidden from their own list —
+  // a filter on the shared library, never a deletion (migration 0046).
+  const { data: hiddenRows } = await supabase
+    .from("instructor_hidden_workouts")
+    .select("workout_id")
+    .eq("instructor_id", user.id);
+  const hiddenIds = new Set((hiddenRows ?? []).map((r) => r.workout_id as string));
+
   // Group by condition (what a kiné actually scans for), then by phase order
   // within each condition — not insertion/seed order, which scattered the
   // same condition's phases across the list.
@@ -151,9 +159,12 @@ export default async function SeancesPage({
               stageLabel: t.stage ? STAGE_LABELS[t.stage as InjuryStage] : undefined,
               leadExerciseName: leadExerciseName(t.workout_exercises),
               exerciseNames: exerciseNames(t.workout_exercises),
+              hidden: hiddenIds.has(t.id),
             }))}
             duplicateSeance={duplicateSeance}
             deleteSeance={deleteSeance}
+            hideTemplateWorkout={hideTemplateWorkout}
+            unhideTemplateWorkout={unhideTemplateWorkout}
             createSeance={createSeance}
             conditions={conditions ?? []}
             stages={STAGES}

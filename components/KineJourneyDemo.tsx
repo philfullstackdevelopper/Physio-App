@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useInView } from "motion/react";
-import { ArrowRight, Check, CheckCircle2, ChevronRight, Dumbbell, Lightbulb, Plus, Search, Smartphone, X } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, ChevronRight, Lightbulb, Plus, Search, Smartphone, X } from "lucide-react";
 import { Cursor } from "@/components/KineDemoScreens";
+import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { useReducedMotion } from "@/components/PhoneDemoScreens";
 
 // Trois panneaux côte à côte = les trois vrais écrans (tableau de bord,
@@ -13,6 +14,20 @@ import { useReducedMotion } from "@/components/PhoneDemoScreens";
 // → résumé + bandeau. Boucle ≈ 12 s. Reduced-motion : tout allumé, sans curseur.
 type Target = "marc" | "adjust" | "squat" | "save" | null;
 type Phase = { target: Target; clicking: boolean; lit2: boolean; lit3: boolean; marcHi: boolean; squatOut: boolean; saved: boolean; duration: number };
+
+// Démo animée (Everkinetic) à côté de chaque exercice cité dans la démo.
+// Clé = libellé affiché, valeur = nom présent dans EXERCISE_ILLUSTRATION_MAP.
+const DEMO_FIGURE: Record<string, string> = {
+  "Extension du genou assise": "Leg Extension",
+  "Montée de marche": "Step-Up",
+  "Squat assisté": "Bodyweight Squat",
+  "Fente statique": "Split Squat",
+  "Pont fessier": "Glute Bridge",
+  "Extension ischio debout": "Leg Curl",
+};
+function Fig({ label, size = "h-7 w-7" }: { label: string; size?: string }) {
+  return <ExerciseIllustration name={DEMO_FIGURE[label] ?? label} className={`${size} shrink-0 text-brand`} />;
+}
 
 const PHASES: Phase[] = [
   { target: null,     clicking: false, lit2: false, lit3: false, marcHi: false, squatOut: false, saved: false, duration: 1200 },
@@ -119,7 +134,7 @@ export default function KineJourneyDemo() {
           <p className="text-xs font-semibold text-ink">Initiation genou <span className="font-normal text-muted">· 15 min · 3 exercices</span></p>
           <ul className="mt-1.5 divide-y divide-line rounded-lg border border-line">
             {["Extension du genou assise", "Montée de marche", "Squat assisté"].map((e) => (
-              <li key={e} className="flex items-center gap-2 px-2 py-1.5 text-[11px] text-ink"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-soft text-brand"><Dumbbell className="h-3 w-3" strokeWidth={1.75} /></span>{e}</li>
+              <li key={e} className="flex items-center gap-2 px-2 py-1 text-[11px] text-ink"><Fig label={e} size="h-6 w-6" />{e}</li>
             ))}
           </ul>
         </div>
@@ -135,17 +150,17 @@ export default function KineJourneyDemo() {
             <div>
               <p className="text-[9px] font-semibold uppercase tracking-wide text-muted">Exercices actuels</p>
               {["Extension du genou assise", "Montée de marche"].map((e) => (
-                <div key={e} className="mt-1 flex items-center gap-1.5 rounded-lg border border-line px-2 py-1.5 text-[10px] text-ink"><span className="flex-1 truncate">{e}</span><Check className="h-3 w-3 text-brand" strokeWidth={2} /></div>
+                <div key={e} className="mt-1 flex items-center gap-1.5 rounded-lg border border-line px-2 py-1.5 text-[10px] text-ink"><Fig label={e} /><span className="flex-1 truncate">{e}</span><Check className="h-3 w-3 text-brand" strokeWidth={2} /></div>
               ))}
               <div ref={setSquatEl} className={`mt-1 flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[10px] transition-colors duration-300 ${ph.squatOut ? "border-danger-soft bg-danger-soft text-danger" : "border-line text-ink"}`}>
-                <span className="flex-1 truncate">Squat assisté</span>{ph.squatOut ? <span className="flex items-center gap-0.5 font-medium">À retirer <X className="h-3 w-3" strokeWidth={2} /></span> : <Check className="h-3 w-3 text-brand" strokeWidth={2} />}
+                <Fig label="Squat assisté" /><span className="flex-1 truncate">Squat assisté</span>{ph.squatOut ? <span className="flex items-center gap-0.5 font-medium">À retirer <X className="h-3 w-3" strokeWidth={2} /></span> : <Check className="h-3 w-3 text-brand" strokeWidth={2} />}
               </div>
             </div>
             <div>
               <p className="text-[9px] font-semibold uppercase tracking-wide text-muted">Ajouter un exercice</p>
               <div className="mt-1 flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-[10px] text-muted"><Search className="h-3 w-3" strokeWidth={1.75} />Rechercher…</div>
               {[["Fente statique", false], ["Pont fessier", ph.saved || ph.squatOut], ["Extension ischio debout", false]].map(([e, on]) => (
-                <div key={String(e)} className={`mt-1 flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[10px] transition-colors duration-300 ${on ? "border-ok-soft bg-ok-soft text-ok" : "border-line text-ink"}`}><span className="flex-1 truncate">{String(e)}</span>{on ? <span className="font-medium">À ajouter</span> : <Plus className="h-3 w-3 text-brand" strokeWidth={2} />}</div>
+                <div key={String(e)} className={`mt-1 flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[10px] transition-colors duration-300 ${on ? "border-ok-soft bg-ok-soft text-ok" : "border-line text-ink"}`}><Fig label={String(e)} /><span className="flex-1 truncate">{String(e)}</span>{on ? <span className="font-medium">À ajouter</span> : <Plus className="h-3 w-3 text-brand" strokeWidth={2} />}</div>
               ))}
             </div>
           </div>

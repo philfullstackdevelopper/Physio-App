@@ -34,7 +34,7 @@ export default function ConversationList({
   const [showNew, setShowNew] = useState(false);
 
   const visible = useMemo(() => filterConversations(rows, tab, query), [rows, tab, query]);
-  const withoutMessages = useMemo(() => rows.filter((r) => r.lastAt === null), [rows]);
+  const allPatients = useMemo(() => [...rows].sort((a, b) => a.name.localeCompare(b.name, "fr")), [rows]);
 
   const href = (patientId: string) => `/dashboard/messages?patient=${patientId}&tab=${tab}`;
 
@@ -67,18 +67,24 @@ export default function ConversationList({
           {showNew && (
             <div className="absolute right-0 z-10 mt-1 w-64 rounded-xl border border-line bg-surface p-1 shadow-lg">
               <p className="px-3 py-2 text-xs font-medium text-muted">Écrire à un patient</p>
-              {withoutMessages.length === 0 ? (
-                <p className="px-3 pb-2 text-sm text-muted">Vous avez déjà échangé avec tous vos patients.</p>
+              {allPatients.length === 0 ? (
+                <p className="px-3 pb-2 text-sm text-muted">Aucun patient pour l&apos;instant.</p>
               ) : (
                 <ul className="max-h-64 overflow-y-auto">
-                  {withoutMessages.map((r) => (
+                  {allPatients.map((r) => (
                     <li key={r.patientId}>
                       <Link
                         href={href(r.patientId)}
                         onClick={() => setShowNew(false)}
-                        className="block rounded-lg px-3 py-2 text-sm text-ink hover:bg-app-bg"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-app-bg"
                       >
-                        {r.name}
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
+                          {r.initials}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm text-ink">{r.name}</span>
+                          {r.conditionLabel && <span className="block truncate text-xs text-muted">{r.conditionLabel}</span>}
+                        </span>
                       </Link>
                     </li>
                   ))}

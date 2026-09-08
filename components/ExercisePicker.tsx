@@ -7,15 +7,34 @@
 // =============================================================================
 
 import { useMemo, useState } from "react";
-import { CATEGORY_ORDER, categoryFor, type Category } from "@/lib/exercise/category";
+import { primaryBodyPart, type BodyPart } from "@/lib/exercise/category";
+import ExerciseIllustration from "@/components/ExerciseIllustration";
 
-type Exercise = { id: string; name: string };
+type Exercise = {
+  id: string;
+  name: string;
+  instructions: string | null;
+  bodyPartIds: string[];
+  /** Old French names this exercise was renamed or merged away from
+   *  (migration 0042/0043) — searched, never displayed. */
+  search_keywords: string[] | null;
+};
+
+function matches(ex: Exercise, query: string) {
+  return (
+    ex.name.toLowerCase().includes(query) ||
+    ex.instructions?.toLowerCase().includes(query) ||
+    (ex.search_keywords ?? []).some((k) => k.toLowerCase().includes(query))
+  );
+}
 
 export default function ExercisePicker({
   exercises,
+  bodyParts,
   selectedIds,
 }: {
   exercises: Exercise[];
+  bodyParts: BodyPart[];
   selectedIds: string[];
 }) {
   const [q, setQ] = useState("");
@@ -23,13 +42,14 @@ export default function ExercisePicker({
   const query = q.trim().toLowerCase();
 
   const groups = useMemo(() => {
-    const m = new Map<Category, Exercise[]>();
+    const m = new Map<string, Exercise[]>();
     for (const ex of exercises) {
-      const cat = categoryFor(ex.name);
-      (m.get(cat) ?? m.set(cat, []).get(cat)!).push(ex);
+      const bp = primaryBodyPart(ex.bodyPartIds, bodyParts);
+      if (!bp) continue;
+      (m.get(bp.id) ?? m.set(bp.id, []).get(bp.id)!).push(ex);
     }
     return m;
-  }, [exercises]);
+  }, [exercises, bodyParts]);
 
   return (
     <div>
@@ -42,20 +62,20 @@ export default function ExercisePicker({
       />
 
       <div className="mt-3 max-h-[28rem] space-y-4 overflow-y-auto">
-        {CATEGORY_ORDER.map((cat) => {
-          const list = groups.get(cat) ?? [];
+        {bodyParts.map((bp) => {
+          const list = groups.get(bp.id) ?? [];
           if (list.length === 0) return null;
           const visibleCount = query
-            ? list.filter((ex) => ex.name.toLowerCase().includes(query)).length
+            ? list.filter((ex) => matches(ex, query)).length
             : list.length;
           return (
-            <div key={cat} className={visibleCount === 0 ? "hidden" : ""}>
+            <div key={bp.id} className={visibleCount === 0 ? "hidden" : ""}>
               <p className="sticky top-0 bg-surface py-1 text-xs font-semibold uppercase tracking-wide text-muted">
-                {cat} <span className="font-normal text-muted">({list.length})</span>
+                {bp.label} <span className="font-normal text-muted">({list.length})</span>
               </p>
               <div className="mt-1 space-y-0.5">
                 {list.map((ex) => {
-                  const show = !query || ex.name.toLowerCase().includes(query);
+                  const show = !query || matches(ex, query);
                   return (
                     <label
                       key={ex.id}
@@ -66,7 +86,12 @@ export default function ExercisePicker({
                         name="exercise_ids"
                         value={ex.id}
                         defaultChecked={selected.has(ex.id)}
-                        className="h-4 w-4 rounded border-line text-brand focus:ring-brand-soft"
+                        className="h-4 w-4 shrink-0 rounded border-line text-brand focus:ring-brand-soft"
+                      />
+                      <ExerciseIllustration
+                        name={ex.name}
+                        animate={false}
+                        className="h-9 w-9 shrink-0 text-brand"
                       />
                       <span className="text-sm text-ink">{ex.name}</span>
                     </label>

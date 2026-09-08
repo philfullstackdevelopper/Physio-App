@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, ArrowDown, ArrowUp, CheckCircle2, ChevronDown, ChevronUp, FileText, Flame, MessageCircle, Minus, X } from "lucide-react";
+import { ArrowLeft, ArrowDown, ArrowUp, CheckCircle2, FileText, Flame, MessageCircle, Minus } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
@@ -16,11 +16,13 @@ import { ageFromDob } from "@/lib/exercise/patientProfile";
 import { type CalendarDay } from "@/components/PatientCalendar";
 import CalendarPanel from "@/components/CalendarPanel";
 import PainHistoryChart from "@/components/PainHistoryChart";
-import AdjustWorkoutModal from "@/components/AdjustWorkoutModal";
-import AddWorkoutModal, { type AddableWorkout } from "@/components/AddWorkoutModal";
-import { assignCondition, addRecommendedWorkout, removeRecommendedWorkout, moveRecommendedWorkout, adjustPatientWorkout } from "./actions";
+import AdjustWorkoutModal, { type AddableWorkout } from "@/components/AdjustWorkoutModal";
+import { assignCondition, addRecommendedWorkout, removeRecommendedWorkout, adjustPatientWorkout } from "./actions";
 
-type WorkoutExercise = { position: number; exercises: { id: string; name: string } | null };
+type WorkoutExercise = {
+  position: number;
+  exercises: { id: string; name: string; exercise_body_parts: { body_part_id: string }[] } | null;
+};
 type Workout = {
   id: string; name: string; description: string | null; duration_minutes: number | null; times_per_week: number | null;
   stage: string | null; created_by: string | null; condition_id: string | null; patient_id: string | null;
@@ -54,13 +56,15 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   if (!patient) redirect("/dashboard/patients");
   const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || "ce patient";
 
-  const WORKOUT_FIELDS = "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, patient_id, workout_exercises ( position, exercises ( id, name ) )";
+  const WORKOUT_FIELDS =
+    "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, patient_id, workout_exercises ( position, exercises ( id, name, exercise_body_parts ( body_part_id ) ) )";
   const since30 = new Date(now.getTime() - 30 * 86_400_000).toISOString();
   const month = resolveMonthInfo(monthParam);
 
   const [
     { data: conditions }, { data: profile }, { data: docs }, { data: allLogs }, { data: recentFeedback },
     { data: monthLogs }, { data: ownWorkouts }, { data: platformWorkouts }, { data: recRows }, { data: allExercises }, { data: hiddenRows },
+    { data: bodyParts },
     { count: unreadCount },
   ] = await Promise.all([
     supabase.from("conditions").select("id, name").order("name"),
@@ -72,8 +76,9 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     supabase.from("workouts").select(WORKOUT_FIELDS).eq("created_by", user.id),
     supabase.from("workouts").select(WORKOUT_FIELDS).is("created_by", null),
     supabase.from("patient_recommended_workouts").select("id, priority, workout_id, created_at").eq("patient_id", id).order("priority"),
-    supabase.from("exercises").select("id, name").order("name"),
+    supabase.from("exercises").select("id, name, exercise_body_parts(body_part_id)").order("name"),
     supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
+    supabase.from("body_parts").select("id, slug, label, position").order("position"),
     supabase.from("patient_messages").select("id", { count: "exact", head: true }).eq("patient_id", id).eq("sender", "patient").is("read_by_instructor_at", null),
   ]);
 
@@ -94,8 +99,15 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const weekCount: Record<string, number> = {};
   for (const l of allLogs ?? []) if ((l.completed_at as string) >= weekStart) weekCount[l.workout_id as string] = (weekCount[l.workout_id as string] ?? 0) + 1;
   const activeWorkoutId = pickActiveWorkout(recommended.map((r) => ({ workoutId: r.workout.id, priority: r.priority, timesPerWeek: r.workout.times_per_week })), weekCount);
-  const active = recommended.find((r) => r.workout.id === activeWorkoutId)?.workout ?? null;
-  const activeExercises = active ? [...active.workout_exercises].sort((a, b) => a.position - b.position).map((we) => we.exercises).filter((e): e is { id: string; name: string } => !!e) : [];
+  const activeRec = recommended.find((r) => r.workout.id === activeWorkoutId) ?? null;
+  const active = activeRec?.workout ?? null;
+  const activeExercises = active
+    ? [...active.workout_exercises]
+        .sort((a, b) => a.position - b.position)
+        .map((we) => we.exercises)
+        .filter((e): e is NonNullable<typeof e> => !!e)
+        .map((e) => ({ id: e.id, name: e.name }))
+    : [];
 
   // Stats.
   const completed = (allLogs ?? []).map((l) => l.completed_at as string);
@@ -130,15 +142,48 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   // Modale « Ajuster » : exercices ajoutables = tous − masqués − déjà dans la séance.
   const hiddenIds = new Set((hiddenRows ?? []).map((r) => r.exercise_id as string));
   const inActive = new Set(activeExercises.map((e) => e.id));
-  const addableExercises = (allExercises ?? []).filter((e) => !hiddenIds.has(e.id) && !inActive.has(e.id)).map((e) => ({ id: e.id as string, name: e.name as string }));
+  const addableExercises = (allExercises ?? [])
+    .filter((e) => !hiddenIds.has(e.id) && !inActive.has(e.id))
+    .map((e) => ({
+      id: e.id as string,
+      name: e.name as string,
+      bodyPartIds: (e.exercise_body_parts ?? []).map((t) => t.body_part_id as string),
+    }));
 
   // Modale « Ajouter une séance » : le pool sans les séances déjà recommandées.
+  // La condition actuelle du patient remonte toujours en tête de liste — c'est
+  // dans ce groupe qu'un kiné cherche une alternative neuf fois sur dix.
   const recommendedIds = new Set(recommended.map((r) => r.workout.id));
   const stageOrder = new Map(Object.keys(STAGE_LABELS).map((s, i) => [s, i]));
+  const patientConditionName = conditionName(patient.condition_id) ?? null;
   const addableWorkouts: AddableWorkout[] = pool
     .filter((w) => !recommendedIds.has(w.id))
-    .sort((a, b) => (conditionName(a.condition_id) ?? "").localeCompare(conditionName(b.condition_id) ?? "", "fr") || (stageOrder.get(a.stage ?? "") ?? 99) - (stageOrder.get(b.stage ?? "") ?? 99))
-    .map((w) => ({ id: w.id, name: w.name, description: w.description, durationMinutes: w.duration_minutes, timesPerWeek: w.times_per_week, stageLabel: w.stage ? STAGE_LABELS[w.stage as InjuryStage] : null, conditionName: conditionName(w.condition_id) ?? null, editHref: w.created_by === user.id ? `/dashboard/seances/${w.id}` : null, exerciseNames: [...w.workout_exercises].sort((a, b) => a.position - b.position).map((we) => we.exercises?.name).filter((n): n is string => !!n) }));
+    .sort((a, b) => {
+      const ca = conditionName(a.condition_id) ?? "";
+      const cb = conditionName(b.condition_id) ?? "";
+      if (ca !== cb) {
+        if (ca === patientConditionName) return -1;
+        if (cb === patientConditionName) return 1;
+        return ca.localeCompare(cb, "fr");
+      }
+      return (stageOrder.get(a.stage ?? "") ?? 99) - (stageOrder.get(b.stage ?? "") ?? 99);
+    })
+    .map((w) => ({
+      id: w.id,
+      name: w.name,
+      description: w.description,
+      durationMinutes: w.duration_minutes,
+      timesPerWeek: w.times_per_week,
+      stageLabel: w.stage ? STAGE_LABELS[w.stage as InjuryStage] : null,
+      conditionName: conditionName(w.condition_id) ?? null,
+      editHref: w.created_by === user.id ? `/dashboard/seances/${w.id}` : null,
+      exerciseNames: [...w.workout_exercises].sort((a, b) => a.position - b.position).map((we) => we.exercises?.name).filter((n): n is string => !!n),
+      // Union of every one of this séance's exercises' tagged body parts —
+      // lets the picker filter a séance by area without forcing it into a
+      // single category (see lib/exercise/category.ts's primaryBodyPart,
+      // which does the opposite for a single exercise).
+      bodyPartIds: [...new Set(w.workout_exercises.flatMap((we) => (we.exercises?.exercise_body_parts ?? []).map((t) => t.body_part_id)))],
+    }));
 
   const docLinks: { id: string; file_name: string; url: string | null }[] = [];
   for (const d of docs ?? []) {
@@ -166,7 +211,18 @@ export default async function PatientDetailPage({ params, searchParams }: { para
             </form>
           </div>
           <div className="flex items-center gap-2">
-            <AdjustWorkoutModal patientId={patient.id} patientFirstName={firstName} workout={active ? { id: active.id, name: active.name, exercises: activeExercises } : null} addable={addableExercises} action={adjustPatientWorkout} />
+            <AdjustWorkoutModal
+              patientId={patient.id}
+              patientFirstName={firstName}
+              workout={active ? { id: active.id, name: active.name, exercises: activeExercises } : null}
+              recId={activeRec?.recId ?? null}
+              addableExercises={addableExercises}
+              bodyParts={bodyParts ?? []}
+              addableWorkouts={addableWorkouts}
+              adjustAction={adjustPatientWorkout}
+              assignAction={addRecommendedWorkout}
+              removeAction={removeRecommendedWorkout}
+            />
             <Link href={`/dashboard/messages?patient=${id}`} className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg">
               <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
               Messages
@@ -243,7 +299,8 @@ export default async function PatientDetailPage({ params, searchParams }: { para
           </section>
         </div>
 
-        {/* Séance recommandée + liste */}
+        {/* Séance recommandée — lecture seule ; se gère uniquement via le
+            bouton « Ajuster la séance »/« Choisir une séance » en haut de page. */}
         <section className="mt-6 rounded-xl border border-line bg-surface p-5">
           <h2 className="text-sm font-semibold text-ink">Séance recommandée</h2>
           {active ? (
@@ -261,29 +318,8 @@ export default async function PatientDetailPage({ params, searchParams }: { para
               </ul>
             </div>
           ) : (
-            <p className="mt-2 text-sm text-muted">{recommended.length ? "Toutes les séances recommandées sont faites cette semaine." : "Aucune séance recommandée pour l'instant — ajoutez-en une ci-dessous."}</p>
+            <p className="mt-2 text-sm text-muted">{recommended.length ? "La séance recommandée est faite cette semaine." : "Aucune séance recommandée pour l'instant — choisissez-en une avec le bouton « Choisir une séance » en haut de page."}</p>
           )}
-
-          <h3 className="mt-6 text-xs font-semibold uppercase tracking-wide text-muted">Autres séances recommandées</h3>
-          <ul className="mt-2 divide-y divide-line">
-            {recommended.map((r, i) => (
-              <li key={r.recId} className={`flex items-start gap-3 py-3 ${r.workout.id === activeWorkoutId ? "-mx-3 rounded-lg bg-brand-soft/60 px-3" : ""}`}>
-                <span className="w-5 text-sm font-semibold tabular-nums text-muted">{i + 1}</span>
-                <div className="min-w-0 flex-1">
-                  {r.workout.created_by === user.id && r.workout.patient_id === null
-                    ? <Link href={`/dashboard/seances/${r.workout.id}`} className="truncate text-sm font-semibold text-ink underline decoration-line underline-offset-2 hover:decoration-brand">{r.workout.name}</Link>
-                    : <p className="truncate text-sm font-semibold text-ink">{r.workout.name}{r.workout.patient_id === id && <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-medium text-brand">Séance de {firstName}</span>}</p>}
-                  <p className="text-xs text-muted">{r.workout.duration_minutes} min · {r.workout.times_per_week ? `${r.workout.times_per_week}×/semaine` : "objectif libre"} · cette semaine {weekCount[r.workout.id] ?? 0}{r.workout.times_per_week ? `/${r.workout.times_per_week}` : ""}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-0.5">
-                  <form action={moveRecommendedWorkout}><input type="hidden" name="patient_id" value={patient.id} /><input type="hidden" name="rec_id" value={r.recId} /><input type="hidden" name="direction" value="up" /><button type="submit" disabled={i === 0} aria-label="Monter" className="rounded p-1 text-muted hover:bg-app-bg hover:text-ink disabled:opacity-30"><ChevronUp className="h-3.5 w-3.5" strokeWidth={2} /></button></form>
-                  <form action={moveRecommendedWorkout}><input type="hidden" name="patient_id" value={patient.id} /><input type="hidden" name="rec_id" value={r.recId} /><input type="hidden" name="direction" value="down" /><button type="submit" disabled={i === recommended.length - 1} aria-label="Descendre" className="rounded p-1 text-muted hover:bg-app-bg hover:text-ink disabled:opacity-30"><ChevronDown className="h-3.5 w-3.5" strokeWidth={2} /></button></form>
-                  <form action={removeRecommendedWorkout}><input type="hidden" name="patient_id" value={patient.id} /><input type="hidden" name="rec_id" value={r.recId} /><button type="submit" aria-label="Retirer" className="rounded p-1 text-muted hover:bg-danger-soft hover:text-danger"><X className="h-3.5 w-3.5" strokeWidth={2} /></button></form>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-3"><AddWorkoutModal patientId={patient.id} addable={addableWorkouts} addAction={addRecommendedWorkout} /></div>
         </section>
       </div>
     </main>

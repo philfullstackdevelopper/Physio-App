@@ -132,6 +132,46 @@ export async function duplicateSeance(formData: FormData) {
   redirect(`/dashboard/seances/${created.id}`);
 }
 
+// Hide a platform template from this instructor's own "Séances prévues" list.
+// Personal filter only — the template itself and every other instructor's
+// view of it are untouched (mirrors hideExercise in app/dashboard/exercises).
+export async function hideTemplateWorkout(formData: FormData) {
+  const supabase = await createClient();
+  const userId = await requireInstructor(supabase);
+
+  const workoutId = String(formData.get("workout_id") ?? "");
+  if (!workoutId) redirect("/dashboard/seances");
+
+  const { error } = await supabase
+    .from("instructor_hidden_workouts")
+    .insert({ instructor_id: userId, workout_id: workoutId });
+  if (error) {
+    redirect(`/dashboard/seances?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/dashboard/seances");
+  redirect("/dashboard/seances");
+}
+
+// Reverses hideTemplateWorkout.
+export async function unhideTemplateWorkout(formData: FormData) {
+  const supabase = await createClient();
+  const userId = await requireInstructor(supabase);
+
+  const workoutId = String(formData.get("workout_id") ?? "");
+  const { error } = await supabase
+    .from("instructor_hidden_workouts")
+    .delete()
+    .eq("instructor_id", userId)
+    .eq("workout_id", workoutId);
+  if (error) {
+    redirect(`/dashboard/seances?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/dashboard/seances");
+  redirect("/dashboard/seances");
+}
+
 // Deleting a workout cascades in the database to its recommendations
 // (patient_recommended_workouts) and completed-session history (workout_logs)
 // — real adherence data, not just a pointer. So a séance currently

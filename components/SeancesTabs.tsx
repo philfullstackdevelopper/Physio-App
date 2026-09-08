@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Dumbbell, Trash2 } from "lucide-react";
+import { Search, Dumbbell, Trash2, MoreVertical, Pencil, EyeOff, Eye } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import SubmitButton from "@/components/SubmitButton";
 import { STAGE_SHORT, STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
@@ -21,7 +21,95 @@ type ListItem = {
    *  it's recommended to a patient or has logged sessions. Undefined means
    *  deletable. */
   blockedReason?: string;
+  /** Templates only — hidden by the CURRENT instructor from their own
+   *  "Séances prévues" list (migration 0046). A personal filter, not a
+   *  deletion — the shared template is untouched. */
+  hidden?: boolean;
 };
+
+// Helper matching ExerciseLibraryGrid's runAction — calls a server action
+// with a small FormData built from a single field, without needing a real
+// <form> submit (used inside the dropdown menu below).
+function runAction(action: (formData: FormData) => void, field: string, value: string) {
+  const fd = new FormData();
+  fd.set(field, value);
+  action(fd);
+}
+
+// Three-dot menu on a template card — "Modifier" forks the read-only
+// template into the instructor's own editable copy (duplicateSeance already
+// opens that copy's editor), "Masquer"/"Réafficher" toggles it out of this
+// instructor's own list only. Mirrors ExerciseCardMenu's idiom exactly.
+function TemplateCardMenu({
+  templateId,
+  hidden,
+  duplicateSeance,
+  hideTemplateWorkout,
+  unhideTemplateWorkout,
+}: {
+  templateId: string;
+  hidden?: boolean;
+  duplicateSeance: (formData: FormData) => void;
+  hideTemplateWorkout: (formData: FormData) => void;
+  unhideTemplateWorkout: (formData: FormData) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Options"
+        className="rounded p-1 text-muted hover:bg-app-bg hover:text-ink"
+      >
+        <MoreVertical className="h-4 w-4" strokeWidth={2} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-line bg-surface py-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                runAction(duplicateSeance, "template_id", templateId);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-app-bg"
+            >
+              <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+              Modifier
+            </button>
+            {hidden ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  runAction(unhideTemplateWorkout, "workout_id", templateId);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-app-bg"
+              >
+                <Eye className="h-3.5 w-3.5" strokeWidth={2} />
+                Réafficher
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  runAction(hideTemplateWorkout, "workout_id", templateId);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-danger hover:bg-danger-soft"
+              >
+                <EyeOff className="h-3.5 w-3.5" strokeWidth={2} />
+                Supprimer de ma liste
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 // Own séance only (templates/platform séances are never deletable here).
 // Two-step confirm inline rather than a native confirm() dialog, matching
@@ -117,7 +205,7 @@ function SeanceThumb({
 }) {
   const boxClass = size === "inset" ? "h-28 w-full rounded-lg" : "aspect-[4/3] rounded-t-xl";
   return (
-    <div className={`relative ${boxClass} bg-app-bg`}>
+    <div className={`relative ${boxClass} bg-surface`}>
       {leadExerciseName ? (
         <ExerciseIllustration
           name={leadExerciseName}
@@ -130,7 +218,7 @@ function SeanceThumb({
         </div>
       )}
       {badge === "mine" && (
-        <span className="absolute left-2 top-2 rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-muted">
+        <span className="absolute left-2 top-2 rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-medium text-muted">
           Personnalisée
         </span>
       )}
@@ -281,6 +369,8 @@ export default function SeancesTabs({
   templates,
   duplicateSeance,
   deleteSeance,
+  hideTemplateWorkout,
+  unhideTemplateWorkout,
   createSeance,
   conditions,
   stages,
@@ -289,6 +379,8 @@ export default function SeancesTabs({
   templates: ListItem[];
   duplicateSeance: (formData: FormData) => void;
   deleteSeance: (formData: FormData) => void;
+  hideTemplateWorkout: (formData: FormData) => void;
+  unhideTemplateWorkout: (formData: FormData) => void;
   createSeance: (formData: FormData) => void;
   conditions: { id: string; name: string }[];
   stages: [InjuryStage, string][];
@@ -297,6 +389,7 @@ export default function SeancesTabs({
   const [mineQuery, setMineQuery] = useState("");
   const [templateQuery, setTemplateQuery] = useState("");
   const [templatesShown, setTemplatesShown] = useState(REVEAL_INITIAL);
+  const [showHiddenTemplates, setShowHiddenTemplates] = useState(false);
 
   const filteredMine = useMemo(() => {
     const q = mineQuery.trim().toLowerCase();
@@ -309,16 +402,20 @@ export default function SeancesTabs({
     );
   }, [mine, mineQuery]);
 
+  const hiddenTemplateCount = useMemo(() => templates.filter((t) => t.hidden).length, [templates]);
+
   const filteredTemplates = useMemo(() => {
     const q = templateQuery.trim().toLowerCase();
-    if (!q) return templates;
-    return templates.filter(
-      (t) =>
+    return templates.filter((t) => {
+      if (!showHiddenTemplates && t.hidden) return false;
+      if (!q) return true;
+      return (
         t.name.toLowerCase().includes(q) ||
         t.conditionName?.toLowerCase().includes(q) ||
-        t.exerciseNames?.some((n) => n.toLowerCase().includes(q)),
-    );
-  }, [templates, templateQuery]);
+        t.exerciseNames?.some((n) => n.toLowerCase().includes(q))
+      );
+    });
+  }, [templates, templateQuery, showHiddenTemplates]);
 
   const visibleTemplates = filteredTemplates.slice(0, templatesShown);
 
@@ -422,10 +519,21 @@ export default function SeancesTabs({
 
       {tab === "templates" && (
         <div className="mt-3">
-          <p className="text-sm text-muted">
-            Déjà disponibles pour tous les kinés. Dupliquez-en une pour en faire votre
-            propre version modifiable.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-muted">
+              Déjà disponibles pour tous les kinés. Ouvrez le menu ⋮ d&apos;un modèle pour le
+              modifier (une copie modifiable vous est ouverte) ou le retirer de votre liste.
+            </p>
+            {hiddenTemplateCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowHiddenTemplates((v) => !v)}
+                className="shrink-0 text-sm font-medium text-brand hover:underline"
+              >
+                {showHiddenTemplates ? "Masquer les retirés" : `Voir les retirés (${hiddenTemplateCount})`}
+              </button>
+            )}
+          </div>
           {templates.length > 0 && (
             <div className="relative mt-3 mb-3">
               <Search
@@ -460,24 +568,24 @@ export default function SeancesTabs({
                 {visibleTemplates.map((t) => (
                   <div
                     key={t.id}
-                    className="overflow-hidden rounded-xl border border-line bg-surface"
+                    className={`overflow-hidden rounded-xl border border-line bg-surface ${t.hidden ? "opacity-60" : ""}`}
                   >
                     <SeanceThumb badge="template" stage={t.stage} leadExerciseName={t.leadExerciseName} />
                     <div className="flex flex-col gap-3 p-4">
-                      <div>
-                        <p className="font-medium text-ink">{t.conditionName ?? t.name}</p>
-                        <p className="text-sm text-muted">{t.stageLabel ?? t.name}</p>
-                        <ExerciseNamesList names={t.exerciseNames} />
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-medium text-ink">{t.conditionName ?? t.name}</p>
+                          <p className="text-sm text-muted">{t.stageLabel ?? t.name}</p>
+                        </div>
+                        <TemplateCardMenu
+                          templateId={t.id}
+                          hidden={t.hidden}
+                          duplicateSeance={duplicateSeance}
+                          hideTemplateWorkout={hideTemplateWorkout}
+                          unhideTemplateWorkout={unhideTemplateWorkout}
+                        />
                       </div>
-                      <form action={duplicateSeance}>
-                        <input type="hidden" name="template_id" value={t.id} />
-                        <SubmitButton
-                          pendingText="Duplication…"
-                          className="w-full rounded-full border border-brand px-3 py-1.5 text-sm font-medium text-brand transition hover:bg-brand-soft active:scale-95"
-                        >
-                          Dupliquer
-                        </SubmitButton>
-                      </form>
+                      <ExerciseNamesList names={t.exerciseNames} />
                     </div>
                   </div>
                 ))}

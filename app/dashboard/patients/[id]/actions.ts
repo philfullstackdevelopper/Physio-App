@@ -55,7 +55,9 @@ export async function sendMessage(formData: FormData) {
   redirect(`/dashboard/patients/${patientId}`);
 }
 
-// Adds a workout to the patient's recommended list, at the end (lowest priority).
+// Assigns the patient's one recommended workout, replacing any previous
+// recommendation — a patient has at most one at a time. Managed entirely
+// from AdjustWorkoutModal now (no separate queue/reorder UI).
 export async function addRecommendedWorkout(formData: FormData) {
   const supabase = await createClient();
   await requireUser(supabase);
@@ -64,25 +66,18 @@ export async function addRecommendedWorkout(formData: FormData) {
   const workoutId = String(formData.get("workout_id") ?? "");
   if (!patientId || !workoutId) redirect(`/dashboard/patients/${patientId}`);
 
-  const { data: last } = await supabase
-    .from("patient_recommended_workouts")
-    .select("priority")
-    .eq("patient_id", patientId)
-    .order("priority", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const nextPriority = ((last?.priority as number | undefined) ?? 0) + 1;
+  await supabase.from("patient_recommended_workouts").delete().eq("patient_id", patientId);
 
   const { error } = await supabase
     .from("patient_recommended_workouts")
-    .insert({ patient_id: patientId, workout_id: workoutId, priority: nextPriority });
+    .insert({ patient_id: patientId, workout_id: workoutId, priority: 1 });
   if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
 
   revalidatePath(`/dashboard/patients/${patientId}`);
   redirect(`/dashboard/patients/${patientId}`);
 }
 
-// Removes one workout from the patient's recommended list.
+// Unassigns the patient's recommended workout, with no replacement.
 export async function removeRecommendedWorkout(formData: FormData) {
   const supabase = await createClient();
   await requireUser(supabase);
@@ -92,36 +87,6 @@ export async function removeRecommendedWorkout(formData: FormData) {
 
   const { error } = await supabase.from("patient_recommended_workouts").delete().eq("id", recId);
   if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
-
-  revalidatePath(`/dashboard/patients/${patientId}`);
-  redirect(`/dashboard/patients/${patientId}`);
-}
-
-// Swaps one recommended workout's priority with its neighbor — the whole
-// "reordering" UI, on purpose: no drag-and-drop, just two arrows.
-export async function moveRecommendedWorkout(formData: FormData) {
-  const supabase = await createClient();
-  await requireUser(supabase);
-
-  const patientId = String(formData.get("patient_id") ?? "");
-  const recId = String(formData.get("rec_id") ?? "");
-  const direction = String(formData.get("direction") ?? "");
-
-  const { data: rows } = await supabase
-    .from("patient_recommended_workouts")
-    .select("id, priority")
-    .eq("patient_id", patientId)
-    .order("priority");
-  const list = rows ?? [];
-  const idx = list.findIndex((r) => r.id === recId);
-  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-
-  if (idx !== -1 && swapIdx >= 0 && swapIdx < list.length) {
-    const a = list[idx];
-    const b = list[swapIdx];
-    await supabase.from("patient_recommended_workouts").update({ priority: b.priority }).eq("id", a.id);
-    await supabase.from("patient_recommended_workouts").update({ priority: a.priority }).eq("id", b.id);
-  }
 
   revalidatePath(`/dashboard/patients/${patientId}`);
   redirect(`/dashboard/patients/${patientId}`);

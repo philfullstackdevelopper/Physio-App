@@ -14,6 +14,13 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       accessToken: () => {
+        // This client is also constructed during the server render pass of
+        // its "use client" callers (Next.js renders Client Components on the
+        // server too, for the initial HTML/RSC payload) — where `window`
+        // doesn't exist. Without this guard, that SSR pass throws, and Next
+        // silently falls back to client-only rendering, which hangs the
+        // client-side navigation that follows Clerk sign-in.
+        if (typeof window === "undefined") return Promise.resolve(null);
         const getToken = (window as ClerkWindow).Clerk?.session?.getToken;
         return getToken ? getToken() : Promise.resolve(null);
       },

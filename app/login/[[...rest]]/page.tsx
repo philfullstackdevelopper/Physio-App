@@ -56,7 +56,7 @@ export default function LoginPage() {
                 Handles e-mail + password, "mot de passe oublié", and error
                 messages natively — no custom form code needed anymore. */}
             <SignIn
-              fallbackRedirectUrl="/dashboard"
+              fallbackRedirectUrl="/apres-connexion"
               signUpUrl="/signup"
               appearance={{
                 elements: { rootBox: "w-full", cardBox: "w-full" },

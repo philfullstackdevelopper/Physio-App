@@ -31,7 +31,11 @@ export default async function SeanceEditorPage({
   if (!workout || workout.created_by !== user.id) redirect("/dashboard/seances");
 
   const { data: conditions } = await supabase.from("conditions").select("id, name").order("name");
-  const { data: exercises } = await supabase.from("exercises").select("id, name").order("name");
+  const { data: bodyParts } = await supabase.from("body_parts").select("id, slug, label, position").order("position");
+  const { data: exercises } = await supabase
+    .from("exercises")
+    .select("id, name, instructions, search_keywords, exercise_body_parts(body_part_id)")
+    .order("name");
 
   const { data: current } = await supabase
     .from("workout_exercises")
@@ -47,7 +51,15 @@ export default async function SeanceEditorPage({
     .select("exercise_id")
     .eq("instructor_id", user.id);
   const hiddenIds = new Set((hiddenRows ?? []).map((r) => r.exercise_id as string));
-  const pickerExercises = (exercises ?? []).filter((ex) => !hiddenIds.has(ex.id) || selected.has(ex.id));
+  const pickerExercises = (exercises ?? [])
+    .filter((ex) => !hiddenIds.has(ex.id) || selected.has(ex.id))
+    .map((ex) => ({
+      id: ex.id,
+      name: ex.name,
+      instructions: ex.instructions,
+      search_keywords: ex.search_keywords,
+      bodyPartIds: (ex.exercise_body_parts ?? []).map((t) => t.body_part_id as string),
+    }));
 
   return (
     <main className="min-h-screen">
@@ -140,7 +152,8 @@ export default async function SeanceEditorPage({
             </h2>
             <div className="mt-3">
               <ExercisePicker
-                exercises={pickerExercises as { id: string; name: string }[]}
+                exercises={pickerExercises}
+                bodyParts={bodyParts ?? []}
                 selectedIds={[...selected]}
               />
             </div>

@@ -1,82 +1,29 @@
 // =============================================================================
-// Exercise categories — group the library by body area for the séance editor.
-// Category is derived from the exercise name (no DB column needed).
+// Exercise categories — group the exercise pickers (séance editor, "Ajuster
+// la séance") by body area, using the real `body_parts`/`exercise_body_parts`
+// tags (see migration 0035) instead of guessing from the exercise name.
+//
+// A name-matching heuristic used to live here, keyed on French substrings
+// ("genou", "hanche", "cheville"...). Migration 0042 translated every
+// exercise name to English, so that heuristic silently stopped matching
+// almost everything and dumped the whole library into one "Équilibre &
+// général" bucket — which is what actually made the pickers feel flooded
+// with near-identical entries. The real tags were sitting right there and
+// already correctly maintained (every exercise has at least one).
 // =============================================================================
 
-export const CATEGORY_ORDER = [
-  "Cheville & pied",
-  "Genou & jambe",
-  "Hanche & fessiers",
-  "Dos & lombaires",
-  "Cervicales & cou",
-  "Épaule",
-  "Poignet, main & coude",
-  "Tronc, gainage & abdominaux",
-  "Équilibre & général",
-] as const;
+export type BodyPart = { id: string; slug: string; label: string; position: number };
 
-export type Category = (typeof CATEGORY_ORDER)[number];
-
-/** Assign an exercise to a body-area category (first matching rule wins). */
-export function categoryFor(name: string): Category {
-  const n = name.toLowerCase();
-
-  if (n.includes("sur place")) return "Équilibre & général";
-
-  if (
-    n.includes("cervical") || n.includes("menton") || n.includes("nuque") ||
-    n.includes("trapèze") || n.includes("angulaire") || n.includes("inclinaison") ||
-    /\bcou\b/.test(n) // whole word "cou" — avoids matching "coude"
-  )
-    return "Cervicales & cou";
-
-  if (
-    n.includes("épaule") || n.includes("scapulaire") || n.includes("pendulaire") ||
-    n.includes("rétropulsion") || n.includes("doigts au mur") || n.includes("bras") ||
-    n.includes("élévation") || n.includes("rotation externe") || n.includes("rotation interne")
-  )
-    return "Épaule";
-
-  if (
-    n.includes("poignet") || n.includes("serrage") || n.includes("doigts") ||
-    n.includes("coude") || n.includes("épicondyl") || n.includes("bouteille")
-  )
-    return "Poignet, main & coude";
-
-  if (
-    n.includes("cheville") || n.includes("mollet") || n.includes("pointe") ||
-    n.includes("éversion") || n.includes("eversion") || n.includes("inversion") ||
-    n.includes("orteils") || n.includes("talons") || n.includes("alphabet") ||
-    n.includes("dorsale")
-  )
-    return "Cheville & pied";
-
-  if (
-    n.includes("hanche") || n.includes("coquille") || n.includes("clam") ||
-    n.includes("marche latérale") || n.includes("fessier") || n.includes("piriforme") ||
-    n.includes("psoas")
-  )
-    return "Hanche & fessiers";
-
-  if (
-    n.includes("gainage") || n.includes("planche") || n.includes("crunch") ||
-    n.includes("abdominal") || n.includes("respiration") || n.includes("tronc") ||
-    n.includes("postural")
-  )
-    return "Tronc, gainage & abdominaux";
-
-  if (
-    n.includes("genou") || n.includes("quadriceps") || n.includes("assis-debout") ||
-    n.includes("mini-squat") || n.includes("montée de marche") || n.includes("squat") ||
-    n.includes("fente") || n.includes("ischio")
-  )
-    return "Genou & jambe";
-
-  if (
-    n.includes("lombaire") || n.includes("bascule du bassin") || n.includes("chat-vache") ||
-    n.includes("quadrupède") || n.includes("cobra") || n.includes("boule") || n.includes("dos")
-  )
-    return "Dos & lombaires";
-
-  return "Équilibre & général";
+/**
+ * Which of an exercise's tagged body parts to group it under when a picker
+ * needs exactly one heading per exercise (an exercise can be tagged with
+ * more than one area) — the lowest-`position` tag, i.e. the first one in
+ * `body_parts` order, so grouping stays deterministic and each exercise
+ * appears exactly once. Falls back to the last body part (general/misc)
+ * for the — currently nonexistent — case of an untagged exercise.
+ */
+export function primaryBodyPart(bodyPartIds: string[], bodyParts: BodyPart[]): BodyPart | null {
+  const tagged = bodyParts.filter((bp) => bodyPartIds.includes(bp.id));
+  if (tagged.length > 0) return tagged.reduce((best, bp) => (bp.position < best.position ? bp : best));
+  return bodyParts.length > 0 ? bodyParts[bodyParts.length - 1] : null;
 }

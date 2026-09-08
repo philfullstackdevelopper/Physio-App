@@ -40,7 +40,8 @@ export async function markMessageRead() {
     .is("read_at", null);
 
   revalidatePath("/patient");
-  redirect("/patient");
+  revalidatePath("/patient/messages");
+  redirect("/patient/messages");
 }
 
 // Patient sends a message to their own instructor. No rate limiting: patients
@@ -53,10 +54,10 @@ export async function sendPatientMessage(formData: FormData) {
   const attachmentPath = String(formData.get("attachment_path") ?? "") || null;
   const attachmentName = String(formData.get("attachment_name") ?? "") || null;
   if (!body && !attachmentPath) {
-    redirect(`/patient?error=${encodeURIComponent("Écrivez un message ou joignez un fichier.")}`);
+    redirect(`/patient/messages?error=${encodeURIComponent("Écrivez un message ou joignez un fichier.")}`);
   }
   if (attachmentPath && !isAttachmentPathFor(attachmentPath, user.id)) {
-    redirect(`/patient?error=${encodeURIComponent("Pièce jointe invalide.")}`);
+    redirect(`/patient/messages?error=${encodeURIComponent("Pièce jointe invalide.")}`);
   }
 
   const { data: patient } = await supabase
@@ -65,7 +66,7 @@ export async function sendPatientMessage(formData: FormData) {
     .eq("id", user.id)
     .maybeSingle();
   if (!patient?.instructor_id) {
-    redirect(`/patient?error=${encodeURIComponent("Kiné introuvable.")}`);
+    redirect(`/patient/messages?error=${encodeURIComponent("Kiné introuvable.")}`);
   }
 
   const { error } = await supabase.from("patient_messages").insert({
@@ -76,8 +77,9 @@ export async function sendPatientMessage(formData: FormData) {
     attachment_path: attachmentPath,
     attachment_name: attachmentPath ? (attachmentName ?? "Fichier") : null,
   });
-  if (error) redirect(`/patient?error=${encodeURIComponent(error.message)}`);
+  if (error) redirect(`/patient/messages?error=${encodeURIComponent(error.message)}`);
 
   revalidatePath("/patient");
-  redirect("/patient");
+  revalidatePath("/patient/messages");
+  redirect("/patient/messages");
 }

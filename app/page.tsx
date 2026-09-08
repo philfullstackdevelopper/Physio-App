@@ -1,26 +1,23 @@
-import { Fragment } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  Check,
-  ClipboardList,
   Eye,
   PenSquare,
-  Play,
+  PlayCircle,
   ShieldCheck,
+  Users,
   Sparkles,
   Video,
   Zap,
 } from "lucide-react";
-import ConditionsShowcase from "@/components/ConditionsShowcase";
-import FeaturesShowcase from "@/components/FeaturesShowcase";
 import FaqSection from "@/components/FaqSection";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import PhoneMockup from "@/components/PhoneMockup";
 import KineJourneyDemo from "@/components/KineJourneyDemo";
-import ComparisonTable from "@/components/ComparisonTable";
+import ComparisonTable, { ComparisonBadge } from "@/components/ComparisonTable";
 import Testimonials from "@/components/Testimonials";
+import StepsShowcase from "@/components/StepsShowcase";
 import Reveal from "@/components/Reveal";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 
@@ -28,53 +25,6 @@ const HERO_CHIPS = [
   { icon: Sparkles, label: "Gratuit pour les patients" },
   { icon: Video, label: "Vidéos, sans caméra ni capteur" },
   { icon: ShieldCheck, label: "Piloté par votre kiné, jamais par un algorithme seul" },
-];
-
-const STEPS = [
-  {
-    title: "Votre kiné construit votre programme",
-    body: "Il choisit les exercices et la phase adaptés à votre situation, depuis sa bibliothèque.",
-    visual: (
-      <div className="rounded-xl border border-slate-100 bg-white p-3">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-blue-600">Programme</p>
-        <p className="mt-0.5 text-sm font-semibold text-slate-900">Mobilité épaule · Phase 2</p>
-        <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-          <Check className="h-3 w-3 text-emerald-500" strokeWidth={2.5} />
-          8 exercices validés pour cette phase
-        </p>
-      </div>
-    ),
-  },
-  {
-    title: "Vous suivez vos séances, guidées pas à pas",
-    body: "Une vidéo et des consignes claires pour chaque mouvement, un exercice à la fois.",
-    visual: (
-      <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
-          <Play className="h-3.5 w-3.5 fill-current" strokeWidth={0} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-slate-900">Rotation externe</p>
-          <p className="text-xs text-slate-500">2 × 10 · 45 s restantes</p>
-        </div>
-        <ClipboardList className="h-4 w-4 shrink-0 text-slate-300" strokeWidth={1.75} />
-      </div>
-    ),
-  },
-  {
-    title: "Il ajuste selon vos retours",
-    body: "Douleur ou difficulté ? Votre praticien le voit et adapte le programme le jour même.",
-    visual: (
-      <div className="rounded-xl border border-slate-100 bg-white p-3">
-        <p className="text-xs font-medium text-amber-600">Douleur signalée hier</p>
-        <p className="mt-1 flex items-center gap-1 text-xs text-slate-600">
-          <Check className="h-3 w-3 text-emerald-500" strokeWidth={2.5} />
-          Charge allégée sur 2 exercices
-        </p>
-        <p className="mt-0.5 text-[11px] text-slate-400">Ajusté par Julien, kiné, il y a 2 h</p>
-      </div>
-    ),
-  },
 ];
 
 function PrimaryCta({
@@ -154,7 +104,7 @@ export default function Home() {
 
         {/* ── Côté kiné : tableau de bord → patient → action ─────── */}
         <Reveal>
-        <section className="py-16 sm:py-20">
+        <section id="cote-kine" className="scroll-mt-28 py-16 sm:py-20">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Côté kiné</p>
             <h2 className="font-display mt-3 text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
@@ -192,50 +142,27 @@ export default function Home() {
         {/* ── Comment ça marche ────────────────────────────────── */}
         <Reveal>
         <section id="comment-ca-marche" className="mt-24 scroll-mt-28 sm:mt-32">
-          <h2 className="font-display max-w-lg text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+          <span className="inline-block rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] text-blue-600">
+            Fonctionnement
+          </span>
+          <h2 className="font-display mt-4 max-w-lg text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
             Trois étapes, rien de plus
           </h2>
+          <p className="mt-3 max-w-xl text-lg leading-relaxed text-slate-600">
+            EasyPhysio simplifie le suivi et l&apos;adaptation de vos patients au quotidien.
+          </p>
 
-          {/* A connected diagram instead of three parallel cards: the mini
-              UI-previews lead, arrows do the connecting work, and the copy
-              shrinks to a caption — reads as one mechanism, not a generic
-              3-column feature grid. Picked from a live 3-variant prototype
-              (2026-09-02); see git history for the other two directions. */}
-          <RevealGroup className="mt-10 flex flex-col items-stretch gap-6 lg:flex-row lg:items-center lg:gap-0">
-            {STEPS.map((step, i) => (
-              <Fragment key={step.title}>
-                <RevealItem className="flex-1">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    {step.visual}
-                  </div>
-                  <p className="mt-4 text-sm font-semibold text-slate-900">
-                    <span className="text-blue-600">{i + 1}.</span> {step.title}
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{step.body}</p>
-                </RevealItem>
-                {i < STEPS.length - 1 && (
-                  <div aria-hidden className="hidden shrink-0 px-4 lg:flex">
-                    <ArrowRight className="h-5 w-5 text-blue-300" strokeWidth={1.75} />
-                  </div>
-                )}
-              </Fragment>
-            ))}
-          </RevealGroup>
+          <StepsShowcase />
 
-          <div className="mt-10 border-t border-slate-200 pt-8">
-            <PrimaryCta>Commencer maintenant</PrimaryCta>
-          </div>
-        </section>
-        </Reveal>
-
-        {/* ── Fonctionnalités ──────────────────────────────────── */}
-        <Reveal>
-        <section id="fonctionnalites" className="mt-24 scroll-mt-28 text-center sm:mt-32">
-          <h2 className="font-display mx-auto max-w-lg text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Tout ce qu&apos;il faut, rien de superflu
-          </h2>
-          <div className="mx-auto mt-8 max-w-3xl">
-            <FeaturesShowcase />
+          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <PrimaryCta>Découvrir EasyPhysio en action</PrimaryCta>
+            <Link
+              href="#cote-kine"
+              className="inline-flex items-center gap-2 font-medium text-slate-700 transition hover:text-blue-700"
+            >
+              <PlayCircle className="h-5 w-5 text-blue-600" strokeWidth={1.75} />
+              Voir la démo <span className="font-normal text-slate-500">(1 min)</span>
+            </Link>
           </div>
         </section>
         </Reveal>
@@ -243,13 +170,19 @@ export default function Home() {
         {/* ── Comparaison ──────────────────────────────────────── */}
         <Reveal>
         <section id="comparaison" className="mt-24 scroll-mt-28 sm:mt-32">
-          <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Ce qui change vraiment pour le patient
-          </h2>
-          <p className="mt-3 max-w-xl leading-relaxed text-slate-600">
-            La plupart des programmes s&apos;arrêtent à la porte du cabinet. Voici la différence,
-            ligne par ligne.
-          </p>
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+                Ce qui change vraiment pour le patient
+              </h2>
+              <p className="mt-3 max-w-xl leading-relaxed text-slate-600">
+                La plupart des programmes s&apos;arrêtent à la porte du cabinet.
+                <br className="hidden sm:block" />
+                EasyPhysio assure un suivi continu, personnalisé et efficace.
+              </p>
+            </div>
+            <ComparisonBadge />
+          </div>
           <div className="mt-8">
             <ComparisonTable />
           </div>
@@ -259,23 +192,15 @@ export default function Home() {
         {/* ── Témoignages ──────────────────────────────────────── */}
         <Reveal>
         <section className="mt-24 sm:mt-32">
-          <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Utilisé au cabinet, et surtout à la maison
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-blue-600">
+            <Users className="h-4 w-4" strokeWidth={2} /> Ils utilisent EasyPhysio au quotidien
+          </p>
+          <h2 className="font-display mt-4 max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            Utilisé au cabinet,
+            <br />
+            et surtout à la maison
           </h2>
           <Testimonials />
-        </section>
-        </Reveal>
-
-        {/* ── Conditions couvertes ─────────────────────────────── */}
-        <Reveal>
-        <section id="conditions" className="mt-24 scroll-mt-28 sm:mt-32">
-          <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Des programmes pour chaque situation
-          </h2>
-          <p className="mt-3 max-w-xl leading-relaxed text-slate-600">
-            Cliquez sur une catégorie pour voir des exemples de situations concernées.
-          </p>
-          <ConditionsShowcase />
         </section>
         </Reveal>
 

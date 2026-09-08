@@ -76,6 +76,23 @@ body {
   }
 }
 
+/* A day's séance detail popping open (WeekProgramme) — a quick overshoot +
+   wiggle so the popup reads as a direct reaction to the click, not a plain
+   fade. */
+@keyframes popIn {
+  0% {
+    transform: scale(0.85) rotate(-1deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.03) rotate(1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
 /* Faint paper grain — an ambient background texture (colorless noise, tints
    with whatever sits under it), kept subtle enough to read as tactile rather
    than "background pattern." Shared by the dashboard's warm background and
@@ -114,5 +131,41 @@ body {
   }
   html {
     scroll-behavior: auto;
+  }
+}
+
+/* Landing mocks: bars grow in from the left, lines draw themselves. */
+@keyframes growX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes drawLine { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+/* WeekProgramme's strip-segment <-> day-view morph (view-transition-name
+   "week-strip-N" on each side, see components/WeekProgramme.tsx). Slower and
+   softer than the browser's ~0.25s default cross-fade, same exponential
+   ease-out feel as the rest of the app's motion. `*` here scopes to every
+   view transition in the app, not just this one — fine while this is the
+   only one, revisit if a second, differently-paced transition is added.
+   0.62s (bumped from 0.42s, Philippe, 2026-09-08) read as sluggish/clunky in
+   practice — outside the 200-500ms range that holds even for a drawer/modal-
+   scale transition — and left enough time to notice the arrow-notch button
+   warping into the day panel's plain rounded rect. Settled on 0.34s: still
+   clearly slower/more noticeable than the browser's bare ~0.25s default (the
+   original ask), well inside the 200-500ms bracket. Paired with the clip-path
+   restructure in WeekProgramme.tsx (the shape being morphed is now a plain
+   rounded rect on both ends, not a notched arrow), same day. */
+::view-transition-group(*) {
+  animation-duration: 0.34s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 0.34s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms !important;
   }
 }
