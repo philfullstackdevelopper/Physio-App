@@ -46,7 +46,7 @@ export default async function ExercisesPage({
 
   return (
     <main className="min-h-screen">
-      <div className="mx-auto max-w-5xl p-6 sm:p-8">
+      <div className="mx-auto max-w-7xl p-6 sm:p-8">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>

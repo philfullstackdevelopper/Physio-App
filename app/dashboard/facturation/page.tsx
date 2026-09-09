@@ -81,7 +81,7 @@ export default async function FacturationPage({
 
   return (
     <main className="min-h-screen">
-      <div className="mx-auto max-w-6xl p-6 sm:p-8">
+      <div className="mx-auto max-w-7xl p-6 sm:p-8">
         <h1 className="text-2xl font-semibold text-ink">Tarif et paiements</h1>
         <p className="mt-1 text-sm text-muted">
           Définissez votre tarif mensuel et activez les paiements pour encaisser vos patients en toute simplicité.
