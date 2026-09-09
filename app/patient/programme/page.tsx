@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { startOfWeekISO } from "@/lib/week";
 import { loadPatientHome } from "@/lib/patient/home-data";
+import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { tipOfTheDay } from "@/lib/patient/tips";
-import { pickActiveWorkout } from "@/lib/exercise/activeRecommendation";
+import { resolveWorkoutForWeek } from "@/lib/exercise/activeRecommendation";
 import { primaryBodyPart, type BodyPart } from "@/lib/exercise/category";
 import MountainScene from "@/components/MountainScene";
 import ProgressRing from "@/components/ProgressRing";
@@ -44,17 +45,16 @@ export default async function ProgrammePage() {
   const { data: recRows } = await supabase
     .from("patient_recommended_workouts")
     .select(
-      `priority, workouts (
+      `week_start_date, workouts (
         id, name, description, duration_minutes, times_per_week,
         workout_exercises ( exercises ( id, name, instructions, exercise_body_parts ( body_part_id ) ) )
       )`,
     )
-    .eq("patient_id", user.id)
-    .order("priority", { ascending: true });
+    .eq("patient_id", user.id);
   const { data: bodyPartRows } = await supabase.from("body_parts").select("id, slug, label, position").order("position");
   const bodyParts = (bodyPartRows ?? []) as BodyPart[];
 
-  const recommended = (recRows ?? [])
+  const allAssignments = (recRows ?? [])
     .map((r) => {
       const w = r.workouts as unknown as
         | (Omit<Workout, "workout_exercises"> & {
@@ -63,7 +63,7 @@ export default async function ProgrammePage() {
         | null;
       if (!w) return null;
       return {
-        priority: r.priority as number,
+        weekStartDate: r.week_start_date as string,
         workout: {
           ...w,
           workout_exercises: w.workout_exercises.map((we) => ({
@@ -74,7 +74,18 @@ export default async function ProgrammePage() {
         } as Workout,
       };
     })
-    .filter((r): r is { priority: number; workout: Workout } => r != null);
+    .filter((r): r is { weekStartDate: string; workout: Workout } => r != null);
+
+  // Only one séance is ever "assigned" at a time now — the one whose
+  // week_start_date is on or before this week's Monday (see lib/exercise/
+  // activeRecommendation.ts). `recommended` used to list every recommended
+  // workout; now it's that single active one (or empty), so the rendering
+  // below — written for a list — still works unchanged.
+  const activeWorkoutId = resolveWorkoutForWeek(
+    allAssignments.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate })),
+    thisWeekStartDateKey(),
+  );
+  const recommended = allAssignments.filter((r) => r.workout.id === activeWorkoutId).map((r) => ({ workout: r.workout }));
 
   const weekStart = startOfWeekISO();
   const workoutIds = recommended.map((r) => r.workout.id);
@@ -92,11 +103,6 @@ export default async function ProgrammePage() {
     const id = l.workout_id as string;
     weekCounts[id] = (weekCounts[id] ?? 0) + 1;
   }
-
-  const activeWorkoutId = pickActiveWorkout(
-    recommended.map((r) => ({ workoutId: r.workout.id, priority: r.priority, timesPerWeek: r.workout.times_per_week })),
-    weekCounts,
-  );
 
   // Aggregate across every assigned workout, for the sidebar — each workout's
   // "done" is capped at its own target so finishing one early doesn't inflate

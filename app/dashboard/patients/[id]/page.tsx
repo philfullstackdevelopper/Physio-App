@@ -1,23 +1,23 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, ArrowDown, ArrowUp, CheckCircle2, FileText, Flame, MessageCircle, Minus } from "lucide-react";
-import ExerciseIllustration from "@/components/ExerciseIllustration";
+import { ArrowLeft, ArrowDown, ArrowUp, CheckCircle2, ChevronRight, FileText, Flame, Minus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { startOfWeekISO, resolveMonthInfo } from "@/lib/week";
-import { gradeDay } from "@/lib/exercise/dayGrade";
-import { pickActiveWorkout } from "@/lib/exercise/activeRecommendation";
+import { resolveWorkoutForWeek } from "@/lib/exercise/activeRecommendation";
+import { buildWeeks, currentWeekNumber, localDateKey, thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { computeStreak } from "@/lib/exercise/streak";
 import { computeAdherence, adherenceLabel, adherenceTone } from "@/lib/exercise/adherence";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import { relativeDay } from "@/lib/format/relativeDay";
+import { initials } from "@/lib/format/initials";
 import { STAGE_LABELS, STAGE_SHORT, type InjuryStage } from "@/lib/exercise/prescription";
 import { ageFromDob } from "@/lib/exercise/patientProfile";
-import { type CalendarDay } from "@/components/PatientCalendar";
-import CalendarPanel from "@/components/CalendarPanel";
-import PainHistoryChart from "@/components/PainHistoryChart";
-import AdjustWorkoutModal, { type AddableWorkout } from "@/components/AdjustWorkoutModal";
+import { type AddableWorkout } from "@/components/AdjustWorkoutModal";
+import KineWeekProgramme, { type KineWorkoutSummary } from "@/components/KineWeekProgramme";
+import PatientMessagesButton from "@/components/PatientMessagesButton";
+import type { SessionDetail } from "@/components/WeekProgramme";
 import { assignCondition, addRecommendedWorkout, removeRecommendedWorkout, adjustPatientWorkout } from "./actions";
+import { getPatientThread, sendPatientMessage } from "../actions";
 
 type WorkoutExercise = {
   position: number;
@@ -45,37 +45,39 @@ function PainDelta({ latest, previous }: { latest: number | null; previous: numb
   );
 }
 
-export default async function PatientDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; month?: string; adjusted?: string }> }) {
+export default async function PatientDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; adjusted?: string }> }) {
   const { id } = await params;
-  const { error, month: monthParam, adjusted } = await searchParams;
+  const { error, adjusted } = await searchParams;
   const supabase = await createClient();
   const user = await requireUser(supabase);
   const now = new Date();
 
-  const { data: patient } = await supabase.from("patients").select("id, full_name, email, condition_id").eq("id", id).maybeSingle();
+  const { data: patient } = await supabase.from("patients").select("id, full_name, email, condition_id, created_at").eq("id", id).maybeSingle();
   if (!patient) redirect("/dashboard/patients");
   const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || "ce patient";
 
   const WORKOUT_FIELDS =
     "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, patient_id, workout_exercises ( position, exercises ( id, name, exercise_body_parts ( body_part_id ) ) )";
   const since30 = new Date(now.getTime() - 30 * 86_400_000).toISOString();
-  const month = resolveMonthInfo(monthParam);
 
+  // Tout l'historique du patient (séances + ressentis) est chargé une fois :
+  // la frise (KineWeekProgramme) navigue entre les semaines côté client sans
+  // refaire de requête — plus de filtre par mois ni de `?month=` dans l'URL.
   const [
     { data: conditions }, { data: profile }, { data: docs }, { data: allLogs }, { data: recentFeedback },
-    { data: monthLogs }, { data: ownWorkouts }, { data: platformWorkouts }, { data: recRows }, { data: allExercises }, { data: hiddenRows },
+    { data: allFeedback }, { data: ownWorkouts }, { data: platformWorkouts }, { data: recRows }, { data: allExercises }, { data: hiddenRows },
     { data: bodyParts },
     { count: unreadCount },
   ] = await Promise.all([
     supabase.from("conditions").select("id, name").order("name"),
     supabase.from("patient_profiles").select("condition_id, injury_stage, rehab_progress, history, date_of_birth, height_cm, weight_kg, activity_level, updated_at").eq("id", id).maybeSingle(),
     supabase.from("patient_documents").select("id, file_name, storage_path, uploaded_at").eq("patient_id", id).order("uploaded_at", { ascending: false }),
-    supabase.from("workout_logs").select("id, completed_at, workout_id").eq("patient_id", id),
+    supabase.from("workout_logs").select("id, completed_at, workout_id, workouts ( name, duration_minutes )").eq("patient_id", id),
     supabase.from("patient_feedback").select("pain_score, created_at").eq("patient_id", id).gte("created_at", since30),
-    supabase.from("workout_logs").select("id, completed_at, workouts ( name )").eq("patient_id", id).gte("completed_at", month.startISO).lt("completed_at", month.endISO),
+    supabase.from("patient_feedback").select("workout_log_id, pain_score, difficulty, notes").eq("patient_id", id),
     supabase.from("workouts").select(WORKOUT_FIELDS).eq("created_by", user.id),
     supabase.from("workouts").select(WORKOUT_FIELDS).is("created_by", null),
-    supabase.from("patient_recommended_workouts").select("id, priority, workout_id, created_at").eq("patient_id", id).order("priority"),
+    supabase.from("patient_recommended_workouts").select("id, week_start_date, workout_id, created_at").eq("patient_id", id).order("week_start_date", { ascending: false }),
     supabase.from("exercises").select("id, name, exercise_body_parts(body_part_id)").order("name"),
     supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
     supabase.from("body_parts").select("id, slug, label, position").order("position"),
@@ -91,14 +93,17 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const copies = own.filter((w) => w.patient_id === id);
   const workoutById = new Map([...pool, ...copies].map((w) => [w.id, w]));
 
+  // Full history of what's ever been recommended (needed for adherence below,
+  // which tracks compliance over time, not just the current séance) — the
+  // one currently in effect is resolved separately right after.
   const recommended = (recRows ?? [])
-    .map((r) => ({ recId: r.id as string, priority: r.priority as number, createdAt: r.created_at as string, workout: workoutById.get(r.workout_id as string) }))
-    .filter((r): r is { recId: string; priority: number; createdAt: string; workout: Workout } => r.workout != null);
+    .map((r) => ({ recId: r.id as string, weekStartDate: r.week_start_date as string, createdAt: r.created_at as string, workout: workoutById.get(r.workout_id as string) }))
+    .filter((r): r is { recId: string; weekStartDate: string; createdAt: string; workout: Workout } => r.workout != null);
 
-  const weekStart = startOfWeekISO();
-  const weekCount: Record<string, number> = {};
-  for (const l of allLogs ?? []) if ((l.completed_at as string) >= weekStart) weekCount[l.workout_id as string] = (weekCount[l.workout_id as string] ?? 0) + 1;
-  const activeWorkoutId = pickActiveWorkout(recommended.map((r) => ({ workoutId: r.workout.id, priority: r.priority, timesPerWeek: r.workout.times_per_week })), weekCount);
+  const activeWorkoutId = resolveWorkoutForWeek(
+    recommended.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate })),
+    thisWeekStartDateKey(),
+  );
   const activeRec = recommended.find((r) => r.workout.id === activeWorkoutId) ?? null;
   const active = activeRec?.workout ?? null;
   const activeExercises = active
@@ -115,31 +120,55 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const streak = computeStreak(completed);
   const lastLog = (allLogs ?? []).reduce<{ completed_at: string; workout_id: string } | null>((best, l) => (!best || (l.completed_at as string) > best.completed_at ? { completed_at: l.completed_at as string, workout_id: l.workout_id as string } : best), null);
   const lastWorkout = lastLog ? workoutById.get(lastLog.workout_id) : undefined;
-  const adherence = computeAdherence({ completedAt: completed, recommendations: recommended.map((r) => ({ timesPerWeek: r.workout.times_per_week, createdAt: r.createdAt })), now });
+  const adherence = computeAdherence({
+    completedAt: completed,
+    assignments: recommended.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate, timesPerWeek: r.workout.times_per_week })),
+    now,
+  });
   const tone = adherenceTone(adherence.pct);
   const pain = buildPainSeries((recentFeedback ?? []) as { pain_score: number | null; created_at: string }[], now);
 
-  // Calendrier (inchangé : couleur = pire ressenti du jour).
-  const monthLogIds = (monthLogs ?? []).map((l) => l.id as string);
-  const { data: monthFeedback } = monthLogIds.length ? await supabase.from("patient_feedback").select("workout_log_id, pain_score, difficulty, notes").in("workout_log_id", monthLogIds) : { data: [] };
-  const feedbackByLogId = new Map((monthFeedback ?? []).filter((f) => f.workout_log_id).map((f) => [f.workout_log_id as string, f]));
-  const logsByDay = new Map<number, { id: string; workoutName: string | null; time: string }[]>();
-  for (const l of monthLogs ?? []) {
-    const d = new Date(l.completed_at as string);
-    const entry = { id: l.id as string, workoutName: (l.workouts as unknown as { name: string } | null)?.name ?? null, time: d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) };
-    (logsByDay.get(d.getDate()) ?? logsByDay.set(d.getDate(), []).get(d.getDate())!).push(entry);
+  // Frise : semaines depuis la création du compte patient, et le détail de
+  // chaque jour (séance, heure, douleur, difficulté, notes) indexé par date
+  // locale — même structure que côté patient (app/patient/page.tsx).
+  const weeks = buildWeeks((patient.created_at as string | null) ?? now.toISOString(), now);
+  const feedbackByLogId = new Map((allFeedback ?? []).filter((f) => f.workout_log_id).map((f) => [f.workout_log_id as string, f]));
+  const dayDetails: Record<string, SessionDetail[]> = {};
+  for (const l of allLogs ?? []) {
+    const completedAt = new Date(l.completed_at as string);
+    const f = feedbackByLogId.get(l.id as string);
+    const w = l.workouts as unknown as { name: string; duration_minutes: number | null } | null;
+    (dayDetails[localDateKey(completedAt)] ??= []).push({
+      logId: l.id as string,
+      workoutName: w?.name ?? null,
+      time: completedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+      durationMinutes: w?.duration_minutes ?? null,
+      painScore: (f?.pain_score as number | null) ?? null,
+      difficulty: (f?.difficulty as number | null) ?? null,
+      notes: (f?.notes as string | null) ?? null,
+    });
   }
-  const calendarDays: CalendarDay[] = Array.from({ length: month.daysInMonth }, (_, i) => {
-    const day = i + 1;
-    const logs = logsByDay.get(day) ?? [];
-    const grade = gradeDay(logs.length > 0, logs.map((l) => { const f = feedbackByLogId.get(l.id); return { painScore: (f?.pain_score as number | null) ?? null, difficulty: (f?.difficulty as number | null) ?? null }; }));
-    const detail = logs.length
-      ? logs.map((l) => { const f = feedbackByLogId.get(l.id); const parts = [l.workoutName ?? "Séance", `terminée à ${l.time}`]; if (f?.pain_score != null) parts.push(`douleur ${f.pain_score}/10`); if (f?.difficulty != null) parts.push(`difficulté ${f.difficulty}/10`); if (f?.notes) parts.push(`« ${f.notes} »`); return parts.join(" · "); }).join(" ; ")
-      : null;
-    return { day, grade, detail };
-  });
+  // La frise résout elle-même la séance effective de chaque semaine à partir
+  // de la liste complète des assignations + un résumé de chaque séance.
+  const assignments = recommended.map((r) => ({ id: r.recId, workoutId: r.workout.id, weekStartDate: r.weekStartDate }));
+  const workoutSummaries: Record<string, KineWorkoutSummary> = {};
+  for (const r of recommended) {
+    workoutSummaries[r.workout.id] ??= {
+      id: r.workout.id,
+      name: r.workout.name,
+      exercises: [...r.workout.workout_exercises]
+        .sort((a, b) => a.position - b.position)
+        .map((we) => we.exercises)
+        .filter((e): e is NonNullable<typeof e> => !!e)
+        .map((e) => ({ id: e.id, name: e.name })),
+    };
+  }
 
   // Modale « Ajuster » : exercices ajoutables = tous − masqués − déjà dans la séance.
+  // v1 : calculé pour la séance de la SEMAINE COURANTE uniquement. Si le kiné
+  // ajuste une autre semaine dont la séance est différente, la liste peut
+  // proposer un exercice déjà présent (applyAdjustment l'ignore alors) ou
+  // masquer un exercice absent de cette séance-là — acceptable pour l'instant.
   const hiddenIds = new Set((hiddenRows ?? []).map((r) => r.exercise_id as string));
   const inActive = new Set(activeExercises.map((e) => e.id));
   const addableExercises = (allExercises ?? [])
@@ -150,14 +179,16 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       bodyPartIds: (e.exercise_body_parts ?? []).map((t) => t.body_part_id as string),
     }));
 
-  // Modale « Ajouter une séance » : le pool sans les séances déjà recommandées.
+  // Modale « Choisir une séance » : tout le pool ; la frise retire elle-même la
+  // séance déjà effective pour la semaine sélectionnée (KineWeekProgramme).
+  // Pas d'exclusion de l'historique — migration 0047 a explicitement supprimé
+  // la contrainte d'unicité (patient_id, workout_id) pour permettre qu'une
+  // séance déjà utilisée revienne plus tard.
   // La condition actuelle du patient remonte toujours en tête de liste — c'est
   // dans ce groupe qu'un kiné cherche une alternative neuf fois sur dix.
-  const recommendedIds = new Set(recommended.map((r) => r.workout.id));
   const stageOrder = new Map(Object.keys(STAGE_LABELS).map((s, i) => [s, i]));
   const patientConditionName = conditionName(patient.condition_id) ?? null;
   const addableWorkouts: AddableWorkout[] = pool
-    .filter((w) => !recommendedIds.has(w.id))
     .sort((a, b) => {
       const ca = conditionName(a.condition_id) ?? "";
       const cb = conditionName(b.condition_id) ?? "";
@@ -194,7 +225,9 @@ export default async function PatientDetailPage({ params, searchParams }: { para
 
   return (
     <main className="min-h-screen">
-      <div className="mx-auto max-w-5xl p-6 sm:p-8">
+      {/* max-w-7xl comme la liste patients (Philippe, 2026-09-09 : « prendre
+          toute la place ») — la frise a besoin de largeur. */}
+      <div className="mx-auto max-w-7xl p-6 sm:p-8">
         <Link href="/dashboard/patients" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"><ArrowLeft className="h-4 w-4" strokeWidth={1.75} />Retour à la liste</Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -210,25 +243,15 @@ export default async function PatientDetailPage({ params, searchParams }: { para
               <span className="inline-flex items-center gap-1 text-xs text-muted"><Flame className="h-3.5 w-3.5" strokeWidth={1.75} />{streak} j d&apos;affilée · {totalSessions} séance{totalSessions > 1 ? "s" : ""}</span>
             </form>
           </div>
-          <div className="flex items-center gap-2">
-            <AdjustWorkoutModal
-              patientId={patient.id}
-              patientFirstName={firstName}
-              workout={active ? { id: active.id, name: active.name, exercises: activeExercises } : null}
-              recId={activeRec?.recId ?? null}
-              addableExercises={addableExercises}
-              bodyParts={bodyParts ?? []}
-              addableWorkouts={addableWorkouts}
-              adjustAction={adjustPatientWorkout}
-              assignAction={addRecommendedWorkout}
-              removeAction={removeRecommendedWorkout}
-            />
-            <Link href={`/dashboard/messages?patient=${id}`} className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg">
-              <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
-              Messages
-              {!!unreadCount && unreadCount > 0 && <span className="rounded-full bg-brand px-1.5 text-[11px] text-white">{unreadCount}</span>}
-            </Link>
-          </div>
+          {/* La séance se gère semaine par semaine depuis la frise ci-dessous ;
+              ici il ne reste que la conversation, en popup pour ne pas quitter
+              la fiche (point 4 de l'audit du 2026-09-09). */}
+          <PatientMessagesButton
+            patient={{ id: patient.id, name: (patient.full_name as string | null) ?? "Patient", initials: initials(patient.full_name as string | null) }}
+            unreadCount={unreadCount ?? 0}
+            getThread={getPatientThread}
+            sendMessage={sendPatientMessage}
+          />
         </div>
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
@@ -253,9 +276,15 @@ export default async function PatientDetailPage({ params, searchParams }: { para
           </div>
         </div>
 
-        {/* Profil déclaré */}
-        <section className="mt-6 rounded-xl border border-line bg-surface p-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Profil déclaré</h2>
+        {/* Profil déclaré — replié par défaut (Philippe, 2026-09-09 : la fiche
+            ne doit pas nécessiter de scroll ; cette section sert rarement). */}
+        <details className="mt-6 group rounded-xl border border-line bg-surface p-4">
+          <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-wide text-muted marker:content-none">
+            <span className="inline-flex items-center gap-1">
+              Profil déclaré
+              <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" strokeWidth={2} />
+            </span>
+          </summary>
           {profile ? (
             <div className="mt-2 space-y-1">
               <p className="text-sm text-ink">
@@ -287,40 +316,33 @@ export default async function PatientDetailPage({ params, searchParams }: { para
           ) : (
             <p className="mt-2 text-sm text-muted">Le patient n&apos;a pas encore complété son admission.</p>
           )}
-        </section>
+        </details>
 
-        {/* Calendrier + douleur */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          <CalendarPanel monthLabel={month.label} prevMonthKey={month.prevMonthKey} nextMonthKey={month.nextMonthKey} leadingBlanks={month.leadingBlanks} days={calendarDays} todayDay={month.todayDay} />
-          <section className="rounded-xl border border-line bg-surface p-5">
-            <h2 className="text-sm font-semibold text-ink">Historique douleur</h2>
-            <p className="mt-1 text-sm text-muted">Notes transmises en fin de séance, 30 derniers jours.</p>
-            <div className="mt-3"><PainHistoryChart series={pain} /></div>
-          </section>
+        {/* Frise semaine par semaine — remplace le calendrier mensuel et le
+            graphique « Historique douleur » (audit Philippe, 2026-09-09) : une
+            semaine avec douleur élevée ressort en rouge directement ici, et
+            c'est depuis chaque semaine que le kiné assigne/ajuste la séance.
+            Les illustrations de la séance en cours s'affichent directement
+            DANS la carte « Cette semaine » de la frise (Philippe, 2026-09-09,
+            deuxième retour : « mets-les sur la frise, qu'elle grossisse ») —
+            plus de section séparée à faire défiler pour les voir. */}
+        <div className="mt-8 w-full min-w-0">
+          <KineWeekProgramme
+            weeks={weeks}
+            currentWeekNumber={currentWeekNumber(weeks, now)}
+            dayDetails={dayDetails}
+            assignments={assignments}
+            workoutsById={workoutSummaries}
+            patientId={patient.id}
+            patientFirstName={firstName}
+            addableExercises={addableExercises}
+            bodyParts={bodyParts ?? []}
+            addableWorkouts={addableWorkouts}
+            adjustAction={adjustPatientWorkout}
+            assignAction={addRecommendedWorkout}
+            removeAction={removeRecommendedWorkout}
+          />
         </div>
-
-        {/* Séance recommandée — lecture seule ; se gère uniquement via le
-            bouton « Ajuster la séance »/« Choisir une séance » en haut de page. */}
-        <section className="mt-6 rounded-xl border border-line bg-surface p-5">
-          <h2 className="text-sm font-semibold text-ink">Séance recommandée</h2>
-          {active ? (
-            <div className="mt-3">
-              <p className="text-base font-semibold text-ink">{active.name}</p>
-              <p className="text-sm text-muted">{active.duration_minutes} min · {active.times_per_week ? `${active.times_per_week}×/semaine` : "objectif libre"} · cette semaine {weekCount[active.id] ?? 0}{active.times_per_week ? `/${active.times_per_week}` : ""}</p>
-              <ul className="mt-3 divide-y divide-line rounded-lg border border-line">
-                {activeExercises.map((e) => (
-                  <li key={e.id} className="flex items-center gap-3 px-3 py-2 text-sm text-ink">
-                    <ExerciseIllustration name={e.name} animate={false} className="h-10 w-10 shrink-0 text-brand" />
-                    {e.name}
-                  </li>
-                ))}
-                {activeExercises.length === 0 && <li className="px-3 py-2 text-sm text-muted">Cette séance ne contient pas encore d&apos;exercices.</li>}
-              </ul>
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-muted">{recommended.length ? "La séance recommandée est faite cette semaine." : "Aucune séance recommandée pour l'instant — choisissez-en une avec le bouton « Choisir une séance » en haut de page."}</p>
-          )}
-        </section>
       </div>
     </main>
   );

@@ -120,10 +120,7 @@ function val(v: CellValue): string {
 function SectionHeader() {
   return (
     <>
-      <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-        Pourquoi pas juste du papier ?
-      </p>
-      <h2 className="font-display mt-2 max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+      <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
         Ce qui change vraiment pour le patient
       </h2>
     </>

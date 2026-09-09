@@ -171,9 +171,10 @@ export default function FeaturesShowcase() {
         )}
 
         <div key={idx} className="animate-[fadeInUp_0.3s_ease-out_both]">
-          <p className={`text-xs font-semibold uppercase tracking-wide ${colors.text}`}>{j.phase}</p>
-          <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{j.workout}</p>
-          <p className="mt-1 text-sm text-slate-500">{j.attendance}% d&apos;assiduité cette semaine</p>
+          <p className="font-display text-2xl font-semibold text-slate-900">{j.workout}</p>
+          <p className="mt-1 text-sm text-slate-500">
+            <span className={`font-medium ${colors.text}`}>{j.phase}</span> · {j.attendance}% d&apos;assiduité cette semaine
+          </p>
           <div className="mt-6">
             <ExerciseTrio names={j.exercises} />
           </div>

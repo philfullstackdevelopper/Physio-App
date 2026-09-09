@@ -85,9 +85,6 @@ export default function SignupPage() {
             <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
           </Link>
 
-          <span className="mb-4 inline-flex w-fit items-center rounded-full border border-blue-100 bg-white/70 px-4 py-1.5 text-sm font-medium text-blue-700 shadow-sm backdrop-blur">
-            Espace physiothérapeute
-          </span>
           <h1 className="font-display max-w-md text-4xl font-semibold leading-[1.1] tracking-tight text-slate-900">
             Prescrivez, suivez, ajustez, le tout depuis un seul endroit.
           </h1>

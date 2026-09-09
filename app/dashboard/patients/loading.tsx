@@ -1,7 +1,7 @@
 export default function PatientsLoading() {
   return (
     <main className="min-h-screen p-6 sm:p-8">
-      <div className="mx-auto max-w-5xl motion-safe:animate-pulse">
+      <div className="mx-auto max-w-7xl motion-safe:animate-pulse">
         <div className="flex items-center justify-between">
           <div>
             <div className="h-7 w-40 rounded bg-line" />

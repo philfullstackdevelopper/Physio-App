@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Dumbbell, Trash2, MoreVertical, Pencil, EyeOff, Eye } from "lucide-react";
+import { Search, Dumbbell, Trash2, MoreVertical, Pencil, EyeOff, Eye, Plus } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import SubmitButton from "@/components/SubmitButton";
 import { STAGE_SHORT, STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
@@ -262,90 +262,84 @@ function ExerciseNamesList({ names }: { names?: string[] }) {
   return <p className="mt-1 line-clamp-2 text-xs text-muted">{names.join(" · ")}</p>;
 }
 
-// Same toggle-button-then-inline-form idiom as ExerciseLibraryGrid's
-// "+ Ajouter un nouvel exercice" — a collapsed action by default rather than
-// an always-open form taking up space above every tab.
+// The collapsible creation panel itself — the trigger button now lives in
+// the page header (top right, matching the patients page's "Ajouter un
+// patient" button) so its open state is owned by the parent and passed in.
 function NewSeanceForm({
+  open,
+  onClose,
   conditions,
   stages,
   createSeance,
 }: {
+  open: boolean;
+  onClose: () => void;
   conditions: { id: string; name: string }[];
   stages: [InjuryStage, string][];
   createSeance: (formData: FormData) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  if (!open) return null;
 
   return (
     <div className="mb-4">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95"
+      <form
+        action={createSeance}
+        className="rounded-xl border border-line bg-surface p-5"
       >
-        + Nouvelle séance
-      </button>
-
-      {open && (
-        <form
-          action={createSeance}
-          className="mt-3 rounded-xl border border-line bg-surface p-5"
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-ink">Nouvelle séance</h3>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="text-sm text-muted hover:text-ink"
-            >
-              Annuler
-            </button>
-          </div>
-          <div className="mt-3 flex flex-col gap-3">
-            <input
-              name="name"
-              required
-              placeholder="Nom de la séance"
-              className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-            />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <select
-                name="condition_id"
-                required
-                defaultValue=""
-                className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-              >
-                <option value="" disabled>
-                  Condition…
-                </option>
-                {conditions.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="stage"
-                defaultValue=""
-                className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-              >
-                <option value="">Phase (toutes)</option>
-                {stages.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <SubmitButton
-            pendingText="Création…"
-            className="mt-3 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95"
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-ink">Nouvelle séance</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-sm text-muted hover:text-ink"
           >
-            Créer et composer
-          </SubmitButton>
-        </form>
-      )}
+            Annuler
+          </button>
+        </div>
+        <div className="mt-3 flex flex-col gap-3">
+          <input
+            name="name"
+            required
+            placeholder="Nom de la séance"
+            className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
+          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <select
+              name="condition_id"
+              required
+              defaultValue=""
+              className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
+            >
+              <option value="" disabled>
+                Condition…
+              </option>
+              {conditions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <select
+              name="stage"
+              defaultValue=""
+              className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
+            >
+              <option value="">Phase (toutes)</option>
+              {stages.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <SubmitButton
+          pendingText="Création…"
+          className="mt-3 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95"
+        >
+          Créer et composer
+        </SubmitButton>
+      </form>
     </div>
   );
 }
@@ -365,6 +359,7 @@ function VoirPlusButton({ onClick }: { onClick: () => void }) {
 }
 
 export default function SeancesTabs({
+  error,
   mine,
   templates,
   duplicateSeance,
@@ -375,6 +370,7 @@ export default function SeancesTabs({
   conditions,
   stages,
 }: {
+  error?: string;
   mine: ListItem[];
   templates: ListItem[];
   duplicateSeance: (formData: FormData) => void;
@@ -390,6 +386,7 @@ export default function SeancesTabs({
   const [templateQuery, setTemplateQuery] = useState("");
   const [templatesShown, setTemplatesShown] = useState(REVEAL_INITIAL);
   const [showHiddenTemplates, setShowHiddenTemplates] = useState(false);
+  const [newSeanceOpen, setNewSeanceOpen] = useState(false);
 
   const filteredMine = useMemo(() => {
     const q = mineQuery.trim().toLowerCase();
@@ -420,7 +417,35 @@ export default function SeancesTabs({
   const visibleTemplates = filteredTemplates.slice(0, templatesShown);
 
   return (
-    <div className="mt-8">
+    <div>
+      <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-ink">Mes séances</h1>
+          <p className="mt-1 text-sm text-muted">Composez vos propres séances ; elles seront proposées aux patients de la phase choisie.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard/exercises" className="text-sm font-medium text-brand hover:underline">Gérer mes exercices →</Link>
+          <button
+            type="button"
+            onClick={() => {
+              setTab("mine");
+              setNewSeanceOpen((v) => !v);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Nouvelle séance
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <p className="animate-[fadeInUp_0.6s_ease-out_both] mt-4 rounded-lg bg-danger-soft p-3 text-sm text-danger">
+          {error}
+        </p>
+      )}
+
+      <div className="mt-8">
       <div className="inline-flex items-center gap-1 rounded-full border border-line bg-app-bg p-1">
         <button
           type="button"
@@ -448,7 +473,13 @@ export default function SeancesTabs({
 
       {tab === "mine" && (
         <div className="mt-3">
-          <NewSeanceForm conditions={conditions} stages={stages} createSeance={createSeance} />
+          <NewSeanceForm
+            open={newSeanceOpen}
+            onClose={() => setNewSeanceOpen(false)}
+            conditions={conditions}
+            stages={stages}
+            createSeance={createSeance}
+          />
 
           {mine.length > 0 && (
             <div className="relative mb-3">
@@ -598,6 +629,7 @@ export default function SeancesTabs({
         </div>
       )}
 
+      </div>
     </div>
   );
 }

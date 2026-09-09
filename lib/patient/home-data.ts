@@ -4,7 +4,8 @@ import { isProfileComplete } from "@/lib/exercise/patientProfile";
 import { type InjuryStage } from "@/lib/exercise/prescription";
 import { computeStreak } from "@/lib/exercise/streak";
 import { stageWithFeedback, careWeek, type Rating } from "@/lib/exercise/stageProgress";
-import { pickActiveWorkout } from "@/lib/exercise/activeRecommendation";
+import { resolveWorkoutForWeek } from "@/lib/exercise/activeRecommendation";
+import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { startOfTodayISO, startOfWeekISO, daysAgoISO } from "@/lib/week";
 
 export type Workout = {
@@ -90,13 +91,13 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
       : Promise.resolve({ data: null }),
     supabase
       .from("patient_recommended_workouts")
-      .select(`priority, workouts ( ${WORKOUT_FIELDS} )`)
+      .select(`week_start_date, workouts ( ${WORKOUT_FIELDS} )`)
       .eq("patient_id", userId),
   ]);
 
   const recommended = (recRows ?? [])
-    .map((r) => ({ priority: r.priority as number, workout: r.workouts as unknown as Workout | null }))
-    .filter((r): r is { priority: number; workout: Workout } => r.workout != null);
+    .map((r) => ({ weekStartDate: r.week_start_date as string, workout: r.workouts as unknown as Workout | null }))
+    .filter((r): r is { weekStartDate: string; workout: Workout } => r.workout != null);
 
   const weekStart = startOfWeekISO();
   const weekCounts: Record<string, number> = {};
@@ -107,9 +108,9 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
     }
   }
 
-  const activeId = pickActiveWorkout(
-    recommended.map((r) => ({ workoutId: r.workout.id, priority: r.priority, timesPerWeek: r.workout.times_per_week })),
-    weekCounts,
+  const activeId = resolveWorkoutForWeek(
+    recommended.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate })),
+    thisWeekStartDateKey(),
   );
   const activeWorkout = recommended.find((r) => r.workout.id === activeId)?.workout ?? null;
 
@@ -118,6 +119,13 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
   const doneToday = activeWorkout
     ? (logs ?? []).some((l) => l.workout_id === activeWorkout.id && (l.completed_at as string) >= todayISO)
     : false;
+  const weekCount = activeWorkout ? (weekCounts[activeWorkout.id] ?? 0) : 0;
+  // There's no more "rotate to the next recommendation once this one's quota
+  // is met" (see lib/exercise/activeRecommendation.ts) — the single active
+  // séance stays active either way, so "week complete" is now just "its own
+  // target is met", not "nothing left to resolve to".
+  const weekTarget = activeWorkout?.times_per_week ?? null;
+  const weekComplete = weekTarget !== null && weekTarget > 0 && weekCount >= weekTarget;
 
   return {
     fullName: (patient?.full_name as string | undefined) ?? null,
@@ -126,8 +134,8 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
     week,
     decision,
     activeWorkout,
-    weekComplete: recommended.length > 0 && activeId === null,
-    weekCount: activeWorkout ? (weekCounts[activeWorkout.id] ?? 0) : 0,
+    weekComplete,
+    weekCount,
     doneToday,
     streak,
   };

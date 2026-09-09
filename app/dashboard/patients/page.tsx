@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { loadPatientRows } from "@/lib/dashboard/patientRows";
 import PatientsTable, { type Segment } from "@/components/PatientsTable";
+import { getPatientThread, sendPatientMessage } from "./actions";
 
 export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ filtre?: string }> }) {
   const { filtre } = await searchParams;
@@ -18,7 +19,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
 
   return (
     <main className="min-h-screen">
-      <div className="mx-auto max-w-5xl p-6 sm:p-8">
+      <div className="mx-auto max-w-7xl p-6 sm:p-8">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-ink">Mes patients</h1>
@@ -30,7 +31,13 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
           </Link>
         </div>
         <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-6">
-          <PatientsTable rows={rows} conditions={conditions ?? []} initialSegment={initialSegment} />
+          <PatientsTable
+            rows={rows}
+            conditions={conditions ?? []}
+            initialSegment={initialSegment}
+            getPatientThread={getPatientThread}
+            sendPatientMessage={sendPatientMessage}
+          />
         </div>
       </div>
     </main>

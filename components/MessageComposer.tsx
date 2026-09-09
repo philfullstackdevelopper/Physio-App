@@ -79,6 +79,7 @@ export default function MessageComposer({
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && canSend) formRef.current?.requestSubmit();
         }}
         placeholder={placeholder}
+        aria-label={placeholder}
         className="w-full resize-none bg-transparent px-4 pt-3 text-sm text-ink placeholder:text-muted focus:outline-none"
       />
 
@@ -91,7 +92,11 @@ export default function MessageComposer({
           </button>
         </div>
       )}
-      {error && <p className="mx-4 mb-2 text-xs text-danger">{error}</p>}
+      {error && (
+        <p role="alert" className="mx-4 mb-2 text-xs text-danger">
+          {error}
+        </p>
+      )}
 
       <div className="flex items-center gap-4 px-4 pb-3">
         <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm text-muted hover:text-ink">

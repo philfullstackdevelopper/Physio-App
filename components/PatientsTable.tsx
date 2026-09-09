@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Search, SlidersHorizontal, UserPlus } from "lucide-react";
+import { ChevronRight, MessageCircle, Search, SlidersHorizontal, UserPlus } from "lucide-react";
 import type { PatientRow } from "@/lib/dashboard/patientRows";
 import { STAGE_LABELS, STAGE_SHORT, type InjuryStage } from "@/lib/exercise/prescription";
+import PatientMessagesModal from "@/components/PatientMessagesModal";
+import type { ThreadMessage } from "@/components/MessageThread";
 
 export type Segment = "tous" | "surveiller" | "jour";
 
@@ -48,16 +50,23 @@ export default function PatientsTable({
   rows,
   conditions,
   initialSegment = "tous",
+  getPatientThread,
+  sendPatientMessage,
 }: {
   rows: PatientRow[];
   conditions: { id: string; name: string }[];
   initialSegment?: Segment;
+  /** Charge le fil d'un patient pour la pop-up Messages (voir app/dashboard/patients/actions.ts). */
+  getPatientThread: (patientId: string) => Promise<{ thread: ThreadMessage[] } | { error: string }>;
+  /** Envoie un message depuis la pop-up, sans redirection. */
+  sendPatientMessage: (formData: FormData) => Promise<{ ok: true } | { error: string }>;
 }) {
   const [q, setQ] = useState("");
   const [segment, setSegment] = useState<Segment>(initialSegment);
   const [conditionId, setConditionId] = useState("");
   const [stage, setStage] = useState<InjuryStage | "">("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [messagesPatient, setMessagesPatient] = useState<PatientRow | null>(null);
 
   const counts = useMemo(
     () => ({
@@ -129,10 +138,17 @@ export default function PatientsTable({
           type="button"
           onClick={() => setFiltersOpen((o) => !o)}
           aria-expanded={filtersOpen}
-          aria-label="Filtres condition et phase"
-          className={`flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface ${filtersOpen || conditionId || stage ? "text-brand" : "text-muted"}`}
+          className={`inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-sm font-medium ${
+            filtersOpen || conditionId || stage ? "text-brand" : "text-muted"
+          }`}
         >
           <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} />
+          Filtres
+          {(conditionId || stage) && (
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[10px] font-semibold text-white">
+              {[conditionId, stage].filter(Boolean).length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -149,7 +165,7 @@ export default function PatientsTable({
         </div>
       )}
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-line bg-surface">
+      <div className="mt-4 overflow-x-auto rounded-xl border border-line bg-surface">
         {visible.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted">Aucun patient ne correspond à ces critères.</p>
         ) : (
@@ -163,7 +179,9 @@ export default function PatientsTable({
                   <th scope="col" className="px-4 py-3 font-medium">Dernière séance</th>
                   <th scope="col" className="px-4 py-3 font-medium">Adhérence</th>
                   <th scope="col" className="px-4 py-3 font-medium">Signal</th>
-                  <th scope="col" className="w-10 px-2 py-3" />
+                  <th scope="col" className="px-2 py-3">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -182,7 +200,22 @@ export default function PatientsTable({
                     <td className="px-4 py-3 text-sm text-ink">{r.lastSessionLabel}</td>
                     <td className="px-4 py-3"><AdherenceCell row={r} /></td>
                     <td className="px-4 py-3"><SignalCell row={r} /></td>
-                    <td className="px-2 py-3 text-muted"><ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.75} /></td>
+                    <td className="px-2 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setMessagesPatient(r)}
+                          aria-label={`Messages avec ${r.name}`}
+                          title="Messages"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-app-bg hover:text-brand"
+                        >
+                          <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
+                        </button>
+                        <Link href={`/dashboard/patients/${r.id}`} aria-label={`Voir la fiche de ${r.name}`} className="flex h-8 w-8 items-center justify-center text-muted">
+                          <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.75} />
+                        </Link>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -191,8 +224,8 @@ export default function PatientsTable({
             {/* Mobile : liste */}
             <ul className="divide-y divide-line md:hidden">
               {visible.map((r) => (
-                <li key={r.id}>
-                  <Link href={`/dashboard/patients/${r.id}`} className="flex items-center gap-3 px-4 py-3">
+                <li key={r.id} className="flex items-center gap-2 px-4 py-3">
+                  <Link href={`/dashboard/patients/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand">{r.initials}</span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center justify-between gap-2">
@@ -206,12 +239,29 @@ export default function PatientsTable({
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => setMessagesPatient(r)}
+                    aria-label={`Messages avec ${r.name}`}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-app-bg hover:text-brand"
+                  >
+                    <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
+                  </button>
                 </li>
               ))}
             </ul>
           </>
         )}
       </div>
+
+      {messagesPatient && (
+        <PatientMessagesModal
+          patient={{ id: messagesPatient.id, name: messagesPatient.name, initials: messagesPatient.initials }}
+          onClose={() => setMessagesPatient(null)}
+          getThread={getPatientThread}
+          sendMessage={sendPatientMessage}
+        />
+      )}
     </div>
   );
 }

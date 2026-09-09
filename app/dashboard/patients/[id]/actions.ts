@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { applyAdjustment, adjustmentMessage } from "@/lib/exercise/adjustPlan";
+import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 
 // Assigns a condition to a patient. The condition's workouts become available to
 // the patient. Changing the condition clears any previous recommendations —
@@ -55,9 +56,14 @@ export async function sendMessage(formData: FormData) {
   redirect(`/dashboard/patients/${patientId}`);
 }
 
-// Assigns the patient's one recommended workout, replacing any previous
-// recommendation — a patient has at most one at a time. Managed entirely
-// from AdjustWorkoutModal now (no separate queue/reorder UI).
+// Assigns the patient's séance from a given week onward (migration 0047: a
+// séance applies from a given week until a later assignment replaces it — see
+// lib/exercise/activeRecommendation.ts). The week comes from the frise on the
+// patient page (`week_start_date`, that week's Monday as "YYYY-MM-DD"); when
+// the form doesn't send one we fall back to the current week. Upserts that
+// week's row rather than wiping the patient's whole history: other weeks'
+// assignments must stay in place for resolveWorkoutForWeek to keep resolving
+// them correctly.
 export async function addRecommendedWorkout(formData: FormData) {
   const supabase = await createClient();
   await requireUser(supabase);
@@ -66,11 +72,17 @@ export async function addRecommendedWorkout(formData: FormData) {
   const workoutId = String(formData.get("workout_id") ?? "");
   if (!patientId || !workoutId) redirect(`/dashboard/patients/${patientId}`);
 
-  await supabase.from("patient_recommended_workouts").delete().eq("patient_id", patientId);
+  // Only accept a well-formed "YYYY-MM-DD" — anything else (empty, tampered)
+  // falls back to this week rather than sending garbage to the `date` column.
+  const rawWeek = String(formData.get("week_start_date") ?? "");
+  const weekStartDate = /^\d{4}-\d{2}-\d{2}$/.test(rawWeek) ? rawWeek : thisWeekStartDateKey();
 
   const { error } = await supabase
     .from("patient_recommended_workouts")
-    .insert({ patient_id: patientId, workout_id: workoutId, priority: 1 });
+    .upsert(
+      { patient_id: patientId, workout_id: workoutId, week_start_date: weekStartDate },
+      { onConflict: "patient_id,week_start_date" },
+    );
   if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
 
   revalidatePath(`/dashboard/patients/${patientId}`);
@@ -103,11 +115,16 @@ export async function adjustPatientWorkout(formData: FormData) {
 
   const patientId = String(formData.get("patient_id") ?? "");
   const workoutId = String(formData.get("workout_id") ?? "");
+  // Which assignment row (patient_recommended_workouts.id) to repoint at the
+  // copy. Needed rather than matching on workout_id: since migration 0047 the
+  // same séance can be assigned at two different periods (two rows), and
+  // adjusting one of them must not silently repoint the other.
+  const recId = String(formData.get("rec_id") ?? "");
   const removeIds = formData.getAll("remove_ids").map(String).filter(Boolean);
   const addIds = formData.getAll("add_ids").map(String).filter(Boolean);
 
   const fail = (msg: string): never => redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(msg)}`);
-  if (!patientId || !workoutId) return fail("Séance introuvable.");
+  if (!patientId || !workoutId || !recId) return fail("Séance introuvable.");
   if (removeIds.length === 0 && addIds.length === 0) return redirect(`/dashboard/patients/${patientId}`);
 
   const { data: patient } = await supabase
@@ -161,7 +178,11 @@ export async function adjustPatientWorkout(formData: FormData) {
     const { data: repointed, error: recError } = await supabase
       .from("patient_recommended_workouts")
       .update({ workout_id: targetId })
+      .eq("id", recId)
       .eq("patient_id", patientId)
+      // Belt and braces: the row must really point at the séance we copied,
+      // otherwise a stale form (page left open while the assignment changed)
+      // would repoint the wrong assignment.
       .eq("workout_id", workout.id)
       .select("id");
     if (recError) {

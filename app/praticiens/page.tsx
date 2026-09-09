@@ -94,14 +94,11 @@ export default function PraticiensPage() {
         {/* Hero */}
         <section className="grid items-center gap-12 pb-16 pt-28 lg:grid-cols-2 lg:gap-16 lg:pb-24 lg:pt-36">
           <div>
-            <span className="inline-block rounded-full border border-blue-100 bg-white px-4 py-1.5 text-sm font-medium text-blue-700 shadow-sm">
-              Pour les kinésithérapeutes
-            </span>
-            <h1 className="font-display mt-6 max-w-xl text-4xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl">
+            <h1 className="font-display max-w-xl text-4xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl">
               Vos programmes suivis, même quand vos patients sont chez eux.
             </h1>
             <p className="mt-5 max-w-lg text-lg leading-relaxed text-slate-600">
-              EasyPhysio distribue vos programmes sur le téléphone du patient, le guide
+              Pensé pour les kinésithérapeutes : EasyPhysio distribue vos programmes sur le téléphone du patient, le guide
               exercice par exercice, et vous remontre ce qui se passe vraiment entre deux
               rendez-vous.
             </p>
@@ -139,10 +136,7 @@ export default function PraticiensPage() {
         {/* Capabilities */}
         <section className="my-24 sm:my-32">
           <div className="rounded-[2rem] border border-slate-200/70 bg-white p-8 shadow-sm sm:p-12">
-            <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">
-              Ce que EasyPhysio fait pour vous
-            </p>
-            <h2 className="font-display mt-2 max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
               Le suivi continue là où la séance s&apos;arrête
             </h2>
             <div className="mt-10 grid gap-x-12 gap-y-8 sm:grid-cols-2">

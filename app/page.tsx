@@ -5,7 +5,6 @@ import {
   PenSquare,
   PlayCircle,
   ShieldCheck,
-  Users,
   Sparkles,
   Video,
   Zap,
@@ -106,9 +105,8 @@ export default function Home() {
         <Reveal>
         <section id="cote-kine" className="scroll-mt-28 py-16 sm:py-20">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Côté kiné</p>
-            <h2 className="font-display mt-3 text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-              De son tableau de bord à la fiche de chaque patient.
+            <h2 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+              Côté kiné : de son tableau de bord à la fiche de chaque patient.
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-slate-600">
               Tout ce qui se passe entre deux séances, en un coup d&apos;œil. Comprendre, décider, ajuster : 2 clics suffisent.
@@ -142,10 +140,7 @@ export default function Home() {
         {/* ── Comment ça marche ────────────────────────────────── */}
         <Reveal>
         <section id="comment-ca-marche" className="mt-24 scroll-mt-28 sm:mt-32">
-          <span className="inline-block rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] text-blue-600">
-            Fonctionnement
-          </span>
-          <h2 className="font-display mt-4 max-w-lg text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+          <h2 className="font-display max-w-lg text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
             Trois étapes, rien de plus
           </h2>
           <p className="mt-3 max-w-xl text-lg leading-relaxed text-slate-600">
@@ -192,10 +187,7 @@ export default function Home() {
         {/* ── Témoignages ──────────────────────────────────────── */}
         <Reveal>
         <section className="mt-24 sm:mt-32">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-blue-600">
-            <Users className="h-4 w-4" strokeWidth={2} /> Ils utilisent EasyPhysio au quotidien
-          </p>
-          <h2 className="font-display mt-4 max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+          <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
             Utilisé au cabinet,
             <br />
             et surtout à la maison

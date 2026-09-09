@@ -71,7 +71,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink sm:flex-row">
       <DashboardSidebar instructorName={instructor.full_name ?? null} unreadCount={unreadCount} />
-      <div className="relative flex-1">{children}</div>
+      {/* min-w-0 : sans ça, un contenu large (tableau, etc.) forcerait tout le
+          flex row à s'élargir et entraînerait la sidebar dans le défilement
+          horizontal de la page. Chaque page gère son propre overflow-x-auto
+          localement si besoin ; la sidebar, elle, ne doit jamais bouger. */}
+      <div className="relative min-w-0 flex-1">{children}</div>
     </div>
   );
 }

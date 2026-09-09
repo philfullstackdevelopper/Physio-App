@@ -15,21 +15,20 @@ export type Screen = 0 | 1 | 2;
 export type Step = {
   screen: Screen;
   duration: number;
-  badge: string;
   title: string;
   tap?: { x: number; y: number }; // percent of the screen area, for the tap-ripple
   set?: 1 | 2 | 3; // which rep-set the exercise screen shows
 };
 
 export const STEPS: Step[] = [
-  { screen: 0, duration: 1100, badge: "Le tableau de bord", title: "Son programme du jour, en un coup d'œil." },
-  { screen: 0, duration: 550, badge: "Le tableau de bord", title: "Son programme du jour, en un coup d'œil.", tap: { x: 50, y: 41 } },
-  { screen: 1, duration: 500, badge: "La séance guidée", title: "Un seul exercice à l'écran, à la fois.", set: 1 },
-  { screen: 1, duration: 650, badge: "La séance guidée", title: "Un seul exercice à l'écran, à la fois.", set: 1, tap: { x: 50, y: 27 } },
-  { screen: 1, duration: 1300, badge: "La séance guidée", title: "Un seul exercice à l'écran, à la fois.", set: 1 },
-  { screen: 1, duration: 550, badge: "La séance guidée", title: "Un seul exercice à l'écran, à la fois.", set: 1, tap: { x: 50, y: 79 } },
-  { screen: 1, duration: 1400, badge: "La séance guidée", title: "Un seul exercice à l'écran, à la fois.", set: 2 },
-  { screen: 2, duration: 2400, badge: "La progression", title: "Ses progrès, visibles pour son kiné." },
+  { screen: 0, duration: 1100, title: "Son programme du jour, en un coup d'œil." },
+  { screen: 0, duration: 550, title: "Son programme du jour, en un coup d'œil.", tap: { x: 50, y: 41 } },
+  { screen: 1, duration: 500, title: "Un seul exercice à l'écran, à la fois.", set: 1 },
+  { screen: 1, duration: 650, title: "Un seul exercice à l'écran, à la fois.", set: 1, tap: { x: 50, y: 27 } },
+  { screen: 1, duration: 1300, title: "Un seul exercice à l'écran, à la fois.", set: 1 },
+  { screen: 1, duration: 550, title: "Un seul exercice à l'écran, à la fois.", set: 1, tap: { x: 50, y: 79 } },
+  { screen: 1, duration: 1400, title: "Un seul exercice à l'écran, à la fois.", set: 2 },
+  { screen: 2, duration: 2400, title: "Ses progrès, visibles pour son kiné." },
 ];
 
 // Respect prefers-reduced-motion: freeze on the first frame instead of

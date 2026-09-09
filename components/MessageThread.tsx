@@ -4,7 +4,7 @@
 // page appelante. `mineSender` dit quel côté est « moi » (bulles bleues).
 // =============================================================================
 
-import { Check, CheckCheck, Paperclip } from "lucide-react";
+import { Check, CheckCheck, MessageCircle, Paperclip } from "lucide-react";
 import { groupByDay } from "@/lib/dashboard/messageDays";
 
 export interface ThreadMessage {
@@ -30,7 +30,14 @@ export default function MessageThread({
   emptyText?: string;
 }) {
   if (messages.length === 0) {
-    return <p className="py-10 text-center text-sm text-muted">{emptyText}</p>;
+    return (
+      <div className="flex flex-col items-center gap-2 py-14 text-center">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-app-bg">
+          <MessageCircle className="h-5 w-5 text-muted" strokeWidth={1.5} />
+        </span>
+        <p className="max-w-[22rem] text-sm text-muted">{emptyText}</p>
+      </div>
+    );
   }
   const groups = groupByDay(messages);
   return (
@@ -48,8 +55,8 @@ export default function MessageThread({
               return (
                 <li key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                      mine ? "rounded-br-md bg-brand text-white" : "rounded-bl-md bg-app-bg text-ink"
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[70%] ${
+                      mine ? "rounded-br-md bg-brand text-white" : "rounded-bl-md border border-line bg-app-bg text-ink"
                     }`}
                   >
                     {m.body && <p className="whitespace-pre-wrap break-words">{m.body}</p>}

@@ -24,9 +24,13 @@ const input = {
     { patient_id: "p1", pain_score: 7, difficulty: null, created_at: daysAgo(0) },
     { patient_id: "p1", pain_score: 8, difficulty: null, created_at: daysAgo(2) },
   ],
+  // week_start_date well before all 4 rolling adherence-window buckets
+  // (earliest bucket monday is 2026-08-10 for this fixture's `now`), so the
+  // assignment covers the whole window — same intent the old `daysAgo(30)`
+  // fixture had under the pre-migration-0047 model.
   recs: [
-    { patient_id: "p1", created_at: daysAgo(30), times_per_week: 3 },
-    { patient_id: "p2", created_at: daysAgo(30), times_per_week: 2 },
+    { patient_id: "p1", workout_id: "w1", week_start_date: "2026-08-04", times_per_week: 3 },
+    { patient_id: "p2", workout_id: "w2", week_start_date: "2026-08-04", times_per_week: 2 },
   ],
 };
 

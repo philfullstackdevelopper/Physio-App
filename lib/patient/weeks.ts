@@ -23,12 +23,26 @@ export function localDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** This week's Monday as a "YYYY-MM-DD" key — what
+ *  patient_recommended_workouts.week_start_date is compared against to
+ *  resolve "which séance applies right now" (see lib/exercise/
+ *  activeRecommendation.ts's resolveWorkoutForWeek). */
+export function thisWeekStartDateKey(now: Date = new Date()): string {
+  return localDateKey(mondayOf(now));
+}
+
 export interface WeekInfo {
   weekNumber: number;
   /** Monday 00:00, local time, as an ISO string — inclusive lower bound for a query. */
   startISO: string;
   /** Following Monday 00:00, local time, as an ISO string — exclusive upper bound. */
   endISO: string;
+  /** This week's Monday as a local "YYYY-MM-DD" key — what gets stored in /
+   *  compared against a plain `date` column (patient_recommended_workouts.week_start_date).
+   *  NOT derived from startISO.slice(0, 10): that string is UTC-shifted, so
+   *  for any timezone ahead of UTC (e.g. France) it names the SUNDAY before
+   *  local midnight Monday instead of the Monday itself. */
+  startDateKey: string;
   label: string; // "Semaine 3"
   rangeLabel: string; // "15 sept. – 21 sept."
 }
@@ -54,6 +68,7 @@ export function buildWeeks(patientCreatedAtISO: string, now: Date = new Date()):
       weekNumber: n,
       startISO: cursor.toISOString(),
       endISO: end.toISOString(),
+      startDateKey: localDateKey(cursor),
       label: `Semaine ${n}`,
       rangeLabel: `${fmt(cursor)} – ${fmt(lastDay)}`,
     });

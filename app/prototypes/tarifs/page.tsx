@@ -73,8 +73,7 @@ const PICKER_CSS = `
 function PricingQuiet() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-24">
-      <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">Tarifs</p>
-      <h2 className="font-display mt-2 max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+      <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
         Gratuite pour les patients, simple pour les cabinets
       </h2>
 
@@ -168,8 +167,7 @@ function PricingAudienceSwitch() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-24 text-center">
-      <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">Tarifs</p>
-      <h2 className="font-display mt-2 text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+      <h2 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
         Gratuite pour les patients, simple pour les cabinets
       </h2>
       <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-slate-500">
@@ -229,8 +227,7 @@ function PricingAudienceSwitch() {
 function PricingBigNumber() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-24">
-      <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">Tarifs</p>
-      <h2 className="font-display mt-2 max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+      <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
         Le patient paie son kiné. Le kiné paie EasyPhysio.
       </h2>
 

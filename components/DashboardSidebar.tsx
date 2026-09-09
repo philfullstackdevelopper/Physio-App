@@ -36,8 +36,9 @@ export default function DashboardSidebar({
 
   return (
     <>
-      {/* Desktop */}
-      <aside className="hidden w-56 shrink-0 flex-col bg-sidebar p-4 text-white sm:flex">
+      {/* Desktop — sticky : reste à sa place quel que soit le défilement
+          (vertical ou horizontal) du contenu à côté. */}
+      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col overflow-y-auto bg-sidebar p-4 text-white sm:flex">
         <Link href="/" className="flex items-center gap-2.5 px-2 py-1">
           <LogoMark size={26} />
           <span className="text-base font-semibold">EasyPhysio</span>
@@ -56,7 +57,7 @@ export default function DashboardSidebar({
           ))}
         </nav>
         <div className="mt-4 flex items-center gap-2.5 border-t border-white/10 px-2 pt-4">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold">
             {initials(instructorName)}
           </span>
           <div className="min-w-0">

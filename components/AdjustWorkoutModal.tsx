@@ -47,12 +47,21 @@ export default function AdjustWorkoutModal({
   adjustAction,
   assignAction,
   removeAction,
+  weekStartDate,
+  weekLabel,
 }: {
   patientId: string;
   patientFirstName: string;
   workout: { id: string; name: string; exercises: ModalExercise[] } | null;
-  /** `patient_recommended_workouts.id` for the current workout, if any — needed to unassign it. */
+  /** `patient_recommended_workouts.id` for the current workout, if any — needed
+   *  to unassign it and (adjust) to repoint exactly that row at the copy. */
   recId: string | null;
+  /** Monday ("YYYY-MM-DD") of the week the kiné is assigning FROM — the
+   *  selected week in the frise (KineWeekProgramme). Omitted = this week. */
+  weekStartDate?: string;
+  /** Human label of that week ("Semaine 4 · 21 sept. – 27 sept."), shown in
+   *  the header so the kiné knows which period they're changing. */
+  weekLabel?: string;
   addableExercises: AddableExercise[];
   bodyParts: BodyPart[];
   addableWorkouts: AddableWorkout[];
@@ -125,6 +134,19 @@ export default function AdjustWorkoutModal({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // Verrouille le scroll de la page derrière la modale (Philippe, 2026-09-09 :
+  // « empêcher de scroller derrière »). On restaure la valeur précédente à la
+  // fermeture plutôt que de la vider, au cas où une autre couche l'aurait
+  // déjà posée.
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
   }, [open]);
 
   const query = q.trim().toLowerCase();
@@ -206,19 +228,28 @@ export default function AdjustWorkoutModal({
             aria-modal="true"
             aria-label={view === "exercises" && workout ? `Ajuster la séance ${workout.name}` : "Choisir une séance"}
             onClick={(e) => e.stopPropagation()}
-            className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-2xl bg-surface shadow-sm outline-none"
+            // Plein écran (presque) sur desktop : hauteur fixe à 90vh pour que
+            // les colonnes se partagent l'espace et scrollent chacune de leur
+            // côté, au lieu d'une modale qui grandit puis fait scroller toute
+            // la page (Philippe, 2026-09-09).
+            className="flex h-[90vh] w-full max-w-6xl flex-col rounded-2xl bg-surface shadow-sm outline-none"
           >
             <div className="flex items-start justify-between gap-3 border-b border-line px-6 py-4">
               <div className="min-w-0">
                 {view === "exercises" && workout ? (
                   <>
                     <h2 className="text-lg font-semibold text-ink">Ajuster la séance</h2>
-                    <p className="mt-0.5 text-sm text-muted">{workout.name} — les modifications ne concernent que {patientFirstName}.</p>
+                    <p className="mt-0.5 text-sm text-muted">
+                      {workout.name} — les modifications ne concernent que {patientFirstName}.
+                    </p>
                   </>
                 ) : (
                   <>
                     <h2 className="text-lg font-semibold text-ink">{workout ? "Changer de séance" : "Choisir une séance"}</h2>
-                    {workout && <p className="mt-0.5 text-sm text-muted">Remplace la séance actuelle de {patientFirstName}.</p>}
+                    <p className="mt-0.5 text-sm text-muted">
+                      {weekLabel ? `À partir de la ${weekLabel.charAt(0).toLowerCase()}${weekLabel.slice(1)}` : "À partir de cette semaine"}
+                      {workout ? ` — remplace la séance actuelle de ${patientFirstName}.` : "."}
+                    </p>
                   </>
                 )}
               </div>
@@ -252,13 +283,16 @@ export default function AdjustWorkoutModal({
               <form action={adjustAction} className="flex min-h-0 flex-1 flex-col">
                 <input type="hidden" name="patient_id" value={patientId} />
                 <input type="hidden" name="workout_id" value={workout.id} />
+                {recId && <input type="hidden" name="rec_id" value={recId} />}
                 {[...removeIds].map((id) => <input key={`r-${id}`} type="hidden" name="remove_ids" value={id} />)}
                 {[...addIds].map((id) => <input key={`a-${id}`} type="hidden" name="add_ids" value={id} />)}
 
-                <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-6 md:grid-cols-2">
-                  <section>
+                {/* Sur desktop chaque colonne scrolle indépendamment (min-h-0 +
+                    overflow-y-auto) ; sur mobile la grille entière scrolle. */}
+                <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-6 md:grid-cols-[2fr_3fr] md:overflow-hidden">
+                  <section className="flex min-h-0 flex-col">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted">Exercices actuels</p>
-                    <ul className="mt-2 space-y-1.5">
+                    <ul className="mt-2 space-y-1.5 md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
                       {workout.exercises.map((ex) => {
                         const marked = removeIds.has(ex.id);
                         return (
@@ -298,7 +332,10 @@ export default function AdjustWorkoutModal({
                       />
                     </label>
                     {!query && (
-                      <div className="mt-2 grid grid-cols-3 gap-1.5">
+                      // Tuiles larges (jusqu'à 6 colonnes) : la rangée reste
+                      // basse, donc la liste d'exercices en dessous garde de
+                      // la hauteur et n'a pas à scroller sauf nécessité.
+                      <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-6">
                         {bodyParts.map((bp) => {
                           const active = bp.id === exerciseBodyPartId;
                           return (
@@ -318,7 +355,7 @@ export default function AdjustWorkoutModal({
                         })}
                       </div>
                     )}
-                    <div className="mt-2 max-h-72 space-y-1 overflow-y-auto pr-1 md:max-h-none md:flex-1">
+                    <div className="mt-2 max-h-72 space-y-1 overflow-y-auto pr-1 md:min-h-0 md:max-h-none md:flex-1">
                       {filteredExercises.length === 0 && (
                         <p className="text-sm text-muted">
                           {query ? `Aucun exercice ne correspond à « ${q.trim()} ».` : "Aucun exercice dans cette catégorie."}
@@ -391,7 +428,7 @@ export default function AdjustWorkoutModal({
                       />
                     </label>
                     {!templateQuery && (
-                      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
                         {bodyParts.map((bp) => {
                           const active = bp.id === templateBodyPartId;
                           return (
@@ -421,44 +458,47 @@ export default function AdjustWorkoutModal({
                       {templateQuery ? `Aucune séance ne correspond à « ${qTemplate} ».` : "Aucune séance dans cette catégorie."}
                     </p>
                   ) : (
-                    <ul className="space-y-2">
+                    // Cartes compactes en 2 colonnes sur desktop : deux fois
+                    // plus de séances visibles sans scroller.
+                    <ul className="grid gap-2 lg:grid-cols-2">
                       {filteredWorkouts.map((w, i) => {
                         const newGroup = i === 0 || filteredWorkouts[i - 1].conditionName !== w.conditionName;
                         return (
-                          <li key={w.id}>
+                          <li key={w.id} className="contents">
                             {newGroup && (
-                              <p className={`text-xs font-semibold uppercase tracking-wide text-muted ${i === 0 ? "" : "mt-4"}`}>
+                              <p className={`text-xs font-semibold uppercase tracking-wide text-muted lg:col-span-2 ${i === 0 ? "" : "mt-3"}`}>
                                 {w.conditionName ?? "Sans condition"}
                               </p>
                             )}
-                            <div className="mt-2 flex items-start gap-3 rounded-xl border border-line bg-surface p-3 transition-colors hover:border-brand/40">
-                              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-app-bg">
+                            <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 transition-colors hover:border-brand/40">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-app-bg">
                                 {w.exerciseNames[0] ? (
-                                  <ExerciseIllustration name={w.exerciseNames[0]} animate={false} className="h-8 w-8 text-brand" />
+                                  <ExerciseIllustration name={w.exerciseNames[0]} animate={false} className="h-7 w-7 text-brand" />
                                 ) : (
                                   <Dumbbell className="h-5 w-5 text-muted" strokeWidth={1.75} />
                                 )}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <p className="truncate font-semibold text-ink">{w.name}</p>
+                                  <p className="truncate text-sm font-semibold text-ink">{w.name}</p>
                                   {w.editHref && (
                                     <Link href={w.editHref} className="shrink-0 text-xs font-medium text-brand underline underline-offset-2 hover:no-underline">
                                       Modifier
                                     </Link>
                                   )}
                                 </div>
-                                <p className="mt-0.5 text-xs text-muted">
+                                <p className="mt-0.5 truncate text-xs text-muted">
                                   {w.stageLabel && `${w.stageLabel} · `}
                                   {w.durationMinutes} min
                                   {w.timesPerWeek ? ` · ${w.timesPerWeek}×/semaine` : ""}
                                   {w.exerciseNames.length > 0 ? ` · ${w.exerciseNames.length} exercice${w.exerciseNames.length > 1 ? "s" : ""}` : ""}
                                 </p>
-                                {w.description && <p className="mt-1 line-clamp-2 text-sm text-muted">{w.description}</p>}
+                                {w.description && <p className="mt-0.5 line-clamp-1 text-xs text-muted">{w.description}</p>}
                               </div>
                               <form action={assignAction} onSubmit={close} className="shrink-0">
                                 <input type="hidden" name="patient_id" value={patientId} />
                                 <input type="hidden" name="workout_id" value={w.id} />
+                                {weekStartDate && <input type="hidden" name="week_start_date" value={weekStartDate} />}
                                 <button type="submit" className="rounded-full border border-brand/30 px-3 py-1 text-xs font-medium text-brand hover:bg-brand-soft">
                                   Choisir
                                 </button>

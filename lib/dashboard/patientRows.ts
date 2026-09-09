@@ -20,7 +20,7 @@ export interface PatientRowsInput {
   logs: { patient_id: string; completed_at: string }[];
   /** 14 derniers jours. */
   feedback: { patient_id: string; pain_score: number | null; difficulty: number | null; created_at: string }[];
-  recs: { patient_id: string; created_at: string; times_per_week: number | null }[];
+  recs: { patient_id: string; workout_id: string; week_start_date: string; times_per_week: number | null }[];
 }
 
 export interface PatientRow {
@@ -49,9 +49,13 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
   const logsBy = new Map<string, string[]>();
   for (const l of logs) (logsBy.get(l.patient_id) ?? logsBy.set(l.patient_id, []).get(l.patient_id)!).push(l.completed_at);
 
-  const recsBy = new Map<string, { timesPerWeek: number | null; createdAt: string }[]>();
+  const recsBy = new Map<string, { workoutId: string; weekStartDate: string; timesPerWeek: number | null }[]>();
   for (const r of recs)
-    (recsBy.get(r.patient_id) ?? recsBy.set(r.patient_id, []).get(r.patient_id)!).push({ timesPerWeek: r.times_per_week, createdAt: r.created_at });
+    (recsBy.get(r.patient_id) ?? recsBy.set(r.patient_id, []).get(r.patient_id)!).push({
+      workoutId: r.workout_id,
+      weekStartDate: r.week_start_date,
+      timesPerWeek: r.times_per_week,
+    });
 
   const signalsBy = new Map<string, ProgressSignals & { lastPain: number | null; lastPainAt: string }>();
   for (const f of feedback) {
@@ -69,7 +73,7 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
     const stage = stageOf.get(p.id) ?? null;
     const sig = signalsBy.get(p.id) ?? { painScores: [], difficulties: [], lastPain: null, lastPainAt: "" };
     const assessment = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties });
-    const adherence = computeAdherence({ completedAt: completed, recommendations: recsBy.get(p.id) ?? [], now });
+    const adherence = computeAdherence({ completedAt: completed, assignments: recsBy.get(p.id) ?? [], now });
     return {
       id: p.id,
       name: p.full_name ?? "Patient",
@@ -113,7 +117,7 @@ export async function loadPatientRows(supabase: SupabaseClient, now: Date = new 
       supabase.from("conditions").select("id, name"),
       supabase.from("workout_logs").select("patient_id, completed_at"),
       supabase.from("patient_feedback").select("patient_id, pain_score, difficulty, created_at").gte("created_at", since14),
-      supabase.from("patient_recommended_workouts").select("patient_id, created_at, workouts ( times_per_week )"),
+      supabase.from("patient_recommended_workouts").select("patient_id, workout_id, week_start_date, workouts ( times_per_week )"),
     ]);
 
   return buildPatientRows({
@@ -125,7 +129,8 @@ export async function loadPatientRows(supabase: SupabaseClient, now: Date = new 
     feedback: (feedback ?? []) as PatientRowsInput["feedback"],
     recs: (recs ?? []).map((r) => ({
       patient_id: r.patient_id as string,
-      created_at: r.created_at as string,
+      workout_id: r.workout_id as string,
+      week_start_date: r.week_start_date as string,
       times_per_week: ((r.workouts as unknown as { times_per_week: number | null } | null)?.times_per_week ?? null),
     })),
   });

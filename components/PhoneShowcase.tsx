@@ -25,17 +25,14 @@ export default function PhoneShowcase() {
       <div className="pointer-events-none relative h-[132px] w-full max-w-lg text-center">
         <AnimatePresence mode="wait">
           <motion.div
-            key={step.badge}
+            key={step.title}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-x-0 top-0"
           >
-            <span className="inline-flex items-center rounded-full border border-blue-100 bg-white px-4 py-1.5 text-xs font-medium text-blue-700 shadow-sm">
-              {step.badge}
-            </span>
-            <h2 className="font-display mt-4 text-2xl font-semibold text-slate-900 sm:text-3xl">
+            <h2 className="font-display text-2xl font-semibold text-slate-900 sm:text-3xl">
               {step.title}
             </h2>
           </motion.div>

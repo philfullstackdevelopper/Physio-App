@@ -1,31 +1,39 @@
 // =============================================================================
-// Which recommended workout is "active" right now — shared by the patient's
+// Which recommended workout applies to a given week — shared by the patient's
 // own home page and the kiné dashboard so the two can never disagree.
+//
+// A séance assigned for a week stays in effect until a later assignment
+// replaces it (Philippe, 2026-09-08): assign A at week 1 and B at week 4,
+// weeks 1-3 still resolve to A, week 4 onward resolves to B. So resolving
+// "which séance for week N" means the most recent assignment whose
+// week_start_date is on or before week N's Monday — not a per-week lookup,
+// and no more "skip to the next one once this week's quota is met" (that
+// belonged to the old priority-ordered queue, replaced by this single
+// timeline — see components/AdjustWorkoutModal.tsx).
 // =============================================================================
 
-export interface RecommendedWorkout {
+export interface WeeklyAssignment {
   workoutId: string;
-  /** Lower = higher priority (1 is recommended first). */
-  priority: number;
-  timesPerWeek: number | null;
+  /** Monday of the week this assignment starts applying, "YYYY-MM-DD". */
+  weekStartDate: string;
+}
+
+/** Generic version returning the whole matched record (e.g. to recover its
+ *  row id, not just the workoutId) — resolveWorkoutForWeek is the common case
+ *  built on top of it. */
+export function resolveAssignmentForWeek<T extends WeeklyAssignment>(assignments: T[], weekStartDate: string): T | null {
+  let best: T | null = null;
+  for (const a of assignments) {
+    if (a.weekStartDate > weekStartDate) continue;
+    if (!best || a.weekStartDate > best.weekStartDate) best = a;
+  }
+  return best;
 }
 
 /**
- * Returns the workoutId of the highest-priority recommended workout whose
- * weekly target isn't met yet, or null if the list is empty or every target
- * is already met this week.
- *
- * A null `timesPerWeek` is treated as a target of 1 — a workout with no
- * declared weekly frequency shouldn't block the list forever.
+ * Returns the workoutId in effect for `weekStartDate` (that week's own
+ * Monday, "YYYY-MM-DD"), or null if no assignment exists on or before it yet.
  */
-export function pickActiveWorkout(
-  recommended: RecommendedWorkout[],
-  weekCounts: Record<string, number>,
-): string | null {
-  const ordered = [...recommended].sort((a, b) => a.priority - b.priority);
-  for (const r of ordered) {
-    const target = r.timesPerWeek ?? 1;
-    if ((weekCounts[r.workoutId] ?? 0) < target) return r.workoutId;
-  }
-  return null;
+export function resolveWorkoutForWeek(assignments: WeeklyAssignment[], weekStartDate: string): string | null {
+  return resolveAssignmentForWeek(assignments, weekStartDate)?.workoutId ?? null;
 }

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
@@ -122,23 +121,10 @@ export default async function SeancesPage({
 
   return (
     <main className="min-h-screen">
-      <div className="mx-auto max-w-5xl p-6 sm:p-8">
-        <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-ink">Mes séances</h1>
-            <p className="mt-1 text-sm text-muted">Composez vos propres séances ; elles seront proposées aux patients de la phase choisie.</p>
-          </div>
-          <Link href="/dashboard/exercises" className="text-sm font-medium text-brand hover:underline">Gérer mes exercices →</Link>
-        </div>
-
-        {error && (
-          <p className="animate-[fadeInUp_0.6s_ease-out_both] mt-4 rounded-lg bg-danger-soft p-3 text-sm text-danger">
-            {error}
-          </p>
-        )}
-
+      <div className="mx-auto max-w-7xl p-6 sm:p-8">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms]">
           <SeancesTabs
+            error={error}
             mine={seances.map((s) => ({
               id: s.id,
               name: s.name,
