@@ -1,0 +1,278 @@
+[
+  {
+    "target": "retraction-cervicale-chin-tuck",
+    "real": "cross-body-shoulder-stretch"
+  },
+  {
+    "target": "flexion-extension-cervicale-active",
+    "real": "standing-quad-stretch"
+  },
+  {
+    "target": "inclinaison-laterale-cervicale",
+    "real": "torso-twist-stretch"
+  },
+  {
+    "target": "rotation-cervicale-active",
+    "real": "standing-quad-stretch"
+  },
+  {
+    "target": "isometrique-cervical-main-contre-tete",
+    "real": "cross-body-shoulder-stretch"
+  },
+  {
+    "target": "etirement-trapeze-superieur",
+    "real": "cross-body-shoulder-stretch"
+  },
+  {
+    "target": "etirement-elevateur-de-la-scapula",
+    "real": "cross-body-shoulder-stretch"
+  },
+  {
+    "target": "etirement-scalenes",
+    "real": "cross-body-shoulder-stretch"
+  },
+  {
+    "target": "retraction-et-extension-cervicale-mckenzie",
+    "real": "standing-quad-stretch"
+  },
+  {
+    "target": "flechisseurs-profonds-du-cou-allonge-hochement",
+    "real": "dead-bug"
+  },
+  {
+    "target": "pendulaire-de-codman",
+    "real": "good-morning"
+  },
+  {
+    "target": "elevation-anterieure-allongee-avec-baton",
+    "real": "hollow-body-hold"
+  },
+  {
+    "target": "rotation-externe-a-l-elastique-coude-au-corps",
+    "real": "band-pull-apart"
+  },
+  {
+    "target": "rotation-externe-couche-sur-le-cote-haltere",
+    "real": "side-plank"
+  },
+  {
+    "target": "rotation-externe-a-90-d-abduction",
+    "real": "lateral-raise"
+  },
+  {
+    "target": "wall-slides-glisses-au-mur",
+    "real": "wall-push-up"
+  },
+  {
+    "target": "sleeper-stretch",
+    "real": "side-plank"
+  },
+  {
+    "target": "serviette-dans-le-dos-rotation-interne",
+    "real": "band-pull-apart"
+  },
+  {
+    "target": "poulietherapie-auto-mobilisation-a-la-poulie",
+    "real": "dead-hang"
+  },
+  {
+    "target": "isometriques-d-epaule-contre-un-mur",
+    "real": "wall-push-up"
+  },
+  {
+    "target": "pronation-supination-avec-marteau",
+    "real": "wrist-curl"
+  },
+  {
+    "target": "etirement-des-extenseurs-du-poignet",
+    "real": "wrist-extension"
+  },
+  {
+    "target": "etirement-des-flechisseurs-du-poignet",
+    "real": "wrist-curl"
+  },
+  {
+    "target": "tyler-twist-flexbar",
+    "real": "wrist-curl"
+  },
+  {
+    "target": "prehension-balle-mousse",
+    "real": "wrist-curl"
+  },
+  {
+    "target": "ouverture-des-doigts-avec-elastique",
+    "real": "wrist-extension"
+  },
+  {
+    "target": "deviation-radiale-ulnaire-du-poignet",
+    "real": "wrist-curl"
+  },
+  {
+    "target": "glissements-tendineux-des-doigts-tendon-glides",
+    "real": "wrist-extension"
+  },
+  {
+    "target": "opposition-du-pouce",
+    "real": "wrist-curl"
+  },
+  {
+    "target": "poing-ferme-main-ouverte",
+    "real": "wrist-curl"
+  },
+  {
+    "target": "etirement-du-piriforme-allonge-figure-4",
+    "real": "glute-bridge"
+  },
+  {
+    "target": "etirement-du-piriforme-assis",
+    "real": "seated-knee-tuck"
+  },
+  {
+    "target": "etirement-du-carre-des-lombes-inclinaison-laterale",
+    "real": "torso-twist-stretch"
+  },
+  {
+    "target": "hip-hinge-avec-baton-dans-le-dos",
+    "real": "good-morning"
+  },
+  {
+    "target": "nerf-sciatique-glissement-neural-slump",
+    "real": "seated-forward-fold-stretch"
+  },
+  {
+    "target": "mobilisation-en-bascule-sur-ballon-de-klein",
+    "real": "seated-leg-curl"
+  },
+  {
+    "target": "auto-grandissement-debout",
+    "real": "standing-quad-stretch"
+  },
+  {
+    "target": "respiration-diaphragmatique-allonge",
+    "real": "dead-bug"
+  },
+  {
+    "target": "etirement-du-fessier-figure-4",
+    "real": "glute-bridge"
+  },
+  {
+    "target": "etirement-tfl-bandelette-ilio-tibiale",
+    "real": "worlds-greatest-stretch"
+  },
+  {
+    "target": "cercles-de-hanche-en-quadrupedie-cars",
+    "real": "bird-dog"
+  },
+  {
+    "target": "rotation-externe-interne-de-hanche-assis",
+    "real": "seated-knee-tuck"
+  },
+  {
+    "target": "mobilisation-de-la-rotule-auto-mobilisation",
+    "real": "seated-leg-curl"
+  },
+  {
+    "target": "prone-hang-extension-passive-du-genou",
+    "real": "superman"
+  },
+  {
+    "target": "extension-passive-talon-sureleve",
+    "real": "dead-bug"
+  },
+  {
+    "target": "cercles-de-genoux",
+    "real": "standing-quad-stretch"
+  },
+  {
+    "target": "montee-sur-pointes-a-l-elastique",
+    "real": "standing-calf-raise"
+  },
+  {
+    "target": "alphabet-avec-le-pied",
+    "real": "seated-leg-curl"
+  },
+  {
+    "target": "flexion-dorsale-a-l-elastique",
+    "real": "wall-calf-stretch"
+  },
+  {
+    "target": "flexion-plantaire-a-l-elastique",
+    "real": "standing-calf-raise"
+  },
+  {
+    "target": "inversion-a-l-elastique",
+    "real": "seated-leg-curl"
+  },
+  {
+    "target": "eversion-a-l-elastique",
+    "real": "seated-leg-curl"
+  },
+  {
+    "target": "flexion-dorsale-active-assis",
+    "real": "seated-leg-curl"
+  },
+  {
+    "target": "serviette-tiree-avec-les-orteils-towel-curl",
+    "real": "towel-hamstring-curl"
+  },
+  {
+    "target": "ramasser-des-billes-avec-les-orteils",
+    "real": "seated-leg-curl"
+  },
+  {
+    "target": "short-foot-voute-plantaire",
+    "real": "seated-leg-curl"
+  },
+  {
+    "target": "etirement-de-la-fascia-plantaire",
+    "real": "wall-calf-stretch"
+  },
+  {
+    "target": "rouleau-balle-sous-la-voute-plantaire",
+    "real": "seated-leg-curl"
+  },
+  {
+    "target": "mobilisation-cheville-genou-au-mur-knee-to-wall",
+    "real": "wall-calf-stretch"
+  },
+  {
+    "target": "appui-unipodal-sur-coussin-bosu",
+    "real": "single-leg-calf-raise"
+  },
+  {
+    "target": "planche-d-equilibre-instable",
+    "real": "single-leg-calf-raise"
+  },
+  {
+    "target": "position-tandem-un-pied-devant-l-autre",
+    "real": "single-leg-calf-raise"
+  },
+  {
+    "target": "marche-en-tandem-funambule",
+    "real": "lateral-shuffle"
+  },
+  {
+    "target": "franchissement-d-obstacle",
+    "real": "step-up"
+  },
+  {
+    "target": "lever-du-sol-transfert-demi-genou",
+    "real": "kneeling-hip-flexor-stretch"
+  },
+  {
+    "target": "exercice-sur-bosu-plateau-instable",
+    "real": "single-leg-calf-raise"
+  },
+  {
+    "target": "respiration-a-levres-pincees",
+    "real": "dead-bug"
+  },
+  {
+    "target": "ouverture-thoracique-allonge-sur-rouleau",
+    "real": "glute-bridge"
+  },
+  {
+    "target": "extension-thoracique-sur-chaise-mains-derriere-la-tete",
+    "real": "seated-knee-tuck"
+  }
+]
