@@ -12,11 +12,22 @@ import { relativeDay } from "@/lib/format/relativeDay";
 import { initials } from "@/lib/format/initials";
 import { STAGE_LABELS, STAGE_SHORT, type InjuryStage } from "@/lib/exercise/prescription";
 import { ageFromDob } from "@/lib/exercise/patientProfile";
+import { EQUIPMENT_LABELS, type EquipmentId } from "@/lib/exercise/equipment";
+import { paymentEligibleForDeletion } from "@/lib/patient/paymentStatus";
 import { type AddableWorkout } from "@/components/AdjustWorkoutModal";
 import KineWeekProgramme, { type KineWorkoutSummary } from "@/components/KineWeekProgramme";
 import PatientMessagesButton from "@/components/PatientMessagesButton";
+import PatientActionsMenu from "@/components/PatientActionsMenu";
 import type { SessionDetail } from "@/components/WeekProgramme";
-import { assignCondition, addRecommendedWorkout, removeRecommendedWorkout, adjustPatientWorkout } from "./actions";
+import {
+  assignCondition,
+  addRecommendedWorkout,
+  removeRecommendedWorkout,
+  adjustPatientWorkout,
+  markPaymentLapsed,
+  clearPaymentLapsed,
+  deletePatient,
+} from "./actions";
 import { getPatientThread, sendPatientMessage } from "../actions";
 
 type WorkoutExercise = {
@@ -52,7 +63,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const user = await requireUser(supabase);
   const now = new Date();
 
-  const { data: patient } = await supabase.from("patients").select("id, full_name, email, condition_id, created_at").eq("id", id).maybeSingle();
+  const { data: patient } = await supabase.from("patients").select("id, full_name, email, condition_id, created_at, payment_lapsed_at").eq("id", id).maybeSingle();
   if (!patient) redirect("/dashboard/patients");
   const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || "ce patient";
 
@@ -70,7 +81,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     { count: unreadCount },
   ] = await Promise.all([
     supabase.from("conditions").select("id, name").order("name"),
-    supabase.from("patient_profiles").select("condition_id, injury_stage, rehab_progress, history, date_of_birth, height_cm, weight_kg, activity_level, updated_at").eq("id", id).maybeSingle(),
+    supabase.from("patient_profiles").select("declared_body_part_ids, injury_stage, rehab_progress, history, date_of_birth, height_cm, weight_kg, activity_level, equipment, updated_at").eq("id", id).maybeSingle(),
     supabase.from("patient_documents").select("id, file_name, storage_path, uploaded_at").eq("patient_id", id).order("uploaded_at", { ascending: false }),
     supabase.from("workout_logs").select("id, completed_at, workout_id, workouts ( name, duration_minutes )").eq("patient_id", id),
     supabase.from("patient_feedback").select("pain_score, created_at").eq("patient_id", id).gte("created_at", since30),
@@ -241,17 +252,32 @@ export default async function PatientDetailPage({ params, searchParams }: { para
               <button type="submit" className="rounded-full border border-line px-3 py-1 text-xs font-medium text-ink hover:bg-app-bg">Changer</button>
               {stage && <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-ink" title={STAGE_LABELS[stage]}>{STAGE_SHORT[stage]}</span>}
               <span className="inline-flex items-center gap-1 text-xs text-muted"><Flame className="h-3.5 w-3.5" strokeWidth={1.75} />{streak} j d&apos;affilée · {totalSessions} séance{totalSessions > 1 ? "s" : ""}</span>
+              {patient.payment_lapsed_at && (
+                <span className="rounded-full bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">Ne paie plus</span>
+              )}
             </form>
           </div>
           {/* La séance se gère semaine par semaine depuis la frise ci-dessous ;
               ici il ne reste que la conversation, en popup pour ne pas quitter
               la fiche (point 4 de l'audit du 2026-09-09). */}
-          <PatientMessagesButton
-            patient={{ id: patient.id, name: (patient.full_name as string | null) ?? "Patient", initials: initials(patient.full_name as string | null) }}
-            unreadCount={unreadCount ?? 0}
-            getThread={getPatientThread}
-            sendMessage={sendPatientMessage}
-          />
+          <div className="flex items-center gap-2">
+            <PatientMessagesButton
+              patient={{ id: patient.id, name: (patient.full_name as string | null) ?? "Patient", initials: initials(patient.full_name as string | null) }}
+              unreadCount={unreadCount ?? 0}
+              getThread={getPatientThread}
+              sendMessage={sendPatientMessage}
+            />
+            <PatientActionsMenu
+              patientId={patient.id}
+              patientName={firstName}
+              paymentLapsedAt={patient.payment_lapsed_at as string | null}
+              paymentEligibleForDeletion={paymentEligibleForDeletion(patient.payment_lapsed_at as string | null, now)}
+              redirectTo={`/dashboard/patients/${patient.id}`}
+              markPaymentLapsed={markPaymentLapsed}
+              clearPaymentLapsed={clearPaymentLapsed}
+              deletePatient={deletePatient}
+            />
+          </div>
         </div>
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
@@ -293,12 +319,35 @@ export default async function PatientDetailPage({ params, searchParams }: { para
                   profile.height_cm != null ? `${profile.height_cm} cm` : null,
                   profile.weight_kg != null ? `${profile.weight_kg} kg` : null,
                   profile.activity_level ? `activité ${ACTIVITY_LABELS[profile.activity_level as string] ?? profile.activity_level}` : null,
-                  conditionName(profile.condition_id as string | null) ? `déclare : ${conditionName(profile.condition_id as string | null)}` : null,
                   stage ? STAGE_LABELS[stage] : null,
                 ].filter(Boolean).join(" · ")}
               </p>
+              {((profile.declared_body_part_ids as string[] | null) ?? []).length > 0 && (
+                <div className="mt-1.5">
+                  <span className="text-sm text-muted">Le patient signale vouloir travailler : </span>
+                  <span className="inline-flex flex-wrap gap-1 align-middle">
+                    {(profile.declared_body_part_ids as string[]).map((bpId) => (
+                      <span key={bpId} className="rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-ink">
+                        {bodyParts?.find((bp) => bp.id === bpId)?.label ?? bpId}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              )}
               {profile.rehab_progress && <p className="text-sm text-muted"><span>Avancement{profileUpdated ? ` (mis à jour le ${profileUpdated})` : ""} :</span> {profile.rehab_progress as string}</p>}
               {profile.history && <p className="text-sm text-muted"><span>Historique :</span> {profile.history as string}</p>}
+              {((profile.equipment as EquipmentId[] | null) ?? []).length > 0 && (
+                <div className="mt-1.5">
+                  <span className="text-sm text-muted">Équipement disponible : </span>
+                  <span className="inline-flex flex-wrap gap-1 align-middle">
+                    {(profile.equipment as EquipmentId[]).map((eq) => (
+                      <span key={eq} className="rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-ink">
+                        {EQUIPMENT_LABELS[eq] ?? eq}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              )}
               {docLinks.length > 0 && (
                 <div className="mt-2">
                   <p className="text-sm font-medium text-ink">Documents médicaux</p>

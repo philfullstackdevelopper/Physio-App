@@ -7,7 +7,7 @@ import { ATTACHMENT_BUCKET } from "@/lib/messages/attachment";
 import ConversationList from "@/components/ConversationList";
 import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
 import MessageComposer from "@/components/MessageComposer";
-import { sendInboxMessage, toggleFollowUp } from "./actions";
+import { markConversationRead, sendInboxMessage, toggleFollowUp } from "./actions";
 
 const TABS: ConversationTab[] = ["all", "unread", "follow_up"];
 
@@ -79,13 +79,7 @@ export default async function MessagesPage({
       attachmentUrl: m.attachment_path ? (signed.get(m.attachment_path as string) ?? null) : null,
     }));
 
-    await supabase
-      .from("patient_messages")
-      .update({ read_by_instructor_at: new Date().toISOString() })
-      .eq("instructor_id", user.id)
-      .eq("patient_id", selectedId)
-      .eq("sender", "patient")
-      .is("read_by_instructor_at", null);
+    await markConversationRead(selectedId);
   }
 
   return (

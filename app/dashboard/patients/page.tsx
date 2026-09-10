@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { loadPatientRows } from "@/lib/dashboard/patientRows";
 import PatientsTable, { type Segment } from "@/components/PatientsTable";
-import { getPatientThread, sendPatientMessage } from "./actions";
+import { getPatientThread, sendPatientMessage, reactivatePatient } from "./actions";
+import { markPaymentLapsed, clearPaymentLapsed, deletePatient } from "./[id]/actions";
 
 export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ filtre?: string }> }) {
   const { filtre } = await searchParams;
@@ -15,7 +16,8 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
     loadPatientRows(supabase),
     supabase.from("conditions").select("id, name").order("name"),
   ]);
-  const initialSegment: Segment = filtre === "surveiller" ? "surveiller" : filtre === "jour" ? "jour" : "tous";
+  const initialSegment: Segment =
+    filtre === "surveiller" ? "surveiller" : filtre === "jour" ? "jour" : filtre === "resilies" ? "resilies" : "tous";
 
   return (
     <main className="min-h-screen">
@@ -37,6 +39,10 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
             initialSegment={initialSegment}
             getPatientThread={getPatientThread}
             sendPatientMessage={sendPatientMessage}
+            reactivatePatient={reactivatePatient}
+            markPaymentLapsed={markPaymentLapsed}
+            clearPaymentLapsed={clearPaymentLapsed}
+            deletePatient={deletePatient}
           />
         </div>
       </div>

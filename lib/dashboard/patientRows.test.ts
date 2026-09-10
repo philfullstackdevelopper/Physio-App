@@ -9,11 +9,14 @@ const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOStr
 const input = {
   now,
   patients: [
-    { id: "p1", full_name: "Marc T.", condition_id: "c1", created_at: daysAgo(60) },
-    { id: "p2", full_name: "Sophie R.", condition_id: "c2", created_at: daysAgo(60) },
-    { id: "p3", full_name: "Paul M.", condition_id: null, created_at: daysAgo(2) },
+    { id: "p1", full_name: "Marc T.", condition_id: "c1", created_at: daysAgo(60), terms_accepted_at: daysAgo(60) },
+    { id: "p2", full_name: "Sophie R.", condition_id: "c2", created_at: daysAgo(60), terms_accepted_at: daysAgo(60) },
+    { id: "p3", full_name: "Paul M.", condition_id: null, created_at: daysAgo(2), terms_accepted_at: daysAgo(2) },
   ],
-  profiles: [{ id: "p1", injury_stage: "acute" }, { id: "p2", injury_stage: "recovery" }],
+  profiles: [
+    { id: "p1", injury_stage: "acute", health_data_consent_at: daysAgo(60) },
+    { id: "p2", injury_stage: "recovery", health_data_consent_at: daysAgo(60) },
+  ],
   conditions: [{ id: "c1", name: "Prothèse genou" }, { id: "c2", name: "Entorse cheville" }],
   logs: [
     { patient_id: "p1", completed_at: daysAgo(0) },
@@ -64,4 +67,26 @@ test("inactivité et à jour", () => {
 test("tri : douleur sévère, douleur, inactif, puis alphabétique", () => {
   const rows = buildPatientRows(input);
   assert.deepEqual(rows.map((r) => r.id), ["p1", "p2", "p3"]);
+});
+
+test("onboarding : invitation jamais acceptée vs profil santé jamais terminé", () => {
+  const marc = buildPatientRows(input).find((r) => r.id === "p1")!;
+  assert.equal(marc.onboardingStage, null); // CGU + profil : inscription terminée
+
+  const paul = buildPatientRows(input).find((r) => r.id === "p3")!;
+  assert.equal(paul.onboardingStage, "profile"); // CGU acceptées, mais aucune ligne patient_profiles
+
+  const invited = { id: "p4", full_name: "Zoé K.", condition_id: null, created_at: daysAgo(1), terms_accepted_at: null };
+  const rows = buildPatientRows({ ...input, patients: [...input.patients, invited] });
+  assert.equal(rows.find((r) => r.id === "p4")!.onboardingStage, "invite");
+});
+
+test("tri : les inscriptions en attente restent en bas, même en présence d'une douleur sévère", () => {
+  const invited = { id: "p4", full_name: "Aaron A.", condition_id: null, created_at: daysAgo(1), terms_accepted_at: null };
+  const rows = buildPatientRows({
+    ...input,
+    patients: [...input.patients, invited],
+    feedback: [...input.feedback, { patient_id: "p4", pain_score: 10, difficulty: null, created_at: daysAgo(0) }],
+  });
+  assert.deepEqual(rows.map((r) => r.id), ["p1", "p2", "p3", "p4"]);
 });

@@ -42,6 +42,28 @@ export async function sendInboxMessage(formData: FormData) {
   redirect(`/dashboard/messages?patient=${patientId}`);
 }
 
+// Marque comme lus les messages du patient sélectionné, dès qu'on ouvre sa
+// conversation. Un plain `await supabase...update()` dans le composant serveur
+// de la page fonctionnait déjà pour la donnée elle-même, mais revalidatePath
+// ne peut s'appeler que dans une Server Action ou un Route Handler — pas
+// pendant le rendu d'un composant serveur. Extrait ici pour pouvoir purger le
+// badge "Messages" du layout du dashboard, sinon il reste affiché comme non
+// lu jusqu'au prochain rechargement complet (Philippe, 2026-09-09).
+export async function markConversationRead(patientId: string) {
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+
+  await supabase
+    .from("patient_messages")
+    .update({ read_by_instructor_at: new Date().toISOString() })
+    .eq("instructor_id", user.id)
+    .eq("patient_id", patientId)
+    .eq("sender", "patient")
+    .is("read_by_instructor_at", null);
+
+  revalidatePath("/dashboard", "layout");
+}
+
 // « Ajouter un suivi » / « Retirer le suivi » : marque-page sur la
 // conversation d'un patient (patients.follow_up_at). La politique RLS
 // existante limite la mise à jour aux patients du kiné connecté.

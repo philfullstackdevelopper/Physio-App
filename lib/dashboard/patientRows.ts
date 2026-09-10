@@ -11,11 +11,21 @@ import { computeAdherence, adherenceLabel, adherenceTone, type Adherence } from 
 import { computeSignal, type Signal } from "./patientSignal.ts";
 import { relativeDay } from "../format/relativeDay.ts";
 import { initials } from "../format/initials.ts";
+import { paymentEligibleForDeletion } from "../patient/paymentStatus.ts";
 
 export interface PatientRowsInput {
   now?: Date;
-  patients: { id: string; full_name: string | null; condition_id: string | null; created_at: string }[];
-  profiles: { id: string; injury_stage: string | null }[];
+  patients: {
+    id: string;
+    full_name: string | null;
+    condition_id: string | null;
+    created_at: string;
+    /** Optional so existing test fixtures (no payment tracking yet) still type-check. */
+    payment_lapsed_at?: string | null;
+    /** CGU acceptance (app/patient/layout.tsx's gate). Optional for old test fixtures — see `onboardingStage`. */
+    terms_accepted_at?: string | null;
+  }[];
+  profiles: { id: string; injury_stage: string | null; health_data_consent_at?: string | null }[];
   conditions: { id: string; name: string }[];
   logs: { patient_id: string; completed_at: string }[];
   /** 14 derniers jours. */
@@ -38,6 +48,16 @@ export interface PatientRow {
   adherenceLabel: "Bonne" | "Moyenne" | "Faible" | null;
   adherenceTone: "ok" | "warn" | "danger" | "muted";
   signal: Signal;
+  paymentLapsedAt: string | null;
+  paymentEligibleForDeletion: boolean;
+  /**
+   * `null` = onboarding terminé. `"invite"` = n'a jamais accepté les CGU (a
+   * peut-être même jamais ouvert son invitation Clerk) — on peut renvoyer
+   * l'invitation. `"profile"` = CGU acceptées mais questionnaire santé
+   * jamais terminé — le patient a déjà un compte actif, rien à renvoyer.
+   */
+  onboardingStage: "invite" | "profile" | null;
+  createdAt: string;
 }
 
 const SIGNAL_RANK: Record<Signal["kind"], number> = { pain: 0, inactive: 1, ok: 2 };
@@ -45,6 +65,7 @@ const SIGNAL_RANK: Record<Signal["kind"], number> = { pain: 0, inactive: 1, ok: 
 export function buildPatientRows({ now = new Date(), patients, profiles, conditions, logs, feedback, recs }: PatientRowsInput): PatientRow[] {
   const conditionName = new Map(conditions.map((c) => [c.id, c.name]));
   const stageOf = new Map(profiles.map((p) => [p.id, (p.injury_stage as InjuryStage | null) ?? null]));
+  const healthConsentOf = new Map(profiles.map((p) => [p.id, p.health_data_consent_at ?? null]));
 
   const logsBy = new Map<string, string[]>();
   for (const l of logs) (logsBy.get(l.patient_id) ?? logsBy.set(l.patient_id, []).get(l.patient_id)!).push(l.completed_at);
@@ -74,6 +95,13 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
     const sig = signalsBy.get(p.id) ?? { painScores: [], difficulties: [], lastPain: null, lastPainAt: "" };
     const assessment = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties });
     const adherence = computeAdherence({ completedAt: completed, assignments: recsBy.get(p.id) ?? [], now });
+    const paymentLapsedAt = p.payment_lapsed_at ?? null;
+    const termsAcceptedAt = p.terms_accepted_at ?? null;
+    const onboardingStage: PatientRow["onboardingStage"] = !termsAcceptedAt
+      ? "invite"
+      : !healthConsentOf.get(p.id)
+        ? "profile"
+        : null;
     return {
       id: p.id,
       name: p.full_name ?? "Patient",
@@ -96,15 +124,28 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
         createdAt: p.created_at,
         now,
       }),
+      paymentLapsedAt,
+      paymentEligibleForDeletion: paymentEligibleForDeletion(paymentLapsedAt, now),
+      onboardingStage,
+      createdAt: p.created_at,
     };
   });
 
-  return rows.sort(
-    (a, b) =>
+  return rows.sort((a, b) => {
+    // Inscription non terminée : toujours en bas de la pile, quel que soit
+    // le signal (Philippe, 2026-09-09 — un compte tout neuf sans donnée
+    // ressortait sinon comme « À jour », ce qui laissait croire à tort que
+    // le patient était opérationnel).
+    const aPending = a.onboardingStage !== null;
+    const bPending = b.onboardingStage !== null;
+    if (aPending !== bPending) return aPending ? 1 : -1;
+    if (aPending && bPending) return a.createdAt.localeCompare(b.createdAt); // le plus ancien en attente d'abord
+    return (
       SIGNAL_RANK[a.signal.kind] - SIGNAL_RANK[b.signal.kind] ||
       Number(b.signal.severe) - Number(a.signal.severe) ||
-      a.name.localeCompare(b.name, "fr"),
-  );
+      a.name.localeCompare(b.name, "fr")
+    );
+  });
 }
 
 /** Toutes les requêtes en parallèle ; RLS limite chaque table aux patients du kiné connecté. */
@@ -112,8 +153,8 @@ export async function loadPatientRows(supabase: SupabaseClient, now: Date = new 
   const since14 = new Date(now.getTime() - 14 * 86_400_000).toISOString();
   const [{ data: patients }, { data: profiles }, { data: conditions }, { data: logs }, { data: feedback }, { data: recs }] =
     await Promise.all([
-      supabase.from("patients").select("id, full_name, condition_id, created_at"),
-      supabase.from("patient_profiles").select("id, injury_stage"),
+      supabase.from("patients").select("id, full_name, condition_id, created_at, payment_lapsed_at, terms_accepted_at"),
+      supabase.from("patient_profiles").select("id, injury_stage, health_data_consent_at"),
       supabase.from("conditions").select("id, name"),
       supabase.from("workout_logs").select("patient_id, completed_at"),
       supabase.from("patient_feedback").select("patient_id, pain_score, difficulty, created_at").gte("created_at", since14),

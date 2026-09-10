@@ -2,10 +2,123 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { clerkClient } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { applyAdjustment, adjustmentMessage } from "@/lib/exercise/adjustPlan";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
+
+// PatientActionsMenu is used both on the patient detail page and inline in
+// the "Mes patients" table, so its forms carry where to land afterwards.
+// Constrained to this feature's own routes — a hidden field is still
+// attacker-editable form data, and redirect() must never be handed an
+// unvalidated destination.
+function ownRedirect(formData: FormData, fallback: string): string {
+  const raw = String(formData.get("redirect_to") ?? "");
+  return raw.startsWith("/dashboard/patients") ? raw : fallback;
+}
+
+// Instructor marks a patient as no longer paying (see supabase/migrations/0049 —
+// this app has no automatic view into the instructor's own Stripe Connect
+// account, so this is a manual record, not a webhook-driven one).
+export async function markPaymentLapsed(formData: FormData) {
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+
+  const patientId = String(formData.get("patient_id") ?? "");
+  const dest = ownRedirect(formData, `/dashboard/patients/${patientId}`);
+  const { error } = await supabase
+    .from("patients")
+    .update({ payment_lapsed_at: new Date().toISOString() })
+    .eq("id", patientId)
+    .eq("instructor_id", user.id);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
+
+  revalidatePath(`/dashboard/patients/${patientId}`);
+  revalidatePath("/dashboard/patients");
+  redirect(dest);
+}
+
+// Reverses the above — the patient resumed paying, or it was marked by mistake.
+export async function clearPaymentLapsed(formData: FormData) {
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+
+  const patientId = String(formData.get("patient_id") ?? "");
+  const dest = ownRedirect(formData, `/dashboard/patients/${patientId}`);
+  const { error } = await supabase
+    .from("patients")
+    .update({ payment_lapsed_at: null })
+    .eq("id", patientId)
+    .eq("instructor_id", user.id);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
+
+  revalidatePath(`/dashboard/patients/${patientId}`);
+  revalidatePath("/dashboard/patients");
+  redirect(dest);
+}
+
+// Permanently removes a patient: all their data (workout logs, profile,
+// messages, documents, recommendations — every table with an
+// `on delete cascade` FK to patients.id, see migration 0001 onward) plus the
+// Clerk identity and the app_users email mapping, so the same email can later
+// be invited fresh via the normal "Ajouter un patient" flow (addPatient in
+// ../actions.ts) without hitting Clerk's "an account already exists" error.
+//
+// Bug fixed 2026-09-09: Clerk cleanup used to branch on our OWN app_users.clerk_id
+// to decide "does a Clerk user already exist for this email" — but that column
+// is only ever backfilled once the person actually logs into this app
+// (resolveAppUserId, lib/auth/user-map.ts). Someone who accepted the invite and
+// set a password, but never completed a first login here (their patients row
+// vanished before that, as happened to a real patient — see the addPatient
+// investigation), has a real Clerk user with clerk_id still null in our DB. The
+// old code then took the "no clerk_id" branch, which only revokes *pending*
+// invitations — an *accepted* one isn't pending, so nothing got revoked AND the
+// live Clerk user was never deleted, permanently blocking every future
+// re-invite of that email with "that email is taken". Fixed by asking Clerk
+// directly (source of truth) instead of trusting our own possibly-stale record.
+//
+// Clerk cleanup is still best-effort: if it fails (API hiccup), the Supabase
+// data — the part the instructor actually asked to remove — is deleted
+// regardless. A failure there just means a future re-invite of that exact
+// email may need a retry or Philippe's help clearing the stale Clerk identity.
+export async function deletePatient(formData: FormData) {
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+
+  const patientId = String(formData.get("patient_id") ?? "");
+  const { data: patient } = await supabase
+    .from("patients")
+    .select("id, email")
+    .eq("id", patientId)
+    .eq("instructor_id", user.id)
+    .maybeSingle();
+  if (!patient) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Patient introuvable.")}`);
+
+  const admin = createAdminClient();
+
+  try {
+    const client = await clerkClient();
+    const existingUsers = await client.users.getUserList({ emailAddress: [patient!.email] });
+    if (existingUsers.data.length > 0) {
+      await Promise.all(existingUsers.data.map((u) => client.users.deleteUser(u.id)));
+    } else {
+      const pending = await client.invitations.getInvitationList({ query: patient!.email, status: "pending" });
+      await Promise.all(pending.data.map((inv) => client.invitations.revokeInvitation(inv.id)));
+    }
+  } catch (e) {
+    console.error("deletePatient: Clerk cleanup failed", e);
+  }
+
+  await admin.from("app_users").delete().eq("email", patient!.email);
+
+  const { error } = await supabase.from("patients").delete().eq("id", patientId).eq("instructor_id", user.id);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
+
+  revalidatePath("/dashboard/patients");
+  redirect("/dashboard/patients");
+}
 
 // Assigns a condition to a patient. The condition's workouts become available to
 // the patient. Changing the condition clears any previous recommendations —
