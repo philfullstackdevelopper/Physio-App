@@ -8,7 +8,7 @@ export default async function AdminPage() {
   const admin = createAdminClient();
   const { data } = await admin
     .from("instructors")
-    .select("id, full_name, email, created_at")
+    .select("id, full_name, email, created_at, cabinet_name, cabinet_address, phone, rpps_number, siret, rpps_verified_at")
     .eq("status", "pending")
     .order("created_at", { ascending: true });
 
@@ -38,6 +38,37 @@ export default async function AdminPage() {
                 <p className="mt-0.5 text-xs text-slate-400">
                   Inscrit le {dateFmt.format(new Date(p.created_at as string))}
                 </p>
+                {/* Cabinet details from app/signup/onboarding — the manual
+                    check to run until ESANTE_API_KEY exists and the RPPS
+                    lookup (lib/instructor/rppsVerification.ts) is automatic:
+                    search this RPPS on annuaire.sante.fr and confirm it
+                    resolves to an active masseur-kinésithérapeute with a
+                    matching name. */}
+                {p.cabinet_name ? (
+                  <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    <p className="font-medium text-slate-700">{p.cabinet_name as string}</p>
+                    {p.cabinet_address && <p>{p.cabinet_address as string}</p>}
+                    {p.phone && <p>Tél. {p.phone as string}</p>}
+                    <p className="mt-1">
+                      RPPS/ADELI :{" "}
+                      <a
+                        href="https://annuaire.sante.fr"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-blue-700 underline hover:no-underline"
+                        title="Vérifier sur l'Annuaire Santé"
+                      >
+                        {(p.rpps_number as string) || "—"}
+                      </a>
+                      {p.rpps_verified_at && <span className="ml-1.5 text-emerald-600">✓ vérifié</span>}
+                    </p>
+                    {p.siret && <p>SIRET {p.siret as string}</p>}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs italic text-amber-600">
+                    Onboarding cabinet non terminé — informations manquantes.
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
                 <form action={approveInstructor}>
