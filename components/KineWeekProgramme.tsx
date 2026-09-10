@@ -220,17 +220,17 @@ export default function KineWeekProgramme({
           // la hauteur de la carte (h-full) pour séparer les deux zones.
           <div className="flex h-full w-full flex-col items-center justify-between gap-1">
             <div className="flex flex-col items-center">
-              <span className="flex items-center gap-1.5 text-xl font-semibold">
+              <span className="flex items-center gap-1.5 text-2xl font-semibold">
                 {week.weekNumber}
                 {painAlert ? (
-                  <AlertTriangle className="h-4 w-4" strokeWidth={2} />
+                  <AlertTriangle className="h-5 w-5" strokeWidth={2} />
                 ) : (
-                  hasActivity && <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
+                  hasActivity && <CheckCircle2 className="h-5 w-5" strokeWidth={2} />
                 )}
               </span>
               <span className="text-xs font-medium opacity-90">{week.rangeLabel}</span>
             </div>
-            {isCurrent && workout && workout.exercises.length > 0 ? (
+            {workout && workout.exercises.length > 0 ? (
               <span className="flex w-full flex-wrap items-start justify-center gap-x-3 gap-y-2 px-2 pb-1">
                 {workout.exercises.map((e) => (
                   <span key={e.id} className="flex w-16 flex-col items-center gap-1">

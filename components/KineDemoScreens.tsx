@@ -18,17 +18,30 @@ export function Cursor({
 }) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
 
+  // Re-measured on every frame for ~400ms after the target changes, not just
+  // once — a parent using layout animation (a screen resizing to fit its
+  // content, e.g. KineJourneyDemo's frame) keeps moving the target for the
+  // length of that transition, and a single getBoundingClientRect() at mount
+  // time landed the cursor on where the button *used to be*, not where it
+  // settles (Philippe, 2026-09-09: "you don't click exactly on the button").
   useEffect(() => {
     if (!stageEl || !targetEl) {
       setPos(null);
       return;
     }
-    const stageRect = stageEl.getBoundingClientRect();
-    const targetRect = targetEl.getBoundingClientRect();
-    setPos({
-      x: ((targetRect.left + targetRect.width / 2 - stageRect.left) / stageRect.width) * 100,
-      y: ((targetRect.top + targetRect.height / 2 - stageRect.top) / stageRect.height) * 100,
-    });
+    let raf = 0;
+    const start = performance.now();
+    const measure = (now: number) => {
+      const stageRect = stageEl.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+      setPos({
+        x: ((targetRect.left + targetRect.width / 2 - stageRect.left) / stageRect.width) * 100,
+        y: ((targetRect.top + targetRect.height / 2 - stageRect.top) / stageRect.height) * 100,
+      });
+      if (now - start < 450) raf = requestAnimationFrame(measure);
+    };
+    raf = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(raf);
   }, [stageEl, targetEl]);
 
   return (

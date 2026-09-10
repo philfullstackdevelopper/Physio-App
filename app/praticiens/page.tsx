@@ -74,7 +74,7 @@ const SETUP_STEPS = [
 function Cta() {
   return (
     <Link
-      href="/signup"
+      href="/signup/kine"
       className="inline-flex items-center justify-center gap-1.5 rounded-full bg-blue-600 px-6 py-3 font-medium text-white shadow-sm transition hover:bg-blue-700 active:scale-95"
     >
       Créer mon compte praticien
@@ -201,7 +201,7 @@ export default function PraticiensPage() {
             </ul>
             <div className="mt-8">
               <Link
-                href="/signup"
+                href="/signup/kine"
                 className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-6 py-3 font-medium text-slate-900 shadow-sm transition hover:bg-slate-100 active:scale-95"
               >
                 Demander mon invitation

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, Check, ClipboardList, Pause, Search, Send, SlidersHorizontal, Video } from "lucide-react";
+import { ArrowRight, Check, ClipboardList, Pause, SlidersHorizontal, Video } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 
@@ -37,214 +37,128 @@ function Figure({ name, className }: { name: string; className: string }) {
   return <ExerciseIllustration name={name} className={`${className} text-blue-600`} />;
 }
 
-function Phone({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div
-      className={`absolute -bottom-3 -right-2 w-[112px] rounded-[18px] border-[3px] border-slate-900 bg-white p-1.5 shadow-lg sm:-right-4 ${className}`}
-    >
-      {children}
-    </div>
-  );
-}
-
 /* ── Step 1 : kiné builds the program ─────────────────────────── */
+// Trimmed to the one thing this step is about — picking exercises — so the
+// search box and "8 exercices" counter (real but beside the point here) are
+// gone, and the list stops at 3 rows instead of 4 (Philippe, 2026-09-09:
+// "trop d'informations d'un coup").
 function BuilderMock() {
   return (
-    <div className="relative">
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-          <p className="text-xs font-semibold text-slate-900">
-            Programme de Julien <span className="font-normal text-slate-400">· Phase 2</span>
-          </p>
-          <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-            8 exercices
-          </span>
-        </div>
-        <div className="mx-3 mt-2 flex items-center gap-1.5 rounded-md border border-slate-200 px-2 py-1 text-[10px] text-slate-400">
-          <Search className="h-3 w-3" strokeWidth={2} /> Rechercher un exercice…
-        </div>
-        <ul className="space-y-1.5 p-3">
-          {PROGRAM.map((ex) => (
-            <li
-              key={ex.name}
-              className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 ${
-                ex.active ? "border-blue-500 bg-blue-50/60" : "border-slate-100"
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-100 px-3 py-2">
+        <p className="text-xs font-semibold text-slate-900">
+          Programme de Julien <span className="font-normal text-slate-400">· Phase 2</span>
+        </p>
+      </div>
+      <ul className="space-y-1.5 p-3">
+        {PROGRAM.slice(0, 3).map((ex) => (
+          <li
+            key={ex.name}
+            className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 ${
+              ex.active ? "border-blue-500 bg-blue-50/60" : "border-slate-100"
+            }`}
+          >
+            <Figure name={ex.name} className="h-9 w-9 shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[11px] font-semibold text-slate-900">{ex.label}</span>
+              <span className="block text-[10px] text-slate-500">{ex.dose}</span>
+            </span>
+            <span
+              className={`flex h-4 w-4 items-center justify-center rounded-full ${
+                ex.active ? "bg-blue-600 text-white" : "border border-slate-300 text-transparent"
               }`}
             >
-              <Figure name={ex.name} className="h-9 w-9 shrink-0" />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[11px] font-semibold text-slate-900">{ex.label}</span>
-                <span className="block text-[10px] text-slate-500">{ex.dose}</span>
-              </span>
-              <span
-                className={`flex h-4 w-4 items-center justify-center rounded-full ${
-                  ex.active ? "bg-blue-600 text-white" : "border border-slate-300 text-transparent"
-                }`}
-              >
-                <Check className="h-2.5 w-2.5" strokeWidth={3} />
-              </span>
-            </li>
-          ))}
-        </ul>
-        <div className="mx-3 mb-3 flex items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 py-1.5 text-[11px] font-medium text-blue-700">
-          + Ajouter un exercice
-        </div>
-      </div>
-      <Phone className="w-[104px]">
-        <div className="rounded-md bg-blue-600 px-2 py-1.5 text-[9px] font-semibold text-white">
-          Programme · Phase 2
-        </div>
-        <ul className="mt-1.5 space-y-1">
-          {PROGRAM.map((ex) => (
-            <li
-              key={ex.name}
-              className={`flex items-center gap-1 rounded px-1 py-0.5 ${ex.active ? "bg-blue-50" : ""}`}
-            >
-              <Figure name={ex.name} className="h-5 w-5 shrink-0" />
-              <span className="truncate text-[7px] text-slate-700">{ex.label}</span>
-            </li>
-          ))}
-        </ul>
-      </Phone>
+              <Check className="h-2.5 w-2.5" strokeWidth={3} />
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
 /* ── Step 2 : patient follows the guided session ──────────────── */
+// Dropped the elapsed/total timestamp under the progress bar — it repeated
+// the same information as the bar itself and the rep counter (Philippe,
+// 2026-09-09: "trop d'informations d'un coup").
 function PlayerMock() {
   const rep = usePlayback();
   const pct = (rep / TOTAL_REPS) * 100;
   return (
-    <div className="relative">
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-start justify-between px-4 pt-3">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">{PLAYER.label}</p>
-            <p className="text-[11px] text-slate-500">{PLAYER.dose}</p>
-          </div>
-          <div className="relative flex h-11 w-11 items-center justify-center">
-            <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90">
-              <circle cx="18" cy="18" r="15.5" fill="none" stroke="#e2e8f0" strokeWidth="3" />
-              <circle
-                cx="18"
-                cy="18"
-                r="15.5"
-                fill="none"
-                stroke="#2563eb"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeDasharray={`${pct} 100`}
-                pathLength={100}
-                className="transition-[stroke-dasharray] duration-700 ease-out"
-              />
-            </svg>
-            <span className="text-[10px] font-semibold tabular-nums text-blue-700">
-              {rep}/{TOTAL_REPS}
-            </span>
-          </div>
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex items-start justify-between px-4 pt-3">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">{PLAYER.label}</p>
+          <p className="text-[11px] text-slate-500">{PLAYER.dose}</p>
         </div>
-        <div className="relative mx-3 mt-2 rounded-lg bg-slate-50">
-          <Figure name={PLAYER.name} className="h-40 w-full" />
-          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-slate-600 shadow-sm">
-            <Video className="h-3 w-3 text-blue-600" strokeWidth={2} /> Démonstration
-          </span>
-        </div>
-        <div className="flex items-center gap-2 px-4 py-3">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white">
-            <Pause className="h-3 w-3 fill-current" strokeWidth={0} />
-          </span>
-          <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-200">
-            <div
-              className="h-full rounded-full bg-blue-600 transition-[width] duration-700 ease-out"
-              style={{ width: `${pct}%` }}
+        <div className="relative flex h-11 w-11 items-center justify-center">
+          <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90">
+            <circle cx="18" cy="18" r="15.5" fill="none" stroke="#e2e8f0" strokeWidth="3" />
+            <circle
+              cx="18"
+              cy="18"
+              r="15.5"
+              fill="none"
+              stroke="#2563eb"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray={`${pct} 100`}
+              pathLength={100}
+              className="transition-[stroke-dasharray] duration-700 ease-out"
             />
-          </div>
-          <span className="text-[10px] tabular-nums text-slate-500">
-            00:{String(Math.round(rep * 4.5)).padStart(2, "0")} / 00:45
+          </svg>
+          <span className="text-[10px] font-semibold tabular-nums text-blue-700">
+            {rep}/{TOTAL_REPS}
           </span>
         </div>
       </div>
-      <Phone>
-        <p className="px-1 text-[9px] font-semibold text-slate-900">{PLAYER.label}</p>
-        <Figure name={PLAYER.name} className="h-14 w-full" />
-        <p className="px-1 text-[8px] text-slate-500">{PLAYER.dose}</p>
-        <div className="mt-1 rounded bg-slate-50 px-1.5 py-1 text-[7px] leading-snug text-slate-600">
-          <span className="font-semibold text-slate-800">Consigne</span> Gardez le coude collé au corps
-          et tirez lentement.
+      <div className="relative mx-3 mt-2 rounded-lg bg-slate-50">
+        <Figure name={PLAYER.name} className="h-40 w-full" />
+        <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-slate-600 shadow-sm">
+          <Video className="h-3 w-3 text-blue-600" strokeWidth={2} /> Démonstration
+        </span>
+      </div>
+      <div className="flex items-center gap-2 px-4 py-3">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white">
+          <Pause className="h-3 w-3 fill-current" strokeWidth={0} />
+        </span>
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-200">
+          <div
+            className="h-full rounded-full bg-blue-600 transition-[width] duration-700 ease-out"
+            style={{ width: `${pct}%` }}
+          />
         </div>
-        <div className="mt-1 rounded-md bg-blue-600 py-1 text-center text-[8px] font-semibold text-white">
-          Terminer la série
-        </div>
-      </Phone>
+      </div>
     </div>
   );
 }
 
 /* ── Step 3 : kiné adjusts from the patient's feedback ────────── */
-function PainScale() {
-  // Five plain dots, the middle one selected — no emoji faces.
-  return (
-    <div className="flex items-center justify-between px-1">
-      {[0, 1, 2, 3, 4].map((i) => (
-        <span
-          key={i}
-          className={`h-4 w-4 rounded-full border ${
-            i === 2 ? "border-red-500 bg-red-500" : "border-slate-300"
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
-
+// Trimmed from 3 rows to 2 — "Adhérence" was a dashboard stat, not a
+// "retour" driving an adjustment the way pain and recency are (Philippe,
+// 2026-09-09: "trop d'informations d'un coup").
 function FollowUpMock() {
   return (
-    <div className="relative">
-      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <p className="text-sm font-semibold text-slate-900">Suivi de Julien</p>
-        <div className="mt-2 space-y-2">
-          <div className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2">
-            <span>
-              <span className="block text-[11px] font-semibold text-slate-900">Douleur signalée</span>
-              <span className="block text-[10px] text-slate-500">Hier · Élévation latérale</span>
-            </span>
-            <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600">
-              5/10
-            </span>
-          </div>
-          <div className="rounded-lg border border-slate-100 px-3 py-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-900">Adhérence cette semaine</span>
-              <span className="text-[11px] font-semibold text-emerald-600">82 %</span>
-            </div>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full w-[82%] origin-left animate-[growX_1.4s_ease-out_both] rounded-full bg-emerald-500" />
-            </div>
-          </div>
-          <div className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2">
-            <span>
-              <span className="block text-[11px] font-semibold text-slate-900">Dernière séance</span>
-              <span className="block text-[10px] text-slate-500">Aujourd&apos;hui · 7 exercices</span>
-            </span>
-            <Check className="h-4 w-4 text-emerald-500" strokeWidth={2.5} />
-          </div>
+    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <p className="text-sm font-semibold text-slate-900">Suivi de Julien</p>
+      <div className="mt-2 space-y-2">
+        <div className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2">
+          <span>
+            <span className="block text-[11px] font-semibold text-slate-900">Douleur signalée</span>
+            <span className="block text-[10px] text-slate-500">Hier · Élévation latérale</span>
+          </span>
+          <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600">
+            5/10
+          </span>
+        </div>
+        <div className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2">
+          <span>
+            <span className="block text-[11px] font-semibold text-slate-900">Dernière séance</span>
+            <span className="block text-[10px] text-slate-500">Aujourd&apos;hui · 7 exercices</span>
+          </span>
+          <Check className="h-4 w-4 text-emerald-500" strokeWidth={2.5} />
         </div>
       </div>
-      <Phone>
-        <div className="rounded-md bg-blue-600 px-2 py-1.5 text-[9px] font-semibold text-white">Mon ressenti</div>
-        <p className="mt-1.5 px-1 text-[8px] text-slate-600">Comment vous sentez-vous ?</p>
-        <p className="mt-1 px-1 text-[8px] font-semibold text-slate-800">Douleur ressentie</p>
-        <div className="mt-1">
-          <PainScale />
-        </div>
-        <p className="mt-0.5 text-center text-[8px] font-semibold text-red-500">5/10</p>
-        <div className="mt-1 rounded bg-slate-50 px-1.5 py-1 text-[7px] leading-snug text-slate-600">
-          Douleur à l&apos;épaule après l&apos;élévation latérale.
-        </div>
-        <div className="mt-1 flex items-center justify-center gap-1 rounded-md bg-blue-600 py-1 text-[8px] font-semibold text-white">
-          Envoyer <Send className="h-2 w-2" strokeWidth={2.5} />
-        </div>
-      </Phone>
     </div>
   );
 }

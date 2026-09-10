@@ -1,13 +1,10 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Eye,
-  PenSquare,
   PlayCircle,
   ShieldCheck,
   Sparkles,
   Video,
-  Zap,
 } from "lucide-react";
 import FaqSection from "@/components/FaqSection";
 import SiteHeader from "@/components/SiteHeader";
@@ -27,7 +24,7 @@ const HERO_CHIPS = [
 ];
 
 function PrimaryCta({
-  href = "/signup",
+  href = "/signup/kine",
   children,
 }: {
   href?: string;
@@ -77,7 +74,7 @@ export default function Home() {
             </p>
 
             <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:220ms] mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <PrimaryCta href="/signup">Créer un compte praticien</PrimaryCta>
+              <PrimaryCta href="/signup/kine">Créer un compte praticien</PrimaryCta>
               <Link
                 href="/login"
                 className="inline-flex items-center justify-center font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
@@ -112,19 +109,6 @@ export default function Home() {
               Tout ce qui se passe entre deux séances, en un coup d&apos;œil. Comprendre, décider, ajuster : 2 clics suffisent.
             </p>
           </div>
-
-          <RevealGroup className="mx-auto mt-10 grid max-w-4xl gap-6 sm:grid-cols-3">
-            {[
-              { icon: Eye, title: "Tout voir", body: "Assiduité, phases, dernières séances et signaux importants." },
-              { icon: Zap, title: "Comprendre vite", body: "Ouvrez le suivi détaillé, l'historique de douleur et l'adhérence." },
-              { icon: PenSquare, title: "Agir immédiatement", body: "Ajustez le programme en quelques clics, le patient voit le changement aussitôt." },
-            ].map((f) => (
-              <RevealItem key={f.title} className="flex gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600"><f.icon className="h-5 w-5" strokeWidth={1.75} /></span>
-                <span><span className="block font-semibold text-slate-900">{f.title}</span><span className="mt-1 block text-sm leading-relaxed text-slate-600">{f.body}</span></span>
-              </RevealItem>
-            ))}
-          </RevealGroup>
 
           {/* La démo déborde de la colonne de texte : pleine largeur jusqu'à 1 200 px. */}
           <div className="mx-auto mt-12 max-w-7xl lg:-mx-16">
@@ -251,7 +235,7 @@ export default function Home() {
                 <li>Ajustement de programme à distance</li>
               </ul>
               <Link
-                href="/signup"
+                href="/signup/kine"
                 className="mt-8 inline-flex items-center gap-1.5 rounded-full bg-white px-6 py-3 text-sm font-medium text-blue-700 shadow-sm transition hover:bg-slate-100 active:scale-[0.97]"
               >
                 Demander un accès
@@ -294,7 +278,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/signup"
+                href="/signup/kine"
                 className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-6 py-3 font-medium text-slate-900 shadow-sm transition hover:bg-slate-100 active:scale-95"
               >
                 Créer un compte praticien

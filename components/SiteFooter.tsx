@@ -14,7 +14,7 @@ const COLUMNS = [
     title: "Espace",
     links: [
       { href: "/login", label: "Connexion patient" },
-      { href: "/signup", label: "Créer un compte praticien" },
+      { href: "/signup/kine", label: "Créer un compte praticien" },
       { href: "/forgot-password", label: "Mot de passe oublié" },
       { href: "/#faq", label: "Questions fréquentes" },
     ],
@@ -69,9 +69,18 @@ export default function SiteFooter() {
       </div>
 
       <div className="border-t border-slate-100 py-5">
-        <p className="text-center text-xs text-slate-400">
-          © 2026 EasyPhysio, conçu avec des cabinets de kinésithérapie libéraux
-        </p>
+        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-center text-xs text-slate-400 sm:text-left">
+            © 2026 EasyPhysio, conçu avec des cabinets de kinésithérapie libéraux
+          </p>
+          <p className="text-center text-[11px] italic text-slate-300 sm:text-right">
+            Certaines illustrations :{" "}
+            <a href="https://injurymap.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-400">
+              Injurymap
+            </a>{" "}
+            (CC BY 4.0)
+          </p>
+        </div>
       </div>
     </footer>
   );

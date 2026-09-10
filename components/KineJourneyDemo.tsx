@@ -1,22 +1,52 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView } from "motion/react";
-import { ArrowRight, Check, CheckCircle2, ChevronRight, Lightbulb, Plus, Search, Smartphone, X } from "lucide-react";
+import { AnimatePresence, motion, useInView } from "motion/react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronRight,
+  Dumbbell,
+  Flame,
+  LayoutDashboard,
+  ListChecks,
+  LogOut,
+  MessageCircle,
+  Plus,
+  Search,
+  UsersRound,
+  Wallet,
+  X,
+} from "lucide-react";
 import { Cursor } from "@/components/KineDemoScreens";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { useReducedMotion } from "@/components/PhoneDemoScreens";
 
-// Trois panneaux côte à côte = les trois vrais écrans (tableau de bord,
-// fiche patient, modale d'ajustement), simplifiés. Un curseur enchaîne :
-// clic Marc T. → panneau 2 s'allume → clic « Ajuster la séance » →
-// panneau 3 → clic « Squat assisté » (à retirer) → clic « Enregistrer »
-// → résumé + bandeau. Boucle ≈ 12 s. Reduced-motion : tout allumé, sans curseur.
-type Target = "marc" | "adjust" | "squat" | "save" | null;
-type Phase = { target: Target; clicking: boolean; lit2: boolean; lit3: boolean; marcHi: boolean; squatOut: boolean; saved: boolean; duration: number };
+// One big screen instead of three small side-by-side panels, modeled on the
+// actual three real screens (components/PatientsTable.tsx, the patient
+// detail page, components/AdjustWorkoutModal.tsx) rather than an invented
+// simplification — Philippe, 2026-09-09: "base it on the full screen the
+// kiné sees". It plays slowly (long holds, not a quick loop) with a bold
+// caption under the screen at each step, like a narrated walkthrough rather
+// than a fast ambient animation — a visitor should be able to read every
+// step, not just notice motion. Auto-animated, not visitor-clickable
+// (confirmed with Philippe): a fake cursor drives the same three clicks a
+// kiné would make — patient row → "Ajuster la séance" → swap an exercise →
+// "Enregistrer" — then loops.
+type Scene = 1 | 2 | 3;
+type Target = "marc" | "adjust" | "squat" | "pont" | "save" | null;
+type Phase = {
+  scene: Scene;
+  target: Target;
+  clicking: boolean;
+  marcHi: boolean;
+  squatOut: boolean;
+  pontIn: boolean;
+  saved: boolean;
+  duration: number;
+  caption: [string, string];
+};
 
-// Démo animée (Everkinetic) à côté de chaque exercice cité dans la démo.
-// Clé = libellé affiché, valeur = nom présent dans EXERCISE_ILLUSTRATION_MAP.
 const DEMO_FIGURE: Record<string, string> = {
   "Extension du genou assise": "Leg Extension",
   "Montée de marche": "Step-Up",
@@ -30,35 +60,96 @@ function Fig({ label, size = "h-7 w-7" }: { label: string; size?: string }) {
 }
 
 const PHASES: Phase[] = [
-  { target: null,     clicking: false, lit2: false, lit3: false, marcHi: false, squatOut: false, saved: false, duration: 1200 },
-  { target: "marc",   clicking: false, lit2: false, lit3: false, marcHi: false, squatOut: false, saved: false, duration: 700 },
-  { target: "marc",   clicking: true,  lit2: false, lit3: false, marcHi: true,  squatOut: false, saved: false, duration: 500 },
-  { target: null,     clicking: false, lit2: true,  lit3: false, marcHi: true,  squatOut: false, saved: false, duration: 1300 },
-  { target: "adjust", clicking: false, lit2: true,  lit3: false, marcHi: true,  squatOut: false, saved: false, duration: 700 },
-  { target: "adjust", clicking: true,  lit2: true,  lit3: false, marcHi: true,  squatOut: false, saved: false, duration: 500 },
-  { target: null,     clicking: false, lit2: true,  lit3: true,  marcHi: true,  squatOut: false, saved: false, duration: 1100 },
-  { target: "squat",  clicking: false, lit2: true,  lit3: true,  marcHi: true,  squatOut: false, saved: false, duration: 700 },
-  { target: "squat",  clicking: true,  lit2: true,  lit3: true,  marcHi: true,  squatOut: true,  saved: false, duration: 600 },
-  { target: "save",   clicking: false, lit2: true,  lit3: true,  marcHi: true,  squatOut: true,  saved: false, duration: 800 },
-  { target: "save",   clicking: true,  lit2: true,  lit3: true,  marcHi: true,  squatOut: true,  saved: true,  duration: 500 },
-  { target: null,     clicking: false, lit2: true,  lit3: true,  marcHi: true,  squatOut: true,  saved: true,  duration: 2500 },
+  { scene: 1, target: null, clicking: false, marcHi: false, squatOut: false, pontIn: false, saved: false, duration: 2200,
+    caption: ["1. La liste des patients.", "Marc a signalé une douleur pendant sa dernière séance."] },
+  { scene: 1, target: "marc", clicking: false, marcHi: false, squatOut: false, pontIn: false, saved: false, duration: 1000,
+    caption: ["1. La liste des patients.", "Le kiné ouvre la fiche de Marc."] },
+  { scene: 1, target: "marc", clicking: true, marcHi: true, squatOut: false, pontIn: false, saved: false, duration: 700,
+    caption: ["1. La liste des patients.", "Le kiné ouvre la fiche de Marc."] },
+  { scene: 2, target: null, clicking: false, marcHi: true, squatOut: false, pontIn: false, saved: false, duration: 2200,
+    caption: ["2. La fiche de Marc.", "Douleur, adhérence, dernière séance : tout est là, en un coup d'œil."] },
+  { scene: 2, target: "adjust", clicking: false, marcHi: true, squatOut: false, pontIn: false, saved: false, duration: 1000,
+    caption: ["2. La fiche de Marc.", "Le kiné clique sur « Ajuster la séance »."] },
+  { scene: 2, target: "adjust", clicking: true, marcHi: true, squatOut: false, pontIn: false, saved: false, duration: 700,
+    caption: ["2. La fiche de Marc.", "Le kiné clique sur « Ajuster la séance »."] },
+  { scene: 3, target: null, clicking: false, marcHi: true, squatOut: false, pontIn: false, saved: false, duration: 1900,
+    caption: ["3. Ajuster la séance.", "Un exercice à retirer, un autre à ajouter — tout depuis cet écran."] },
+  { scene: 3, target: "squat", clicking: false, marcHi: true, squatOut: false, pontIn: false, saved: false, duration: 1000,
+    caption: ["3. Ajuster la séance.", "Le squat assisté était trop douloureux : il clique pour le retirer."] },
+  { scene: 3, target: "squat", clicking: true, marcHi: true, squatOut: true, pontIn: false, saved: false, duration: 1200,
+    caption: ["3. Ajuster la séance.", "Le squat assisté était trop douloureux : retiré."] },
+  { scene: 3, target: "pont", clicking: false, marcHi: true, squatOut: true, pontIn: false, saved: false, duration: 1000,
+    caption: ["3. Ajuster la séance.", "Il clique sur « Pont fessier » pour l'ajouter à la place."] },
+  { scene: 3, target: "pont", clicking: true, marcHi: true, squatOut: true, pontIn: true, saved: false, duration: 1200,
+    caption: ["3. Ajuster la séance.", "Le pont fessier remplace le squat assisté."] },
+  { scene: 3, target: "save", clicking: false, marcHi: true, squatOut: true, pontIn: true, saved: false, duration: 1000,
+    caption: ["3. Ajuster la séance.", "Le kiné clique sur « Enregistrer »."] },
+  { scene: 3, target: "save", clicking: true, marcHi: true, squatOut: true, pontIn: true, saved: true, duration: 1000,
+    caption: ["3. Ajuster la séance.", "Le kiné clique sur « Enregistrer »."] },
+  { scene: 3, target: null, clicking: false, marcHi: true, squatOut: true, pontIn: true, saved: true, duration: 3200,
+    caption: ["C'est fait.", "Marc verra sa séance mise à jour dès sa prochaine connexion — sans rien faire de plus."] },
 ];
 
-const STATIC: Phase = { target: null, clicking: false, lit2: true, lit3: true, marcHi: true, squatOut: true, saved: true, duration: 0 };
+const STATIC: Phase = PHASES[PHASES.length - 1];
 
-function PanelTitle({ n, title, sub }: { n: number; title: string; sub: string }) {
-  return (
-    <p className="flex items-center gap-2 text-sm text-ink">
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand text-[11px] font-semibold text-white">{n}</span>
-      <span className="font-semibold">{title}</span>
-      <span className="text-muted">— {sub}</span>
-    </p>
-  );
+const PATIENT_ROWS = [
+  { initials: "MT", name: "Marc T.", tone: "danger" as const, phase: "Genou · P1", signal: "Douleur signalée · 5/10", signalTone: "danger" as const, adherence: 82 },
+  { initials: "SR", name: "Sophie R.", tone: "warn" as const, phase: "Épaule · P2", signal: "Aucune séance depuis 4 jours", signalTone: "warn" as const, adherence: 41 },
+  { initials: "PM", name: "Paul M.", tone: "ok" as const, phase: "Dos · P3", signal: "À jour", signalTone: "ok" as const, adherence: 94 },
+  { initials: "JL", name: "Julie L.", tone: "ok" as const, phase: "Cheville · P2", signal: "À jour", signalTone: "ok" as const, adherence: 88 },
+];
+
+function Avatar({ text, tone }: { text: string; tone: "brand" | "ok" | "warn" | "danger" }) {
+  const cls = { brand: "bg-brand-soft text-brand", ok: "bg-ok-soft text-ok", warn: "bg-warn-soft text-warn", danger: "bg-danger-soft text-danger" }[tone];
+  return <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${cls}`}>{text}</span>;
 }
 
-function Initials({ text, tone }: { text: string; tone: "brand" | "ok" | "warn" | "danger" }) {
-  const cls = { brand: "bg-brand-soft text-brand", ok: "bg-ok-soft text-ok", warn: "bg-warn-soft text-warn", danger: "bg-surface text-danger" }[tone];
-  return <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${cls}`}>{text}</span>;
+const SIDEBAR_LINKS = [
+  { label: "Tableau de bord", icon: LayoutDashboard, active: false },
+  { label: "Mes patients", icon: UsersRound, active: true },
+  { label: "Messages", icon: MessageCircle, active: false },
+  { label: "Mes séances", icon: Dumbbell, active: false },
+  { label: "Mes exercices", icon: ListChecks, active: false },
+  { label: "Tarif & paiements", icon: Wallet, active: false },
+];
+
+// Reprend components/DashboardSidebar.tsx (colonne sombre, mêmes six
+// destinations, avatar + nom en bas) — visible sur les trois scènes pour que
+// la démo se lise comme "l'appli", pas comme trois pages isolées (Philippe,
+// 2026-09-09 : "vraiment vu d'ensemble de ce à quoi ressemble l'interface").
+function SidebarMock() {
+  return (
+    <aside className="hidden w-52 shrink-0 flex-col bg-sidebar p-3 text-white sm:flex">
+      <div className="flex items-center gap-2 px-1 py-1">
+        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand text-xs font-bold">E</span>
+        <span className="text-sm font-semibold">EasyPhysio</span>
+      </div>
+      <nav className="mt-5 flex flex-1 flex-col gap-1">
+        {SIDEBAR_LINKS.map((l) => (
+          <span
+            key={l.label}
+            className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium ${
+              l.active ? "bg-white/10 text-white" : "text-white/70"
+            }`}
+          >
+            <l.icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+            {l.label}
+          </span>
+        ))}
+      </nav>
+      <div className="flex items-center gap-2 border-t border-white/10 px-1 pt-3">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-[10px] font-semibold">JR</span>
+        <div className="min-w-0">
+          <p className="truncate text-xs font-medium">Julien R.</p>
+          <p className="text-[10px] text-white/60">Kinésithérapeute</p>
+        </div>
+      </div>
+      <span className="mt-1.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-white/70">
+        <LogOut className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+        Se déconnecter
+      </span>
+    </aside>
+  );
 }
 
 export default function KineJourneyDemo() {
@@ -77,118 +168,186 @@ export default function KineJourneyDemo() {
   const [marcEl, setMarcEl] = useState<HTMLElement | null>(null);
   const [adjustEl, setAdjustEl] = useState<HTMLElement | null>(null);
   const [squatEl, setSquatEl] = useState<HTMLElement | null>(null);
+  const [pontEl, setPontEl] = useState<HTMLElement | null>(null);
   const [saveEl, setSaveEl] = useState<HTMLElement | null>(null);
-  const targetEl = ph.target === "marc" ? marcEl : ph.target === "adjust" ? adjustEl : ph.target === "squat" ? squatEl : ph.target === "save" ? saveEl : null;
+  const targetEl =
+    ph.target === "marc" ? marcEl
+    : ph.target === "adjust" ? adjustEl
+    : ph.target === "squat" ? squatEl
+    : ph.target === "pont" ? pontEl
+    : ph.target === "save" ? saveEl
+    : null;
 
-  const panel = (lit: boolean) => `rounded-2xl border border-line bg-surface p-4 transition-opacity duration-500 ${lit ? "opacity-100" : "opacity-45"}`;
+  const [captionLead, captionRest] = ph.caption;
 
+  // No card padding around the screen itself — it should read like an
+  // embedded video/product screenshot (full width, flush edges), not a
+  // screenshot floating inside a second frame (Philippe, 2026-09-09: "look
+  // at how there's no white space surrounding [a video demo]").
   return (
-    <div ref={ref} className="rounded-[2rem] border border-slate-200/70 bg-white p-5 shadow-sm sm:p-8">
+    <div ref={ref}>
       <div className="flex flex-wrap items-center justify-center gap-3">
         <span className="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white">Démo interactive</span>
-        <span className="text-sm text-slate-500">Regardez le parcours, du tableau de bord à l&apos;ajustement.</span>
       </div>
 
-      <div ref={setStage} className="relative mt-6 grid gap-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-stretch" aria-hidden>
-        {/* 1 — Tableau de bord */}
-        <div className={panel(true)}>
-          <PanelTitle n={1} title="Dashboard" sub="Ce qui compte aujourd'hui" />
-          <div className="mt-3 flex items-center justify-between"><p className="text-sm font-semibold text-ink">Bonjour Julien</p><span className="text-[11px] text-muted">Mercredi 3 septembre</span></div>
-          <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
-            {[["8", "Séances faites", "text-ok"], ["2", "Douleurs signalées", "text-danger"], ["1", "Sans activité", "text-warn"], ["12", "Patients suivis", "text-ink"]].map(([v, l, c]) => (
-              <div key={l} className="rounded-lg border border-line p-1.5"><p className={`text-base font-semibold tabular-nums ${c}`}>{v}</p><p className="text-[9px] leading-tight text-muted">{l}</p></div>
-            ))}
+      <div
+        ref={setStage}
+        className="relative mt-6 flex w-full overflow-hidden rounded-2xl border border-line bg-surface shadow-md"
+        aria-hidden
+      >
+        <SidebarMock />
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Barre de navigation — reprend "← Retour à la liste" de la vraie
+              fiche patient (app/dashboard/patients/[id]/page.tsx) plutôt qu'un
+              chrome de navigateur inventé. */}
+          <div className="flex items-center border-b border-line bg-app-bg/60 px-5 py-3">
+            {ph.scene === 1 ? (
+              <span className="text-xs font-medium text-muted">Mes patients</span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs font-medium text-muted">
+                <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Retour à la liste
+              </span>
+            )}
           </div>
-          <p className="mt-3 text-[11px] font-semibold text-ink">À traiter aujourd&apos;hui</p>
-          <div ref={setMarcEl} className={`mt-1.5 flex items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors duration-300 ${ph.marcHi ? "border-danger/30 bg-danger-soft" : "border-danger-soft bg-danger-soft/60"}`}>
-            <Initials text="MT" tone="danger" /><span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-ink">Marc T.</span><span className="block text-[10px] text-danger">Douleur signalée</span></span><span className="text-xs font-semibold text-danger">5/10</span><ChevronRight className="h-3.5 w-3.5 text-muted" strokeWidth={1.75} />
-          </div>
-          <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-line px-2 py-1.5"><Initials text="SR" tone="warn" /><span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-ink">Sophie R.</span><span className="block text-[10px] text-warn">Aucune séance depuis 4 jours</span></span><ChevronRight className="h-3.5 w-3.5 text-muted" strokeWidth={1.75} /></div>
-          <p className="mt-3 text-[11px] font-semibold text-ink">Activité récente</p>
-          {[["PM", "Paul M.", "Aujourd'hui"], ["JL", "Julie L.", "Hier"], ["CD", "Claire D.", "Hier"]].map(([ini, n, w]) => (
-            <div key={n} className="mt-1 flex items-center gap-2 px-1 py-1"><Initials text={ini} tone="ok" /><span className="flex-1 truncate text-[11px] text-ink"><b className="font-semibold">{n}</b> a terminé sa séance</span><span className="text-[10px] text-muted">{w}</span></div>
-          ))}
+
+        {/* layout (not a fixed min-height) so the frame hugs whichever
+            scene is showing — scene 3 has visibly less content than the
+            patients list or the patient page, and a shared fixed height
+            left a slab of dead white space under it (Philippe,
+            2026-09-09: "take ALL the space"). */}
+        <motion.div layout transition={{ layout: { duration: 0.35, ease: "easeInOut" } }} className="relative">
+          <AnimatePresence mode="wait">
+            {ph.scene === 1 && (
+              <motion.div key="scene1" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4 } }} exit={{ opacity: 0, transition: { duration: 0.12 } }} className="p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-base font-semibold text-ink">Mes patients</p>
+                  <span className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs text-muted"><Search className="h-3.5 w-3.5" strokeWidth={1.75} />Rechercher…</span>
+                </div>
+                <div className="mt-3 flex items-center gap-1 self-start rounded-full border border-line bg-app-bg p-1 text-xs font-medium">
+                  <span className="rounded-full bg-surface px-3 py-1 text-ink shadow-sm">Tous (4)</span>
+                  <span className="px-3 py-1 text-muted">À surveiller (2)</span>
+                  <span className="px-3 py-1 text-muted">À jour (2)</span>
+                </div>
+                <div className="mt-4 divide-y divide-line rounded-xl border border-line">
+                  {PATIENT_ROWS.map((r) => {
+                    const isMarc = r.name === "Marc T.";
+                    return (
+                      <div
+                        key={r.name}
+                        ref={isMarc ? (setMarcEl as never) : undefined}
+                        className={`flex items-center gap-3 px-4 py-3 transition-colors duration-300 ${isMarc && ph.marcHi ? "bg-danger-soft/50" : ""}`}
+                      >
+                        <Avatar text={r.initials} tone={r.tone} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-ink">{r.name}</span>
+                          <span className={`block truncate text-xs ${r.signalTone === "danger" ? "text-danger" : r.signalTone === "warn" ? "text-warn" : "text-ok"}`}>{r.signal}</span>
+                        </span>
+                        <span className="hidden rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand sm:inline">{r.phase}</span>
+                        <span className="hidden w-16 text-right text-xs font-semibold tabular-nums text-ink sm:inline">{r.adherence}%</span>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {ph.scene === 2 && (
+              <motion.div key="scene2" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4 } }} exit={{ opacity: 0, transition: { duration: 0.12 } }} className="p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-lg font-semibold text-ink">Marc T.</p>
+                    <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
+                      <span className="rounded-full bg-app-bg px-2 py-0.5 font-medium text-ink">Genou · P1</span>
+                      <span className="flex items-center gap-1"><Flame className="h-3.5 w-3.5" strokeWidth={1.75} />6 j d&apos;affilée · 14 séances</span>
+                    </p>
+                  </div>
+                  <span ref={setAdjustEl as never} className="rounded-full bg-brand px-4 py-2 text-xs font-medium text-white">Ajuster la séance</span>
+                </div>
+                <div className="mt-5 grid divide-y divide-line rounded-xl border border-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                  <div className="p-4"><p className="text-xs font-medium text-muted">Douleur</p><p className="mt-1 text-xl font-semibold text-danger">5/10</p><p className="mt-0.5 text-[11px] text-danger">↑2 depuis hier</p></div>
+                  <div className="p-4"><p className="text-xs font-medium text-muted">Adhérence</p><p className="mt-1 text-xl font-semibold text-ink">82 %</p><span className="mt-0.5 inline-flex rounded-full bg-ok-soft px-2 py-0.5 text-[11px] font-medium text-ok">Bonne</span></div>
+                  <div className="p-4"><p className="text-xs font-medium text-muted">Dernière séance</p><p className="mt-1 text-xl font-semibold text-ink">Aujourd&apos;hui</p><p className="mt-0.5 text-[11px] text-muted">15 min · 3 exercices</p></div>
+                </div>
+                <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-muted">Séance de cette semaine — Initiation genou</p>
+                <ul className="mt-2 divide-y divide-line rounded-xl border border-line">
+                  {["Extension du genou assise", "Montée de marche", "Squat assisté"].map((e) => (
+                    <li key={e} className="flex items-center gap-2.5 px-3 py-2 text-sm text-ink"><Fig label={e} />{e}</li>
+                  ))}
+                </ul>
+              </motion.div>
+            )}
+
+            {ph.scene === 3 && (
+              <motion.div key="scene3" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4 } }} exit={{ opacity: 0, transition: { duration: 0.12 } }} className="p-5">
+                <p className="text-base font-semibold text-ink">Ajuster la séance</p>
+                <p className="text-xs text-muted">Initiation genou — les modifications ne concernent que Marc.</p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">Exercices actuels</p>
+                    <div className="mt-2 space-y-1.5">
+                      {["Extension du genou assise", "Montée de marche"].map((e) => (
+                        <div key={e} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs text-ink"><Fig label={e} size="h-6 w-6" /><span className="flex-1 truncate">{e}</span><Check className="h-3.5 w-3.5 text-brand" strokeWidth={2} /></div>
+                      ))}
+                      <div ref={setSquatEl as never} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors duration-300 ${ph.squatOut ? "border-danger-soft bg-danger-soft text-danger" : "border-line text-ink"}`}>
+                        <Fig label="Squat assisté" size="h-6 w-6" /><span className="flex-1 truncate">Squat assisté</span>{ph.squatOut ? <span className="flex items-center gap-0.5 font-medium">À retirer <X className="h-3.5 w-3.5" strokeWidth={2} /></span> : <Check className="h-3.5 w-3.5 text-brand" strokeWidth={2} />}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">Ajouter un exercice</p>
+                    <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs text-muted"><Search className="h-3.5 w-3.5" strokeWidth={1.75} />Rechercher…</div>
+                    <div className="mt-1.5 space-y-1.5">
+                      <div className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs text-ink"><Fig label="Fente statique" size="h-6 w-6" /><span className="flex-1 truncate">Fente statique</span><Plus className="h-3.5 w-3.5 text-brand" strokeWidth={2} /></div>
+                      <div ref={setPontEl as never} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors duration-300 ${ph.pontIn ? "border-ok-soft bg-ok-soft text-ok" : "border-line text-ink"}`}>
+                        <Fig label="Pont fessier" size="h-6 w-6" /><span className="flex-1 truncate">Pont fessier</span>{ph.pontIn ? <span className="font-medium">À ajouter</span> : <Plus className="h-3.5 w-3.5 text-brand" strokeWidth={2} />}
+                      </div>
+                      <div className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs text-ink"><Fig label="Extension ischio debout" size="h-6 w-6" /><span className="flex-1 truncate">Extension ischio debout</span><Plus className="h-3.5 w-3.5 text-brand" strokeWidth={2} /></div>
+                    </div>
+                  </div>
+                </div>
+                {(ph.squatOut || ph.pontIn) && (
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {ph.squatOut && <span className="rounded-full bg-danger-soft px-3 py-1 text-xs font-medium text-danger">1 exercice retiré</span>}
+                    {ph.pontIn && <span className="rounded-full bg-ok-soft px-3 py-1 text-xs font-medium text-ok">1 exercice ajouté</span>}
+                  </div>
+                )}
+                <div className="mt-4 flex justify-end gap-2">
+                  <span className="rounded-full border border-line px-4 py-2 text-xs font-medium text-ink">Annuler</span>
+                  <span ref={setSaveEl as never} className={`rounded-full px-4 py-2 text-xs font-medium text-white transition-colors ${ph.saved ? "bg-ok" : "bg-brand"}`}>{ph.saved ? "Enregistré ✓" : "Enregistrer les modifications"}</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
         </div>
 
-        <ArrowRight className="hidden h-5 w-5 self-center text-blue-300 lg:block" strokeWidth={1.75} />
-
-        {/* 2 — Fiche patient */}
-        <div className={panel(ph.lit2)}>
-          <PanelTitle n={2} title="Patient" sub="Comprendre le suivi" />
-          <div className="mt-3 flex items-start justify-between gap-2">
-            <div><p className="text-sm font-semibold text-ink">Marc T.</p><p className="text-[11px] text-muted">Prothèse genou · Phase 1</p></div>
-            <span ref={setAdjustEl} className="rounded-full bg-brand px-3 py-1.5 text-[11px] font-medium text-white">Ajuster la séance</span>
-          </div>
-          <div className="mt-3 grid grid-cols-3 divide-x divide-line rounded-lg border border-line text-center">
-            <div className="p-2"><p className="text-[9px] text-muted">Douleur</p><p className="text-sm font-semibold text-danger">5/10</p><p className="text-[9px] text-danger">↑2 depuis hier</p></div>
-            <div className="p-2"><p className="text-[9px] text-muted">Adhérence</p><p className="text-sm font-semibold text-ink">82 %</p><span className="rounded-full bg-ok-soft px-1.5 text-[9px] text-ok">Bonne</span></div>
-            <div className="p-2"><p className="text-[9px] text-muted">Dernière séance</p><p className="text-sm font-semibold text-ink">Aujourd&apos;hui</p><p className="text-[9px] text-muted">15 min · 3 exercices</p></div>
-          </div>
-          <p className="mt-3 text-[11px] font-semibold text-ink">Calendrier</p>
-          <div className="mt-1.5 grid grid-cols-7 gap-1">
-            {[["L", "ok"], ["M", "ok"], ["M", "muted"], ["J", "ok"], ["V", "danger"], ["S", "muted"], ["D", "muted"]].map(([d, t], k) => (
-              <span key={k} className={`flex aspect-square items-center justify-center rounded-full text-[9px] font-semibold ${t === "ok" ? "bg-ok-soft text-ok" : t === "danger" ? "bg-danger-soft text-danger" : "bg-app-bg text-muted"}`}>{d}</span>
-            ))}
-          </div>
-          <p className="mt-3 text-[11px] font-semibold text-ink">Séance recommandée</p>
-          <p className="text-xs font-semibold text-ink">Initiation genou <span className="font-normal text-muted">· 15 min · 3 exercices</span></p>
-          <ul className="mt-1.5 divide-y divide-line rounded-lg border border-line">
-            {["Extension du genou assise", "Montée de marche", "Squat assisté"].map((e) => (
-              <li key={e} className="flex items-center gap-2 px-2 py-1 text-[11px] text-ink"><Fig label={e} size="h-6 w-6" />{e}</li>
-            ))}
-          </ul>
-        </div>
-
-        <ArrowRight className="hidden h-5 w-5 self-center text-blue-300 lg:block" strokeWidth={1.75} />
-
-        {/* 3 — Ajuster */}
-        <div className={panel(ph.lit3)}>
-          <PanelTitle n={3} title="Action" sub="Ajuster en deux clics" />
-          <p className="mt-3 text-sm font-semibold text-ink">Ajuster la séance</p>
-          <p className="text-[11px] text-muted">Initiation genou — les modifications ne concernent que Marc.</p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-muted">Exercices actuels</p>
-              {["Extension du genou assise", "Montée de marche"].map((e) => (
-                <div key={e} className="mt-1 flex items-center gap-1.5 rounded-lg border border-line px-2 py-1.5 text-[10px] text-ink"><Fig label={e} /><span className="flex-1 truncate">{e}</span><Check className="h-3 w-3 text-brand" strokeWidth={2} /></div>
-              ))}
-              <div ref={setSquatEl} className={`mt-1 flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[10px] transition-colors duration-300 ${ph.squatOut ? "border-danger-soft bg-danger-soft text-danger" : "border-line text-ink"}`}>
-                <Fig label="Squat assisté" /><span className="flex-1 truncate">Squat assisté</span>{ph.squatOut ? <span className="flex items-center gap-0.5 font-medium">À retirer <X className="h-3 w-3" strokeWidth={2} /></span> : <Check className="h-3 w-3 text-brand" strokeWidth={2} />}
-              </div>
-            </div>
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-muted">Ajouter un exercice</p>
-              <div className="mt-1 flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-[10px] text-muted"><Search className="h-3 w-3" strokeWidth={1.75} />Rechercher…</div>
-              {[["Fente statique", false], ["Pont fessier", ph.saved || ph.squatOut], ["Extension ischio debout", false]].map(([e, on]) => (
-                <div key={String(e)} className={`mt-1 flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[10px] transition-colors duration-300 ${on ? "border-ok-soft bg-ok-soft text-ok" : "border-line text-ink"}`}><Fig label={String(e)} /><span className="flex-1 truncate">{String(e)}</span>{on ? <span className="font-medium">À ajouter</span> : <Plus className="h-3 w-3 text-brand" strokeWidth={2} />}</div>
-              ))}
-            </div>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-1.5 text-[10px]">
-            <span className={`rounded-full px-2 py-0.5 font-medium transition-opacity ${ph.squatOut ? "bg-danger-soft text-danger opacity-100" : "opacity-0"}`}>1 exercice retiré</span>
-            <span className={`rounded-full px-2 py-0.5 font-medium transition-opacity ${ph.squatOut ? "bg-ok-soft text-ok opacity-100" : "opacity-0"}`}>1 exercice ajouté</span>
-          </div>
-          <div className="mt-3 flex justify-end gap-1.5">
-            <span className="rounded-full border border-line px-3 py-1.5 text-[11px] font-medium text-ink">Annuler</span>
-            <span ref={setSaveEl} className={`rounded-full px-3 py-1.5 text-[11px] font-medium text-white transition-colors ${ph.saved ? "bg-ok" : "bg-brand"}`}>{ph.saved ? "Enregistré ✓" : "Enregistrer les modifications"}</span>
-          </div>
-        </div>
-
+        {/* Rendered against the outer stage (sidebar + content), not the
+            content pane alone — its position is computed as a % of the
+            whole screen, so it must be absolutely positioned relative to
+            that same box, or it lands offset by the sidebar's width
+            (Philippe, 2026-09-09: "elle ne clique pas exactement sur le
+            bouton"). */}
         {!reduced && <Cursor stageEl={stage} targetEl={targetEl} clicking={ph.clicking} />}
       </div>
 
-      <div className={`mt-5 flex items-center gap-2 rounded-xl bg-brand-soft px-4 py-2.5 text-sm text-brand transition-opacity duration-500 ${ph.saved || !ph.lit2 ? "opacity-100" : "opacity-0"}`}>
-        <Lightbulb className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-        {ph.saved ? "Marc T. verra sa séance ajustée dès sa prochaine connexion." : "Marc T. a signalé une douleur pendant sa séance."}
-      </div>
-
-      <div className="mt-6 flex flex-col items-center justify-center gap-4 border-t border-slate-200 pt-6 sm:flex-row sm:gap-6">
-        <p className="flex items-center gap-2 text-sm text-slate-600"><Smartphone className="h-5 w-5 text-blue-600" strokeWidth={1.75} />Le patient verra son nouveau programme dès sa prochaine connexion.</p>
-        <ArrowRight className="hidden h-4 w-4 text-slate-400 sm:block" strokeWidth={1.75} />
-        <div className={`rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm transition-opacity duration-500 ${ph.saved ? "opacity-100" : "opacity-40"}`}>
-          <p className="font-medium text-slate-900">Programme mis à jour par votre kiné</p>
-          <p className="flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />Nouvelle séance disponible</p>
-        </div>
+      {/* Commentaire — en gras, lisible sans avoir à suivre le curseur, et qui
+          ne change qu'entre les étapes (pas à chaque micro-mouvement) pour
+          rester lisible à un rythme lent (Philippe, 2026-09-09). */}
+      <div className="mt-3 text-center">
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={captionLead}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.3 } }}
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+            className="text-base leading-relaxed text-slate-600"
+          >
+            <span className="font-semibold text-slate-900">{captionLead}</span> {captionRest}
+          </motion.p>
+        </AnimatePresence>
       </div>
     </div>
   );
