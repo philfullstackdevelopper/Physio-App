@@ -1,122 +1,15 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { PLANS } from "@/lib/billing/plans";
-import { patientAccess, trialDaysLeft } from "@/lib/billing/access";
-import { startCheckout, openBillingPortal } from "./actions";
+import { getInstructor } from "@/lib/dashboard/instructor";
 
-const euro = (cents: number) => (cents / 100).toFixed(0);
-
-// Patient-only page — kinés manage their money at /dashboard/facturation
-// ("Tarif & paiements"), a different mechanism (per-patient pricing +
-// Stripe Connect) with nothing in common with this patient subscription.
-export default async function BillingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ subscribed?: string; checkout?: string }>;
-}) {
-  const sp = await searchParams;
+// The old patient → EasyPhysio €10/month subscription page. Retired on
+// 2026-09-10: patients now pick one of their kiné's three offers on
+// /patient/abonnement and manage it from /patient/compte; kinés manage their
+// money on /dashboard/facturation. Kept only so old links land somewhere real.
+export default async function BillingPage() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
-
-  const [{ data: kine }, { data: pat }, { data: sub }] = await Promise.all([
-    supabase.from("instructors").select("id").eq("id", user.id).maybeSingle(),
-    supabase.from("patients").select("id, trial_ends_at").eq("id", user.id).maybeSingle(),
-    supabase.from("subscriptions").select("plan, status, current_period_end, stripe_customer_id").eq("user_id", user.id).maybeSingle(),
-  ]);
-
-  if (kine) redirect("/dashboard/facturation");
-
-  const isPatient = !!pat;
-  const subStatus = (sub?.status as string | null) ?? null;
-  const subEnd = (sub?.current_period_end as string | null) ?? null;
-  const hasCustomer = !!(sub?.stripe_customer_id as string | null);
-
-  return (
-    <main className="min-h-screen bg-slate-50 p-6 sm:p-8">
-      <div className="mx-auto max-w-lg">
-        <Link href="/patient" className="text-sm text-slate-500 hover:underline">
-          ← Retour
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Mon abonnement</h1>
-
-        {sp.subscribed === "1" && (
-          <p className="mt-4 flex items-center gap-1.5 rounded-lg bg-blue-50 p-3 text-sm font-medium text-blue-700">
-            <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-            Paiement confirmé — votre accès est activé. Merci !
-          </p>
-        )}
-        {sp.checkout === "cancel" && (
-          <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
-            Paiement annulé — vous pouvez réessayer quand vous voulez.
-          </p>
-        )}
-
-        {isPatient ? (
-          (() => {
-            const acc = patientAccess({
-              trialEndsAt: pat?.trial_ends_at as string | null,
-              subStatus,
-              subCurrentPeriodEnd: subEnd,
-            });
-            const days = trialDaysLeft(pat?.trial_ends_at as string | null);
-            const plan = PLANS.patient_monthly;
-            const levelLabel =
-              acc.level === "premium"
-                ? "Abonné(e) — accès complet"
-                : acc.level === "trial"
-                  ? `Essai gratuit en cours — ${days} jour${days > 1 ? "s" : ""} restant${days > 1 ? "s" : ""}`
-                  : "Offre gratuite (exercices prescrits par votre kiné)";
-            return (
-              <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                <p className="text-sm text-slate-500">Votre accès actuel</p>
-                <p className="mt-1 flex items-center gap-1.5 text-lg font-semibold text-slate-900">
-                  {acc.level === "premium" && (
-                    <CheckCircle2 className="h-5 w-5 shrink-0 text-blue-600" strokeWidth={1.75} />
-                  )}
-                  {levelLabel}
-                </p>
-
-                {acc.level !== "premium" && (
-                  <>
-                    <ul className="mt-4 space-y-1.5 text-sm text-slate-600">
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} />
-                        Bibliothèque complète d&apos;exercices
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} />
-                        Programme qui s&apos;adapte à votre ressenti après chaque séance
-                      </li>
-                    </ul>
-                    <form action={startCheckout} className="mt-5">
-                      <input type="hidden" name="plan" value={plan.key} />
-                      <button className="w-full rounded-xl bg-blue-600 py-3 font-medium text-white hover:bg-blue-700">
-                        S&apos;abonner — {euro(plan.amount)} €/mois
-                      </button>
-                    </form>
-                    <p className="mt-2 text-center text-xs text-slate-400">Sans engagement, résiliable à tout moment.</p>
-                  </>
-                )}
-                {hasCustomer && (
-                  <form action={openBillingPortal} className="mt-4">
-                    <button className="w-full rounded-xl border border-slate-300 py-3 font-medium text-slate-700 hover:bg-slate-50">
-                      Gérer mon abonnement
-                    </button>
-                  </form>
-                )}
-              </section>
-            );
-          })()
-        ) : (
-          <p className="mt-6 rounded-lg bg-amber-50 p-4 text-sm text-amber-700">
-            Impossible de retrouver votre compte. Réessayez, ou contactez-nous si le problème
-            persiste.
-          </p>
-        )}
-      </div>
-    </main>
-  );
+  const instructor = await getInstructor(supabase, user.id);
+  redirect(instructor ? "/dashboard/facturation" : "/patient/compte");
 }

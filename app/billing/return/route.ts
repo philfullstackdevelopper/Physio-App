@@ -28,6 +28,11 @@ export async function GET(req: Request) {
     }
   }
 
-  // Back to the billing page so the user sees their access level update.
-  return NextResponse.redirect(new URL("/billing?subscribed=1", url.origin));
+  // `next` lets the caller choose the landing page (the patient tier checkout
+  // sends people into the app, not to the old /billing page). Only a
+  // same-site path is honoured — never an absolute URL, so this can't be
+  // turned into an open redirect.
+  const next = url.searchParams.get("next");
+  const target = next && next.startsWith("/") && !next.startsWith("//") ? next : "/billing?subscribed=1";
+  return NextResponse.redirect(new URL(target, url.origin));
 }

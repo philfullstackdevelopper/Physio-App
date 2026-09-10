@@ -17,6 +17,11 @@
 //             what avoids the compérage risk a reversed flow would create.
 // =============================================================================
 
+// Extension explicite : ce module tourne aussi sous `node --test` (sans
+// bundler), qui ne résout pas les imports sans extension — même convention
+// que lib/dashboard/patientRows.ts.
+import { isTierKey } from "./plans.ts";
+
 export type PatientLevel = "free" | "trial" | "premium";
 export type InstructorLevel = "free" | "pro";
 
@@ -76,6 +81,26 @@ export function patientAccess(b: PatientBilling, now: Date = new Date()): Patien
       adaptationEngine: full,
     },
   };
+}
+
+// ---- Patient : porte « offre active » -----------------------------------------
+
+export interface TierBilling extends PatientBilling {
+  /** subscriptions.plan — une des trois offres, ou une clé historique. */
+  subPlan?: string | null;
+}
+
+/**
+ * Le patient a-t-il le droit d'entrer dans l'app (au-delà de l'onboarding) ?
+ * Vrai si une des trois offres est active — `trialing` compte : c'est l'essai
+ * gratuit de 7 jours de Stripe — OU, grandfathering (spec §7), si l'ancien
+ * abonnement `patient_monthly` est actif ou si l'ancien essai « maison »
+ * (patients.trial_ends_at) court encore. Sinon → /patient/abonnement.
+ */
+export function hasActiveTier(b: TierBilling, now: Date = new Date()): boolean {
+  const paid = isSubscriptionActive(b.subStatus, b.subCurrentPeriodEnd, now);
+  if (paid && (isTierKey(b.subPlan) || b.subPlan === "patient_monthly")) return true;
+  return !!b.trialEndsAt && new Date(b.trialEndsAt).getTime() > now.getTime();
 }
 
 // ---- Instructor (kiné) ---------------------------------------------------

@@ -8,7 +8,22 @@ import {
   instructorAccess,
   type PatientAccess,
   type InstructorAccess,
+  type TierBilling,
 } from "./access";
+
+/** Ce que hasActiveTier() a besoin de savoir sur un patient, en une requête. */
+export async function getTierBilling(supabase: SupabaseClient, userId: string): Promise<TierBilling> {
+  const [{ data: pat }, { data: sub }] = await Promise.all([
+    supabase.from("patients").select("trial_ends_at").eq("id", userId).maybeSingle(),
+    supabase.from("subscriptions").select("plan, status, current_period_end").eq("user_id", userId).maybeSingle(),
+  ]);
+  return {
+    trialEndsAt: (pat?.trial_ends_at as string | null) ?? null,
+    subPlan: (sub?.plan as string | null) ?? null,
+    subStatus: (sub?.status as string | null) ?? null,
+    subCurrentPeriodEnd: (sub?.current_period_end as string | null) ?? null,
+  };
+}
 
 export type AccessContext =
   | { role: "patient"; access: PatientAccess; trialEndsAt: string | null }
