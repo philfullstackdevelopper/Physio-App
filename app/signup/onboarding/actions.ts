@@ -22,6 +22,12 @@ export async function saveInstructorOnboarding(formData: FormData) {
   const user = await requireUser();
   const supabase = createAdminClient();
 
+  const { data: instructor } = await supabase
+    .from("instructors")
+    .select("full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
   const cabinetName = String(formData.get("cabinet_name") ?? "").trim();
   const cabinetAddress = String(formData.get("cabinet_address") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
@@ -45,14 +51,11 @@ export async function saveInstructorOnboarding(formData: FormData) {
     redirect(`/signup/onboarding?error=${encodeURIComponent("Le SIRET doit contenir 14 chiffres.")}`);
   }
 
-  // No-op today (no ESANTE_API_KEY yet) — always resolves to "unverified",
-  // which is an expected, normal state: the admin approval screen shows the
-  // raw RPPS number so Philippe can check it by hand in the meantime. See
-  // lib/instructor/rppsVerification.ts for what happens once the key exists.
-  const verification = await verifyRpps(rppsNumber);
-  // A confirmed RPPS match skips the manual /admin approval queue entirely
-  // (Philippe, 2026-09-10), same as the normal signup path in
-  // app/signup/finalize/page.tsx — an unverified RPPS still needs a human.
+  // A confirmed RPPS + name match (see lib/instructor/rppsVerification.ts)
+  // skips the manual /admin approval queue entirely (Philippe, 2026-09-10),
+  // same as the normal signup path in app/signup/finalize/page.tsx — an
+  // unverified RPPS, or one whose name doesn't match, still needs a human.
+  const verification = await verifyRpps(rppsNumber, instructor?.full_name ?? "");
   const autoApproved = verification.status === "verified";
 
   const { error } = await supabase

@@ -63,11 +63,11 @@ export default async function SignupFinalizePage() {
       [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
       email.split("@")[0];
 
-    // No-op today (no ESANTE_API_KEY yet) — see lib/instructor/rppsVerification.ts.
-    const verification = pendingCabinet ? await verifyRpps(pendingCabinet.rppsNumber) : null;
-    // A confirmed RPPS match skips the manual /admin approval queue entirely
-    // (Philippe, 2026-09-10) — an unverified or missing RPPS still needs a
-    // human to check it by hand, same as today.
+    const verification = pendingCabinet ? await verifyRpps(pendingCabinet.rppsNumber, fullName) : null;
+    // A confirmed RPPS + name match (see lib/instructor/rppsVerification.ts)
+    // skips the manual /admin approval queue entirely (Philippe, 2026-09-10)
+    // — an unverified or missing RPPS still needs a human to check it by
+    // hand, same as today.
     const autoApproved = verification?.status === "verified";
 
     const { error } = await admin.from("instructors").insert({

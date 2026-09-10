@@ -38,12 +38,12 @@ export default async function AdminPage() {
                 <p className="mt-0.5 text-xs text-slate-400">
                   Inscrit le {dateFmt.format(new Date(p.created_at as string))}
                 </p>
-                {/* Cabinet details from app/signup/onboarding — the manual
-                    check to run until ESANTE_API_KEY exists and the RPPS
-                    lookup (lib/instructor/rppsVerification.ts) is automatic:
-                    search this RPPS on annuaire.sante.fr and confirm it
+                {/* Cabinet details from app/signup/onboarding. Accounts that
+                    reach this pending queue failed the automatic RPPS+name
+                    check (lib/instructor/rppsVerification.ts) — search this
+                    RPPS on annuaire.sante.fr and confirm by hand that it
                     resolves to an active masseur-kinésithérapeute with a
-                    matching name. */}
+                    matching name before approving. */}
                 {p.cabinet_name ? (
                   <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
                     <p className="font-medium text-slate-700">{p.cabinet_name as string}</p>

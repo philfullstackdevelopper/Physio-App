@@ -63,6 +63,18 @@ export default function KineSignupFlow() {
           Vos patients n&apos;ont pas besoin de créer de compte ici — c&apos;est vous qui les
           invitez depuis votre tableau de bord, une fois inscrit·e.
         </p>
+        <p className="mt-3 rounded-xl bg-blue-50 px-3.5 py-2.5 text-xs leading-relaxed text-blue-800">
+          Indiquez votre prénom et nom exactement comme ils apparaissent sur{" "}
+          <a
+            href="https://annuaire.sante.fr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:no-underline"
+          >
+            l&apos;Annuaire Santé
+          </a>{" "}
+          — cela permet une activation immédiate de votre compte.
+        </p>
         <div className="mt-5">
           <SignUp
             fallbackRedirectUrl="/signup/finalize"
