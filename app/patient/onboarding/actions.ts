@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { EQUIPMENT_OPTIONS, type EquipmentId } from "@/lib/exercise/equipment";
+import { hasActiveTier } from "@/lib/billing/access";
+import { getTierBilling } from "@/lib/billing/context";
 
 // Saves the patient's onboarding profile into `patient_profiles`.
 // RLS ensures a patient can only write their own row (id = auth.uid()).
@@ -11,7 +14,7 @@ export async function saveOnboarding(formData: FormData) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const conditionId = String(formData.get("condition_id") ?? "");
+  const declaredBodyPartIds = formData.getAll("declared_body_part_ids").map(String).filter(Boolean);
   const injuryStage = String(formData.get("injury_stage") ?? "");
   const rehabProgress = String(formData.get("rehab_progress") ?? "").trim() || null;
   const history = String(formData.get("history") ?? "").trim() || null;
@@ -19,13 +22,28 @@ export async function saveOnboarding(formData: FormData) {
   const heightCm = Number(formData.get("height_cm"));
   const weightKg = Number(formData.get("weight_kg"));
   const activityLevel = String(formData.get("activity_level") ?? "");
+  const equipment = formData
+    .getAll("equipment")
+    .map(String)
+    .filter((v): v is EquipmentId => (EQUIPMENT_OPTIONS as string[]).includes(v));
 
   const validActivity = ["sedentary", "moderate", "active"].includes(activityLevel);
   const validStage = ["acute", "subacute", "recovery", "return_to_sport"].includes(injuryStage);
-  if (!conditionId || !validStage || !dateOfBirth || !heightCm || !weightKg || !validActivity) {
-    redirect(
-      `/patient/onboarding?error=${encodeURIComponent("Veuillez remplir tous les champs.")}`,
-    );
+
+  // Named per-field messages instead of one generic "remplissez tout" — a
+  // patient re-submitting the wizard with everything pre-filled from a prior
+  // save has no way to tell which single field regressed otherwise, and
+  // neither did we when debugging this from server logs alone (Philippe,
+  // 2026-09-09).
+  const missing: string[] = [];
+  if (declaredBodyPartIds.length === 0) missing.push("au moins une zone du corps");
+  if (!validStage) missing.push("l'étape de récupération");
+  if (!dateOfBirth) missing.push("la date de naissance");
+  if (!heightCm) missing.push("la taille");
+  if (!weightKg) missing.push("le poids");
+  if (!validActivity) missing.push("le niveau d'activité");
+  if (missing.length > 0) {
+    redirect(`/patient/onboarding?error=${encodeURIComponent(`Champ(s) manquant(s) : ${missing.join(", ")}.`)}`);
   }
 
   // RGPD article 9: health data needs explicit, specific consent. Asked once —
@@ -54,7 +72,7 @@ export async function saveOnboarding(formData: FormData) {
   const { error } = await supabase.from("patient_profiles").upsert(
     {
       id: user.id,
-      condition_id: conditionId,
+      declared_body_part_ids: declaredBodyPartIds,
       injury_stage: injuryStage,
       rehab_progress: rehabProgress,
       history: history,
@@ -62,6 +80,7 @@ export async function saveOnboarding(formData: FormData) {
       height_cm: heightCm,
       weight_kg: weightKg,
       activity_level: activityLevel,
+      equipment,
       health_data_consent_at: healthDataConsentAt,
       updated_at: new Date().toISOString(),
     },
@@ -72,5 +91,9 @@ export async function saveOnboarding(formData: FormData) {
   }
 
   revalidatePath("/patient");
-  redirect("/patient");
+  // Onboarding done → choose an offer, unless one is already active (a patient
+  // editing their situation later, or a grandfathered account) — Philippe,
+  // 2026-09-10. lib/patient/home-data.ts applies the same rule on /patient.
+  const goesToApp = hasActiveTier(await getTierBilling(supabase, user.id));
+  redirect(goesToApp ? "/patient" : "/patient/abonnement");
 }

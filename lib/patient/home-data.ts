@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isProfileComplete } from "@/lib/exercise/patientProfile";
+import { hasActiveTier } from "@/lib/billing/access";
 import { type InjuryStage } from "@/lib/exercise/prescription";
 import { computeStreak } from "@/lib/exercise/streak";
 import { stageWithFeedback, careWeek, type Rating } from "@/lib/exercise/stageProgress";
@@ -46,13 +47,13 @@ export interface PatientHome {
  *  Redirects to onboarding if the profile isn't complete yet. */
 export async function loadPatientHome(supabase: SupabaseClient, userId: string): Promise<PatientHome> {
   const since = daysAgoISO(14);
-  const [{ data: profile }, { data: patient }, { data: feedbackRows }, { data: logs }] = await Promise.all([
+  const [{ data: profile }, { data: patient }, { data: feedbackRows }, { data: logs }, { data: sub }] = await Promise.all([
     supabase
       .from("patient_profiles")
       .select("condition_id, injury_stage, date_of_birth, height_cm, weight_kg, activity_level, updated_at")
       .eq("id", userId)
       .maybeSingle(),
-    supabase.from("patients").select("full_name, condition_id").eq("id", userId).maybeSingle(),
+    supabase.from("patients").select("full_name, condition_id, trial_ends_at").eq("id", userId).maybeSingle(),
     // The only feedback kept product-wide: one post-session pain/difficulty
     // rating (patient_feedback). Feeds the stage brake below.
     supabase
@@ -66,8 +67,22 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
       .eq("patient_id", userId)
       .order("completed_at", { ascending: false })
       .limit(400),
+    supabase.from("subscriptions").select("plan, status, current_period_end").eq("user_id", userId).maybeSingle(),
   ]);
   if (!isProfileComplete(profile)) redirect("/patient/onboarding");
+  // Then the offer (Philippe, 2026-09-10: onboarding → offre → app). Same
+  // pure rule as app/patient/abonnement/page.tsx and the séance page, so the
+  // three surfaces can never disagree on who is let in.
+  if (
+    !hasActiveTier({
+      trialEndsAt: (patient?.trial_ends_at as string | null) ?? null,
+      subPlan: (sub?.plan as string | null) ?? null,
+      subStatus: (sub?.status as string | null) ?? null,
+      subCurrentPeriodEnd: (sub?.current_period_end as string | null) ?? null,
+    })
+  ) {
+    redirect("/patient/abonnement");
+  }
 
   // What the patient SEES is driven by the condition ASSIGNED BY THE PRACTITIONER
   // (patients.condition_id). The patient's self-declaration is intake only.

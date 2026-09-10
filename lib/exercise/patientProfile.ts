@@ -31,13 +31,22 @@ export function ageFromDob(dob: string | null): number | undefined {
 }
 
 /**
- * A profile is "complete" once we know the patient's situation (condition +
- * stage) and physical profile — everything needed to suggest and tailor a session.
+ * A profile is "complete" once we know the patient's stage and physical
+ * profile — everything the onboarding wizard collects, and everything needed
+ * to suggest and tailor a session.
+ *
+ * `condition_id` was dropped from this check (Philippe, 2026-09-09): step 1
+ * of the wizard used to ask for a clinical condition and set it, but that was
+ * replaced today by the "which body part" picker — the wizard never writes
+ * `patient_profiles.condition_id` anymore (the condition patients actually
+ * see is `patients.condition_id`, assigned by their kiné — see CLAUDE.md §4).
+ * Requiring it here made a freshly-onboarded patient's own profile look
+ * permanently incomplete and bounce straight back to /patient/onboarding —
+ * this field was never going to fill itself in.
  */
 export function isProfileComplete(p: ProfileRow | null | undefined): boolean {
   return Boolean(
     p &&
-      p.condition_id &&
       p.injury_stage &&
       p.date_of_birth &&
       p.height_cm &&

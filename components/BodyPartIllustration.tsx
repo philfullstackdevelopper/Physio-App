@@ -1,113 +1,43 @@
 // =============================================================================
-// BodyPartIllustration — original skeletal/joint icons for each body-part
-// category tile in the exercise library.
+// BodyPartIllustration — one illustration per body-part category tile.
 //
-// Style: side-profile bone-and-joint line art (long bones as thick rounded
-// strokes with a circular "condyle" knob at each end, joints as a bare gap
-// or ball-and-socket) — reads as an actual orthopedic joint rather than an
-// abstract muscle silhouette. Drawn from scratch for this app (not sourced
-// from stock/medical image libraries), same reasoning as the app's other
-// original iconography: the per-exercise movement demos elsewhere use a real
-// vendored+attributed set (see ExerciseIllustration) since those need to be
-// literally correct movements; these category illustrations don't.
+// 7 of the 9 categories use a photo in public/body-parts/<slug>.jpg, cropped
+// from Injurymap's free anatomy illustrations (https://injurymap.com/free-
+// human-anatomy-illustrations, CC BY 4.0 — attribution in SiteFooter.tsx).
+// They were chosen over the app's earlier hand-drawn bone/joint icons
+// (2026-09-09, Philippe) because a translucent-skin photo with the sore spot
+// highlighted in red reads instantly to a patient, where an abstract skeleton
+// diagram didn't. Injurymap has no "core/fitness" category (their library
+// covers joint injuries only), so "tronc-gainage-abdos" instead uses a flat
+// abs/pecs badge icon from Pixabay (Pixabay Content License — free for
+// commercial use, no attribution required) — a deliberate style outlier
+// (flat vector vs. the others' photo-realism) accepted because it reads far
+// more clearly than a hand-drawn attempt at the same visual language.
+// "equilibre-general" also has no photo equivalent — a posture isn't a body
+// part — so it keeps the original skeletal icon.
 // =============================================================================
 
 import type { ReactElement } from "react";
+import Image from "next/image";
+
+// Filenames carry a -vN suffix when a crop was swapped in place after the
+// first pass, so the browser (and Next's image cache) can't keep serving the
+// old crop from a URL they'd already cached.
+const PHOTOS_BY_SLUG: Record<string, string> = {
+  epaule: "/body-parts/epaule-v2.jpg",
+  "cheville-pied": "/body-parts/cheville-pied.jpg",
+  "genou-jambe": "/body-parts/genou-jambe.jpg",
+  "hanche-fessiers": "/body-parts/hanche-fessiers-v3.jpg",
+  "dos-lombaires": "/body-parts/dos-lombaires.jpg",
+  "cervicales-cou": "/body-parts/cervicales-cou.jpg",
+  "poignet-main-coude": "/body-parts/poignet-main-coude.jpg",
+  "tronc-gainage-abdos": "/body-parts/tronc-gainage-abdos-v2.jpg",
+};
 
 const SHAPES_BY_SLUG: Record<string, ReactElement> = {
-  // Shoulder: a slender collarbone rod (clearly thinner than the pelvis
-  // wing on the hip icon) into the humeral head ball, humerus shaft below.
-  epaule: (
-    <>
-      <line x1="6" y1="9" x2="18" y2="13.5" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" />
-      <circle cx="19" cy="15.5" r="4.6" fill="currentColor" fillOpacity={0.9} />
-      <line x1="18" y1="19.5" x2="14.5" y2="28" stroke="currentColor" strokeWidth={5.4} strokeLinecap="round" />
-    </>
-  ),
-  // Ankle / foot: tibia shaft down into the ankle joint, then a foot shaft
-  // running forward — side-profile foot X-ray silhouette.
-  "cheville-pied": (
-    <>
-      <line x1="19" y1="4" x2="16" y2="17" stroke="currentColor" strokeWidth={5} strokeLinecap="round" />
-      <circle cx="15" cy="19" r="4.2" fill="currentColor" fillOpacity={0.9} />
-      <line x1="15" y1="19" x2="27" y2="22" stroke="currentColor" strokeWidth={5} strokeLinecap="round" />
-    </>
-  ),
-  // Knee / leg: femur shaft + condyle, patella riding in front of the joint,
-  // tibia shaft below — the classic knee-joint illustration.
-  "genou-jambe": (
-    <>
-      <line x1="17" y1="4" x2="16" y2="15" stroke="currentColor" strokeWidth={5.4} strokeLinecap="round" />
-      <circle cx="16" cy="16" r="3.6" fill="currentColor" fillOpacity={0.9} />
-      <circle cx="20.5" cy="16.5" r="2.6" fill="currentColor" fillOpacity={0.6} />
-      <line x1="15" y1="17" x2="14" y2="28" stroke="currentColor" strokeWidth={5.4} strokeLinecap="round" />
-    </>
-  ),
-  // Hip / glutes: pelvis wing, femoral head as a ball sitting in the
-  // acetabulum socket, femur shaft running down — ball-and-socket read.
-  "hanche-fessiers": (
-    <>
-      <path d="M6 8c0-2.8 3-5 7.5-5s8.5 2.6 8.5 7c0 2.6-2 4-3.5 5.5" fill="currentColor" fillOpacity={0.85} />
-      <circle cx="18.5" cy="15.5" r="4.2" fill="currentColor" fillOpacity={0.9} />
-      <line x1="17.5" y1="19.5" x2="14.5" y2="28" stroke="currentColor" strokeWidth={5} strokeLinecap="round" />
-    </>
-  ),
-  // Lower back: a column of individual lumbar vertebrae blocks, side
-  // profile, rather than a filled torso — reads as "spine," not "back skin."
-  "dos-lombaires": (
-    <>
-      <line x1="16" y1="4" x2="16" y2="28" stroke="currentColor" strokeWidth={1.4} strokeOpacity={0.5} />
-      {[5, 9.5, 14, 18.5, 23, 27.5].map((y, i) => (
-        <rect key={y} x={13.5 - (i % 2 === 0 ? 0.6 : 0)} y={y - 1.7} width="6.5" height="3.4" rx="1.4" fill="currentColor" fillOpacity={0.9} />
-      ))}
-    </>
-  ),
-  // Neck / cervical: skull base sitting on a short stack of small cervical
-  // vertebrae — same vertebra-block language as the lumbar icon, scaled down.
-  "cervicales-cou": (
-    <>
-      <circle cx="17" cy="6.5" r="4.4" fill="currentColor" fillOpacity={0.3} />
-      <line x1="16" y1="10" x2="15" y2="26" stroke="currentColor" strokeWidth={1.2} strokeOpacity={0.5} />
-      {[11, 14, 17, 20, 23, 26].map((y) => (
-        <rect key={y} x="12.5" y={y - 1.4} width="5.5" height="2.8" rx="1.2" fill="currentColor" fillOpacity={0.9} />
-      ))}
-    </>
-  ),
-  // Wrist / hand / elbow: elbow joint, one thick forearm shaft, wrist
-  // joint, then two bold metacarpal spokes fanning into the hand.
-  "poignet-main-coude": (
-    <>
-      <circle cx="7" cy="7.5" r="3.4" fill="currentColor" fillOpacity={0.9} />
-      <line x1="9" y1="10" x2="18.5" y2="18.5" stroke="currentColor" strokeWidth={5} strokeLinecap="round" />
-      <circle cx="20" cy="20" r="3.4" fill="currentColor" fillOpacity={0.9} />
-      <line x1="21.5" y1="20.5" x2="27.5" y2="18" stroke="currentColor" strokeWidth={3} strokeLinecap="round" />
-      <line x1="21.5" y1="21.5" x2="27.5" y2="25.5" stroke="currentColor" strokeWidth={3} strokeLinecap="round" />
-    </>
-  ),
-  // Trunk / core: a bold rounded ribcage cage over a short spine segment —
-  // a recognizable ribcage silhouette rather than a torso block.
-  "tronc-gainage-abdos": (
-    <>
-      <line x1="16" y1="4" x2="16" y2="28" stroke="currentColor" strokeWidth={2.4} strokeOpacity={0.6} strokeLinecap="round" />
-      <path
-        d="M16 6c-6.5 1-9.5 5-9.5 10.5 0 4 1.7 7.3 4 9.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={3.2}
-        strokeLinecap="round"
-      />
-      <path
-        d="M16 6c6.5 1 9.5 5 9.5 10.5 0 4-1.7 7.3-4 9.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={3.2}
-        strokeLinecap="round"
-      />
-    </>
-  ),
   // Balance: a standing skeleton on one leg, arms out — bone-style joints
-  // (hip/knee/ankle/shoulder circles) rather than a filled figure, so it
-  // matches the rest of the set while still reading as a posture.
+  // (hip/knee/ankle/shoulder circles) — the one category with no photo
+  // equivalent, since a posture isn't a body part.
   "equilibre-general": (
     <>
       <circle cx="16" cy="6" r="3" fill="currentColor" fillOpacity={0.9} />
@@ -134,8 +64,18 @@ export default function BodyPartIllustration({
   className?: string;
   active?: boolean;
 }) {
-  const shape = SHAPES_BY_SLUG[slug];
+  const photo = PHOTOS_BY_SLUG[slug];
+  if (photo) {
+    return (
+      <span
+        className={`relative block overflow-hidden rounded-full ring-2 transition-colors ${active ? "ring-blue-600" : "ring-transparent"} ${className}`}
+      >
+        <Image src={photo} alt="" fill sizes="64px" className="object-cover" aria-hidden />
+      </span>
+    );
+  }
 
+  const shape = SHAPES_BY_SLUG[slug];
   return (
     <svg
       viewBox="0 0 32 32"
