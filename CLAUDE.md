@@ -29,7 +29,7 @@ Conceptually, the schema is organized around:
 - **Identity**: `instructors`, `patients` (owned by an instructor), and — for the Phase-2 auth migration only (see §7) — `auth.users`, `auth_tokens`, `app_users`.
 - **Exercise library**: `exercises` (shared library, any instructor can use any exercise), `conditions` (named protocols, e.g. "Lombalgie chronique"), `workouts` (session alternatives within a condition), `workout_exercises`, plus `instructor_hidden_exercises` (per-instructor hide list). A workout with `patient_id` set is a **patient-specific copy** created by « Ajuster la séance » (`source_workout_id` points at the original); it is visible only to that patient and their instructor (migration 0044) and never appears in library lists.
 - **Assignment & adherence**: a patient is assigned a `condition` and an ordered list of recommended workouts (`patient_recommended_workouts`, migration 0035); completing a session writes a `workout_logs` row. `patient_profiles`, `patient_feedback`, `patient_documents` hold richer per-patient clinical/intake detail beyond the Phase-1 basics.
-- **Billing**: `instructor_connect_accounts` (Stripe Connect account id — deliberately its own table, not a column on `instructors`, so the instructor's own RLS update policy can't let them redirect their own patients' payments — see `lib/billing/platformFee.ts`), `platform_invoices`.
+- **Billing**: `instructor_connect_accounts` (Stripe Connect account id — deliberately its own table, not a column on `instructors`, so the instructor's own RLS update policy can't let them redirect their own patients' payments — see `lib/billing/platformFee.ts`), `platform_invoices`, `subscriptions` (one row per patient, written only by the server from Stripe — `plan` is one of the three offers `essentiel`/`standard`/`premium`, or a legacy value), and the kiné's own offer prices `instructors.tier_*_cents` (null = the platform defaults in `lib/billing/plans.ts`; migration 0053).
 - **Messaging**: `patient_messages` — instructor-to-patient messaging, already live (dashboard patient detail page and the patient app both use it).
 - **Compliance**: `0018_health_data_consent.sql`, `0019_terms_acceptance.sql` — explicit consent gates, required before a patient can proceed.
 
@@ -51,15 +51,15 @@ Conceptually, the schema is organized around:
 4. Create their own conditions/workouts/exercises in addition to the pre-loaded platform library.
 5. View a patient's **adherence** (completions vs. recommended times/week), and message the patient directly.
 6. From the patient page, click « Ajuster la séance » to add/remove exercises for that patient only — the app copies the séance for them and sends them an automatic message.
-7. Set their own monthly per-patient price and connect a Stripe account (`/dashboard/facturation`) to get paid directly by patients.
+7. Set their own price for each of the three patient offers (platform defaults in `lib/billing/plans.ts`) and connect a Stripe account (`/dashboard/facturation`) to get paid directly by patients.
 
 **Patient**
-1. Log in (Clerk), accept CGU and health-data consent on first use.
+1. Log in (Clerk), accept CGU, complete the onboarding wizard (situation, profile, equipment, health-data consent), then pick one of their kiné's three offers on `/patient/abonnement` — 7 days free, then billed monthly straight to the kiné's Stripe Connect account. Manage or cancel it any time from `/patient/compte` (Stripe Customer Portal). The order is enforced by `app/patient/layout.tsx` + `lib/patient/home-data.ts` (`isProfileComplete`, then `hasActiveTier`).
 2. See workout alternatives for their condition, with the instructor's recommendation highlighted.
 3. Open a workout, do the guided session (pain feedback at the end; the phase brake in `lib/exercise/stageProgress.ts` only ever slows progression down), and mark it done → `workout_logs`.
 4. Message their instructor; from `/patient/compte`, export their data (JSON) or delete their account.
 
-**Billing (money flow)** — two flows kept strictly separate: patients pay their instructor directly via the instructor's own Stripe Connect account (EasyPhysio never touches that money — avoids compérage risk); the platform separately bills the instructor a prorated 15% fee per active patient (`lib/billing/platformFee.ts`). There is no flat subscription plan anymore — the old "Kiné Pro" flat plan was removed in favor of this per-patient model.
+**Billing (money flow)** — two flows kept strictly separate: patients pay their instructor directly via the instructor's own Stripe Connect account (EasyPhysio never touches that money — avoids compérage risk); the platform separately bills the instructor a prorated 15% fee per active patient (`lib/billing/platformFee.ts`). There is no flat subscription plan anymore — the old "Kiné Pro" flat plan was removed in favor of this per-patient model. Patients choose between three monthly offers — Essentiel / Standard / Premium (weekly-séance cap and video library, `lib/billing/plans.ts`; the prices are kiné-editable defaults) — with a 7-day Stripe trial before the first charge; see `docs/superpowers/specs/2026-09-08-patient-program-tiers-design.md` and `docs/superpowers/plans/2026-09-10-patient-tiers-trial-and-cancel.md`. Not built yet from that spec: strict weekly-cap enforcement on the kiné side, the active-patient counter, public pricing on the marketing site, and the actual collection of the 15% (sub-project 2).
 
 ## 5. Explicitly out of scope (still not built)
 

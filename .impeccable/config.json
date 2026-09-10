@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "components/OnboardingWizard.tsx"
+        ],
+        "createdAt": "2026-09-09T15:34:28.824Z",
+        "reason": "slate-700 text on has-[:checked]:bg-blue-50/60 -- dark gray on near-white blue tint has ample contrast, confirmed false positive"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "components/SiteHeader.tsx"
+        ],
+        "createdAt": "2026-09-09T15:55:50.212Z",
+        "reason": "slate-700 text on white/blue-50 backgrounds (Se connecter link) -- ample contrast, confirmed false positive, pre-existing code"
+      }
+    ]
+  }
+}

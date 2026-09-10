@@ -1,0 +1,2171 @@
+{
+ "total": 361,
+ "exercises": [
+  {
+   "id": "2c36d671-b4f0-475c-b169-f308e7207b01",
+   "name": "Ab Wheel Rollout",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "e17c5465-029c-4e86-baf2-460c073a9d4e",
+   "name": "ACL-Protected Squat (Limited Range)",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "c87216c0-8313-4890-9ed5-3f36cc463005",
+   "name": "Active Hang",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "7e4c997a-d926-4b0c-9381-a9108eaf8222",
+   "name": "Anti-Rotation Hold (Band)",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "5c026d9f-2341-49e3-a00b-516d5df7269d",
+   "name": "Archer Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "680ec70b-90e5-401e-a7b1-44a0519d35ab",
+   "name": "Arm Circles",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "e238de32-074d-4868-9e01-c44c2501ce7d",
+   "name": "Arnold Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "9c47bd18-f0f4-49e7-9d91-2461004c4081",
+   "name": "Assault Bike",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "32d4e7ec-da03-4707-9437-1b2265e8cb9c",
+   "name": "Assisted Calf Raise (Post-Achilles)",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "bfc1cbaa-7592-4a96-9500-dd76a54b91c5",
+   "name": "Assisted Chin-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "aaebf507-95ef-4ced-9c2a-2a80b64adc9b",
+   "name": "Assisted Dip",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "30ef273b-c40f-41aa-8548-4327cbbc3a7c",
+   "name": "Assisted Front Raise",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "4eea1449-dd13-4106-8d7c-f8d1e3be73c6",
+   "name": "Assisted Low Step-Up (Slow)",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "e1332bcb-6422-4f4d-9dba-e37877d959d6",
+   "name": "Assisted Partial Squat",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "b3d07ba9-af66-4773-8008-f5661a9b5aa9",
+   "name": "Assisted Pistol Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "2f659211-e099-4eab-9a80-3add5d2430fb",
+   "name": "Assisted Progressive Walking",
+   "platform": true,
+   "usage": 6
+  },
+  {
+   "id": "db81e0fd-706c-4f04-929f-80931182a101",
+   "name": "Assisted Progressive Walking (Post-Knee-Replacement)",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "91c7c84d-2da6-4baa-aa43-912596b13860",
+   "name": "Assisted Pull-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "bbdbc0f4-1dcb-4885-ace6-4ce79ef659df",
+   "name": "Assisted Standing Calf Raise",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "b7395424-5abd-49be-a830-feb58e688c70",
+   "name": "Back Extension",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a95011da-9360-4b75-b01c-0ace84fff614",
+   "name": "Band Pull-Apart",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "fef1229f-5858-44b0-a36e-082e05c73aa3",
+   "name": "Banded Clamshell",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "7d6b6f85-05fe-48de-92a7-81c47abc1101",
+   "name": "Banded Dead Bug",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "d1eef68d-4107-4a71-bca0-27373ef4f31f",
+   "name": "Banded Donkey Kick",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "d412b4a7-cd7a-4f50-af5b-c73fc85015bb",
+   "name": "Banded Face Pull",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f7185596-418d-4b26-a35b-4169bf169c7e",
+   "name": "Banded Fire Hydrant",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "fbe68d7e-6bf0-4c97-b4c5-1a8a47a20165",
+   "name": "Banded Frog Pump",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "340dac93-b077-4640-afa4-c2a730991ff7",
+   "name": "Banded Glute Bridge",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "81fc454c-468d-47b1-919a-bc1fbe5a496a",
+   "name": "Banded Hip Thrust",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "292c8cb2-1513-4592-ae5f-f8158ab7365d",
+   "name": "Banded Kickback",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "b6b8f64d-913d-460f-8315-c7d791225ef2",
+   "name": "Banded Lat Pulldown",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a4185d4b-cf20-46e6-b3b4-2b7837999fa4",
+   "name": "Banded Lateral Walk",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "6782e9a1-e8c5-4206-8402-3e6b4be1e0c5",
+   "name": "Banded Monster Walk",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "78b7d15c-09fd-49ad-b4c4-264562a5143b",
+   "name": "Banded Pallof Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a939a9ca-af72-4a9a-8d12-d4b017a719bd",
+   "name": "Banded Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "e42d3f76-6b43-453e-8535-1233636fd54e",
+   "name": "Banded Seated Hip Abduction",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "0c253bf0-3b89-49b2-b665-b51c58af4161",
+   "name": "Banded Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "82e85e8b-046e-4680-8f6e-e50da1481ad3",
+   "name": "Banded Standing Hip Abduction",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "603eb836-0ce4-455f-8c4b-019cd7173b66",
+   "name": "Banded Woodchop",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f1ee442f-fecb-4937-943a-c12208fe2dfd",
+   "name": "Barbell Glute Bridge",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a2f05029-b36a-4993-ad27-89d1d59c0846",
+   "name": "Barbell Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "c7e7d34a-2580-44c5-9af8-365ff9ea8af3",
+   "name": "Barbell Shrug",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "1b50d300-e521-45d6-99fa-6e7aa24812a3",
+   "name": "Battle Ropes",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "5da62b20-5a3f-42d1-b9ca-7f7654d8e58f",
+   "name": "Bear Crawl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "0071695b-e6a8-47d4-a8a3-b3e90aba9bcb",
+   "name": "Bear Plank",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "3056f431-5e8b-4f6a-9d2e-9bcf0bcaccc3",
+   "name": "Belt Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "aee0379e-7b9f-4626-86a3-f31c886f6a92",
+   "name": "Bench Dip",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "be67d976-60ec-4d1b-943c-3ee0de534ffc",
+   "name": "Bench Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "88e2ca24-2612-4108-8d1d-b761aa56ab67",
+   "name": "Bent-Over Rear Delt Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "57c31f27-804a-48c5-9b7f-6ad770cbe3f5",
+   "name": "Bicep Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8c9a2d58-2bf6-4707-bb72-4f71f718cca2",
+   "name": "Bicep Curl (Water Bottle)",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "186c714a-5520-417e-91b3-c947839ee352",
+   "name": "Bicycle Crunch",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "0ab86962-cd40-43f1-8ff2-5a95814bf394",
+   "name": "Bird Dog",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "4258d669-83b8-4f94-8db6-7fe8f5c219b4",
+   "name": "Bodyweight Squat",
+   "platform": true,
+   "usage": 8
+  },
+  {
+   "id": "81b73847-deb2-40ff-97a2-7a3ec1ca8c01",
+   "name": "Bulgarian Split Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "6b1f26fd-130e-4618-a64c-dcf9ed3303dd",
+   "name": "Burpee",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ac2c80fd-f612-4fe9-80c9-48b22823ff3d",
+   "name": "Butterfly Stretch",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "860e72dd-8967-4c36-a45b-e86ed4d20c06",
+   "name": "Cable Crunch",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "691bc92d-ea76-4ae6-aa29-38c441900857",
+   "name": "Cable Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "54e0024d-f021-4bff-a8f9-7dbccd8a45ad",
+   "name": "Cable Fly",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "1c5647c3-6893-4563-9041-d2cd4748d1a5",
+   "name": "Cable Front Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8de3d81b-7037-4461-a6f3-ac8fe6786fff",
+   "name": "Cable Kickback",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "aa0ac4e9-58b2-4d75-89a5-d1ccd8934e94",
+   "name": "Cable Lateral Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "99c8e406-95ef-41d5-b8a4-9315c113ddba",
+   "name": "Cable Pallof Hold",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "7ab85058-2e1e-4b77-b0f1-80d982dd47e4",
+   "name": "Cable Pull-Through",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f0c369c6-b700-4017-bea1-3bd6b7b5d56a",
+   "name": "Cable Rear Delt Fly",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "9384a17f-88fa-48f6-b13f-87fc118347f2",
+   "name": "Cable Standing Hip Abduction",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a1fbeee1-7b79-4a3c-887e-f092e26f97b4",
+   "name": "Cable Standing Hip Adduction",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "09feaf41-3fcb-4ce9-94bb-835ae8b75641",
+   "name": "Cable Woodchop",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "31fb5334-6049-453d-888f-a1009c47407c",
+   "name": "Calf Raise",
+   "platform": true,
+   "usage": 13
+  },
+  {
+   "id": "9cb20741-6d63-470f-ae91-d8d311c1185b",
+   "name": "Captain's Chair Knee Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "af57db77-22a8-42a0-9a73-406e930c0e36",
+   "name": "Cat-Cow Stretch",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "19637837-023e-4fa0-bba3-7de1efd2e280",
+   "name": "Chair Dip",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "5e54c0ad-5b47-402e-b4be-aebed3f5042d",
+   "name": "Chest Dip",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "c2c289b8-7e88-4de0-8efc-84abfc69156c",
+   "name": "Chest Supported Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "edc36ea0-0f19-4635-beca-11f41cdb9e6f",
+   "name": "Child's Pose",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "7afaf05d-41dd-4627-8403-e09bd97a9ff5",
+   "name": "Chin-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "48aa1405-e0ac-42c1-a7ac-1ba17e88a09c",
+   "name": "Clamshell",
+   "platform": true,
+   "usage": 10
+  },
+  {
+   "id": "83dd6b2e-1e6f-4912-9cac-87d29357b03a",
+   "name": "Clamshell (Band)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "8c3cdab8-6519-4bc4-990c-0162ec0d8756",
+   "name": "Close-Grip Bench Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ebad889d-1036-440c-94b4-2dc3a989927a",
+   "name": "Close-Grip Lat Pulldown",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "dec5b911-b66a-4623-be6b-ab4bb6cdcaa8",
+   "name": "Commando Pull-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "d1608793-5e5f-4cce-8041-852843872f38",
+   "name": "Concentration Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "25d04886-760c-4862-80d7-5483ee0f630c",
+   "name": "Controlled Lateral Jump (Hip/Knee Alignment)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "85a9ddcf-1a6c-4f52-b1c1-700b7d0c0b81",
+   "name": "Controlled Mini-Squat (Knee Arthritis)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "79f6be92-a0ee-4c40-93e7-92f1ec613fe7",
+   "name": "Controlled Stair Climbing",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "7a1d935a-feb8-43fc-be7b-461e18fcfbdf",
+   "name": "Copenhagen Plank",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "56c3f8fb-9750-4fa4-b90c-3eb2e2df1379",
+   "name": "Cossack Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "4c93055b-6a25-4e02-b2f7-79a4696d696c",
+   "name": "Crab Walk",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "fd622b97-312e-4843-bf5f-a2382af8709f",
+   "name": "Cross-Body Shoulder Stretch",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "196c3cde-1afb-4c9f-b092-eced815babc0",
+   "name": "Crunch",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "41a9e5d6-6712-4cab-8237-8b19247e0e7e",
+   "name": "Curtsy Lunge",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "15548226-3784-41ea-9b4d-9d95471a331b",
+   "name": "Cycling",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "712f3d25-a6f2-4797-8c97-3f4ce9724cd4",
+   "name": "Dead Bug",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "16ea3c4a-74b1-43a0-a782-51a59a7be6c1",
+   "name": "Dead Hang",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8ce5af7f-7e76-4028-96d2-08e60c46d3f3",
+   "name": "Deadlift",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a28951fa-bbc0-4981-82ea-284f685d44a0",
+   "name": "Decline Bench Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "707e2215-43f4-4907-941d-5a5e27dab90c",
+   "name": "Decline Dumbbell Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "4d53d3b7-9f0e-411b-8fce-a28c0aa567bd",
+   "name": "Decline Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "1a4ef6ae-71a1-4af0-817e-d934975c25a3",
+   "name": "Decline Sit-Up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8ed8649d-75dc-44b8-8fbb-65af7822250b",
+   "name": "Deficit Reverse Lunge",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "bf5c697d-c10b-4435-bb4c-72ae3f0e9afa",
+   "name": "Diamond Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "61e7a153-c430-4c5c-aec5-29901437845a",
+   "name": "Dip",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a6817000-9289-4eb9-b56f-2c1da6a7d05b",
+   "name": "Donkey Calf Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "e479b2f5-a0dd-4c6a-ab3a-3b2c86813b37",
+   "name": "Donkey Kick",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "53e61d8d-450a-4344-84db-c3773363f23b",
+   "name": "Doorway Chest Stretch",
+   "platform": true,
+   "usage": 5
+  },
+  {
+   "id": "b3083a7f-3f6c-400b-aee0-d7cda78da649",
+   "name": "Doorway Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "9896cae1-c40f-44f2-8519-9ad2f72687f8",
+   "name": "Drag Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "cf94ec59-b654-42e7-997a-f28dac8c18e4",
+   "name": "Dragon Flag",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "c58ec504-af16-481f-93b9-7ccfb10092a3",
+   "name": "Dumbbell Bench Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "9786575b-5571-4da6-9c5a-4a2e1d4ef426",
+   "name": "Dumbbell Bent Over Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a47b909e-4588-4d3a-9e3a-1130aac85dd2",
+   "name": "Dumbbell Curtsy Lunge",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "17aae3e9-cb8e-4fc7-b0e5-5b4dac5a5f40",
+   "name": "Dumbbell Fly",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "2b64c074-98db-4f76-8626-966f7bb1079d",
+   "name": "Dumbbell Glute Bridge",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "e4b94b46-e82a-4db0-a044-3b2ed3be899e",
+   "name": "Dumbbell Hip Thrust",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ef026e3f-881a-4e99-905e-0419daf5ed78",
+   "name": "Dumbbell Lateral Lunge",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "19280a6c-0c93-4e4c-8351-4a01603b2a45",
+   "name": "Dumbbell Overhead Tricep Extension",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "7cca1684-a86e-4892-ac49-576734d1842f",
+   "name": "Dumbbell Romanian Deadlift",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "13ef348e-4024-44d1-ab21-26df38f147a5",
+   "name": "Dumbbell Seated Shoulder Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "07fd621a-b71d-4b68-ace2-190578bf0e20",
+   "name": "Dumbbell Shrug",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "965f966e-c38d-4b03-86f7-0aca46d0797f",
+   "name": "Dumbbell Side Bend",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "78e4664c-aefc-4e51-a1e9-6b1e644dee6b",
+   "name": "Dumbbell Sumo Deadlift",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "9ed7fd4f-e4e2-4dfd-8db7-79547dce23f4",
+   "name": "Dumbbell Sumo Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "6f0d89b0-0a27-41b2-86b3-8714d97f3306",
+   "name": "Dynamic Plank (Limb Movement)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "dcff15c3-7d37-4b50-84a4-2d2fedcac5de",
+   "name": "Eccentric Calf Raise (Bent Knee, Soleus)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "f62a09fc-72d1-4630-bfb8-8800f288b1d6",
+   "name": "Eccentric Calf Raise (Straight Knee, Single-Leg)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "86f800c4-3ed8-456f-895c-cd0052e7c3c2",
+   "name": "Eccentric Wrist Curl",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "4fbe1504-df6c-436e-8f6a-b4301bbad7fe",
+   "name": "Eccentric Wrist Extension",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "b9b6244d-1684-4234-86dd-5089429dfde4",
+   "name": "Elliptical",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "d381889e-d2ce-4cd3-89b4-758865cc5c07",
+   "name": "Explosive Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "c92ebe77-894d-4fa0-8815-82b3b4bf92ee",
+   "name": "EZ-Bar Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8f50e843-0f04-4fb5-b7cc-93d3cf1f9d0a",
+   "name": "Face Pull",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "18b101b0-de7a-4a34-b807-75380f4f8d65",
+   "name": "Farmer Carry",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "d78bf2fd-72bb-4477-8697-0af7a4b8f055",
+   "name": "Fast Feet",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8493a9d5-a5ab-400f-b537-f061e368cedf",
+   "name": "Feet-Elevated Pike Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "e7f2efa8-db09-45e8-84e6-9081970b55f5",
+   "name": "Fire Hydrant",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "54a69cf2-a6b2-4b33-a23c-8ebf2c2f2923",
+   "name": "Flutter Kick",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f8c614c4-5945-4947-becd-eb2e3f24a2cc",
+   "name": "Forward Lunge",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "c3643b5b-78e2-4ad2-a290-0fc14cc3029e",
+   "name": "Forward-Leaning Walk (Short Duration)",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "7757cc23-047a-4f2c-9764-eac76a39b36b",
+   "name": "Fractionated Short Walks",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "21d41551-2dc4-476e-a9b0-a60414a76405",
+   "name": "Frog Pump",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "0ed9ecce-3ebf-4e59-898d-39793b9e7aa5",
+   "name": "Front Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "b1313eb2-1513-4dc3-93c1-596c7e4d427a",
+   "name": "Front Raise (Bodyweight)",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "5dc44244-014b-4918-9895-d4692a25cd38",
+   "name": "Front Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "08a93e20-e340-4205-9815-91c0a53c2d2b",
+   "name": "Front-Foot Elevated Split Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "5607640f-0337-4ef0-87c6-d6f0ca540cef",
+   "name": "Gentle Supine Core Bracing (Hernia)",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "7476194f-7240-4cc4-aae9-1252ebb7a578",
+   "name": "Gentle Supine Hamstring Stretch",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "e466cece-d226-434c-aa80-978e494c27f3",
+   "name": "Glute Bridge",
+   "platform": true,
+   "usage": 23
+  },
+  {
+   "id": "14270b5a-d243-42ce-bed4-69574ec5f8a3",
+   "name": "Glute Bridge March",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "b81ef2a6-354a-4161-8228-7ddb6dcd86e0",
+   "name": "Glute-Focused Back Extension",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f03858a3-6277-4bda-9e0c-d11382b25c1f",
+   "name": "Goblet Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "2dbb1448-a299-4c8a-9a89-7f39eac27395",
+   "name": "Good Morning",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "062386cf-3c8b-4f07-8d54-df9033f6bcb4",
+   "name": "Hack Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "0a99434a-ecdf-42ae-b5b2-79b607f21d16",
+   "name": "Half Burpee",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "d86b2bcd-3387-4f56-aaa9-cfa1b561b46f",
+   "name": "Half-Kneeling Pallof Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "4a63142c-f67e-4700-ab20-7c9c7fde5ccc",
+   "name": "Hammer Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "61bbbd24-b9f3-4c74-bda9-6e91af7fa279",
+   "name": "Hamstring Stretch",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "132973a1-50e5-4cf3-9c26-e29d4fbdd89b",
+   "name": "Handstand Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "9f37cdd6-ec63-4fb8-ba66-40bbf1851faa",
+   "name": "Hanging Knee Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "9c704854-378b-4807-98b6-459eaac62ec7",
+   "name": "Hanging Leg Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "19acafe1-94a2-438c-92b8-471fac96e726",
+   "name": "Heel Tap",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "1db23eee-7bd4-493d-b8f4-a1ebf7cc1d6e",
+   "name": "Heel-Driven Glute Bridge (Hamstring Focus)",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "5a7203b2-1bd2-4cf2-a485-88867c64f964",
+   "name": "Heel-Elevated Goblet Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "99be8779-0525-4a1d-854d-dbe8d1f08267",
+   "name": "High Knees",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "fb9642ed-9444-4e1e-95c8-a01506517742",
+   "name": "Hiking",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "48f02a05-7ae0-4ee1-a11b-d2a3e17aab09",
+   "name": "Hindu Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "bd97ded0-c1a6-490f-9969-065ecbd16007",
+   "name": "Hip Abduction Machine",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "2142cebf-94c1-4e70-8db5-87fd36353789",
+   "name": "Hip Adduction Machine",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "efdfb448-64fc-4503-9078-648e4fe973a5",
+   "name": "Hip Airplane",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f6bd0bd6-0753-47ea-9fd2-a91774a50f1d",
+   "name": "Hip Thrust",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "36e9c6b7-c248-4d88-b208-4f614f29da6e",
+   "name": "Hollow Body Hold",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ea3afa82-b6df-47c9-9646-7b6391368dbc",
+   "name": "Hollow Rock",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "847e520c-b1d6-478b-a0b0-eabed259c433",
+   "name": "Inchworm",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "5365af8c-3c09-402b-9bac-0526f0a7daa5",
+   "name": "Incline Bench Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ae8190e5-2879-43fd-85cb-06a85330616e",
+   "name": "Incline Cable Fly",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8427308c-de05-4fc1-ac9f-74fd72f45799",
+   "name": "Incline Dumbbell Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "3b918060-fe55-431c-9b0c-a681bb0f2616",
+   "name": "Incline Dumbbell Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "066ba8c4-1955-468f-b1f2-32ec05dec7ea",
+   "name": "Incline Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8e5942bb-766f-4c46-b8c6-b0653e2f9382",
+   "name": "Inverted Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f469bb69-a0ae-4300-a743-adcbedaa08d4",
+   "name": "Isometric Calf Hold",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "49481313-e5d0-4e49-9548-120d098bda3f",
+   "name": "Isometric Calf Hold (Resistance)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "d60e136f-ec59-47da-8bb2-d87098190bbe",
+   "name": "Isometric Wall Sit (60 Degrees)",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "6e7644dc-724e-4a3b-ba28-952b326e545e",
+   "name": "Isometric Wrist Extension",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "4b5d8a3d-6240-4cab-be9a-223d7e9c8505",
+   "name": "Jump Rope",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "92e2af84-5bea-4b7d-854d-11a701eda009",
+   "name": "Jump Squat",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "2d64bef7-a8f1-4b59-b798-8c7e052dfee6",
+   "name": "Jumping Jack",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "cf81709c-c2e1-4d90-847a-34823a7ea16a",
+   "name": "Kettlebell Romanian Deadlift",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "911bc982-4237-4a23-a4ae-b2764d18af0a",
+   "name": "Kettlebell Swing",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a730c2bc-9320-4f06-b7f6-b03d8146a2c8",
+   "name": "Knee Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "b05f9018-bb26-443e-9a16-ec9d9e7eff54",
+   "name": "Kneeling Hip Flexor Stretch",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "3e4b8110-48e4-4045-8106-0fe84378b621",
+   "name": "L-Sit Hold",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "4f45a15f-32b4-4f11-a689-a7d34f731387",
+   "name": "L-Sit Pull-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "2cecd76d-a31d-45fa-9371-cb75026f6c9a",
+   "name": "Landmine Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "4da488ae-635b-49aa-82c4-6355c160c179",
+   "name": "Landmine Romanian Deadlift",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f85c9ed5-ad46-4a96-87ff-66267620e32c",
+   "name": "Landmine Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ebac36c3-90e8-44a1-813a-c3160e41552a",
+   "name": "Lat Pulldown",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ae0984c9-2fdb-4450-9c7d-56597deb444d",
+   "name": "Lateral Lunge",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "af9ebe20-6f81-4a43-bd67-0a2288754bc5",
+   "name": "Lateral Lunge (Band)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "e614adb7-64ab-4a7d-ba44-d270d6c58553",
+   "name": "Lateral Raise",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "e63ff57d-54de-4e1c-bc9b-46bad7dbc555",
+   "name": "Lateral Shuffle",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "bacfd5ad-41a3-4f80-9ded-361c7fbe0956",
+   "name": "Leg Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8409c244-9437-443d-8fc0-4c31b8384d45",
+   "name": "Leg Extension",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "1c5c6a92-410c-4f0b-8572-672c15505b8e",
+   "name": "Leg Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "de8f2feb-f64e-4a94-9d89-e642834d2e3c",
+   "name": "Leg Press Calf Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a1cef35b-9f88-4b6a-9acd-2b9ab5177339",
+   "name": "Leg Swings",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "26954188-adfe-4e90-a9b2-6dc7288311b5",
+   "name": "Light Closed-Chain Quad Strengthening",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "def00cd6-17d1-40ec-8a2c-c0e175bc9180",
+   "name": "Limited Front Raise (Pain-Guided)",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "27797935-d7e1-4d74-a343-0619a7692233",
+   "name": "Limited-Range Squat (Hip)",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "c2ac1a0b-4627-4705-9829-44a11c13b8c1",
+   "name": "Lying Hamstring Walkout",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "b04e7c4d-456c-4115-a948-19df317c6059",
+   "name": "Lying Leg Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "095ddec9-8ddd-415e-90f9-f2f511c90d3f",
+   "name": "Lying Leg Raise",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "0109fbe3-c5fe-4077-b81f-4ec6e8049221",
+   "name": "Lying Torso Rotation",
+   "platform": true,
+   "usage": 7
+  },
+  {
+   "id": "266978ef-4608-4193-92b3-13aa3a355aa6",
+   "name": "Machine Chest Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "694b902b-e23c-461c-a415-a04ab67522f8",
+   "name": "Machine Glute Kickback",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "32c34058-175b-400a-adb0-2feca669f797",
+   "name": "Machine Lateral Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "123a34e7-7be6-417b-bd6e-ae2f0a91298f",
+   "name": "Machine Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "7950173c-7de2-4f6c-bd57-9e4e8f6d4636",
+   "name": "Machine Shoulder Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a2eb0c0c-3f6e-4df8-926d-4604e6632c55",
+   "name": "Marching in Place (Warm-Up)",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "78de6d1c-03df-4126-8205-f66299732396",
+   "name": "Meadows Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "e4ecad3e-c30c-4bee-a0cd-41b88d34973b",
+   "name": "Mini Wall Sit (Shallow)",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "848846f8-42f3-4fc6-87a8-7c5b269e3599",
+   "name": "Modified Plank (Knees)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "84c9dd65-507d-42f1-8b22-e87278bc7733",
+   "name": "Modified Side Plank (Light)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "61524ab2-0477-46b7-9ddd-a32d9264750a",
+   "name": "Mountain Climber",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "762db505-2eae-4384-9958-519f66a68e3f",
+   "name": "Negative Pull-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "5b8036d7-eddf-4673-88f0-ae8e99a0fbd5",
+   "name": "Neutral-Grip Pull-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "69f80c66-988c-40de-9128-6833e9a18970",
+   "name": "Nordic Hamstring Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "40323f87-ab58-497a-891f-e6f368213c11",
+   "name": "One-Arm Dumbbell Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f8e64c23-e4b5-4fb3-b5e3-f1de8ca134d2",
+   "name": "Overhead Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "45589d8a-4b70-47c1-93d2-f2668fbd1539",
+   "name": "Overhead Tricep Extension",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a85d55e7-83bc-452a-adb2-277ab5701d46",
+   "name": "Pallof Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "2eebd453-1113-4099-8fa5-af5493599da8",
+   "name": "Pec Deck",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "fac10475-f689-447a-9de0-6ac99b8b4586",
+   "name": "Pendlay Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "94fda88a-d59f-4c2c-add2-0fef469d5ab3",
+   "name": "Pike Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "eb50ea89-0e4d-418a-adde-d9295f2f51e2",
+   "name": "Pistol Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a2e1d1a3-b4ee-48d3-98b9-bfb9534f5345",
+   "name": "Plank",
+   "platform": true,
+   "usage": 13
+  },
+  {
+   "id": "490f71cf-19a7-487f-b194-7d181cd64ed6",
+   "name": "Plank Jack",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "4d8b2a01-c8da-4608-bc9e-bda309eb74ab",
+   "name": "Plank Shoulder Tap",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "dadec409-6f17-4438-90e0-92f89c32d71c",
+   "name": "Plate Front Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "c3a7f7ea-e2b2-4c93-bacf-2e92a64a99a1",
+   "name": "Postural Core Bracing",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "8f768f7c-1c0a-4237-ad6e-b5584aa92236",
+   "name": "Preacher Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8bbe6bf6-88fc-4895-bea7-dba5f321349e",
+   "name": "Progressive Brisk Walking",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "b76c7cc4-cb49-40db-a72b-9c7ae17c09e3",
+   "name": "Progressive Clamshell",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "27b5c721-d3b4-47d8-b1e7-5b2bd8f11147",
+   "name": "Progressive Walk-to-Jog (Shin Splints, Soft Terrain)",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "f8473939-3161-44fc-8326-cf65363b2b85",
+   "name": "Prone T Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a2092948-7fc6-4d01-aef2-5034d015d649",
+   "name": "Prone Y Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ea6ef71b-d592-4572-8e36-1d9615866b60",
+   "name": "Protected Squat (Quadriceps)",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "e4e2383f-1d78-4674-be04-df7d6e15f63e",
+   "name": "Pull-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "0bf7b5b4-794b-43cf-bbd3-aa03be6f0a03",
+   "name": "Push Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "d28ceaf6-0ffa-4227-b9e3-2f440acbf998",
+   "name": "Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ad29e0cd-e0a0-44e4-bad5-fa69ef1c3d18",
+   "name": "Push-up Shoulder Tap",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "79741c75-8d28-4a89-bdb5-05275559d061",
+   "name": "Quadruped Scapular Stability",
+   "platform": true,
+   "usage": 6
+  },
+  {
+   "id": "bb0f6428-ae65-4371-97d3-300c05cc445e",
+   "name": "Rack Pull",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "41330774-8b52-42d6-81f8-5a6b1ba4e58e",
+   "name": "Rear Delt Fly",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "425780b9-8431-4c96-9367-86f772aac6ba",
+   "name": "Reverse Crunch",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ce1d013d-0ff9-4af9-9b66-3811f6331dd5",
+   "name": "Reverse Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "4789b9e0-ac80-47b4-80a5-7a36288794fa",
+   "name": "Reverse Hyperextension",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f348703e-b281-4186-9825-9243370810f0",
+   "name": "Reverse Lunge",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "9ad9a232-cc5b-42e7-b11b-67c5e39a63cf",
+   "name": "Reverse Pec Deck",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "19210566-c713-4cfd-8e49-a41bf3f455f0",
+   "name": "Reverse Snow Angel",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "b845cfa5-f2a1-4b66-9cff-e34b84eaf579",
+   "name": "Romanian Deadlift",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "0d8518e8-4417-44bc-8fb5-cbbe47f267fb",
+   "name": "Rope Hammer Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "2e2136e8-615e-4d5f-86d5-b76b0a61df72",
+   "name": "Rope Tricep Pushdown",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "fece5d95-4f4a-4e97-8fc6-2db1e28d2ddb",
+   "name": "Rowing",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "6315517e-eb83-450a-a17a-0ec926a33ee8",
+   "name": "Running",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "44889ddd-5c35-4288-8481-8b90b8ddd002",
+   "name": "Russian Twist",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "0c94663e-9de5-4618-b484-693a68b7fe20",
+   "name": "Scapular Pull-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "eb357637-3f2f-4563-a0c5-5754f69d9360",
+   "name": "Scapular Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "38bcd642-0bc3-4cc9-a70c-795e6a33b8fe",
+   "name": "Seal Jack",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "65f4251f-b9e2-4fa4-a2a8-7185d5f4dfcb",
+   "name": "Seated Cable Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "116cc641-67d6-4cea-a5a1-be5a4875f751",
+   "name": "Seated Calf Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "31bd9c62-b8c5-484f-8d9c-6cfaa1bb74cd",
+   "name": "Seated Forward Fold",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "339f46d1-cd05-4403-9c38-4055a0627d46",
+   "name": "Seated Knee Tuck",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "971235e0-020c-44df-8e65-b60ca2588b1b",
+   "name": "Seated Leg Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "4eeb15e7-d7f2-49fd-af0a-9aa5ea486548",
+   "name": "Seated Stationary Cycling (Forward Lean)",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "d153d138-3831-437d-af44-150e3faa86cd",
+   "name": "Shoulder Circles",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "cab38a37-485b-4fed-92ed-147915f66b71",
+   "name": "Shrimp Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ebe83c21-b997-4bc5-95a0-bd573ddcf064",
+   "name": "Side Plank",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "f12718a1-97d7-4ba2-ab4e-cffbca1e9ad0",
+   "name": "Side Plank Hip Dip",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ed5283a9-4170-4115-b77d-db0dd086d47a",
+   "name": "Side-Lying Hip Abduction",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "303aa7a6-651b-4d9c-9d4e-2d9506b2a696",
+   "name": "Side-Lying Hip Abduction (Band)",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "5127c823-2437-4d1a-b496-98de6fc56c89",
+   "name": "Side-Lying Leg Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "56f8a54b-3592-433a-8e4c-68a5ffd45730",
+   "name": "Single Arm Dumbbell Tricep Extension",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "118a62fc-ea8c-4627-9d0b-d6aea60a5294",
+   "name": "Single Dumbbell Skullcrusher",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "67ae735c-15a3-42dc-8087-74e1f6b8d9ab",
+   "name": "Single-Arm Cable Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "60ffaea8-e747-48d0-8d69-aa88d102756d",
+   "name": "Single-Leg Box Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f0d912cf-2189-409c-94f1-49b0387f30b2",
+   "name": "Single-Leg Calf Raise",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "db6003ea-82cd-4738-b61c-4d14a17b6618",
+   "name": "Single-Leg Glute Bridge",
+   "platform": true,
+   "usage": 7
+  },
+  {
+   "id": "70bbd8fc-49fd-4c8e-bba2-baa07b4d9921",
+   "name": "Single-Leg Romanian Deadlift",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "600234ee-857e-4028-9002-4eb2fa256b2e",
+   "name": "Single-Leg Romanian Deadlift (Light, Bodyweight)",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "30b8c6f8-10fc-455f-a7a7-01efec364834",
+   "name": "Sissy Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "858ae748-1158-4544-bdd0-3809c96f1a6e",
+   "name": "Skater Hop",
+   "platform": true,
+   "usage": 2
+  },
+  {
+   "id": "1ec486b1-5617-4127-90db-e9e3666e56fe",
+   "name": "Skater Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "c875ecb9-8b66-41e1-bdd8-021add177b67",
+   "name": "SkiErg",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "959cb0db-dab9-473b-b9df-c5283f693dd2",
+   "name": "Skull Crusher",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "d1109048-6a7c-42f6-a2e0-333ae8e942d3",
+   "name": "Slow Bilateral Calf Raise",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "5fe234d8-4e54-4489-8cd0-f3f829e9c566",
+   "name": "Smith Machine Bench Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "fe6b5df2-2466-4df7-8e82-acdda60d9e3a",
+   "name": "Smith Machine Bulgarian Split Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "773b86c8-bc12-444c-9c8a-c08576c042c7",
+   "name": "Smith Machine Hip Thrust",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "b067b395-a02e-4a3f-9e4a-3f265e6b1720",
+   "name": "Smith Machine Reverse Lunge",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "9132697a-36c8-4ad7-8378-20aaf7fa2f26",
+   "name": "Smith Machine Romanian Deadlift",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8aae7f12-4538-41cf-a9fd-aa2a5cf85541",
+   "name": "Smith Machine Split Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "adf6b0cb-a94b-42ad-9a57-174e781f17e5",
+   "name": "Smith Machine Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "0ead8035-20e7-49fe-bddd-b707cff96a4b",
+   "name": "Spider Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "e659b74e-f1fa-4722-a7c3-e9aa617ac3a6",
+   "name": "Split Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "5691ab3c-e6ed-4409-b549-f83ae7e1b882",
+   "name": "Sprawl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "73878f59-d02d-4dd6-9050-2d75b9f0f265",
+   "name": "Squat",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "e4082860-ac2e-4282-b8d0-994c6d8abd45",
+   "name": "Squat Thrust",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "a98c038c-5b54-45f7-a80d-0d3ec1e99969",
+   "name": "Stability Ball Hamstring Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "954a60e6-51c9-4232-9f56-cc9e2addb3f9",
+   "name": "Stair Climber",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "7c996ef6-623c-452b-9f1a-1b5dc5961ed7",
+   "name": "Standing Calf Raise",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "fd6a54dd-74c2-40f5-b7a2-0e809b7d4af7",
+   "name": "Standing Dumbbell Press",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "2445312f-705d-4190-9bcb-38ebb00d1f24",
+   "name": "Standing Quad Stretch",
+   "platform": true,
+   "usage": 3
+  },
+  {
+   "id": "e8618c41-c82d-49c8-b6d0-d8be803c8a4d",
+   "name": "Stationary Cycling (Low Resistance, Meniscus)",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "2aca580e-ef25-4295-a2b3-d215ff88b80c",
+   "name": "Stationary Cycling (No Resistance)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "52207c5a-5057-4a19-ba0a-29a45de976d0",
+   "name": "Step-Down",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "4ec44ea0-4a60-40bc-ad2e-0ca4efa04962",
+   "name": "Step-Up",
+   "platform": true,
+   "usage": 5
+  },
+  {
+   "id": "8bba1f78-8b20-4172-b0f5-1ebfdbae36e4",
+   "name": "Straight-Arm Pulldown",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "59bb3aa6-99fb-44a6-89bc-492c8b30b5c3",
+   "name": "Sumo Deadlift",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "3c7a9006-1232-4766-a158-56d1d7b13295",
+   "name": "Superman",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "65b1f5d4-5b2b-4db4-88aa-1582b6dec5be",
+   "name": "Superman Hold",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "c48231a0-e39c-492a-824a-83d5e322425a",
+   "name": "Swimming",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "d45be57a-4f35-4e13-854b-543ebf613fd0",
+   "name": "T-Bar Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "72ff039d-5e98-4eaa-b1cf-320ce58d6900",
+   "name": "Toe Touch",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "7b84f0f5-dfc4-4ea2-a8bb-34aeca21b6f7",
+   "name": "Torso Twists",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "4e0b6060-9975-4bd1-9f5d-ac862f78ad67",
+   "name": "Towel Hamstring Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "1a1ad00d-8c44-48d5-b762-694b12f506b3",
+   "name": "Towel Pull-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "6696a80f-d6bf-4ac6-91d7-2c8461409c9d",
+   "name": "Towel Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "bf52032a-e810-4f82-87c9-39d0f981650f",
+   "name": "Trap Bar Deadlift",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "87d5dbf1-a2cc-4867-8a5b-e04d53da19a3",
+   "name": "Treadmill Incline Walk",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8777781e-2bcb-4f8f-8f94-f5e8ae8bbb79",
+   "name": "Tricep Kickback",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "149d7c4c-4b8e-4cba-b11d-fa0f1b3d5ac0",
+   "name": "Tricep Pushdown",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "46aaa2cc-99a0-4fb0-bb96-9c55a4b7422c",
+   "name": "Two Dumbbell Skullcrusher",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "4523f87d-8721-4e9a-bd80-fdae92f29349",
+   "name": "Typewriter Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "6b1544f1-36ce-4714-b432-937911d301e3",
+   "name": "Unassisted Prolonged Walking (Hip)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "5a20fb00-f477-4585-a282-3c3ecdd39e6c",
+   "name": "Upright Row",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "f731a916-31f6-476d-8c4b-c9ee5763b152",
+   "name": "V-Up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "b474f557-b996-4736-aab5-177334b50878",
+   "name": "Walking",
+   "platform": true,
+   "usage": 17
+  },
+  {
+   "id": "47892ae5-bbcd-4622-90e6-e710dd8e2917",
+   "name": "Walking Lunge",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "c571fcdb-f8fc-4058-96aa-34494f8f2d10",
+   "name": "Walking on Varied Terrain",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "49e7aee4-551a-4504-b225-dd09a19e0741",
+   "name": "Wall Calf Stretch",
+   "platform": true,
+   "usage": 9
+  },
+  {
+   "id": "4a2ccd07-db9b-46d0-9cc7-f73880d9a628",
+   "name": "Wall Calf Stretch (Bent Knee, Soleus)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "288e9b44-9a89-4e61-a3ba-bafee5484eef",
+   "name": "Wall Finger Walk (Shoulder Mobility)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "70a9edc1-f621-41d0-955f-8838d16f9fe6",
+   "name": "Wall Handstand Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "75037aed-7569-4b67-98b6-bb6bec9c51f4",
+   "name": "Wall Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "6786ac6a-e359-4b15-bfce-b3cc61998636",
+   "name": "Wall Sit",
+   "platform": true,
+   "usage": 4
+  },
+  {
+   "id": "9e39df37-d092-4e66-a8f6-b5767e2898ec",
+   "name": "Wall Walk",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "4d26f9c8-2afa-40a2-962c-7815ffc49a1d",
+   "name": "Weighted Chin-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "6eb686d5-d788-4d55-a309-90f3cf9b3b37",
+   "name": "Weighted Crunch",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "844e6d99-de6b-492f-80b9-25be2a0367e2",
+   "name": "Weighted Dip",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ec642c92-8649-425d-b1b6-2eabfc0924f4",
+   "name": "Weighted Pull-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "fad3b9a4-b74a-4949-a60b-264408dab97a",
+   "name": "Weighted Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "80055c3b-0095-4a3d-8beb-0aac1ec84110",
+   "name": "Weighted Russian Twist",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "c556bec3-7b0a-45ac-9834-fe4832e5b306",
+   "name": "Weighted Single-Leg Glute Bridge",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "5cbb9b87-ae7b-4e6e-84da-f9d073d92928",
+   "name": "Wide Push-up",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "351bbbe7-2248-466c-8e8e-2b85a01e5f14",
+   "name": "Wide-Grip Lat Pulldown",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "3d6693f6-a61c-46df-aa22-c44fa25d35db",
+   "name": "World's Greatest Stretch",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "ca0dfc6d-8789-4686-b97e-f57744be8735",
+   "name": "Wrist Curl",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "70717aac-6227-4f89-a247-23898294cc90",
+   "name": "Wrist Curl (Light Dumbbell)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "5cf7c9f7-aaf2-4a4e-a98f-5dbb54c45227",
+   "name": "Wrist Extension",
+   "platform": true,
+   "usage": 0
+  },
+  {
+   "id": "8c9c44ba-36e3-4d24-9bb2-e9b91ba51de8",
+   "name": "Wrist Extension (Band)",
+   "platform": true,
+   "usage": 1
+  },
+  {
+   "id": "a256437f-6a6c-4385-95ed-179b587f8b82",
+   "name": "Wrist Extension (Light Dumbbell)",
+   "platform": true,
+   "usage": 1
+  }
+ ]
+}
