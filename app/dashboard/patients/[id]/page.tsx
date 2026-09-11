@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, ArrowDown, ArrowUp, CheckCircle2, ChevronRight, FileText, Flame, Minus } from "lucide-react";
+import { ArrowLeft, ArrowDown, ArrowUp, CheckCircle2, ChevronRight, Flame, Minus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { resolveWorkoutForWeek } from "@/lib/exercise/activeRecommendation";
@@ -75,14 +75,13 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   // la frise (KineWeekProgramme) navigue entre les semaines côté client sans
   // refaire de requête — plus de filtre par mois ni de `?month=` dans l'URL.
   const [
-    { data: conditions }, { data: profile }, { data: docs }, { data: allLogs }, { data: recentFeedback },
+    { data: conditions }, { data: profile }, { data: allLogs }, { data: recentFeedback },
     { data: allFeedback }, { data: ownWorkouts }, { data: platformWorkouts }, { data: recRows }, { data: allExercises }, { data: hiddenRows },
     { data: bodyParts },
     { count: unreadCount },
   ] = await Promise.all([
     supabase.from("conditions").select("id, name").order("name"),
     supabase.from("patient_profiles").select("declared_body_part_ids, injury_stage, rehab_progress, history, date_of_birth, height_cm, weight_kg, activity_level, equipment, updated_at").eq("id", id).maybeSingle(),
-    supabase.from("patient_documents").select("id, file_name, storage_path, uploaded_at").eq("patient_id", id).order("uploaded_at", { ascending: false }),
     supabase.from("workout_logs").select("id, completed_at, workout_id, workouts ( name, duration_minutes )").eq("patient_id", id),
     supabase.from("patient_feedback").select("pain_score, created_at").eq("patient_id", id).gte("created_at", since30),
     supabase.from("patient_feedback").select("workout_log_id, pain_score, difficulty, notes").eq("patient_id", id),
@@ -227,11 +226,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       bodyPartIds: [...new Set(w.workout_exercises.flatMap((we) => (we.exercises?.exercise_body_parts ?? []).map((t) => t.body_part_id)))],
     }));
 
-  const docLinks: { id: string; file_name: string; url: string | null }[] = [];
-  for (const d of docs ?? []) {
-    const { data } = await supabase.storage.from("patient-documents").createSignedUrl(d.storage_path, 3600);
-    docLinks.push({ id: d.id, file_name: d.file_name, url: data?.signedUrl ?? null });
-  }
   const profileUpdated = profile?.updated_at ? new Date(profile.updated_at as string).toLocaleDateString("fr-FR") : null;
 
   return (
@@ -346,19 +340,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
                       </span>
                     ))}
                   </span>
-                </div>
-              )}
-              {docLinks.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-sm font-medium text-ink">Documents médicaux</p>
-                  <ul className="mt-1 space-y-1.5">
-                    {docLinks.map((d) => (
-                      <li key={d.id}>
-                        {d.url ? <a href={d.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"><FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />{d.file_name}</a>
-                               : <span className="flex items-center gap-1.5 text-sm text-muted"><FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />{d.file_name}</span>}
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               )}
             </div>

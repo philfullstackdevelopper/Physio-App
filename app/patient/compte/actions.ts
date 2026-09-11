@@ -6,13 +6,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import { revokeCurrentSession } from "@/lib/auth/clerk-session";
-import { listFiles, removeFiles } from "@/lib/storage/server";
 
 // RGPD droit à l'effacement: a patient deletes their own account. Every
 // table referencing patients.id has "on delete cascade" (see the
 // migrations), so removing the row here removes the profile, feedback,
-// logs, documents metadata, and messages with it. Storage files themselves
-// aren't covered by that cascade — deleted explicitly below instead.
+// logs, and messages with it.
 export async function deleteMyAccount(formData: FormData) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
@@ -25,12 +23,6 @@ export async function deleteMyAccount(formData: FormData) {
       )}`,
     );
   }
-
-  // Delete the patient's files from storage first — the DB row for each
-  // document cascades away with the account below, but the file bytes
-  // don't, and would otherwise be orphaned.
-  const paths = await listFiles("patient-documents", user.id);
-  await removeFiles("patient-documents", paths);
 
   // Delete the Clerk identity itself (login, e-mail, password)...
   try {

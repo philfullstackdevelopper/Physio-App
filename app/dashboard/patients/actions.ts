@@ -9,8 +9,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { precreateAppUserId } from "@/lib/auth/user-map";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ATTACHMENT_BUCKET, isAttachmentPathFor } from "@/lib/messages/attachment";
-import { signedReadUrls } from "@/lib/storage/server";
 import type { ThreadMessage } from "@/components/MessageThread";
 
 // Instructor invites a new patient by email. Creates the patient's Clerk
@@ -189,16 +187,12 @@ export async function getPatientThread(patientId: string): Promise<{ thread: Thr
 
   const { data } = await supabase
     .from("patient_messages")
-    .select("id, body, created_at, sender, read_at, read_by_instructor_at, attachment_path, attachment_name")
+    .select("id, body, created_at, sender, read_at, read_by_instructor_at")
     .eq("instructor_id", user.id)
     .eq("patient_id", patientId)
     .order("created_at", { ascending: false })
     .limit(50);
   const rows = [...(data ?? [])].reverse();
-
-  // Liens signés (1 h) pour les pièces jointes du fil affiché.
-  const paths = rows.map((m) => m.attachment_path as string | null).filter((p): p is string => !!p);
-  const signed = await signedReadUrls(ATTACHMENT_BUCKET, paths, 3600);
 
   const thread: ThreadMessage[] = rows.map((m) => ({
     id: m.id as string,
@@ -206,8 +200,6 @@ export async function getPatientThread(patientId: string): Promise<{ thread: Thr
     created_at: m.created_at as string,
     sender: m.sender as string,
     read_at: (m.read_at as string | null) ?? null,
-    attachment_name: (m.attachment_name as string | null) ?? null,
-    attachmentUrl: m.attachment_path ? (signed.get(m.attachment_path as string) ?? null) : null,
   }));
 
   await supabase
@@ -235,20 +227,15 @@ export async function sendPatientMessage(formData: FormData): Promise<{ ok: true
 
   const patientId = String(formData.get("patient_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
-  const attachmentPath = String(formData.get("attachment_path") ?? "") || null;
-  const attachmentName = String(formData.get("attachment_name") ?? "") || null;
 
   if (!patientId) return { error: "Patient introuvable." };
-  if (!body && !attachmentPath) return { error: "Écrivez un message ou joignez un fichier." };
-  if (attachmentPath && !isAttachmentPathFor(attachmentPath, patientId)) return { error: "Pièce jointe invalide." };
+  if (!body) return { error: "Écrivez un message." };
 
   const { error } = await supabase.from("patient_messages").insert({
     patient_id: patientId,
     instructor_id: user.id,
     sender: "instructor",
     body,
-    attachment_path: attachmentPath,
-    attachment_name: attachmentPath ? (attachmentName ?? "Fichier") : null,
   });
   if (error) return { error: error.message };
 

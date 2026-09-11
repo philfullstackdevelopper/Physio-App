@@ -10,18 +10,13 @@ export async function GET() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, documents, messages] =
+  const [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, messages] =
     await Promise.all([
       supabase.from("patient_profiles").select("*").eq("id", user.id).maybeSingle(),
       supabase.from("patients").select("*").eq("id", user.id).maybeSingle(),
       supabase.from("patient_feedback").select("*").eq("patient_id", user.id),
       supabase.from("patient_recommended_workouts").select("*").eq("patient_id", user.id),
       supabase.from("workout_logs").select("*").eq("patient_id", user.id),
-      // File names/paths only — not the file bytes themselves.
-      supabase
-        .from("patient_documents")
-        .select("id, file_name, uploaded_at")
-        .eq("patient_id", user.id),
       supabase.from("patient_messages").select("*").eq("patient_id", user.id),
     ]);
 
@@ -33,7 +28,6 @@ export async function GET() {
     feedback: feedback.data,
     recommended_workouts: recommendedWorkouts.data,
     workout_logs: workoutLogs.data,
-    documents: documents.data,
     messages: messages.data,
   };
 

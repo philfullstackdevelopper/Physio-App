@@ -4,8 +4,6 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { markMessageRead, sendPatientMessage } from "../actions";
 import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
 import MessageComposer from "@/components/MessageComposer";
-import { ATTACHMENT_BUCKET } from "@/lib/messages/attachment";
-import { signedReadUrls } from "@/lib/storage/server";
 import { initials } from "@/lib/format/initials";
 
 // Full-page version of the thread that used to live inline on the home page
@@ -33,13 +31,11 @@ export default async function MessagesPage({
 
   const { data: messages } = await supabase
     .from("patient_messages")
-    .select("id, body, created_at, read_at, read_by_instructor_at, sender, attachment_path, attachment_name")
+    .select("id, body, created_at, read_at, read_by_instructor_at, sender")
     .eq("patient_id", user.id)
     .order("created_at", { ascending: false })
     .limit(50);
   const rows = [...(messages ?? [])].reverse();
-  const paths = rows.map((m) => m.attachment_path as string | null).filter((p): p is string => !!p);
-  const signed = await signedReadUrls(ATTACHMENT_BUCKET, paths, 3600);
   // Pour mes messages (patient), « lu » = ouvert par le kiné.
   const thread: ThreadMessage[] = rows.map((m) => ({
     id: m.id as string,
@@ -47,8 +43,6 @@ export default async function MessagesPage({
     created_at: m.created_at as string,
     sender: m.sender as string,
     read_at: (m.read_by_instructor_at as string | null) ?? null,
-    attachment_name: (m.attachment_name as string | null) ?? null,
-    attachmentUrl: m.attachment_path ? (signed.get(m.attachment_path as string) ?? null) : null,
   }));
   const unreadFromKine = rows.filter((m) => m.sender === "instructor" && !m.read_at).length;
 

@@ -1,10 +1,10 @@
 // =============================================================================
-// MessageThread — fil de messages avec séparateurs de jour, accusés de lecture
-// et pièces jointes. Composant serveur : les liens signés sont calculés par la
-// page appelante. `mineSender` dit quel côté est « moi » (bulles bleues).
+// MessageThread — fil de messages avec séparateurs de jour et accusés de
+// lecture. Composant serveur. `mineSender` dit quel côté est « moi » (bulles
+// bleues).
 // =============================================================================
 
-import { Check, CheckCheck, MessageCircle, Paperclip } from "lucide-react";
+import { Check, CheckCheck, MessageCircle } from "lucide-react";
 import { groupByDay } from "@/lib/dashboard/messageDays";
 
 export interface ThreadMessage {
@@ -13,9 +13,6 @@ export interface ThreadMessage {
   created_at: string;
   sender: string;
   read_at: string | null;
-  attachment_name: string | null;
-  /** Lien signé vers la pièce jointe, ou null si aucune. */
-  attachmentUrl: string | null;
 }
 
 const TIME = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
@@ -60,19 +57,6 @@ export default function MessageThread({
                     }`}
                   >
                     {m.body && <p className="whitespace-pre-wrap break-words">{m.body}</p>}
-                    {m.attachmentUrl && (
-                      <a
-                        href={m.attachmentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`${m.body ? "mt-2" : ""} inline-flex max-w-full items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium underline-offset-2 hover:underline ${
-                          mine ? "bg-white/15 text-white" : "bg-surface text-brand"
-                        }`}
-                      >
-                        <Paperclip className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-                        <span className="truncate">{m.attachment_name ?? "Fichier"}</span>
-                      </a>
-                    )}
                     <p className={`mt-1 flex items-center justify-end gap-1 text-[11px] ${mine ? "text-white/70" : "text-muted"}`}>
                       {TIME.format(new Date(m.created_at))}
                       {mine &&

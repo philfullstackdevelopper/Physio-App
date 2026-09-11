@@ -3,8 +3,6 @@ import { Bookmark, BookmarkCheck, Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { buildConversations, type ConversationTab } from "@/lib/dashboard/conversations";
-import { ATTACHMENT_BUCKET } from "@/lib/messages/attachment";
-import { signedReadUrls } from "@/lib/storage/server";
 import ConversationList from "@/components/ConversationList";
 import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
 import MessageComposer from "@/components/MessageComposer";
@@ -55,16 +53,12 @@ export default async function MessagesPage({
   if (selectedId) {
     const { data } = await supabase
       .from("patient_messages")
-      .select("id, body, created_at, sender, read_at, read_by_instructor_at, attachment_path, attachment_name")
+      .select("id, body, created_at, sender, read_at, read_by_instructor_at")
       .eq("instructor_id", user.id)
       .eq("patient_id", selectedId)
       .order("created_at", { ascending: false })
       .limit(50);
     const rows = [...(data ?? [])].reverse();
-
-    // Liens signés (1 h) pour les pièces jointes du fil affiché.
-    const paths = rows.map((m) => m.attachment_path as string | null).filter((p): p is string => !!p);
-    const signed = await signedReadUrls(ATTACHMENT_BUCKET, paths, 3600);
 
     thread = rows.map((m) => ({
       id: m.id as string,
@@ -73,8 +67,6 @@ export default async function MessagesPage({
       sender: m.sender as string,
       // Pour mes messages, « lu » = lu par le patient (read_at).
       read_at: (m.read_at as string | null) ?? null,
-      attachment_name: (m.attachment_name as string | null) ?? null,
-      attachmentUrl: m.attachment_path ? (signed.get(m.attachment_path as string) ?? null) : null,
     }));
   }
 

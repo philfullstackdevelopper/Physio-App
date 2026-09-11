@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isAttachmentPathFor } from "@/lib/messages/attachment";
 
 // First step of patient onboarding, gated in app/patient/layout.tsx. Uses the
 // admin client rather than the patient's own session: patients_update_by_instructor
@@ -75,13 +74,8 @@ export async function sendPatientMessage(formData: FormData) {
   const user = await requireUser(supabase);
 
   const body = String(formData.get("body") ?? "").trim();
-  const attachmentPath = String(formData.get("attachment_path") ?? "") || null;
-  const attachmentName = String(formData.get("attachment_name") ?? "") || null;
-  if (!body && !attachmentPath) {
-    redirect(`/patient/messages?error=${encodeURIComponent("Écrivez un message ou joignez un fichier.")}`);
-  }
-  if (attachmentPath && !isAttachmentPathFor(attachmentPath, user.id)) {
-    redirect(`/patient/messages?error=${encodeURIComponent("Pièce jointe invalide.")}`);
+  if (!body) {
+    redirect(`/patient/messages?error=${encodeURIComponent("Écrivez un message.")}`);
   }
 
   const { data: patient } = await supabase
@@ -98,8 +92,6 @@ export async function sendPatientMessage(formData: FormData) {
     instructor_id: patient!.instructor_id,
     sender: "patient",
     body,
-    attachment_path: attachmentPath,
-    attachment_name: attachmentPath ? (attachmentName ?? "Fichier") : null,
   });
   if (error) redirect(`/patient/messages?error=${encodeURIComponent(error.message)}`);
 

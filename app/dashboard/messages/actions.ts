@@ -4,36 +4,26 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { isAttachmentPathFor } from "@/lib/messages/attachment";
 
 // Envoie un message depuis la boîte de réception du kiné (/dashboard/messages).
-// Le fichier éventuel a déjà été déposé par le navigateur dans le bucket privé
-// (voir MessageComposer) ; on ne reçoit ici que son chemin, qu'on revérifie :
-// il doit vivre sous le dossier de CE patient. Corps ou pièce jointe requis —
-// la contrainte SQL patient_messages_body_or_attachment le garantit aussi.
 export async function sendInboxMessage(formData: FormData) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
-  const attachmentPath = String(formData.get("attachment_path") ?? "") || null;
-  const attachmentName = String(formData.get("attachment_name") ?? "") || null;
 
   const fail = (msg: string): never =>
     redirect(`/dashboard/messages?patient=${patientId}&error=${encodeURIComponent(msg)}`);
 
   if (!patientId) fail("Patient introuvable.");
-  if (!body && !attachmentPath) fail("Écrivez un message ou joignez un fichier.");
-  if (attachmentPath && !isAttachmentPathFor(attachmentPath, patientId)) fail("Pièce jointe invalide.");
+  if (!body) fail("Écrivez un message.");
 
   const { error } = await supabase.from("patient_messages").insert({
     patient_id: patientId,
     instructor_id: user.id,
     sender: "instructor",
     body,
-    attachment_path: attachmentPath,
-    attachment_name: attachmentPath ? (attachmentName ?? "Fichier") : null,
   });
   if (error) fail(error.message);
 
