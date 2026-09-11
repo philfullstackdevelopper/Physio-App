@@ -61,8 +61,17 @@ export default function CguPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">5. Résiliation</h2>
-            <p className="mt-1">Chaque partie peut résilier à tout moment.</p>
+            <h2 className="font-display font-semibold text-slate-900">5. Essai gratuit, facturation et résiliation</h2>
+            <p className="mt-1">
+              L&apos;abonnement patient débute par un essai gratuit de 7 jours. Le patient doit
+              enregistrer une carte bancaire dès la souscription ; à l&apos;issue de l&apos;essai,
+              si l&apos;abonnement n&apos;a pas été résilié, la carte est débitée automatiquement
+              du tarif mensuel en vigueur, puis chaque mois par reconduction tacite. Le patient
+              peut résilier à tout moment depuis son espace personnel, avec effet à la fin de la
+              période déjà payée — aucun remboursement au prorata n&apos;est effectué pour une
+              période entamée, sauf erreur de facturation. Le kinésithérapeute peut également
+              résilier son propre compte à tout moment.
+            </p>
           </section>
 
           <section>

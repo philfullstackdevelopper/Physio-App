@@ -68,14 +68,30 @@ export default function ConfidentialitePage() {
           <section>
             <h2 className="font-display font-semibold text-slate-900">5. Hébergement et sécurité</h2>
             <p className="mt-1">
-              Vos données de santé sont hébergées par un prestataire certifié Hébergeur de
-              Données de Santé (HDS), conformément à l&apos;article L.1111-8 du Code de la
-              santé publique. Les mots de passe sont chiffrés, jamais stockés en clair.
+              L&apos;article L.1111-8 du Code de la santé publique impose qu&apos;un
+              hébergement de données de santé à caractère personnel soit assuré par un
+              prestataire certifié Hébergeur de Données de Santé (HDS). EasyPhysio est
+              actuellement en cours de migration vers un tel hébergement certifié ; cette
+              section sera mise à jour dès que la migration sera effective, avec le nom du
+              prestataire certifié. Les mots de passe sont chiffrés, jamais stockés en clair.
             </p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">6. Durée de conservation</h2>
+            <h2 className="font-display font-semibold text-slate-900">6. Sous-traitants</h2>
+            <p className="mt-1">
+              EasyPhysio fait appel aux prestataires suivants pour fonctionner, chacun
+              n&apos;accédant qu&apos;aux données strictement nécessaires à son rôle : Clerk
+              (gestion de l&apos;authentification et des comptes), Stripe (traitement des
+              paiements — EasyPhysio ne voit ni ne stocke aucun numéro de carte), et notre
+              hébergeur de base de données (stockage des données de santé et de suivi). Aucun
+              de ces prestataires n&apos;est autorisé à utiliser vos données à d&apos;autres
+              fins que la fourniture de leur service à EasyPhysio.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display font-semibold text-slate-900">7. Durée de conservation</h2>
             <p className="mt-1">
               Vos données sont conservées pendant la durée de votre suivi. En cas de
               suppression de votre compte, elles sont supprimées ou anonymisées, sauf
@@ -84,7 +100,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">7. Vos droits</h2>
+            <h2 className="font-display font-semibold text-slate-900">8. Vos droits</h2>
             <p className="mt-1">
               Conformément au RGPD, vous disposez d&apos;un droit d&apos;accès, de
               rectification, d&apos;effacement, de limitation, de portabilité, d&apos;opposition
@@ -94,7 +110,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">8. Intelligence artificielle</h2>
+            <h2 className="font-display font-semibold text-slate-900">9. Intelligence artificielle</h2>
             <p className="mt-1">
               EasyPhysio n&apos;utilise actuellement aucune intelligence artificielle
               générative traitant vos données de santé personnelles.
@@ -102,7 +118,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">9. Contact</h2>
+            <h2 className="font-display font-semibold text-slate-900">10. Contact</h2>
             <p className="mt-1">
               Pour toute question sur cette politique ou vos données, contactez-nous depuis
               votre compte.
