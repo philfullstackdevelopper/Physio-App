@@ -22,9 +22,70 @@ export type UploadTarget =
   | { provider: "supabase" }
   | { provider: "s3"; uploadUrl: string; publicUrl: string };
 
+// Content-types allowed through the presigned-upload path. Deliberately an
+// allowlist, not a denylist: an uploaded file this app later serves back
+// (exercise-media is a PUBLIC bucket) must never come back as text/html,
+// image/svg+xml, or application/xhtml+xml — a browser will happily execute
+// script from those regardless of what a <video>/<img> tag intended, turning
+// this into stored XSS. Extend deliberately, not by removing entries.
+const ALLOWED_CONTENT_TYPES = new Set([
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+]);
+
+/** Every bucket this app writes to, and who's allowed to mint an upload URL
+ *  into it. Reject anything not listed — this is a strict allowlist, not a
+ *  passthrough, precisely because a presigned URL is a bearer credential:
+ *  whoever holds it can write to that exact bucket/path regardless of who
+ *  they are, so authorization has to happen HERE, before minting one, not
+ *  after. Mirrors the checks that already exist elsewhere for the same
+ *  buckets (removeMessageAttachment below, migration 0022's
+ *  set_exercise_media() for exercise-media, the patient-documents upload
+ *  action's own `${user.id}/` prefix convention). */
+async function assertCanUploadTo(bucket: string, path: string): Promise<void> {
+  const supabase = await createClient();
+  const user = await requireUser(supabase); // throws/redirects if not signed in
+
+  if (bucket === ATTACHMENT_BUCKET) {
+    const patientId = path.split("/")[0] ?? "";
+    if (!isAttachmentPathFor(path, patientId)) throw new Error("Chemin de pièce jointe invalide.");
+    // RLS-scoped select: a row comes back only if `user` is this patient or
+    // their instructor — same rule enforced everywhere else patients are read.
+    const { data } = await supabase.from("patients").select("id").eq("id", patientId).maybeSingle();
+    if (!data && user.id !== patientId) throw new Error("Accès refusé.");
+    return;
+  }
+
+  if (bucket === "patient-documents") {
+    if (!path.startsWith(`${user.id}/`)) throw new Error("Accès refusé.");
+    return;
+  }
+
+  if (bucket === "exercise-media") {
+    // Any authenticated instructor may attach a demo video to any exercise,
+    // including shared platform ones — same rule as set_exercise_media()
+    // (migration 0022), which this upload always pairs with.
+    const { data } = await supabase.from("instructors").select("id").eq("id", user.id).maybeSingle();
+    if (!data) throw new Error("Réservé aux comptes kiné.");
+    return;
+  }
+
+  throw new Error(`Bucket de stockage inconnu : ${bucket}`);
+}
+
 export async function getUploadTarget(bucket: string, path: string, contentType: string): Promise<UploadTarget> {
   if (activeStorageProvider() !== "s3") return { provider: "supabase" };
-  const uploadUrl = await s3UploadUrl(bucket, path, contentType);
+
+  const safeContentType = ALLOWED_CONTENT_TYPES.has(contentType) ? contentType : "application/octet-stream";
+  await assertCanUploadTo(bucket, path);
+
+  const uploadUrl = await s3UploadUrl(bucket, path, safeContentType);
   return { provider: "s3", uploadUrl, publicUrl: s3PublicUrl(bucket, path) };
 }
 
@@ -43,9 +104,6 @@ export async function removeMessageAttachment(patientId: string, path: string): 
   if (!isAttachmentPathFor(path, patientId)) return;
   const supabase = await createClient();
   const user = await requireUser(supabase);
-  // RLS-scoped select: returns a row only if `user` is this patient or their
-  // instructor — same rule the "patients" policies already enforce
-  // everywhere else, reused here instead of re-deriving it.
   const { data } = await supabase.from("patients").select("id").eq("id", patientId).maybeSingle();
   if (!data && user.id !== patientId) return;
   await removeFiles(ATTACHMENT_BUCKET, [path]);
