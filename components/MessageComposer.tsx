@@ -10,6 +10,8 @@
 import { useRef, useState } from "react";
 import { Paperclip, SendHorizontal, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { uploadFile } from "@/lib/storage/client";
+import { removeMessageAttachment } from "@/lib/storage/actions";
 import { ATTACHMENT_BUCKET, ATTACHMENT_MAX_MB, attachmentPath } from "@/lib/messages/attachment";
 
 export default function MessageComposer({
@@ -41,8 +43,8 @@ export default function MessageComposer({
     setBusy(true);
     try {
       const path = attachmentPath(patientId, file.name);
-      const { error: upErr } = await supabase.storage.from(ATTACHMENT_BUCKET).upload(path, file);
-      if (upErr) throw upErr;
+      const { error: upErr } = await uploadFile(supabase, ATTACHMENT_BUCKET, path, file);
+      if (upErr) throw new Error(upErr);
       setAttachment({ path, name: file.name });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Échec de l'envoi du fichier.");
@@ -55,7 +57,7 @@ export default function MessageComposer({
     if (!attachment) return;
     const { path } = attachment;
     setAttachment(null);
-    await supabase.storage.from(ATTACHMENT_BUCKET).remove([path]);
+    await removeMessageAttachment(patientId, path);
   };
 
   const canSend = !busy && (body.trim().length > 0 || attachment !== null);

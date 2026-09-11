@@ -10,6 +10,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { precreateAppUserId } from "@/lib/auth/user-map";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ATTACHMENT_BUCKET, isAttachmentPathFor } from "@/lib/messages/attachment";
+import { signedReadUrls } from "@/lib/storage/server";
 import type { ThreadMessage } from "@/components/MessageThread";
 
 // Instructor invites a new patient by email. Creates the patient's Clerk
@@ -197,11 +198,7 @@ export async function getPatientThread(patientId: string): Promise<{ thread: Thr
 
   // Liens signés (1 h) pour les pièces jointes du fil affiché.
   const paths = rows.map((m) => m.attachment_path as string | null).filter((p): p is string => !!p);
-  const signed = new Map<string, string>();
-  if (paths.length > 0) {
-    const { data: urls } = await supabase.storage.from(ATTACHMENT_BUCKET).createSignedUrls(paths, 3600);
-    for (const u of urls ?? []) if (u.path && u.signedUrl) signed.set(u.path, u.signedUrl);
-  }
+  const signed = await signedReadUrls(ATTACHMENT_BUCKET, paths, 3600);
 
   const thread: ThreadMessage[] = rows.map((m) => ({
     id: m.id as string,

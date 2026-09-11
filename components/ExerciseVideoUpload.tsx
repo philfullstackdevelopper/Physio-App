@@ -10,6 +10,7 @@
 
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { uploadFile } from "@/lib/storage/client";
 import { getYoutubeEmbedId, isVideoFileUrl } from "@/lib/exercise/media";
 
 const BUCKET = "exercise-media";
@@ -43,11 +44,8 @@ export default function ExerciseVideoUpload({
       const safe = file.name.replace(/[^\w.\-]+/g, "_");
       const path = `${exerciseId}/${crypto.randomUUID()}_${safe}`;
 
-      const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file);
-      if (upErr) throw upErr;
-
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      const publicUrl = data.publicUrl;
+      const { error: upErr, publicUrl } = await uploadFile(supabase, BUCKET, path, file);
+      if (upErr || !publicUrl) throw new Error(upErr ?? "Échec de l'envoi.");
 
       const { error: rpcErr } = await supabase.rpc("set_exercise_media", {
         p_exercise_id: exerciseId,

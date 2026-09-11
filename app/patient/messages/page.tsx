@@ -5,6 +5,7 @@ import { markMessageRead, sendPatientMessage } from "../actions";
 import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
 import MessageComposer from "@/components/MessageComposer";
 import { ATTACHMENT_BUCKET } from "@/lib/messages/attachment";
+import { signedReadUrls } from "@/lib/storage/server";
 import { initials } from "@/lib/format/initials";
 
 // Full-page version of the thread that used to live inline on the home page
@@ -38,11 +39,7 @@ export default async function MessagesPage({
     .limit(50);
   const rows = [...(messages ?? [])].reverse();
   const paths = rows.map((m) => m.attachment_path as string | null).filter((p): p is string => !!p);
-  const signed = new Map<string, string>();
-  if (paths.length > 0) {
-    const { data: urls } = await supabase.storage.from(ATTACHMENT_BUCKET).createSignedUrls(paths, 3600);
-    for (const u of urls ?? []) if (u.path && u.signedUrl) signed.set(u.path, u.signedUrl);
-  }
+  const signed = await signedReadUrls(ATTACHMENT_BUCKET, paths, 3600);
   // Pour mes messages (patient), « lu » = ouvert par le kiné.
   const thread: ThreadMessage[] = rows.map((m) => ({
     id: m.id as string,
