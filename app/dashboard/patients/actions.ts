@@ -64,7 +64,11 @@ export async function addPatient(formData: FormData) {
     await client.invitations.createInvitation({
       emailAddress: email,
       redirectUrl: `${origin}/invitation${instructor?.full_name ? `?kine=${encodeURIComponent(instructor.full_name)}` : ""}`,
-      publicMetadata: { full_name: fullName, role: "patient" },
+      // instructor_name rides along in metadata (not just the redirect query
+      // param above) so Clerk's own invitation EMAIL template can reference
+      // {{public_metadata.instructor_name}} — the in-app /invitation page
+      // was already personalized, the raw email itself wasn't.
+      publicMetadata: { full_name: fullName, role: "patient", instructor_name: instructor?.full_name ?? null },
     });
   } catch (e) {
     // Clerk throws a ClerkAPIResponseError whose own top-level `.message` is
@@ -142,7 +146,7 @@ export async function reactivatePatient(formData: FormData): Promise<{ ok: true 
     await client.invitations.createInvitation({
       emailAddress: patient.email,
       redirectUrl: `${origin}/invitation${instructor?.full_name ? `?kine=${encodeURIComponent(instructor.full_name)}` : ""}`,
-      publicMetadata: { full_name: patient.full_name, role: "patient" },
+      publicMetadata: { full_name: patient.full_name, role: "patient", instructor_name: instructor?.full_name ?? null },
     });
   } catch (e) {
     // Même logique de lecture d'erreur que addPatient ci-dessus : le détail

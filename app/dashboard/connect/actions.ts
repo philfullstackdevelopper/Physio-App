@@ -13,10 +13,11 @@ import { TIERS, TIER_KEYS, type TierKey } from "@/lib/billing/plans";
 // Connect — see app/patient/abonnement/actions.ts.
 //
 // monthly_patient_price_cents is kept in step with the Standard price as a
-// bridge: lib/billing/platformFee.ts (the 15 % estimate) and
+// bridge: lib/billing/platformFee.ts (the 16 % estimate) and
 // lib/billing/context.ts (the kiné's "pro" level) still read that single
-// column. Charging the real 15 % per actual tier is sub-project 2 of the
-// spec (docs/superpowers/specs/2026-09-08-patient-program-tiers-design.md).
+// column. The real 16 % per actual tier is charged automatically by Stripe
+// on every invoice (app/patient/abonnement/actions.ts,
+// subscription_data.application_fee_percent) — no separate collection step.
 export async function setTierPrices(formData: FormData) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
@@ -67,6 +68,14 @@ export async function startConnectOnboarding() {
 
   let accountId = existing?.stripe_connect_account_id as string | null;
   if (!accountId) {
+    // Compte Standard classique. Stripe n'autorise PAS fees.payer:
+    // "application" (EasyPhysio absorbant les frais Stripe) sur un compte
+    // avec stripe_dashboard.type "full" (= Standard) — combinaison rejetée
+    // par l'API (essayé le 2026-09-10, erreur "type and controller
+    // mutually exclusive", puis confirmé incompatible même en listant les
+    // deux séparément). Le kiné paie donc le frais Stripe sur sa part, comme
+    // pour tout compte Standard — un seul montant net par paiement, pas de
+    // ligne de frais séparée visible pour lui.
     const account = await stripe.accounts.create({ type: "standard", email: user.email });
     accountId = account.id;
     await admin.from("instructor_connect_accounts").upsert(

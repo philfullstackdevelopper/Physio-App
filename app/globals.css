@@ -138,6 +138,23 @@ body {
 @keyframes growX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes drawLine { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 
+/* Featured pricing card (app/patient/abonnement/page.tsx) — a gentle float so
+   the card everyone's meant to pick feels alive rather than static, same
+   "Road to Offer"-style pricing page it's already modeled on (Philippe,
+   2026-09-10). Small enough not to fight the card's own -translate-y-4. */
+@keyframes floatY {
+  0%, 100% { transform: translateY(-1rem); }
+  50% { transform: translateY(-1.5rem); }
+}
+
+/* A soft diagonal light sweep across the trial CTA button — background-only
+   (no extra DOM element needed): a bright diagonal band slides through on a
+   loop. Pairs with floatY on the same featured card. */
+@keyframes shineSweep {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
 /* WeekProgramme's strip-segment <-> day-view morph (view-transition-name
    "week-strip-N" on each side, see components/WeekProgramme.tsx). Slower and
    softer than the browser's ~0.25s default cross-fade, same exponential

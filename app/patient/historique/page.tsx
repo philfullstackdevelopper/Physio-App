@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { getTierBilling } from "@/lib/billing/context";
+import { TIERS, isTierKey } from "@/lib/billing/plans";
 
 type LogRow = {
   id: string;
@@ -20,12 +22,15 @@ export default async function HistoriquePage() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const { data } = await supabase
-    .from("workout_logs")
-    .select("id, completed_at, workouts ( name )")
-    .eq("patient_id", user.id)
-    .order("completed_at", { ascending: false })
-    .limit(200);
+  const [{ data }, billing] = await Promise.all([
+    supabase
+      .from("workout_logs")
+      .select("id, completed_at, workouts ( name )")
+      .eq("patient_id", user.id)
+      .order("completed_at", { ascending: false })
+      .limit(200),
+    getTierBilling(supabase, user.id),
+  ]);
   const logs = (data ?? []) as unknown as LogRow[];
 
   // Group by day for a readable list — most recent day first.
@@ -36,6 +41,13 @@ export default async function HistoriquePage() {
     if (group) group.logs.push(log);
     else groups.push({ day, logs: [log] });
   }
+
+  // Offre du patient -> combien de jours (groupes) en clair avant verrou.
+  // Plan inconnu/historique (patient_monthly, grandfathering) = illimité,
+  // pas de mauvaise surprise sur un abonnement qui n'a jamais eu cette règle.
+  const historyDaysVisible = isTierKey(billing.subPlan) ? TIERS[billing.subPlan].historyDaysVisible : null;
+  const visibleGroups = historyDaysVisible === null ? groups : groups.slice(0, historyDaysVisible);
+  const lockedGroups = historyDaysVisible === null ? [] : groups.slice(historyDaysVisible);
 
   return (
     <main className="min-h-screen p-6 sm:p-8">
@@ -49,7 +61,7 @@ export default async function HistoriquePage() {
           </div>
         ) : (
           <div className="mt-6 space-y-6">
-            {groups.map((g) => (
+            {visibleGroups.map((g) => (
               <div key={g.day}>
                 <h2 className="text-sm font-medium capitalize text-slate-500">{g.day}</h2>
                 <div className="mt-2 space-y-2">
@@ -69,6 +81,36 @@ export default async function HistoriquePage() {
                 </div>
               </div>
             ))}
+
+            {lockedGroups.length > 0 && (
+              <div>
+                <h2 className="text-sm font-medium capitalize text-slate-400">
+                  {lockedGroups.length} jour{lockedGroups.length > 1 ? "s" : ""} plus ancien
+                  {lockedGroups.length > 1 ? "s" : ""}
+                </h2>
+                <div className="mt-2 space-y-2">
+                  {lockedGroups.map((g) => (
+                    <div
+                      key={g.day}
+                      className="flex items-center justify-between rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3.5"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200/70 text-slate-400">
+                          <Lock className="h-3.5 w-3.5" strokeWidth={2} />
+                        </span>
+                        <p className="text-sm font-medium capitalize text-slate-400">{g.day}</p>
+                      </div>
+                      <Link
+                        href="/patient/compte"
+                        className="shrink-0 text-xs font-semibold text-brand hover:underline"
+                      >
+                        Passez à Standard pour avoir accès à cette partie !
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

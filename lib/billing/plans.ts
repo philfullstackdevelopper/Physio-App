@@ -14,19 +14,59 @@ export type TierKey = "essentiel" | "standard" | "premium";
 export interface Tier {
   key: TierKey;
   label: string;
-  /** Prix par défaut, centimes / mois. */
+  /** Prix par défaut, centimes / mois — actuellement le tarif de lancement. */
   amount: number;
+  /**
+   * Prix "normal" de référence, centimes / mois, affiché barré pendant
+   * l'offre de lancement (Philippe, 2026-09-11 : -50% temporaire, remontera
+   * à ce prix ensuite). Uniquement indicatif côté affichage — n'est jamais
+   * facturé, `amount` (ou le prix propre du kiné) reste la seule source
+   * pour Stripe.
+   */
+  listAmount: number;
   /** Séances recommandables par semaine ; null = illimité. */
   weeklyCap: number | null;
   videoLibrary: boolean;
+  /**
+   * Combien de jours d'historique (page /patient/historique) le patient voit
+   * en clair ; au-delà, les blocs sont verrouillés avec une incitation à
+   * passer à l'offre supérieure. null = illimité (Philippe, 2026-09-11 :
+   * Standard doit débloquer plus qu'Essentiel au-delà du seul nombre de
+   * séances/semaine).
+   */
+  historyDaysVisible: number | null;
 }
 
 export const TIER_KEYS: readonly TierKey[] = ["essentiel", "standard", "premium"] as const;
 
 export const TIERS: Record<TierKey, Tier> = {
-  essentiel: { key: "essentiel", label: "Essentiel", amount: 1999, weeklyCap: 1, videoLibrary: false },
-  standard: { key: "standard", label: "Standard", amount: 3499, weeklyCap: 3, videoLibrary: false },
-  premium: { key: "premium", label: "Premium", amount: 4999, weeklyCap: null, videoLibrary: true },
+  essentiel: {
+    key: "essentiel",
+    label: "Essentiel",
+    amount: 1999,
+    listAmount: 3999,
+    weeklyCap: 1,
+    videoLibrary: false,
+    historyDaysVisible: 7,
+  },
+  standard: {
+    key: "standard",
+    label: "Standard",
+    amount: 2999,
+    listAmount: 5999,
+    weeklyCap: 3,
+    videoLibrary: false,
+    historyDaysVisible: null,
+  },
+  premium: {
+    key: "premium",
+    label: "Premium",
+    amount: 3999,
+    listAmount: 7999,
+    weeklyCap: null,
+    videoLibrary: true,
+    historyDaysVisible: null,
+  },
 };
 
 export const CURRENCY = "eur";

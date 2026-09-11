@@ -31,7 +31,18 @@ export async function POST(req: Request) {
       if (session.subscription) {
         const subId =
           typeof session.subscription === "string" ? session.subscription : session.subscription.id;
-        const sub = await stripe.subscriptions.retrieve(subId);
+        // The checkout session (and the subscription it created) lives on the
+        // kiné's own Connect account (Direct charge — app/patient/abonnement/actions.ts),
+        // never on the platform account. A Connect webhook event carries which
+        // connected account it came from in `event.account`; without passing
+        // that back as the request option, the platform's own view of Stripe
+        // can't see the connected account's objects at all ("No such
+        // subscription" — confirmed via a live test, 2026-09-11).
+        const sub = await stripe.subscriptions.retrieve(
+          subId,
+          undefined,
+          event.account ? { stripeAccount: event.account } : undefined,
+        );
         await syncSubscription(sub, {
           user_id: session.metadata?.user_id,
           plan: session.metadata?.plan,

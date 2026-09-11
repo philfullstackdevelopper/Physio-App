@@ -4,6 +4,8 @@ import PatientNav from "@/components/PatientNav";
 import PatientWelcomeGate from "@/components/PatientWelcomeGate";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { getTierBilling } from "@/lib/billing/context";
+import { hasActiveTier } from "@/lib/billing/access";
 
 const ONBOARDING_PATH = "/patient/onboarding";
 // Same treatment as onboarding: the offer choice comes right after it
@@ -52,10 +54,24 @@ export default async function PatientLayout({ children }: { children: React.Reac
     }
   }
 
-  // Onboarding renders full-bleed, its own layout (step wizard, no dashboard
-  // chrome) — the real nav only makes sense once there's a real profile to
-  // navigate around (Philippe, 2026-09-09: "sans les trucs sur la barre
-  // latérale pour le début").
+  // Same "offre active ?" gate as lib/patient/home-data.ts, but done HERE,
+  // before any nav markup is built, not from inside a nested page. A
+  // redirect() thrown deep inside {children} arrives too late: this layout's
+  // shell (sidebar included) may already have started streaming to the
+  // browser, so the sidebar flashes/sticks around the abonnement page even
+  // though that page is meant to render full-bleed (Philippe, 2026-09-11 —
+  // reported as "la barre latérale ne devrait pas être là").
+  if (patient && !onOnboardingPath && !pathname.startsWith(ABONNEMENT_PATH)) {
+    if (!hasActiveTier(await getTierBilling(supabase, user.id))) {
+      redirect(ABONNEMENT_PATH);
+    }
+  }
+
+  // Onboarding and the offer choice both render full-bleed, their own layout
+  // (step wizard / pricing cards, no dashboard chrome) — the real nav only
+  // makes sense once there's a real profile AND an active offer to navigate
+  // around (Philippe, 2026-09-09: "sans les trucs sur la barre latérale pour
+  // le début").
   if (onOnboardingPath || pathname.startsWith(ABONNEMENT_PATH)) return <>{children}</>;
 
   // Messages FROM the instructor this patient hasn't opened yet — mirrors

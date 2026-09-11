@@ -5,8 +5,11 @@ import { TIERS, TIER_KEYS, isTierKey, resolveTierPrices } from "./plans.ts";
 test("TIERS : trois offres, prix croissants, plafonds du spec", () => {
   assert.deepEqual(TIER_KEYS, ["essentiel", "standard", "premium"]);
   assert.equal(TIERS.essentiel.amount, 1999);
-  assert.equal(TIERS.standard.amount, 3499);
-  assert.equal(TIERS.premium.amount, 4999);
+  assert.equal(TIERS.standard.amount, 2999);
+  assert.equal(TIERS.premium.amount, 3999);
+  assert.equal(TIERS.essentiel.listAmount, 3999);
+  assert.equal(TIERS.standard.listAmount, 5999);
+  assert.equal(TIERS.premium.listAmount, 7999);
   assert.equal(TIERS.essentiel.weeklyCap, 1);
   assert.equal(TIERS.standard.weeklyCap, 3);
   assert.equal(TIERS.premium.weeklyCap, null);
@@ -25,10 +28,10 @@ test("isTierKey : accepte les trois clés, refuse le reste", () => {
 });
 
 test("resolveTierPrices : défauts quand le kiné n'a rien fixé", () => {
-  assert.deepEqual(resolveTierPrices(null), { essentiel: 1999, standard: 3499, premium: 4999 });
+  assert.deepEqual(resolveTierPrices(null), { essentiel: 1999, standard: 2999, premium: 3999 });
   assert.deepEqual(
     resolveTierPrices({ tier_essentiel_cents: null, tier_standard_cents: null, tier_premium_cents: null }),
-    { essentiel: 1999, standard: 3499, premium: 4999 },
+    { essentiel: 1999, standard: 2999, premium: 3999 },
   );
 });
 

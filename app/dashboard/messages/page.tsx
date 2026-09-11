@@ -7,6 +7,7 @@ import { ATTACHMENT_BUCKET } from "@/lib/messages/attachment";
 import ConversationList from "@/components/ConversationList";
 import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
 import MessageComposer from "@/components/MessageComposer";
+import MarkThreadRead from "@/components/MarkThreadRead";
 import { markConversationRead, sendInboxMessage, toggleFollowUp } from "./actions";
 
 const TABS: ConversationTab[] = ["all", "unread", "follow_up"];
@@ -78,8 +79,6 @@ export default async function MessagesPage({
       attachment_name: (m.attachment_name as string | null) ?? null,
       attachmentUrl: m.attachment_path ? (signed.get(m.attachment_path as string) ?? null) : null,
     }));
-
-    await markConversationRead(selectedId);
   }
 
   return (
@@ -117,6 +116,7 @@ export default async function MessagesPage({
               <p className="m-auto p-6 text-center text-sm text-muted">Aucun patient pour l&apos;instant.</p>
             ) : (
               <>
+                <MarkThreadRead patientId={selected.patientId} action={markConversationRead} />
                 <header className="flex items-center gap-3 border-b border-line px-5 py-4">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand">
                     {selected.initials}

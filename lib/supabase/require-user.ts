@@ -54,7 +54,19 @@ const loadUser = cache(async (): Promise<AppUser> => {
     redirect("/login");
   }
 
-  const user = await getClerkUser();
+  // getClerkUser() can also *throw* (e.g. Clerk's dev-instance rate limit —
+  // a 429 ClerkAPIResponseError), not just resolve to null. That case wasn't
+  // handled at all before: the exception propagated straight out of this
+  // Server Component, crashing the whole page instead of falling back to
+  // /connection-error like the "resolved to null" case below already does
+  // (Philippe, 2026-09-10 — a burst of testing tripped Clerk's rate limit and
+  // /patient/onboarding hard-crashed instead of showing a retry screen).
+  let user: Awaited<ReturnType<typeof getClerkUser>>;
+  try {
+    user = await getClerkUser();
+  } catch {
+    redirect("/connection-error?next=/login");
+  }
 
   if (!user) {
     // auth() just confirmed a valid session, so a null user here means the

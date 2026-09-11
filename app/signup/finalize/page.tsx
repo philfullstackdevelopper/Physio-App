@@ -35,7 +35,17 @@ function readPendingCabinet(raw: string | undefined): PendingCabinet | null {
 // the person is logged in to Clerk, but their uuid has no instructors row yet,
 // which is exactly what we're creating.
 export default async function SignupFinalizePage() {
-  const user = await currentUser();
+  // currentUser() can throw (Clerk dev-instance rate limit, a 429) rather
+  // than just resolve to null — same failure mode fixed in
+  // lib/supabase/require-user.ts, Philippe, 2026-09-10. Right after a fresh
+  // Clerk sign-up is exactly when this page runs, so it can't skip the
+  // guard.
+  let user;
+  try {
+    user = await currentUser();
+  } catch {
+    redirect("/connection-error?next=/signup/finalize");
+  }
   if (!user) redirect("/login");
 
   const email = user.primaryEmailAddress?.emailAddress ?? "";

@@ -14,15 +14,19 @@ import {
   resolveTierPrices,
   type InstructorTierPriceRow,
 } from "@/lib/billing/plans";
+import { PLATFORM_FEE_RATE } from "@/lib/billing/platformFee";
 
 // Démarre un Stripe Checkout (page hébergée) pour l'offre choisie et y
 // redirige le patient. Appelé depuis un <form action={startTierCheckout}>
 // avec un champ caché `tier`.
 //
-// L'argent va DIRECTEMENT sur le compte Stripe Connect du kiné du patient
-// (subscription_data.transfer_data.destination) — EasyPhysio n'y touche
-// jamais (CLAUDE.md §4, risque de compérage). Les 15 % de plateforme ne sont
-// pas prélevés ici : sous-projet 2 du spec. Prix = ceux du kiné
+// Paiement direct (option `stripeAccount`, voir plus bas) : le kiné est le
+// "merchant of record", l'argent du patient ne transite jamais par le compte
+// EasyPhysio (CLAUDE.md §4). La commission de 16 % est prélevée
+// automatiquement par Stripe sur chaque facture
+// (subscription_data.application_fee_percent) — décision Philippe du
+// 2026-09-10, risque de compérage assumé en connaissance de cause (question
+// posée au CNOMK en parallèle). Prix = ceux du kiné
 // (instructors.tier_*_cents), sinon les défauts de lib/billing/plans.ts.
 export async function startTierCheckout(formData: FormData) {
   // Annotation explicite sur la variable : c'est ce qui permet à TypeScript de
@@ -78,32 +82,47 @@ export async function startTierCheckout(formData: FormData) {
   // rester HORS du try, sinon le catch l'avalerait.
   let checkoutUrl: string | null = null;
   try {
-    const session = await getStripe().checkout.sessions.create({
-      mode: "subscription",
-      customer_email: user.email ?? undefined,
-      client_reference_id: user.id,
-      metadata: { user_id: user.id, plan: tier.key },
-      subscription_data: {
+    // Paiement direct (Direct charge) : la session est créée SUR le compte
+    // Connect du kiné (option `stripeAccount`, pas transfer_data.destination)
+    // — Stripe recommande ce mode pour les comptes "Standard" (le type utilisé
+    // ici, voir startConnectOnboarding()). Le kiné est le "merchant of
+    // record" : l'argent du patient ne transite jamais, même techniquement,
+    // par le compte plateforme — cohérent avec CLAUDE.md §4 ("EasyPhysio n'y
+    // touche jamais"). `application_fee_percent` prélève quand même
+    // automatiquement la commission plateforme sur chaque facture. Décision
+    // Philippe du 2026-09-10 : risque déontologique (compérage,
+    // R.4321-70/71/72 CSP) assumé en connaissance de cause, question posée
+    // au CNOMK en parallèle — ce mode de paiement ne change rien à ce
+    // risque, seulement à qui est légalement le vendeur de la transaction.
+    const session = await getStripe().checkout.sessions.create(
+      {
+        mode: "subscription",
+        customer_email: user.email ?? undefined,
+        client_reference_id: user.id,
         metadata: { user_id: user.id, plan: tier.key },
-        trial_period_days: TRIAL_DAYS,
-        transfer_data: { destination },
-      },
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: CURRENCY,
-            product_data: { name: `EasyPhysio — Offre ${tier.label} · ${kineName}` },
-            unit_amount: prices[tier.key],
-            recurring: { interval: "month" },
-          },
+        subscription_data: {
+          metadata: { user_id: user.id, plan: tier.key },
+          trial_period_days: TRIAL_DAYS,
+          application_fee_percent: PLATFORM_FEE_RATE * 100,
         },
-      ],
-      // Stripe remplace {CHECKOUT_SESSION_ID} ; /billing/return synchronise
-      // l'abonnement puis renvoie vers `next`.
-      success_url: `${base}/billing/return?session_id={CHECKOUT_SESSION_ID}&next=${encodeURIComponent("/patient?subscribed=1")}`,
-      cancel_url: `${base}/patient/abonnement?checkout=cancel`,
-    });
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: CURRENCY,
+              product_data: { name: `EasyPhysio — Offre ${tier.label} · ${kineName}` },
+              unit_amount: prices[tier.key],
+              recurring: { interval: "month" },
+            },
+          },
+        ],
+        // Stripe remplace {CHECKOUT_SESSION_ID} ; /billing/return synchronise
+        // l'abonnement puis renvoie vers `next`.
+        success_url: `${base}/billing/return?session_id={CHECKOUT_SESSION_ID}&next=${encodeURIComponent("/patient?subscribed=1")}`,
+        cancel_url: `${base}/patient/abonnement?checkout=cancel`,
+      },
+      { stripeAccount: destination },
+    );
     checkoutUrl = session.url;
   } catch (e) {
     console.error("startTierCheckout: Stripe checkout failed", e);

@@ -222,7 +222,7 @@ export default function Home() {
               <p className="text-sm font-medium text-blue-100">
                 Cabinets &amp; praticiens · Bêta
               </p>
-              <p className="font-display mt-3 text-7xl font-semibold tracking-tight">15 %</p>
+              <p className="font-display mt-3 text-7xl font-semibold tracking-tight">16 %</p>
               <p className="mt-1 text-sm text-blue-200">
                 prélevés par patient actif, sur le tarif que vous fixez
               </p>

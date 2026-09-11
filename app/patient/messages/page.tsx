@@ -57,7 +57,7 @@ export default async function MessagesPage({
 
   return (
     <main className="min-h-screen p-6 sm:p-8">
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-4xl">
         <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
           <MessageCircle className="h-5 w-5 text-brand" strokeWidth={1.75} />
           Messages

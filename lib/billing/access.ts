@@ -7,7 +7,7 @@
 // Business model (see CLAUDE.md / the build brief):
 //   PATIENT:  free floor  ->  2-month trial (full)  ->  premium €10/mo (full)
 //   KINÉ:     free  ->  "pro" once he has set his own patient price and pays
-//             EasyPhysio a prorated 15% platform fee per active patient
+//             EasyPhysio a prorated 16% platform fee per active patient
 //             (lib/billing/platformFee.ts) — there is no separate flat
 //             instructor subscription anymore (the old "kine_pro" €30/mo
 //             plan was removed). Fees ARE now proportional to how many
