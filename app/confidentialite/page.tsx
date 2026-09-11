@@ -39,9 +39,9 @@ export default function ConfidentialitePage() {
             <p className="mt-1">
               Compte et identification (nom, email, mot de passe chiffré) ; données de santé
               (condition, stade de récupération, profil physique, ressenti et douleur,
-              séances réalisées, documents médicaux éventuels, messages avec votre
-              kinésithérapeute) ; données de facturation, gérées par notre prestataire de
-              paiement — nous ne stockons jamais de numéro de carte.
+              séances réalisées, messages avec votre kinésithérapeute) ; données de
+              facturation, gérées par notre prestataire de paiement — nous ne stockons jamais
+              de numéro de carte.
             </p>
           </section>
 
