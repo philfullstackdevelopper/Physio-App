@@ -1,2 +1,9 @@
 #!/usr/bin/env bash
-exit 0
+set -e
+BUILD_DIR=$1
+curl -sL -o "$BUILD_DIR/postgrest.tar.xz" https://github.com/PostgREST/postgrest/releases/download/v16.3/postgrest-v16.3-linux-static-x86-64.tar.xz
+tar -xJf "$BUILD_DIR/postgrest.tar.xz" -C "$BUILD_DIR"
+rm "$BUILD_DIR/postgrest.tar.xz"
+chmod +x "$BUILD_DIR/postgrest"
+curl -sL -o "$BUILD_DIR/jwks.json" https://charmed-bear-3797.clerk.accounts.dev/.well-known/jwks.json
+echo "PostgREST binary + Clerk JWKS fetched at build time."
