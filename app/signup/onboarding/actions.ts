@@ -1,26 +1,25 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { setInstructorStatus } from "@/lib/db/admin";
 import { verifyRpps } from "@/lib/instructor/rppsVerification";
 
 // Saves the cabinet/practice details collected right after Clerk signup (see
 // app/signup/onboarding/page.tsx).
 //
-// Uses the admin client, NOT the instructor's own RLS-scoped client: this
-// update can set `status` to "approved" (auto-approval on a confirmed RPPS
-// match, Philippe 2026-09-10), and instructors_update_own
-// (0031_rls_clerk_identity.sql) checks only row ownership, not which columns
-// are written — same reasoning as instructor_connect_accounts living in its
-// own table (see 0020_connect_pricing.sql). Writing `status` through the
-// instructor's own session would let any kiné self-approve by calling
-// Supabase directly, bypassing verifyRpps() entirely. requireUser() below
-// already confirms identity, and .eq("id", user.id) scopes the write to
-// their own row, so admin-client here is safe.
+// The cabinet fields go through the instructor's own RLS-scoped session
+// (instructors_update_own already allows a self-row update). The `status`
+// escalation to "approved" is handled separately, through the privileged
+// setInstructorStatus() write: writing status through the instructor's own
+// session would let any kiné self-approve by calling PostgREST directly,
+// bypassing verifyRpps() entirely (see supabase/migrations/0057's
+// admin_set_instructor_status(), deliberately unreachable from any session
+// but the server's own trusted code).
 export async function saveInstructorOnboarding(formData: FormData) {
   const user = await requireUser();
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: instructor } = await supabase
     .from("instructors")
@@ -67,12 +66,15 @@ export async function saveInstructorOnboarding(formData: FormData) {
       rpps_number: rppsNumber,
       siret,
       rpps_verified_at: verification.status === "verified" ? verification.verifiedAt : null,
-      ...(autoApproved && { status: "approved" }),
     })
     .eq("id", user.id);
 
   if (error) {
     redirect(`/signup/onboarding?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (autoApproved) {
+    await setInstructorStatus(user.id, "approved");
   }
 
   redirect(autoApproved ? "/dashboard" : "/signup/pending");

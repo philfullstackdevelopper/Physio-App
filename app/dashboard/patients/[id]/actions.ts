@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { applyAdjustment, adjustmentMessage } from "@/lib/exercise/adjustPlan";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 
@@ -96,8 +95,6 @@ export async function deletePatient(formData: FormData) {
     .maybeSingle();
   if (!patient) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Patient introuvable.")}`);
 
-  const admin = createAdminClient();
-
   try {
     const client = await clerkClient();
     const existingUsers = await client.users.getUserList({ emailAddress: [patient!.email] });
@@ -111,7 +108,7 @@ export async function deletePatient(formData: FormData) {
     console.error("deletePatient: Clerk cleanup failed", e);
   }
 
-  await admin.from("app_users").delete().eq("email", patient!.email);
+  await supabase.from("app_users").delete().eq("email", patient!.email);
 
   const { error } = await supabase.from("patients").delete().eq("id", patientId).eq("instructor_id", user.id);
   if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);

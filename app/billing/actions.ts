@@ -3,7 +3,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 
@@ -39,7 +38,7 @@ export async function openBillingPortal(formData?: FormData) {
   // is what silently broke the "annuler mon abonnement" button.
   const instructorId = (patient?.instructor_id as string | null) ?? null;
   const { data: connect } = instructorId
-    ? await createAdminClient()
+    ? await supabase
         .from("instructor_connect_accounts")
         .select("stripe_connect_account_id")
         .eq("instructor_id", instructorId)

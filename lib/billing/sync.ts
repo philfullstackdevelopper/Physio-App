@@ -1,8 +1,9 @@
-// Writes a Stripe subscription into our `subscriptions` table using the admin
-// (service-role) client, which bypasses RLS. Shared by the Stripe webhook and
-// the checkout-return handler so both stay consistent.
+// Writes a Stripe subscription into our `subscriptions` table via a
+// privileged, server-only write (see lib/db/admin.ts) — no user session
+// exists at webhook time. Shared by the Stripe webhook and the
+// checkout-return handler so both stay consistent.
 import type Stripe from "stripe";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { upsertSubscription } from "@/lib/db/admin";
 
 /** Stripe moved current_period_end onto items in recent API versions — read it
  *  from either place. Returns an ISO string or null. */
@@ -22,17 +23,12 @@ export async function syncSubscription(
   const plan = sub.metadata?.plan ?? fallback?.plan;
   if (!userId || !plan) return;
 
-  const admin = createAdminClient();
-  await admin.from("subscriptions").upsert(
-    {
-      user_id: userId,
-      plan,
-      stripe_customer_id: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
-      stripe_subscription_id: sub.id,
-      status: sub.status,
-      current_period_end: periodEndISO(sub),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
+  await upsertSubscription({
+    userId,
+    plan,
+    stripeCustomerId: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+    stripeSubscriptionId: sub.id,
+    status: sub.status,
+    currentPeriodEnd: periodEndISO(sub),
+  });
 }

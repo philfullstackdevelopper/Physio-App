@@ -1,18 +1,13 @@
 import { UserCheck } from "lucide-react";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { getPool } from "@/lib/db/pool";
 import { approveInstructor, rejectInstructor } from "./actions";
 
 const dateFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
 export default async function AdminPage() {
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from("instructors")
-    .select("id, full_name, email, created_at, cabinet_name, cabinet_address, phone, rpps_number, siret, rpps_verified_at")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true });
+  const { rows } = await getPool().query("select * from internal.admin_list_pending_instructors()");
 
-  const pending = data ?? [];
+  const pending = rows;
 
   return (
     <div>

@@ -8,7 +8,6 @@ import { isClerkAPIResponseError } from "@clerk/shared/error";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { precreateAppUserId } from "@/lib/auth/user-map";
-import { createAdminClient } from "@/lib/supabase/admin";
 import type { ThreadMessage } from "@/components/MessageThread";
 
 // Instructor invites a new patient by email. Creates the patient's Clerk

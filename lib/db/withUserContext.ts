@@ -1,7 +1,13 @@
 import type { PoolClient } from "pg";
 import { getPool } from "./pool";
 
-// NOT YET WIRED INTO THE LIVE APP (Scalingo migration, Phase 2).
+// NOT YET WIRED INTO THE LIVE APP (Scalingo migration, Phase 2's abandoned
+// Auth.js scaffold — see auth.ts, the only caller). Kept only so that file
+// keeps compiling; do not build on this without checking with Philippe
+// first, per CLAUDE.md §7 — its three-role model (authenticated/anon/
+// auth_service) predates the discovery that Scalingo's managed Postgres
+// role can't create new roles at all (see supabase/migrations/0057's design
+// note), so it would not actually work if wired up as written.
 //
 // Every query needing RLS runs through here. Two things happen per call,
 // both scoped to "local" (i.e. this transaction only), so nothing leaks into

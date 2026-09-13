@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 import { CURRENCY, TIERS, isTierKey, resolveTierPrices, type InstructorTierPriceRow } from "@/lib/billing/plans";
@@ -49,7 +48,7 @@ export async function changeTier(formData: FormData) {
       .select("full_name, tier_essentiel_cents, tier_standard_cents, tier_premium_cents")
       .eq("id", instructorId)
       .maybeSingle(),
-    createAdminClient()
+    supabase
       .from("instructor_connect_accounts")
       .select("stripe_connect_account_id, status")
       .eq("instructor_id", instructorId)

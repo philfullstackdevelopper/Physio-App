@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { upsertConnectAccount } from "@/lib/db/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 import { TIERS, TIER_KEYS, type TierKey } from "@/lib/billing/plans";
@@ -57,7 +57,6 @@ export async function setTierPrices(formData: FormData) {
 export async function startConnectOnboarding() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
-  const admin = createAdminClient();
   const stripe = getStripe();
 
   const { data: existing } = await supabase
@@ -78,14 +77,7 @@ export async function startConnectOnboarding() {
     // ligne de frais séparée visible pour lui.
     const account = await stripe.accounts.create({ type: "standard", email: user.email });
     accountId = account.id;
-    await admin.from("instructor_connect_accounts").upsert(
-      {
-        instructor_id: user.id,
-        stripe_connect_account_id: accountId,
-        status: "onboarding",
-      },
-      { onConflict: "instructor_id" },
-    );
+    await upsertConnectAccount({ instructorId: user.id, stripeConnectAccountId: accountId, status: "onboarding" });
   }
 
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";

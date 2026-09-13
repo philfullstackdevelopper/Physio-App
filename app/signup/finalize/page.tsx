@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { resolveAppUserId } from "@/lib/auth/user-map";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { setInstructorStatus } from "@/lib/db/admin";
 import { verifyRpps } from "@/lib/instructor/rppsVerification";
 
 const PENDING_CABINET_COOKIE = "pending_cabinet";
@@ -31,9 +32,15 @@ function readPendingCabinet(raw: string | undefined): PendingCabinet | null {
 // app needs (same job the old signup() server action did inline), with
 // status "pending" so the manual approval gate still applies.
 //
-// Uses the service-role client: at this instant RLS would refuse the insert —
-// the person is logged in to Clerk, but their uuid has no instructors row yet,
-// which is exactly what we're creating.
+// The instructors_insert_self RLS policy allows this insert as soon as
+// resolveAppUserId() below has created the app_users mapping row for this
+// Clerk identity — its WITH CHECK only requires id = current_app_user_id(),
+// nothing about the row not existing yet. The one thing that policy does
+// NOT restrict is which `status` value gets inserted, so `status` is always
+// inserted as "pending" here and escalated to "approved" separately, through
+// the privileged setInstructorStatus() write (same reasoning as
+// app/signup/onboarding/actions.ts): inserting "approved" directly through
+// this session would let anyone self-approve by calling PostgREST directly.
 export default async function SignupFinalizePage() {
   // currentUser() can throw (Clerk dev-instance rate limit, a 429) rather
   // than just resolve to null — same failure mode fixed in
@@ -52,7 +59,7 @@ export default async function SignupFinalizePage() {
   if (!email) redirect("/login");
 
   const appId = await resolveAppUserId(user.id, email);
-  const admin = createAdminClient();
+  const supabase = await createClient();
 
   // Cabinet details filled in BEFORE the Clerk account existed (see
   // components/KineSignupFlow.tsx — cabinet form first, account creation
@@ -62,7 +69,7 @@ export default async function SignupFinalizePage() {
   // row is created bare and app/signup/onboarding picks up the slack.
   const pendingCabinet = readPendingCabinet((await cookies()).get(PENDING_CABINET_COOKIE)?.value);
 
-  const { data: existing } = await admin
+  const { data: existing } = await supabase
     .from("instructors")
     .select("status, cabinet_name")
     .eq("id", appId)
@@ -80,11 +87,11 @@ export default async function SignupFinalizePage() {
     // hand, same as today.
     const autoApproved = verification?.status === "verified";
 
-    const { error } = await admin.from("instructors").insert({
+    const { error } = await supabase.from("instructors").insert({
       id: appId,
       full_name: fullName,
       email,
-      status: autoApproved ? "approved" : "pending",
+      status: "pending",
       ...(pendingCabinet && {
         cabinet_name: pendingCabinet.cabinetName,
         cabinet_address: pendingCabinet.cabinetAddress,
@@ -97,6 +104,10 @@ export default async function SignupFinalizePage() {
 
     if (error) {
       redirect(`/connection-error?next=${encodeURIComponent("/dashboard")}`);
+    }
+
+    if (autoApproved) {
+      await setInstructorStatus(appId, "approved");
     }
     // Auto-approved → straight into the app. Cabinet details on file but not
     // (yet) verified → the waiting screen. Missing entirely (recovery path,

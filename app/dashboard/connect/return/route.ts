@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { upsertConnectAccount } from "@/lib/db/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 
@@ -10,7 +10,6 @@ import { getStripe } from "@/lib/billing/stripe";
 export async function GET(request: Request) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
-  const admin = createAdminClient();
 
   const { data: row } = await supabase
     .from("instructor_connect_accounts")
@@ -22,10 +21,7 @@ export async function GET(request: Request) {
   if (accountId) {
     const account = await getStripe().accounts.retrieve(accountId);
     const status = account.details_submitted && account.charges_enabled ? "active" : "onboarding";
-    await admin
-      .from("instructor_connect_accounts")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("instructor_id", user.id);
+    await upsertConnectAccount({ instructorId: user.id, stripeConnectAccountId: accountId, status });
   }
 
   return NextResponse.redirect(new URL("/dashboard/facturation", request.url));

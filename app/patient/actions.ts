@@ -4,24 +4,18 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { createAdminClient } from "@/lib/supabase/admin";
 
-// First step of patient onboarding, gated in app/patient/layout.tsx. Uses the
-// admin client rather than the patient's own session: patients_update_by_instructor
-// is the only UPDATE policy on `patients` (see supabase/migrations/0001), so a
-// patient has no RLS path to write their own row — same situation signup/finalize
-// is in for `instructors`. Safe here because the id and column are both fixed
-// server-side (requireUser's own resolved id, terms_accepted_at only), never
-// client-supplied.
+// First step of patient onboarding, gated in app/patient/layout.tsx.
+// patients_update_by_instructor is the only ordinary UPDATE policy on
+// `patients` (see supabase/migrations/0001) — a patient has no RLS path to
+// write their own row directly, so this goes through the narrow
+// accept_patient_terms() RPC instead (supabase/migrations/0057), which only
+// ever touches terms_accepted_at and only for the calling patient's own id.
 export async function acceptTerms() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from("patients")
-    .update({ terms_accepted_at: new Date().toISOString() })
-    .eq("id", user.id);
+  const { error } = await supabase.rpc("accept_patient_terms", { p_patient_id: user.id });
   if (error) {
     redirect(`/patient?error=${encodeURIComponent(error.message)}`);
   }

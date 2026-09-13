@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 // Bridges Clerk identities to the UUIDs the database already uses.
 //
@@ -11,10 +11,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 //   email    (text)  – unique; lets us pre-create a mapping before first login
 //                      (patient invitations) and attach a Clerk id later.
 //
-// SERVER ONLY — talks to Supabase with the service-role key.
+// app_users has a deliberately open RLS policy (app_users_service, `using
+// (true)`) since it's the identity-resolution table itself — nothing else
+// can gate access to it by identity before identity is known.
 async function findAppIdBy(field: "clerk_id" | "email", value: string): Promise<string | null> {
-  const admin = createAdminClient();
-  const { data } = await admin
+  const supabase = await createClient();
+  const { data } = await supabase
     .from("app_users")
     .select("app_id")
     .eq(field, value)
@@ -34,8 +36,8 @@ export async function resolveAppUserId(clerkId: string, email: string): Promise<
 
   const byEmail = await findAppIdBy("email", email);
   if (byEmail) {
-    const admin = createAdminClient();
-    const { error } = await admin
+    const supabase = await createClient();
+    const { error } = await supabase
       .from("app_users")
       .update({ clerk_id: clerkId })
       .is("clerk_id", null)
@@ -46,8 +48,8 @@ export async function resolveAppUserId(clerkId: string, email: string): Promise<
     return byEmail;
   }
 
-  const admin = createAdminClient();
-  const { data, error } = await admin
+  const supabase = await createClient();
+  const { data, error } = await supabase
     .from("app_users")
     .insert({ clerk_id: clerkId, email })
     .select("app_id")
@@ -70,8 +72,8 @@ export async function precreateAppUserId(email: string): Promise<{ appId: string
   const existing = await findAppIdBy("email", email);
   if (existing) return { appId: existing, isNew: false };
 
-  const admin = createAdminClient();
-  const { data, error } = await admin
+  const supabase = await createClient();
+  const { data, error } = await supabase
     .from("app_users")
     .insert({ email })
     .select("app_id")

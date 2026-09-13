@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/require-user";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import DotCanvas from "@/components/DotCanvas";
 import { LogoMark } from "@/components/Logo";
 import { saveInstructorOnboarding } from "./actions";
@@ -12,9 +12,9 @@ import { saveInstructorOnboarding } from "./actions";
 // new kiné, and puts the RPPS number on file for the automatic Annuaire
 // Santé check once ESANTE_API_KEY exists (lib/instructor/rppsVerification.ts).
 //
-// Uses the admin client to read the instructor row, same reasoning as
-// finalize/page.tsx: this can run in the same instant as that insert, before
-// any RLS-visible session state has settled.
+// A plain self-read (instructors_select_own already covers it) — by the time
+// this page renders, app/signup/finalize/page.tsx has already created the
+// row this reads.
 export default async function SignupOnboardingPage({
   searchParams,
 }: {
@@ -22,9 +22,9 @@ export default async function SignupOnboardingPage({
 }) {
   const { error } = await searchParams;
   const user = await requireUser();
-  const admin = createAdminClient();
+  const supabase = await createClient();
 
-  const { data: instructor } = await admin
+  const { data: instructor } = await supabase
     .from("instructors")
     .select("status, cabinet_name, cabinet_address, phone, rpps_number, siret")
     .eq("id", user.id)

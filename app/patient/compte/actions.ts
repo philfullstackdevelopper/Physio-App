@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { clerkClient } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { deleteAppUserById } from "@/lib/db/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import { revokeCurrentSession } from "@/lib/auth/clerk-session";
 
@@ -32,9 +32,10 @@ export async function deleteMyAccount(formData: FormData) {
     redirect(`/patient/compte?error=${encodeURIComponent("Suppression du compte impossible.")}`);
   }
 
-  // ...and drop the internal identity-mapping row.
-  const admin = createAdminClient();
-  await admin.from("app_users").delete().eq("app_id", user.id);
+  // ...and drop the internal identity-mapping row. A direct connection, not
+  // the normal supabase-js client: the Clerk identity was just deleted
+  // above, so a fresh Clerk token may no longer be obtainable here.
+  await deleteAppUserById(user.id);
 
   await revokeCurrentSession();
   redirect("/login?deleted=1");

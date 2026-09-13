@@ -191,3 +191,25 @@ create policy connect_accounts_patient_read on public.instructor_connect_account
         and p.id = public.current_app_user_id()
     )
   );
+
+-- ---------------------------------------------------------------------------
+-- 6. Lecture privilégiée : la liste des kinés en attente d'approbation
+--    (app/admin). Lecture pure (pas d'écriture), mais cross-tenant — un
+--    admin de plateforme doit voir TOUS les kinés en attente, pas seulement
+--    "les siens". Vit dans `internal`, appelée via connexion directe.
+-- ---------------------------------------------------------------------------
+create or replace function internal.admin_list_pending_instructors()
+returns table(
+  id uuid, full_name text, email text, created_at timestamptz,
+  cabinet_name text, cabinet_address text, phone text,
+  rpps_number text, siret text, rpps_verified_at timestamptz
+)
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  select id, full_name, email, created_at, cabinet_name, cabinet_address, phone, rpps_number, siret, rpps_verified_at
+  from public.instructors
+  where status = 'pending'
+  order by created_at asc;
+$$;

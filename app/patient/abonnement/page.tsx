@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { AlertCircle, Check, LogOut, ShieldCheck, Sparkles } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import { LogoMark } from "@/components/Logo";
 import SubmitButton from "@/components/SubmitButton";
@@ -75,9 +74,10 @@ export default async function AbonnementPage({
           .eq("id", instructorId)
           .maybeSingle()
       : Promise.resolve({ data: null }),
-    // Statut Connect : lisible seulement par le kiné (0020) — lecture serveur.
+    // Un patient peut lire le compte Connect de SON PROPRE kiné (voir
+    // connect_accounts_patient_read, migration 0057).
     instructorId
-      ? createAdminClient().from("instructor_connect_accounts").select("status").eq("instructor_id", instructorId).maybeSingle()
+      ? supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", instructorId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 

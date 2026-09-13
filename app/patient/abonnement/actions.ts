@@ -3,7 +3,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 import {
@@ -57,11 +56,10 @@ export async function startTierCheckout(formData: FormData) {
     .maybeSingle();
   const prices = resolveTierPrices(kine as InstructorTierPriceRow | null);
 
-  // Le compte Connect n'est lisible que par le kiné lui-même (0020) — lecture
-  // serveur avec la clé service-role, jamais exposée au navigateur. On ne
-  // garde l'id que si Stripe a validé le compte (status = active).
-  const admin = createAdminClient();
-  const { data: connect } = await admin
+  // Un patient peut lire le compte Connect de SON PROPRE kiné (voir
+  // connect_accounts_patient_read, migration 0057) — on ne garde l'id que si
+  // Stripe a validé le compte (status = active).
+  const { data: connect } = await supabase
     .from("instructor_connect_accounts")
     .select("stripe_connect_account_id, status")
     .eq("instructor_id", instructorId)
