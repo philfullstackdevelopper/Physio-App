@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  PlayCircle,
   ShieldCheck,
   Sparkles,
   Video,
@@ -12,8 +11,8 @@ import SiteFooter from "@/components/SiteFooter";
 import PhoneMockup from "@/components/PhoneMockup";
 import KineJourneyDemo from "@/components/KineJourneyDemo";
 import ComparisonTable, { ComparisonBadge } from "@/components/ComparisonTable";
+import PricingSection from "@/components/PricingSection";
 import Testimonials from "@/components/Testimonials";
-import StepsShowcase from "@/components/StepsShowcase";
 import Reveal from "@/components/Reveal";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 
@@ -121,31 +120,6 @@ export default function Home() {
         </section>
         </Reveal>
 
-        {/* ── Comment ça marche ────────────────────────────────── */}
-        <Reveal>
-        <section id="comment-ca-marche" className="mt-24 scroll-mt-28 sm:mt-32">
-          <h2 className="font-display max-w-lg text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Trois étapes, rien de plus
-          </h2>
-          <p className="mt-3 max-w-xl text-lg leading-relaxed text-slate-600">
-            EasyPhysio simplifie le suivi et l&apos;adaptation de vos patients au quotidien.
-          </p>
-
-          <StepsShowcase />
-
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-            <PrimaryCta>Découvrir EasyPhysio en action</PrimaryCta>
-            <Link
-              href="#cote-kine"
-              className="inline-flex items-center gap-2 font-medium text-slate-700 transition hover:text-blue-700"
-            >
-              <PlayCircle className="h-5 w-5 text-blue-600" strokeWidth={1.75} />
-              Voir la démo <span className="font-normal text-slate-500">(1 min)</span>
-            </Link>
-          </div>
-        </section>
-        </Reveal>
-
         {/* ── Comparaison ──────────────────────────────────────── */}
         <Reveal>
         <section id="comparaison" className="mt-24 scroll-mt-28 sm:mt-32">
@@ -181,80 +155,29 @@ export default function Home() {
         </Reveal>
 
         {/* ── Tarifs ───────────────────────────────────────────── */}
-        {/* "Big number" direction, picked from a live 3-variant prototype
-            (2026-09-02; see git history for the other two). Money flow is
-            stated plainly (patient pays kiné, kiné pays EasyPhysio) rather
-            than the old "free for everyone" framing, which no longer
-            matched lib/billing/platformFee.ts. */}
+        {/* Bascule "Côté kiné" / "Côté patient" (Philippe, 2026-09-13) : un
+            seul prix parle à chaque audience (la commission pour le kiné,
+            les 3 offres pour le patient) — les montrer côte à côte, comme
+            avant, ne parlait vraiment à personne. Les prix patient viennent
+            de lib/billing/plans.ts (même source que /patient/abonnement). */}
         <Reveal>
-        <section id="tarifs" className="mt-24 scroll-mt-28 sm:mt-32">
-          <h2 className="font-display max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+        <section id="tarifs" className="mt-24 scroll-mt-28 text-center sm:mt-32">
+          <h2 className="font-display mx-auto max-w-xl text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
             Le patient paie son kiné. Le kiné paie EasyPhysio.
           </h2>
 
-          <RevealGroup className="mt-10 grid gap-4 sm:grid-cols-2">
-            <RevealItem className="rounded-2xl bg-white/70 p-8">
-              <p className="text-sm font-medium text-slate-500">Patients</p>
-              <p className="font-display mt-3 text-4xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-5xl">
-                Fixé par votre kiné
-              </p>
-              <p className="mt-2 text-sm text-slate-400">
-                réglé directement à votre praticien, via Stripe
-              </p>
-              <ul className="mt-8 space-y-2 text-sm text-slate-600">
-                <li>
-                  Accès uniquement sur invitation d&apos;un kinésithérapeute déjà inscrit sur
-                  EasyPhysio
-                </li>
-                <li>Paiement sécurisé, directement à votre kiné</li>
-                <li>Historique complet de vos séances conservé</li>
-              </ul>
-              <Link
-                href="/login"
-                className="mt-8 inline-flex items-center gap-1 text-sm font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
-              >
-                Me connecter
-                <ArrowRight className="h-4 w-4" strokeWidth={2} />
-              </Link>
-            </RevealItem>
-
-            <RevealItem className="rounded-2xl bg-blue-600 p-8 text-white">
-              <p className="text-sm font-medium text-blue-100">
-                Cabinets &amp; praticiens · Bêta
-              </p>
-              <p className="font-display mt-3 text-7xl font-semibold tracking-tight">16 %</p>
-              <p className="mt-1 text-sm text-blue-200">
-                prélevés par patient actif, sur le tarif que vous fixez
-              </p>
-              <ul className="mt-8 space-y-2 text-sm text-blue-50">
-                <li>Vous fixez votre tarif mensuel par patient</li>
-                <li>Paiement direct par vos patients, via Stripe Connect</li>
-                <li>Patients illimités</li>
-                <li>Bibliothèque d&apos;exercices avec vidéos</li>
-                <li>Suivi d&apos;assiduité et signalements de douleur</li>
-                <li>Ajustement de programme à distance</li>
-              </ul>
-              <Link
-                href="/signup/kine"
-                className="mt-8 inline-flex items-center gap-1.5 rounded-full bg-white px-6 py-3 text-sm font-medium text-blue-700 shadow-sm transition hover:bg-slate-100 active:scale-[0.97]"
-              >
-                Demander un accès
-                <ArrowRight className="h-4 w-4" strokeWidth={2} />
-              </Link>
-              <p className="mt-4 text-xs leading-relaxed text-blue-100">
-                Aucun abonnement fixe — la commission est prélevée automatiquement, uniquement sur
-                vos patients actifs.
-              </p>
-            </RevealItem>
-          </RevealGroup>
+          <div className="mt-10 text-left">
+            <PricingSection />
+          </div>
         </section>
         </Reveal>
 
         {/* ── FAQ ──────────────────────────────────────────────── */}
         <Reveal>
         <section id="faq" className="mx-auto mt-24 max-w-2xl scroll-mt-28 sm:mt-32">
-          <h2 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Les questions qu&apos;on nous pose le plus
+          <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Encore un doute&nbsp;?</p>
+          <h2 className="font-display mt-2 text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            Les réponses à toutes vos questions
           </h2>
           <div className="mt-8">
             <FaqSection />
