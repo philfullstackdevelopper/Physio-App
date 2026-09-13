@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import PatientNav from "@/components/PatientNav";
 import PatientWelcomeGate from "@/components/PatientWelcomeGate";
+import PatientNoRecordGate from "@/components/PatientNoRecordGate";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getTierBilling } from "@/lib/billing/context";
@@ -36,14 +37,24 @@ export default async function PatientLayout({ children }: { children: React.Reac
     .eq("id", user.id)
     .maybeSingle();
 
-  if (patient && !patient.terms_accepted_at) {
+  // No `patients` row at all for this identity — not "hasn't onboarded yet",
+  // genuinely nothing to attach a profile to (e.g. this Clerk account was
+  // never actually invited by an instructor). Block here, before any
+  // /patient/* page — including onboarding, whose patient_profiles insert
+  // has a foreign key onto patients.id and would otherwise fail with a raw
+  // Postgres error instead of an explanation (Philippe, 2026-09-13).
+  if (!patient) {
+    return <PatientNoRecordGate />;
+  }
+
+  if (!patient.terms_accepted_at) {
     const instructor = patient.instructors as unknown as { full_name: string | null } | null;
     return <PatientWelcomeGate instructorName={instructor?.full_name ?? null} />;
   }
 
   const pathname = (await headers()).get("x-pathname") ?? "";
   const onOnboardingPath = pathname.startsWith(ONBOARDING_PATH);
-  if (patient && !onOnboardingPath) {
+  if (!onOnboardingPath) {
     const { data: profile } = await supabase
       .from("patient_profiles")
       .select("health_data_consent_at")
@@ -61,7 +72,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
   // browser, so the sidebar flashes/sticks around the abonnement page even
   // though that page is meant to render full-bleed (Philippe, 2026-09-11 —
   // reported as "la barre latérale ne devrait pas être là").
-  if (patient && !onOnboardingPath && !pathname.startsWith(ABONNEMENT_PATH)) {
+  if (!onOnboardingPath && !pathname.startsWith(ABONNEMENT_PATH)) {
     if (!hasActiveTier(await getTierBilling(supabase, user.id))) {
       redirect(ABONNEMENT_PATH);
     }
@@ -85,7 +96,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
 
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink sm:flex-row">
-      <PatientNav patientName={(patient?.full_name as string | undefined) ?? null} unreadCount={unreadCount ?? 0} />
+      <PatientNav patientName={(patient.full_name as string | null) ?? null} unreadCount={unreadCount ?? 0} />
       <div className="relative min-w-0 flex-1 pb-20 sm:pb-0">{children}</div>
     </div>
   );

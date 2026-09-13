@@ -79,11 +79,17 @@ export default async function ChangerOffrePage({
                 key={key}
                 className={`relative flex h-full flex-col rounded-3xl p-7 ${
                   isUpgrade
-                    ? "bg-blue-600 text-white shadow-xl shadow-blue-900/20 ring-1 ring-blue-700"
+                    ? "bg-blue-600 text-white shadow-xl shadow-blue-900/20 ring-1 ring-blue-700 sm:animate-[floatY_4s_ease-in-out_infinite]"
                     : isCurrent
                       ? "border border-slate-200 bg-slate-50"
                       : "border border-slate-200 bg-white"
                 }`}
+                // Décalage de la flottaison entre Standard et Premium : les deux
+                // sont "upgrade" ici (le patient est sur l'offre la plus basse),
+                // les faire flotter en même temps donnerait un effet de
+                // synchronisation artificielle plutôt que "vivant" (Philippe,
+                // 2026-09-13 : « les faire bouger de haut en bas »).
+                style={isUpgrade ? { animationDelay: `${rank * 0.7}s` } : undefined}
               >
                 {isNearestUpgrade && (
                   <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">

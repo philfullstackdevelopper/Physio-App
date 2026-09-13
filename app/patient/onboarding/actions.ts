@@ -14,6 +14,21 @@ export async function saveOnboarding(formData: FormData) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
+  // app/patient/layout.tsx already blocks reaching this page without a
+  // `patients` row (PatientNoRecordGate) — this is defense in depth for the
+  // action itself, since patient_profiles.id has a foreign key onto
+  // patients.id (0004_stage_pii_and_feedback.sql) and would otherwise surface
+  // a raw Postgres error in the redirect URL instead of an explanation
+  // (Philippe, 2026-09-13).
+  const { data: patient } = await supabase.from("patients").select("id").eq("id", user.id).maybeSingle();
+  if (!patient) {
+    redirect(
+      `/patient/onboarding?error=${encodeURIComponent(
+        "Aucun profil patient n'est associé à ce compte — contactez votre kinésithérapeute.",
+      )}`,
+    );
+  }
+
   const declaredBodyPartIds = formData.getAll("declared_body_part_ids").map(String).filter(Boolean);
   const injuryStage = String(formData.get("injury_stage") ?? "");
   const rehabProgress = String(formData.get("rehab_progress") ?? "").trim() || null;

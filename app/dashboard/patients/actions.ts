@@ -102,8 +102,21 @@ export async function addPatient(formData: FormData) {
   });
 
   if (patientError) {
+    // Without this, the Clerk invitation already sent above stays valid: the
+    // patient could accept it, get a real Clerk account, and land on
+    // /patient/onboarding with no `patients` row to attach a profile to —
+    // patient_profiles.id's foreign key onto patients.id would then reject
+    // their very first save with a raw Postgres error (Philippe, 2026-09-13,
+    // hit by exactly this after a patients insert failed silently here).
+    try {
+      const client = await clerkClient();
+      const pending = await client.invitations.getInvitationList({ query: email, status: "pending" });
+      await Promise.all(pending.data.map((inv) => client.invitations.revokeInvitation(inv.id)));
+    } catch (e) {
+      console.error("addPatient: failed to revoke invitation after patients insert error", e);
+    }
     redirect(
-      `/dashboard/patients/new?error=${encodeURIComponent("Invitation envoyée mais patient non enregistré : " + patientError.message)}`,
+      `/dashboard/patients/new?error=${encodeURIComponent("Impossible d'enregistrer le patient : " + patientError.message)}`,
     );
   }
 

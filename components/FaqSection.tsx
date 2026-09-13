@@ -50,24 +50,42 @@ export default function FaqSection() {
       {QUESTIONS.map((q, i) => {
         const open = openIndex === i;
         return (
-          <RevealItem key={q.question} className="px-6 first:rounded-t-2xl last:rounded-b-2xl">
+          <RevealItem
+            key={q.question}
+            className={`px-6 transition-colors first:rounded-t-2xl last:rounded-b-2xl ${
+              open ? "bg-blue-50/50" : "hover:bg-slate-50"
+            }`}
+          >
             <button
               type="button"
               onClick={() => setOpenIndex(open ? null : i)}
               aria-expanded={open}
               className="flex w-full items-center justify-between gap-4 py-4 text-left"
             >
-              <span className={`text-sm font-medium ${open ? "text-blue-700" : "text-slate-700"}`}>
+              <span className={`text-sm font-medium transition-colors ${open ? "text-blue-700" : "text-slate-700"}`}>
                 {q.question}
               </span>
               <ChevronDown
-                className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+                className={`h-4 w-4 shrink-0 transition-[transform,color] duration-300 ease-out ${
+                  open ? "rotate-180 text-blue-600" : "text-slate-400"
+                }`}
                 strokeWidth={2}
               />
             </button>
-            {open && (
-              <p className="pb-5 pr-8 text-sm leading-relaxed text-slate-600">{q.answer}</p>
-            )}
+            {/* Hauteur animée en CSS pur via grid-template-rows 0fr → 1fr : pas
+                besoin de mesurer le contenu en JS, et ça s'anime même quand la
+                réponse fait plusieurs lignes (Philippe, 2026-09-13 : reprendre
+                la façon dont les questions "s'ouvrent" façon RoadToOffer —
+                l'ancienne version affichait/masquait la réponse d'un coup). */}
+            <div
+              className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <p className="pb-5 pr-8 text-sm leading-relaxed text-slate-600">{q.answer}</p>
+              </div>
+            </div>
           </RevealItem>
         );
       })}
