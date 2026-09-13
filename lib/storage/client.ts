@@ -1,17 +1,14 @@
 "use client";
 
-// Shared upload helper for Client Components (ExerciseVideoUpload,
-// MessageComposer) — hides whether the bytes go straight to Supabase (today)
-// or via a presigned S3 PUT (once STORAGE_PROVIDER=s3, see ./actions.ts).
-// Both components used to call supabase.storage.from(bucket).upload(...)
-// directly; that call now only happens on the Supabase branch here, so it's
-// the one place that needs touching if the presigned-PUT shape ever changes.
+// Upload helper for Client Components (ExerciseVideoUpload, the only caller
+// today — message attachments were dropped entirely, migration 0056) — hides
+// whether the bytes go straight to Supabase (today) or via a presigned S3
+// PUT (once STORAGE_PROVIDER=s3, see ./actions.ts).
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createStorageClient } from "@/lib/supabase/client";
 import { getUploadTarget } from "./actions";
 
 export async function uploadFile(
-  supabase: SupabaseClient,
   bucket: string,
   path: string,
   file: File,
@@ -19,9 +16,13 @@ export async function uploadFile(
   const target = await getUploadTarget(bucket, path, file.type || "application/octet-stream");
 
   if (target.provider === "supabase") {
-    const { error } = await supabase.storage.from(bucket).upload(path, file);
+    // Deliberately a separate client, not the `supabase` param: that one is
+    // pointed at PostgREST (the database) since the Scalingo migration,
+    // which has no Storage API at all — Storage stays on Supabase directly.
+    const storage = createStorageClient();
+    const { error } = await storage.storage.from(bucket).upload(path, file);
     if (error) return { error: error.message, publicUrl: null };
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+    const { data } = storage.storage.from(bucket).getPublicUrl(path);
     return { error: null, publicUrl: data.publicUrl };
   }
 

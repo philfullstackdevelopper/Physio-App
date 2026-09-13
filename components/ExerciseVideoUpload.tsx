@@ -44,7 +44,7 @@ export default function ExerciseVideoUpload({
       const safe = file.name.replace(/[^\w.\-]+/g, "_");
       const path = `${exerciseId}/${crypto.randomUUID()}_${safe}`;
 
-      const { error: upErr, publicUrl } = await uploadFile(supabase, BUCKET, path, file);
+      const { error: upErr, publicUrl } = await uploadFile(BUCKET, path, file);
       if (upErr || !publicUrl) throw new Error(upErr ?? "Échec de l'envoi.");
 
       const { error: rpcErr } = await supabase.rpc("set_exercise_media", {

@@ -27,3 +27,17 @@ export function createClient() {
     },
   );
 }
+
+// Storage-only browser client. Since the Scalingo migration (CLAUDE.md §7),
+// createClient() above points at PostgREST (the database), which has no
+// Storage API at all — Supabase Storage (still the only file-storage
+// backend, see lib/storage/*) needs its own client pointed at Supabase's
+// real project URL regardless of which database is live. Used by
+// lib/storage/client.ts's uploadFile() for the one bucket that still
+// uploads through Supabase Storage directly (exercise-media).
+export function createStorageClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
