@@ -6,4 +6,8 @@ tar -xJf "$BUILD_DIR/postgrest.tar.xz" -C "$BUILD_DIR"
 rm "$BUILD_DIR/postgrest.tar.xz"
 chmod +x "$BUILD_DIR/postgrest"
 curl -sL -o "$BUILD_DIR/jwks.json" https://charmed-bear-3797.clerk.accounts.dev/.well-known/jwks.json
-echo "PostgREST binary + Clerk JWKS fetched at build time."
+curl -sL -o "$BUILD_DIR/caddy.tar.gz" https://github.com/caddyserver/caddy/releases/download/v2.11.4/caddy_2.11.4_linux_amd64.tar.gz
+tar -xzf "$BUILD_DIR/caddy.tar.gz" -C "$BUILD_DIR" caddy
+rm "$BUILD_DIR/caddy.tar.gz"
+chmod +x "$BUILD_DIR/caddy"
+echo "PostgREST + Caddy + Clerk JWKS fetched at build time."

@@ -1,9 +1,10 @@
 # Buildpack minimal pour applications Procfile-seul
 
-Ce buildpack ne compile rien de special : il telecharge le binaire
-PostgREST (version Linux statique) et les clefs publiques Clerk (JWKS)
-directement pendant la construction sur Scalingo, pour ne jamais avoir
-a committer de gros binaires dans un depot git.
+Telecharge, au moment du build sur Scalingo :
+- le binaire PostgREST (Linux statique)
+- les clefs publiques Clerk (JWKS)
+- le binaire Caddy (reverse proxy statique, sert de "traducteur" entre
+  le chemin /rest/v1/... attendu par @supabase/supabase-js et la racine
+  ou PostgREST sert reellement ses tables)
 
-Utilise par l app easyphysio-postgrest via :
-BUILDPACK_URL=https://github.com/philfullstackdevelopper/Physio-App.git#postgrest-null-buildpack
+Rien de gros n est committe dans le depot de l app lui-meme.
