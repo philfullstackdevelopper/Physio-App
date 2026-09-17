@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { resolveAppUserId } from "@/lib/auth/user-map";
@@ -21,6 +22,28 @@ import { resolveAppUserId } from "@/lib/auth/user-map";
 // locally (no network call, so it can't be rate-limited) and is the real
 // source of truth for "is this session valid at all".
 const getClerkUser = cache(() => currentUser());
+
+// auth()'s own local JWT check turned out NOT to be the network-call-free
+// last word the comment above assumes: clerkMiddleware (proxy.ts) can hit a
+// "handshake" — a real round-trip to Clerk's Frontend API to refresh a
+// stale session token — before auth() ever resolves. On the dev instance,
+// that handshake can itself get rate-limited, and when it fails auth()
+// reports no userId even though the browser's Clerk client still holds a
+// perfectly valid session. Redirecting straight to /login in that case
+// recreates the exact /login <-> /apres-connexion bounce this file already
+// fixed once for currentUser() (Philippe, 2026-09-15).
+//
+// __client_uat is Clerk's own signal for this: a non-httpOnly cookie set to
+// a session's last-updated timestamp whenever the browser has ever signed
+// in, kept in sync independently of the __session JWT. Its presence means
+// "the browser believes it's signed in" — so if auth() says no session but
+// this cookie is still there, treat it as ambiguous (handshake/rate-limit
+// hiccup) rather than a real sign-out.
+async function looksSignedInClientSide(): Promise<boolean> {
+  const jar = await cookies();
+  const uat = jar.get("__client_uat")?.value;
+  return !!uat && uat !== "0";
+}
 
 // The Clerk replacement of the old Supabase-based requireUser().
 // Same call signature as before — existing callers do
@@ -47,10 +70,15 @@ export type AppUser = {
 // request hits the same cache entry regardless of which client instance the
 // caller happened to pass in.
 const loadUser = cache(async (): Promise<AppUser> => {
-  // Local JWT check first — cheap, no network call, can't be rate-limited.
-  // If this says there's no session, the user really is signed out.
+  // Local JWT check first — cheap, no network call, can't be rate-limited
+  // *by itself*. But it can come back empty because the middleware's own
+  // handshake with Clerk failed (see looksSignedInClientSide above), so a
+  // bare "no userId" isn't proof the user is actually signed out.
   const { userId } = await auth();
   if (!userId) {
+    if (await looksSignedInClientSide()) {
+      redirect("/connection-error?next=/login");
+    }
     redirect("/login");
   }
 

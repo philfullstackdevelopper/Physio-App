@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, ChevronDown, Sparkles } from "lucide-react";
+import { motion, useInView } from "motion/react";
+import { ArrowRight, Check, Sparkles } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 import { TIERS, TIER_KEYS, type TierKey } from "@/lib/billing/plans";
 import { HIGHLIGHT, featuresFor } from "@/lib/billing/tierCopy";
@@ -20,6 +21,27 @@ const euros = (cents: number) => (cents / 100).toLocaleString("fr-FR", { minimum
 const FEATURED: TierKey = "standard";
 const FEE_PERCENT = Math.round(PLATFORM_FEE_RATE * 100);
 
+// Un léger "pop" du montant final dès qu'il entre dans le viewport, une
+// seule fois — pas un décompte depuis 0 : faire défiler plein de valeurs
+// intermédiaires (0,00 → 12,40 → 19,99…) donnait l'impression que l'offre
+// coûtait bien plus cher qu'en réalité (Philippe, 2026-09-15).
+function AnimatedAmount({ cents, className }: { cents: number; className?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+
+  return (
+    <motion.span
+      ref={ref}
+      className={`inline-block tabular-nums ${className ?? ""}`}
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={inView ? { opacity: 1, scale: 1 } : undefined}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {euros(cents)}
+    </motion.span>
+  );
+}
+
 function PatientOffers() {
   return (
     <div>
@@ -36,8 +58,8 @@ function PatientOffers() {
               key={key}
               className={
                 featured
-                  ? "relative rounded-2xl bg-blue-600 p-6 text-white shadow-lg shadow-blue-900/20 ring-1 ring-blue-700"
-                  : "rounded-2xl border border-slate-200/70 bg-white/70 p-6"
+                  ? "relative z-10 rounded-2xl bg-blue-600 p-6 text-white shadow-lg shadow-blue-900/20 ring-1 ring-blue-700 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-900/30 md:scale-105"
+                  : "rounded-2xl border border-slate-200/70 bg-white/70 p-6 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-blue-200 hover:bg-white hover:shadow-xl hover:shadow-slate-900/10"
               }
             >
               {featured && (
@@ -59,9 +81,10 @@ function PatientOffers() {
                   {euros(tier.listAmount)}&nbsp;€
                 </span>
                 <span
-                  className={`font-display text-3xl font-semibold tracking-tight ${featured ? "text-white" : "text-slate-900"}`}
+                  className={`font-display flex items-baseline text-3xl font-semibold tracking-tight ${featured ? "text-white" : "text-slate-900"}`}
                 >
-                  {euros(tier.amount)}&nbsp;€
+                  <AnimatedAmount cents={tier.amount} />
+                  &nbsp;€
                 </span>
                 <span className={`text-xs ${featured ? "text-blue-100" : "text-slate-500"}`}>/mois</span>
               </p>
@@ -99,7 +122,6 @@ function PatientOffers() {
 }
 
 function KineOffer() {
-  const [whyOpen, setWhyOpen] = useState(false);
   return (
     <div className="mx-auto max-w-md">
       <div className="rounded-2xl bg-blue-600 p-8 text-white">
@@ -122,34 +144,10 @@ function KineOffer() {
           <ArrowRight className="h-4 w-4" strokeWidth={2} />
         </Link>
         <p className="mt-4 text-xs leading-relaxed text-blue-100">
-          Aucun abonnement fixe — la commission est prélevée automatiquement, uniquement sur vos
-          patients actifs.
+          Aucun abonnement fixe, calculé au prorata des jours où chaque patient est actif —
+          rejoint en cours de mois ou pas de patient actif du tout, la commission suit.
         </p>
       </div>
-
-      <button
-        type="button"
-        onClick={() => setWhyOpen((v) => !v)}
-        className="mt-4 flex w-full items-center justify-between rounded-xl border border-slate-200/70 bg-white/70 px-5 py-3.5 text-left text-sm font-medium text-slate-700 transition hover:border-slate-300"
-        aria-expanded={whyOpen}
-      >
-        Pourquoi {FEE_PERCENT}&nbsp;%&nbsp;?
-        <ChevronDown
-          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${whyOpen ? "rotate-180" : ""}`}
-          strokeWidth={2}
-        />
-      </button>
-      {whyOpen && (
-        <div className="mt-2 space-y-2 rounded-xl bg-white/70 px-5 py-4 text-sm leading-relaxed text-slate-600">
-          <p>
-            Pas d&apos;abonnement fixe, pas de coût caché : {FEE_PERCENT}&nbsp;% du tarif que{" "}
-            <strong className="font-medium text-slate-900">vous</strong> fixez, calculé au prorata des
-            jours où le patient est actif — rien de plus.
-          </p>
-          <p>Un patient qui rejoint en cours de mois ne vous coûte qu&apos;une fraction du prix ce mois-là.</p>
-          <p>Aucun patient actif un mois donné = aucune commission ce mois-là.</p>
-        </div>
-      )}
     </div>
   );
 }

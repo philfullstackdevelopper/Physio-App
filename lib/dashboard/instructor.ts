@@ -12,11 +12,18 @@ export type InstructorSummary = {
  *  trip against the same row instead of two near-identical queries. */
 export const getInstructor = cache(
   async (supabase: SupabaseClient, userId: string): Promise<InstructorSummary | null> => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("instructors")
       .select("status, full_name")
       .eq("id", userId)
       .maybeSingle();
+    // A query failure (PostgREST unreachable, network blip) used to look
+    // identical to "this Clerk user really isn't an instructor" — silently
+    // routing a real instructor to /patient instead of /dashboard. Surface
+    // it instead of guessing.
+    if (error) {
+      throw new Error("Impossible de vérifier le profil kiné : " + error.message);
+    }
     return data;
   },
 );

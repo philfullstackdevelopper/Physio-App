@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
+import { TRIAL_DAYS } from "@/lib/billing/plans";
 
 const QUESTIONS = [
   {
@@ -33,17 +34,17 @@ const QUESTIONS = [
   {
     question: "Combien coûte l'application pour moi, patient ?",
     answer:
-      "Rien. EasyPhysio est gratuite pour les patients : c'est votre praticien qui l'utilise pour construire et suivre votre programme.",
+      `Votre kiné vous propose l'une de ses trois offres mensuelles (Essentiel, Standard ou Premium), avec ${TRIAL_DAYS} jours d'essai gratuit avant le premier prélèvement. Le paiement est réglé directement à votre kiné, sans engagement, annulable à tout moment.`,
   },
   {
     question: "Je suis praticien : comment essayer avec mes patients ?",
     answer:
-      "Créez un compte praticien, composez un premier programme depuis la bibliothèque d'exercices, puis invitez vos patients. Ils recevront leur accès sans rien installer d'autre que l'app sur leur téléphone.",
+      "Créez votre compte praticien (validé par notre équipe avant le premier accès), composez un premier programme depuis la bibliothèque d'exercices, fixez vos tarifs et connectez votre compte Stripe pour être payé directement par vos patients, puis invitez-les. Ils recevront leur accès sans rien installer d'autre que l'app sur leur téléphone.",
   },
 ];
 
 export default function FaqSection() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
     <RevealGroup className="divide-y divide-slate-100 rounded-2xl border border-slate-200/70 bg-white shadow-sm">
