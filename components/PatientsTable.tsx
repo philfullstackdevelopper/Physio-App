@@ -46,12 +46,12 @@ function SignalCell({ row }: { row: PatientRow }) {
 }
 
 function AdherenceCell({ row }: { row: PatientRow }) {
-  if (row.adherence.pct === null) return <span className="text-sm text-muted">—</span>;
+  if (row.adherence.pct === null) return <span className="text-base text-muted">—</span>;
   return (
-    <div className="min-w-[4.5rem]">
-      <span className={`text-sm font-semibold tabular-nums ${TONE_TEXT[row.adherenceTone]}`}>{row.adherence.pct} %</span>
-      <div className="mt-1 h-1 w-full rounded-full bg-line">
-        <div className={`h-1 rounded-full ${TONE_BAR[row.adherenceTone]}`} style={{ width: `${row.adherence.pct}%` }} />
+    <div className="min-w-[5rem]">
+      <span className={`text-lg font-semibold leading-none tabular-nums ${TONE_TEXT[row.adherenceTone]}`}>{row.adherence.pct} %</span>
+      <div className="mt-1.5 h-1.5 w-full rounded-full bg-line">
+        <div className={`h-1.5 rounded-full ${TONE_BAR[row.adherenceTone]}`} style={{ width: `${row.adherence.pct}%` }} />
       </div>
     </div>
   );
@@ -60,7 +60,7 @@ function AdherenceCell({ row }: { row: PatientRow }) {
 function PhaseBadge({ row }: { row: PatientRow }) {
   if (!row.stageShort) return <span className="text-sm text-muted">—</span>;
   return (
-    <span title={row.stageLabel ?? undefined} className="inline-flex rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand">
+    <span title={row.stageLabel ?? undefined} className="inline-flex rounded-full bg-brand-soft px-3 py-1 text-sm font-semibold text-brand">
       {row.stageShort}
     </span>
   );
@@ -256,7 +256,7 @@ export default function PatientsTable({
                       </span>
                     </td>
                     <td className="px-4 py-3"><PhaseBadge row={r} /></td>
-                    <td className="px-4 py-3 text-sm text-ink">{r.lastSessionLabel}</td>
+                    <td className={`px-4 py-3 text-base tabular-nums ${r.lastSessionAt ? "font-semibold text-ink" : "text-muted"}`}>{r.lastSessionLabel}</td>
                     <td className="px-4 py-3"><AdherenceCell row={r} /></td>
                     <td className="px-4 py-3"><SignalCell row={r} /></td>
                     <td className="px-2 py-3">
@@ -338,8 +338,13 @@ export default function PatientsTable({
                         <SignalCell row={r} />
                       </span>
                       <span className="mt-0.5 block truncate text-xs text-muted">
-                        {r.onboardingStage ? "Inscription en cours" : r.conditionName ?? "Condition non assignée"} · {r.lastSessionLabel}
-                        {r.adherence.pct !== null && ` · ${r.adherence.pct} %`}
+                        {r.onboardingStage ? "Inscription en cours" : r.conditionName ?? "Condition non assignée"}
+                      </span>
+                      <span className="mt-1 flex items-center gap-3 text-sm tabular-nums">
+                        <span className={r.lastSessionAt ? "font-semibold text-ink" : "text-muted"}>{r.lastSessionLabel}</span>
+                        {r.adherence.pct !== null && (
+                          <span className={`font-semibold ${TONE_TEXT[r.adherenceTone]}`}>{r.adherence.pct} %</span>
+                        )}
                       </span>
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
