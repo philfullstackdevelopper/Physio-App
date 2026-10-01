@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { upsertConnectAccount } from "@/lib/db/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
+import { requestOrigin } from "@/lib/requestOrigin";
 import { TIERS, TIER_KEYS, type TierKey } from "@/lib/billing/plans";
 
 // Sets the kiné's own price for each of the three patient offers (Philippe,
@@ -80,7 +81,7 @@ export async function startConnectOnboarding() {
     await upsertConnectAccount({ instructorId: user.id, stripeConnectAccountId: accountId, status: "onboarding" });
   }
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const base = await requestOrigin();
   const link = await stripe.accountLinks.create({
     account: accountId,
     refresh_url: `${base}/dashboard/connect/refresh`,

@@ -15,7 +15,6 @@ const COLUMNS = [
     links: [
       { href: "/login", label: "Connexion patient" },
       { href: "/signup/kine", label: "Créer un compte praticien" },
-      { href: "/forgot-password", label: "Mot de passe oublié" },
       { href: "/#faq", label: "Questions fréquentes" },
     ],
   },
