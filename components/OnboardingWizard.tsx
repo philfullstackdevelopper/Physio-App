@@ -91,13 +91,17 @@ export default function OnboardingWizard({
   };
   const goBack = () => setStep((s) => Math.max(s - 1, 0));
 
+  // Hauteur bornée par la page (onboarding/page.tsx) : l'indicateur
+  // d'étapes et les boutons Précédent/Suivant restent fixes, seuls les champs
+  // défilent si l'écran est trop petit (Philippe, 2026-10-01 : « la partie du
+  // haut avec les 4 étapes ne devrait pas bouger »).
   return (
-    <div>
+    <div className="flex min-h-0 flex-col">
       {/* Step indicator — no sidebar app-nav here on purpose: onboarding isn't
           done yet, so app/patient/layout.tsx hasn't unlocked the real nav.
           Knowing there are exactly 4 short steps (not an open-ended form) is
           the actual ask — how long this will take. */}
-      <ol className="flex items-center justify-center gap-2 sm:gap-3">
+      <ol className="flex shrink-0 items-center justify-center gap-2 sm:gap-3">
         {STEP_LABELS.map((label, i) => (
           <li key={label} className="flex items-center gap-2 sm:gap-3">
             <div className="flex flex-col items-center gap-1.5">
@@ -121,15 +125,14 @@ export default function OnboardingWizard({
         ))}
       </ol>
 
-      <form action={saveAction} className="mt-6 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
+      <form action={saveAction} className="mt-6 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 short:mt-3 short:p-5">
+        {/* Zone qui défile : les champs de l'étape. -mx-1 px-1 py-1 : de quoi
+            ne pas rogner l'anneau de focus des champs. */}
+        <div className="-mx-1 min-h-0 overflow-y-auto px-1 py-1">
         {/* Étape 1 : Votre situation */}
         <div ref={(el) => { stepRefs.current[0] = el; }} hidden={step !== 0} className="flex flex-col gap-3">
           <div>
             <span className={labelClass}>Quelle(s) partie(s) du corps souhaitez-vous travailler ?</span>
-            <p className="mt-1 text-xs text-slate-500">
-              Vous n&apos;avez pas besoin de connaître le nom clinique de votre condition — votre kiné s&apos;en
-              charge. Choisissez simplement où vous avez mal ou ce que vous voulez renforcer.
-            </p>
             {/* 9 body parts in 5 columns -> 2 rows instead of 3 (Philippe,
                 2026-09-09: the onboarding card must fit without scrolling —
                 paired with the wider max-w-xl column in page.tsx). */}
@@ -142,11 +145,11 @@ export default function OnboardingWizard({
                     type="button"
                     onClick={() => toggleBodyPart(bp.id)}
                     aria-pressed={active}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-center transition-colors ${
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-center transition-colors short:gap-1 short:p-1.5 ${
                       active ? "border-blue-600 bg-blue-50" : "border-slate-200 bg-white hover:bg-slate-50"
                     }`}
                   >
-                    <BodyPartIllustration slug={bp.slug} className="h-10 w-10" active={active} />
+                    <BodyPartIllustration slug={bp.slug} className="h-10 w-10 short:h-8 short:w-8" active={active} />
                     <span className="text-[11px] font-medium leading-tight text-slate-700">{bp.label}</span>
                   </button>
                 );
@@ -172,31 +175,10 @@ export default function OnboardingWizard({
             </select>
           </label>
 
-          <label>
-            <span className={labelClass}>Où en êtes-vous dans votre rééducation ? (optionnel)</span>
-            <input
-              type="text"
-              name="rehab_progress"
-              placeholder="ex. 3 semaines après l'opération, je remarche sans béquilles"
-              defaultValue={profile?.rehab_progress ?? ""}
-              className={fieldClass}
-            />
-          </label>
-
-          <label>
-            <span className={labelClass}>Que s&apos;est-il passé ? (optionnel)</span>
-            <textarea
-              name="history"
-              rows={2}
-              placeholder="Décrivez votre blessure, vos douleurs, ce qui vous limite…"
-              defaultValue={profile?.history ?? ""}
-              className={`${fieldClass} resize-none`}
-            />
-          </label>
         </div>
 
         {/* Étape 2 : Votre profil */}
-        <div ref={(el) => { stepRefs.current[1] = el; }} hidden={step !== 1} className="flex flex-col gap-4">
+        <div ref={(el) => { stepRefs.current[1] = el; }} hidden={step !== 1} className="flex flex-col gap-4 short:gap-2.5">
           <label>
             <span className={labelClass}>Date de naissance</span>
             <input
@@ -234,6 +216,31 @@ export default function OnboardingWizard({
               <option value="moderate">Modérée (activité régulière)</option>
               <option value="active">Active (sport fréquent)</option>
             </select>
+          </label>
+
+          {/* Les deux questions facultatives vivent ici plutôt qu'à l'étape 1 :
+              l'étape 1 (zones du corps + étape de récupération) doit tenir sur
+              un écran sans défiler (Philippe, 2026-10-01). */}
+          <label>
+            <span className={labelClass}>Où en êtes-vous dans votre rééducation ? (optionnel)</span>
+            <input
+              type="text"
+              name="rehab_progress"
+              placeholder="ex. 3 semaines après l'opération, je remarche sans béquilles"
+              defaultValue={profile?.rehab_progress ?? ""}
+              className={fieldClass}
+            />
+          </label>
+
+          <label>
+            <span className={labelClass}>Que s&apos;est-il passé ? (optionnel)</span>
+            <textarea
+              name="history"
+              rows={2}
+              placeholder="Décrivez votre blessure, vos douleurs, ce qui vous limite…"
+              defaultValue={profile?.history ?? ""}
+              className={`${fieldClass} resize-none`}
+            />
           </label>
         </div>
 
@@ -290,8 +297,10 @@ export default function OnboardingWizard({
           )}
         </div>
 
-        {/* Navigation */}
-        <div className="mt-8 flex items-center justify-between gap-3 border-t border-slate-100 pt-6">
+        </div>
+
+        {/* Navigation — hors de la zone qui défile : toujours visible. */}
+        <div className="mt-5 flex shrink-0 items-center justify-between gap-3 border-t border-slate-100 pt-5 short:mt-3 short:pt-3">
           <button
             type="button"
             onClick={goBack}

@@ -30,7 +30,7 @@ export interface PatientRowsInput {
   logs: { patient_id: string; completed_at: string }[];
   /** 14 derniers jours. */
   feedback: { patient_id: string; pain_score: number | null; difficulty: number | null; created_at: string }[];
-  recs: { patient_id: string; workout_id: string; week_start_date: string; times_per_week: number | null }[];
+  recs: { patient_id: string; workout_id: string; week_start_date: string; week_count?: number | null; times_per_week: number | null }[];
 }
 
 export interface PatientRow {
@@ -70,11 +70,12 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
   const logsBy = new Map<string, string[]>();
   for (const l of logs) (logsBy.get(l.patient_id) ?? logsBy.set(l.patient_id, []).get(l.patient_id)!).push(l.completed_at);
 
-  const recsBy = new Map<string, { workoutId: string; weekStartDate: string; timesPerWeek: number | null }[]>();
+  const recsBy = new Map<string, { workoutId: string; weekStartDate: string; weekCount: number | null; timesPerWeek: number | null }[]>();
   for (const r of recs)
     (recsBy.get(r.patient_id) ?? recsBy.set(r.patient_id, []).get(r.patient_id)!).push({
       workoutId: r.workout_id,
       weekStartDate: r.week_start_date,
+      weekCount: r.week_count ?? null,
       timesPerWeek: r.times_per_week,
     });
 
@@ -158,7 +159,7 @@ export async function loadPatientRows(supabase: SupabaseClient, now: Date = new 
       supabase.from("conditions").select("id, name"),
       supabase.from("workout_logs").select("patient_id, completed_at"),
       supabase.from("patient_feedback").select("patient_id, pain_score, difficulty, created_at").gte("created_at", since14),
-      supabase.from("patient_recommended_workouts").select("patient_id, workout_id, week_start_date, workouts ( times_per_week )"),
+      supabase.from("patient_recommended_workouts").select("patient_id, workout_id, week_start_date, week_count, workouts ( times_per_week )"),
     ]);
 
   return buildPatientRows({
@@ -172,6 +173,7 @@ export async function loadPatientRows(supabase: SupabaseClient, now: Date = new 
       patient_id: r.patient_id as string,
       workout_id: r.workout_id as string,
       week_start_date: r.week_start_date as string,
+      week_count: (r.week_count as number | null) ?? null,
       times_per_week: ((r.workouts as unknown as { times_per_week: number | null } | null)?.times_per_week ?? null),
     })),
   });

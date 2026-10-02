@@ -39,6 +39,8 @@ export interface KineAssignment {
   workoutId: string;
   /** Lundi ("YYYY-MM-DD") à partir duquel cette séance s'applique. */
   weekStartDate: string;
+  /** Nombre de semaines (null = jusqu'à la prochaine séance) — migration 0059. */
+  weekCount: number | null;
 }
 
 export interface KineWorkoutSummary {
@@ -52,23 +54,12 @@ export interface KineWorkoutSummary {
  *  palier PAIN_HOLD du frein clinique — une seule règle partout. */
 const WEEK_PAIN_ALERT = PAIN_HOLD;
 
-/** Au-delà de ce nombre de semaines avec la même séance, sans rien de prévu
- *  ensuite, on affiche le bandeau « pensez à faire évoluer la séance ». Règle
- *  simple, à affiner avec le kiné partenaire (durée typique d'une phase). */
-const STALE_AFTER_WEEKS = 4;
-
 const GRADE_TONE: Record<DayGrade, SegmentTone> = {
   red: "danger",
   yellow: "warn",
   green: "active",
   grey: "default",
 };
-
-/** Différence en semaines entières entre deux clés "YYYY-MM-DD" (lundis). */
-function weeksBetween(fromKey: string, toKey: string): number {
-  const ms = new Date(`${toKey}T00:00:00`).getTime() - new Date(`${fromKey}T00:00:00`).getTime();
-  return Math.round(ms / (7 * 86_400_000));
-}
 
 export default function KineWeekProgramme({
   weeks,
@@ -122,19 +113,6 @@ export default function KineWeekProgramme({
     [weeks, assignments, workoutsById, loggedDateKeys, dayDetails],
   );
 
-  // ---- Bandeau d'alerte au-dessus de la frise (point 2 de l'audit) ---------
-  const currentMeta = weekMeta[currentWeekNumber - 1] ?? weekMeta[weekMeta.length - 1];
-  const currentWeekKey = currentMeta.week.startDateKey;
-  const currentIsEmpty = !currentMeta.workout || currentMeta.workout.exercises.length === 0;
-  const hasFutureAssignment = assignments.some((a) => a.weekStartDate > currentWeekKey);
-  const currentAge = currentMeta.assignment ? weeksBetween(currentMeta.assignment.weekStartDate, currentWeekKey) + 1 : 0;
-  const stale = !currentIsEmpty && !hasFutureAssignment && currentAge >= STALE_AFTER_WEEKS;
-  const warning = currentIsEmpty
-    ? "Aucune séance n'est assignée cette semaine — ouvrez la semaine en cours pour en choisir une."
-    : stale
-      ? `La même séance est en place depuis ${currentAge} semaines et rien n'est prévu ensuite — pensez à la faire évoluer dans les semaines à venir.`
-      : null;
-
   // ---- Navigation frise → semaine → jour (même mécanique que côté patient) --
   const [view, setView] = useState<"strip" | "week">("strip");
   const [selectedWeekNumber, setSelectedWeekNumber] = useState(currentWeekNumber);
@@ -186,13 +164,6 @@ export default function KineWeekProgramme({
   };
   const scrollStrip = (dir: 1 | -1) => scrollerRef.current?.scrollBy({ left: dir * 260, behavior: "smooth" });
 
-  const warningBanner = warning && (
-    <div className="mb-4 flex items-start gap-2 rounded-xl bg-warn-soft px-4 py-3 text-sm text-warn">
-      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
-      <p>{warning}</p>
-    </div>
-  );
-
   // ---- Vue 1 : la frise des semaines -----------------------------------------
   if (view === "strip") {
     const weekItems: SegmentItem[] = weekMeta.map(({ week, workout, painAlert, hasActivity }) => {
@@ -220,15 +191,17 @@ export default function KineWeekProgramme({
           // la hauteur de la carte (h-full) pour séparer les deux zones.
           <div className="flex h-full w-full flex-col items-center justify-between gap-1">
             <div className="flex flex-col items-center">
-              <span className="flex items-center gap-1.5 text-2xl font-semibold">
-                {week.weekNumber}
+              {/* « Semaine N » plutôt qu'un numéro seul, dates entre
+                  parenthèses (Philippe, 2026-10-01). */}
+              <span className="flex items-center gap-1.5 text-xl font-semibold">
+                Semaine {week.weekNumber}
                 {painAlert ? (
                   <AlertTriangle className="h-5 w-5" strokeWidth={2} />
                 ) : (
                   hasActivity && <CheckCircle2 className="h-5 w-5" strokeWidth={2} />
                 )}
               </span>
-              <span className="text-xs font-medium opacity-90">{week.rangeLabel}</span>
+              <span className="text-xs font-medium opacity-90">({week.rangeLabel})</span>
             </div>
             {workout && workout.exercises.length > 0 ? (
               <span className="flex w-full flex-wrap items-start justify-center gap-x-3 gap-y-2 px-2 pb-1">
@@ -251,7 +224,6 @@ export default function KineWeekProgramme({
 
     return (
       <div className="flex w-full min-w-0 flex-col">
-        {warningBanner}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-ink">Programme, semaine par semaine</h2>
@@ -327,10 +299,11 @@ export default function KineWeekProgramme({
   const startedWeekNumber = startedEarlier
     ? weeks.find((w) => w.startDateKey === selectedMeta.assignment!.weekStartDate)?.weekNumber
     : undefined;
+  // N° de la semaine où l'attribution commence (pour « semaines X à Y »).
+  const assignmentStartWeek = startedWeekNumber ?? selectedWeek.weekNumber;
 
   return (
     <div className="w-full">
-      {warningBanner}
       <section
         style={{ viewTransitionName: `kine-week-${selectedWeek.weekNumber}` } as VTStyle}
         className="rounded-2xl border border-line bg-surface p-5 shadow-sm"
@@ -375,8 +348,15 @@ export default function KineWeekProgramme({
               <p className="text-xs font-medium text-muted">Séance cette semaine</p>
               <p className={`text-sm ${selectedMeta.workout ? "font-semibold text-ink" : "italic text-muted"}`}>
                 {selectedMeta.workout ? selectedMeta.workout.name : "Aucune séance"}
-                {selectedMeta.workout && startedWeekNumber && (
-                  <span className="ml-1 text-xs font-normal text-muted">(depuis la semaine {startedWeekNumber})</span>
+                {selectedMeta.workout && selectedMeta.assignment?.weekCount ? (
+                  <span className="ml-1 text-xs font-normal text-muted">
+                    ({selectedMeta.assignment.weekCount === 1
+                      ? "cette semaine seulement"
+                      : `semaines ${assignmentStartWeek} à ${assignmentStartWeek + selectedMeta.assignment.weekCount - 1}`})
+                  </span>
+                ) : (
+                  selectedMeta.workout &&
+                  startedWeekNumber && <span className="ml-1 text-xs font-normal text-muted">(depuis la semaine {startedWeekNumber})</span>
                 )}
               </p>
             </div>

@@ -45,8 +45,15 @@ export interface Prescription {
   maxLean: number;
 }
 
-/** Every exercise, every patient: three sets. Reps and depth carry the load. */
+/** Every exercise, every patient: three sets. */
 export const FIXED_GOAL_SETS = 3;
+
+/** Every exercise, every patient: twelve reps per set — 3 × 12 is the staple
+ *  (Philippe, 2026-10-01 : « leave 3x12 as the staple, let's not
+ *  overcomplicate things »). The reps used to vary automatically with
+ *  activity, age and phase (6 in phase 1, 8 for 65+…); a kiné-chosen gentler
+ *  mode (3 × 8) was discussed but deliberately not built for now. */
+export const FIXED_GOAL_REPS = 12;
 
 export interface PatientContext {
   ageYears?: number;
@@ -72,8 +79,8 @@ export const DEFAULT_SQUAT: Prescription = {
 /**
  * Derive a starting prescription from patient attributes. Physio can override.
  *
- * - Activity drives rep volume (sedentary → fewer, active → more).
- * - Age eases both volume and required depth (older patients → gentler).
+ * - Sets × reps are fixed (FIXED_GOAL_SETS × FIXED_GOAL_REPS) for everyone.
+ * - Age eases the required depth (older patients → gentler).
  * - Height is intentionally NOT used for the depth threshold: a knee ANGLE is
  *   independent of body size, so height changes absolute range of motion, not
  *   the target angle. (It could later inform absolute-height metrics.)
@@ -82,42 +89,47 @@ export function recommendPrescription(
   patient: PatientContext,
   base: Prescription = DEFAULT_SQUAT,
 ): Prescription {
-  const activity = patient.activityLevel ?? "moderate";
-  let goalReps = activity === "sedentary" ? 8 : activity === "active" ? 15 : base.goalReps;
   let goodDepth = base.goodDepth;
 
   const age = patient.ageYears;
   if (age !== undefined) {
     if (age >= 65) {
-      goalReps = Math.min(goalReps, 8);
       goodDepth = 100; // gentler depth
     } else if (age >= 50) {
-      goalReps = Math.min(goalReps, 10);
       goodDepth = 90;
     }
   }
 
-  // Recovery stage has the strongest effect: early stages stay gentle,
-  // later stages allow deeper, harder work.
+  // Recovery stage has the strongest effect on depth: early stages stay
+  // gentle, later stages allow deeper work.
   switch (patient.stage) {
     case "acute":
-      goalReps = Math.min(goalReps, 6);
       goodDepth = Math.max(goodDepth, 120); // shallow, protective
       break;
     case "subacute":
-      goalReps = Math.min(goalReps, 10);
       goodDepth = Math.max(goodDepth, 100);
       break;
     case "return_to_sport":
       goodDepth = Math.min(goodDepth, 70); // full depth
       break;
-    // "recovery" (or undefined) → keep the age/activity-based values.
+    // "recovery" (or undefined) → keep the age-based depth.
   }
 
-  // Sets are fixed at 3 for every exercise and every patient, by product decision:
-  // one predictable session shape. Load is modulated through reps and depth
-  // instead, which the patient feels more finely than a whole extra set.
-  const goalSets = FIXED_GOAL_SETS;
+  // Sets and reps are fixed for every exercise and every patient, by product
+  // decision: one predictable session shape (3 × 12).
+  return { ...base, goalReps: FIXED_GOAL_REPS, goalSets: FIXED_GOAL_SETS, goodDepth };
+}
 
-  return { ...base, goalReps, goalSets, goodDepth };
+/**
+ * Texte « Objectif » d'un exercice dans la séance du patient.
+ *
+ * 3 × 12 partout, sauf l'endurance (vélo, marche…) : là on fixe simplement un
+ * nombre de minutes, écrit dans la consigne de l'exercice (Philippe,
+ * 2026-10-01 ; migration 0060). Si la consigne contient « N minutes »,
+ * l'objectif devient « N minutes » au lieu de « 3 séries × 12 répétitions ».
+ */
+export function goalTextFor(instructions: string | null, p: Pick<Prescription, "goalSets" | "goalReps">): string {
+  const m = instructions?.match(/(\d+)\s*minutes?\b/i);
+  if (m) return `${m[1]} minute${Number(m[1]) > 1 ? "s" : ""}`;
+  return `${p.goalSets} séries × ${p.goalReps} répétitions`;
 }

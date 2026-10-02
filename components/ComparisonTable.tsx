@@ -64,7 +64,7 @@ export default function ComparisonTable() {
     <div className="overflow-x-auto">
       <div className="min-w-[640px] rounded-3xl border border-slate-200/80 bg-white p-2 shadow-sm sm:p-3">
         {/* Header row: label column + 3 product columns */}
-        <div className="grid grid-cols-[1.3fr_1fr_1fr_1fr] items-end gap-2 px-4 pb-6 pt-8 sm:gap-4 sm:px-6">
+        <div className="grid grid-cols-[1.3fr_1fr_1fr_1fr] items-end gap-2 px-4 pb-6 pt-8 sm:gap-4 sm:px-6 sm:short:pb-3 sm:short:pt-7">
           <span />
           {COLUMNS.map((col) => (
             <div key={col.name} className="relative flex flex-col items-center text-center">
@@ -98,7 +98,7 @@ export default function ComparisonTable() {
           {ROWS.map((row) => (
             <RevealItem
               key={row.label}
-              className="grid grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-xl px-2 py-3 odd:bg-slate-50/70 sm:gap-4 sm:px-4"
+              className="grid grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-xl px-2 py-3 odd:bg-slate-50/70 sm:short:py-2 sm:gap-4 sm:px-4"
             >
               <p className="text-sm leading-snug text-slate-700">{row.label}</p>
               {row.values.map((value, i) => (
@@ -111,7 +111,7 @@ export default function ComparisonTable() {
         </RevealGroup>
 
         {/* Score total row */}
-        <div className="mt-1 grid grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-2xl bg-blue-50/70 px-4 py-4 sm:gap-4 sm:px-6">
+        <div className="mt-1 grid grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-2xl bg-blue-50/70 px-4 py-4 sm:short:py-2.5 sm:gap-4 sm:px-6">
           <p className="text-sm font-semibold text-slate-900">Score total</p>
           {COLUMNS.map((col, i) => (
             <p
@@ -125,19 +125,6 @@ export default function ComparisonTable() {
           ))}
         </div>
       </div>
-    </div>
-  );
-}
-
-export function ComparisonBadge() {
-  return (
-    <div className="inline-flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
-      <Sparkles className="h-5 w-5 shrink-0 text-blue-600" strokeWidth={1.75} />
-      <span className="text-sm leading-snug text-slate-700">
-        Un accompagnement continu
-        <br />
-        qui fait toute la différence
-      </span>
     </div>
   );
 }

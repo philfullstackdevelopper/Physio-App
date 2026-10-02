@@ -147,7 +147,7 @@ export default function Testimonials() {
   }
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 sm:short:mt-3">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <Toggle value={voice} onChange={selectVoice} />
         <div className="flex items-center gap-3">
@@ -173,7 +173,7 @@ export default function Testimonials() {
         </div>
       </div>
 
-      <div className="mt-8 grid gap-5 lg:grid-cols-[1.9fr_1fr]">
+      <div className="mt-8 grid gap-5 sm:short:mt-4 sm:short:gap-4 lg:grid-cols-[1.9fr_1fr]">
         <AnimatePresence mode="wait">
           <motion.figure
             key={featured.name}
@@ -181,15 +181,15 @@ export default function Testimonials() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="rounded-3xl border border-slate-200/70 bg-white p-7 shadow-sm sm:p-9"
+            className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-9 sm:short:p-6"
           >
             <div>
               <Identity t={featured} size="lg" />
-              <Quote className="mt-6 h-6 w-6 text-blue-600" strokeWidth={2} fill="currentColor" />
-              <blockquote className="font-display mt-3 max-w-2xl text-2xl leading-snug text-slate-900 sm:text-[1.7rem]">
+              <Quote className="mt-4 h-6 w-6 text-blue-600 sm:mt-6 sm:short:mt-3" strokeWidth={2} fill="currentColor" />
+              <blockquote className="font-display mt-3 max-w-2xl text-xl leading-snug text-slate-900 sm:text-[1.7rem] sm:short:text-[1.4rem]">
                 {featured.quote}
               </blockquote>
-              <figcaption className="mt-6 inline-flex items-center gap-3 rounded-xl bg-blue-50/70 px-4 py-3">
+              <figcaption className="mt-4 sm:mt-6 sm:short:mt-4 inline-flex items-center gap-3 rounded-xl bg-blue-50/70 px-4 py-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-blue-600">
                   <TrendingUp className="h-4 w-4" strokeWidth={2} />
                 </span>
@@ -199,14 +199,17 @@ export default function Testimonials() {
           </motion.figure>
         </AnimatePresence>
 
-        <div className="grid gap-5">
+        {/* Les deux autres témoignages seulement dès lg (à côté du principal) :
+            empilés dessous, ils doubleraient la hauteur de la section — les
+            flèches permettent de tous les parcourir. */}
+        <div className="hidden gap-5 lg:grid">
           {others.map((t) => (
             <figure
               key={t.name}
-              className="rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm"
+              className="rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm sm:short:p-4"
             >
               <Identity t={t} />
-              <blockquote className="mt-4 flex gap-2 text-sm leading-relaxed text-slate-700">
+              <blockquote className="mt-4 sm:short:mt-2 flex gap-2 text-sm leading-relaxed text-slate-700">
                 <Quote className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} fill="currentColor" />
                 <span>{t.quote}</span>
               </blockquote>
@@ -215,7 +218,8 @@ export default function Testimonials() {
         </div>
       </div>
 
-      <div className="mt-8 text-center">
+      {/* Bandeau secondaire, masqué sur écran peu haut pour que la section tienne. */}
+      <div className="mt-8 text-center sm:short:hidden">
         <p className="text-sm text-slate-500">Adopté par des kinés partout en France</p>
         <ul className="mt-3 flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
           {TRUST.map((label) => (

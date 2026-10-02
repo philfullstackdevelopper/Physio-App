@@ -16,11 +16,14 @@ import { createClient } from "@/lib/supabase/server";
 // can gate access to it by identity before identity is known.
 async function findAppIdBy(field: "clerk_id" | "email", value: string): Promise<string | null> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("app_users")
     .select("app_id")
     .eq(field, value)
     .maybeSingle();
+  // Une erreur (jeton expiré, réseau…) n'est PAS « personne inconnue » : sans
+  // ce throw, resolveAppUserId tentait alors de créer un nouveau compte.
+  if (error) throw new Error("Lecture du compte interne impossible : " + error.message);
   return data?.app_id ? String(data.app_id) : null;
 }
 

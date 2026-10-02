@@ -130,11 +130,21 @@ export async function assignCondition(formData: FormData) {
     redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Veuillez choisir une condition.")}`);
   }
 
+  const { data: before } = await supabase.from("patients").select("condition_id").eq("id", patientId).maybeSingle();
+  const previousConditionId = (before?.condition_id as string | null) ?? null;
+
   const { error } = await supabase.from("patients").update({ condition_id: conditionId }).eq("id", patientId);
   if (error) {
     redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
   }
-  await supabase.from("patient_recommended_workouts").delete().eq("patient_id", patientId);
+  // Only when REPLACING a condition (ConditionSelect confirms that first).
+  // A first condition must keep the séances already assigned: the kiné can
+  // assign a séance before any condition, and setting one afterwards — which
+  // the « Condition à renseigner » nudge now asks for — used to silently
+  // wipe them (Philippe, 2026-10-01, patient Padraig).
+  if (previousConditionId && previousConditionId !== conditionId) {
+    await supabase.from("patient_recommended_workouts").delete().eq("patient_id", patientId);
+  }
 
   revalidatePath(`/dashboard/patients/${patientId}`);
   redirect(`/dashboard/patients/${patientId}`);
@@ -187,10 +197,15 @@ export async function addRecommendedWorkout(formData: FormData) {
   const rawWeek = String(formData.get("week_start_date") ?? "");
   const weekStartDate = /^\d{4}-\d{2}-\d{2}$/.test(rawWeek) ? rawWeek : thisWeekStartDateKey();
 
+  // Pendant combien de semaines (migration 0059). Absent, vide ou hors 1-52
+  // → null = jusqu'à la prochaine séance attribuée, comme avant.
+  const rawCount = Number(formData.get("week_count") ?? "");
+  const weekCount = Number.isInteger(rawCount) && rawCount >= 1 && rawCount <= 52 ? rawCount : null;
+
   const { error } = await supabase
     .from("patient_recommended_workouts")
     .upsert(
-      { patient_id: patientId, workout_id: workoutId, week_start_date: weekStartDate },
+      { patient_id: patientId, workout_id: workoutId, week_start_date: weekStartDate, week_count: weekCount },
       { onConflict: "patient_id,week_start_date" },
     );
   if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);

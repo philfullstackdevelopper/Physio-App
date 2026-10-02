@@ -16,7 +16,7 @@ export default async function ProgresPage() {
   const since30 = new Date(now.getTime() - 30 * 86_400_000).toISOString();
   const since60 = new Date(now.getTime() - 60 * 86_400_000).toISOString();
   const [{ data: recRows }, { data: logs }, { data: feedback30 }, { data: feedback60 }, { data: patient }] = await Promise.all([
-    supabase.from("patient_recommended_workouts").select("week_start_date, workout_id, workouts ( times_per_week )").eq("patient_id", user.id),
+    supabase.from("patient_recommended_workouts").select("week_start_date, week_count, workout_id, workouts ( times_per_week )").eq("patient_id", user.id),
     supabase.from("workout_logs").select("completed_at").eq("patient_id", user.id),
     supabase.from("patient_feedback").select("pain_score, created_at").eq("patient_id", user.id).gte("created_at", since30),
     supabase.from("patient_feedback").select("pain_score, created_at").eq("patient_id", user.id).gte("created_at", since60).lt("created_at", since30),
@@ -29,6 +29,7 @@ export default async function ProgresPage() {
   const assignments = (recRows ?? []).map((r) => ({
     workoutId: r.workout_id as string,
     weekStartDate: r.week_start_date as string,
+    weekCount: (r.week_count as number | null) ?? null,
     timesPerWeek: (r.workouts as unknown as { times_per_week: number | null } | null)?.times_per_week ?? null,
   }));
   const completedAt = (logs ?? []).map((l) => l.completed_at as string);

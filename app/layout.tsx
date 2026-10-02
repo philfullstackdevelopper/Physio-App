@@ -61,8 +61,13 @@ export default function RootLayout({
     <html
       lang="fr"
       className={`${instrumentSans.variable} ${fraunces.variable} h-full antialiased`}
+      // Browser extensions (e.g. LanguageTool) add attributes to <html> before React loads.
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      {/* Idem sur <body> : Grammarly y ajoute data-gr-ext-installed /
+          data-new-gr-c-s-check-loaded. N'agit que sur les attributs de
+          <body> lui-même, pas sur ses enfants. */}
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ClerkProvider localization={frFR}>{children}</ClerkProvider>
         <CookieBanner />
       </body>

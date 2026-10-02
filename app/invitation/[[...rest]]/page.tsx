@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { SignUp } from "@clerk/nextjs";
+import { SignIn, SignUp } from "@clerk/nextjs";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import InvitationSignedInGate from "@/components/InvitationSignedInGate";
 import { LogoMark } from "@/components/Logo";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 
@@ -14,9 +16,27 @@ import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 export default async function PatientInvitationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ kine?: string }>;
+  searchParams: Promise<{ kine?: string; __clerk_status?: string; __clerk_ticket?: string }>;
 }) {
-  const { kine } = await searchParams;
+  const params = await searchParams;
+  const { kine } = params;
+
+  // Déjà une session ouverte dans ce navigateur : ne PAS laisser le widget
+  // consommer le ticket par-dessus (deux sessions -> boucle de
+  // rafraîchissement, voir InvitationSignedInGate). On propose de continuer
+  // ou de se déconnecter puis de revenir sur ce même lien.
+  const { userId } = await auth();
+  const signedInEmail = userId
+    ? ((await currentUser())?.primaryEmailAddress?.emailAddress ?? null)
+    : null;
+  const invitationUrl = `/invitation?${new URLSearchParams(
+    Object.entries(params).filter((e): e is [string, string] => typeof e[1] === "string"),
+  ).toString()}`;
+
+  // __clerk_status=sign_in : Clerk signale que le compte de cette invitation
+  // EXISTE déjà (lien du mail recliqué après avoir créé son mot de passe).
+  // Il faut alors le formulaire de connexion, pas celui d'inscription.
+  const accountExists = params.__clerk_status === "sign_in";
 
   return (
     <main className="relative min-h-screen bg-[#f6f8fd]">
@@ -39,19 +59,40 @@ export default async function PatientInvitationPage({
 
             <p className="mb-6 text-center text-sm leading-relaxed text-slate-500 lg:hidden">
               {kine ? <span className="font-medium text-slate-700">{kine}</span> : "Votre kinésithérapeute"} vous
-              invite à rejoindre EasyPhysio. Choisissez votre mot de passe pour activer votre accès.
+              invite à rejoindre EasyPhysio.{" "}
+              {accountExists
+                ? "Votre compte existe déjà : connectez-vous pour continuer."
+                : "Choisissez votre mot de passe pour activer votre accès."}
             </p>
 
             {/* Ticket-based invitation: Clerk reads __clerk_ticket from the URL
                 (appended to the invitation's redirectTo) and completes the
                 invited identity instead of offering a normal open sign-up. */}
-            <SignUp
-              fallbackRedirectUrl="/apres-connexion"
-              signInUrl="/login"
-              appearance={{
-                elements: { rootBox: "w-full", cardBox: "w-full" },
-              }}
-            />
+            {userId ? (
+              <InvitationSignedInGate email={signedInEmail} invitationUrl={invitationUrl} />
+            ) : accountExists ? (
+              <SignIn
+                fallbackRedirectUrl="/apres-connexion"
+                signUpUrl="/invitation"
+                appearance={{
+                  elements: {
+                    rootBox: "w-full",
+                    cardBox: "w-full",
+                    // Même réglage que /login : masque « pour continuer vers
+                    // My Application » (nom d'appli Clerk par défaut, en anglais).
+                    headerSubtitle: "hidden",
+                  },
+                }}
+              />
+            ) : (
+              <SignUp
+                fallbackRedirectUrl="/apres-connexion"
+                signInUrl="/login"
+                appearance={{
+                  elements: { rootBox: "w-full", cardBox: "w-full" },
+                }}
+              />
+            )}
           </div>
         </div>
 
@@ -72,7 +113,9 @@ export default async function PatientInvitationPage({
             )}
           </h1>
           <p className="mt-3 max-w-sm text-base leading-relaxed text-slate-600">
-            Choisissez votre mot de passe pour accéder à votre programme d&rsquo;exercices personnalisé.
+            {accountExists
+              ? "Votre compte existe déjà : connectez-vous pour retrouver votre programme d’exercices personnalisé."
+              : "Choisissez votre mot de passe pour accéder à votre programme d’exercices personnalisé."}
           </p>
           <div className="mt-8 min-h-0 flex-1">
             <LoginExerciseShowcase />

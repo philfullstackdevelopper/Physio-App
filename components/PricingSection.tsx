@@ -49,7 +49,7 @@ function PatientOffers() {
         Votre kiné choisit l&apos;offre qu&apos;il vous propose et peut ajuster son tarif — voici les
         prix de base.
       </p>
-      <RevealGroup className="mt-8 grid gap-4 sm:grid-cols-3">
+      <RevealGroup className="mt-8 grid gap-4 sm:grid-cols-3 sm:short:mt-5">
         {TIER_KEYS.map((key) => {
           const tier = TIERS[key];
           const featured = key === FEATURED;
@@ -58,8 +58,8 @@ function PatientOffers() {
               key={key}
               className={
                 featured
-                  ? "relative z-10 rounded-2xl bg-blue-600 p-6 text-white shadow-lg shadow-blue-900/20 ring-1 ring-blue-700 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-900/30 md:scale-105"
-                  : "rounded-2xl border border-slate-200/70 bg-white/70 p-6 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-blue-200 hover:bg-white hover:shadow-xl hover:shadow-slate-900/10"
+                  ? "relative z-10 rounded-2xl bg-blue-600 p-6 text-white shadow-lg shadow-blue-900/20 ring-1 ring-blue-700 sm:short:p-5 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-900/30 md:scale-105"
+                  : "rounded-2xl border border-slate-200/70 bg-white/70 p-6 sm:short:p-5 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-blue-200 hover:bg-white hover:shadow-xl hover:shadow-slate-900/10"
               }
             >
               {featured && (
@@ -76,7 +76,7 @@ function PatientOffers() {
                 <Sparkles className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
                 {HIGHLIGHT[key]}
               </p>
-              <p className="mt-4 flex items-baseline gap-1.5">
+              <p className="mt-4 flex items-baseline gap-1.5 sm:short:mt-2">
                 <span className={`text-base line-through ${featured ? "text-blue-200" : "text-slate-400"}`}>
                   {euros(tier.listAmount)}&nbsp;€
                 </span>
@@ -89,7 +89,7 @@ function PatientOffers() {
                 <span className={`text-xs ${featured ? "text-blue-100" : "text-slate-500"}`}>/mois</span>
               </p>
               <ul
-                className={`mt-5 space-y-2 border-t pt-5 text-sm ${featured ? "border-blue-500 text-blue-50" : "border-slate-100 text-slate-600"}`}
+                className={`mt-5 space-y-2 border-t pt-5 text-sm sm:short:mt-3 sm:short:space-y-1.5 sm:short:pt-3 ${featured ? "border-blue-500 text-blue-50" : "border-slate-100 text-slate-600"}`}
               >
                 {featuresFor(key).map((f) => (
                   <li key={f} className="flex items-start gap-2">
@@ -105,10 +105,10 @@ function PatientOffers() {
           );
         })}
       </RevealGroup>
-      <p className="mt-6 text-center text-xs text-slate-400">
+      <p className="mt-6 text-center text-xs text-slate-400 sm:short:mt-4">
         Réglé directement à votre kiné, via Stripe — 7 jours gratuits avant le premier prélèvement.
       </p>
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex justify-center sm:short:mt-2">
         <Link
           href="/login"
           className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
@@ -123,12 +123,16 @@ function PatientOffers() {
 
 function KineOffer() {
   return (
-    <div className="mx-auto max-w-md">
-      <div className="rounded-2xl bg-blue-600 p-8 text-white">
+    // Deux colonnes dès sm (prix + bouton | liste) plutôt qu'une carte
+    // étroite et haute : toute l'offre tient sur un écran (Philippe, 2026-09-29).
+    <div className="mx-auto max-w-md sm:max-w-3xl">
+      <div className="grid gap-x-10 rounded-2xl bg-blue-600 p-6 text-white sm:grid-cols-2 sm:p-8 sm:items-center">
+        <div>
         <p className="text-sm font-medium text-blue-100">Cabinets &amp; praticiens · Bêta</p>
-        <p className="font-display mt-3 text-7xl font-semibold tracking-tight">{FEE_PERCENT} %</p>
+        <p className="font-display mt-3 text-6xl font-semibold tracking-tight sm:text-7xl">{FEE_PERCENT} %</p>
         <p className="mt-1 text-sm text-blue-200">prélevés par patient actif, sur le tarif que vous fixez</p>
-        <ul className="mt-8 space-y-2 text-sm text-blue-50">
+        </div>
+        <ul className="mt-5 space-y-2 text-sm text-blue-50 sm:row-span-2 sm:mt-0">
           <li>Vous fixez votre tarif mensuel par patient</li>
           <li>Paiement direct par vos patients, via Stripe Connect</li>
           <li>Patients illimités</li>
@@ -136,9 +140,10 @@ function KineOffer() {
           <li>Suivi d&apos;assiduité et signalements de douleur</li>
           <li>Ajustement de programme à distance</li>
         </ul>
+        <div>
         <Link
           href="/signup/kine"
-          className="mt-8 inline-flex items-center gap-1.5 rounded-full bg-white px-6 py-3 text-sm font-medium text-blue-700 shadow-sm transition hover:bg-slate-100 active:scale-[0.97]"
+          className="mt-5 inline-flex sm:mt-8 items-center gap-1.5 rounded-full bg-white px-6 py-3 text-sm font-medium text-blue-700 shadow-sm transition hover:bg-slate-100 active:scale-[0.97]"
         >
           Demander un accès
           <ArrowRight className="h-4 w-4" strokeWidth={2} />
@@ -147,6 +152,7 @@ function KineOffer() {
           Aucun abonnement fixe, calculé au prorata des jours où chaque patient est actif —
           rejoint en cours de mois ou pas de patient actif du tout, la commission suit.
         </p>
+        </div>
       </div>
     </div>
   );
@@ -178,7 +184,7 @@ export default function PricingSection() {
         ))}
       </div>
 
-      <div key={who} className="mt-10 animate-[fadeInUp_0.4s_ease-out_both]">
+      <div key={who} className="mt-10 sm:short:mt-5 animate-[fadeInUp_0.4s_ease-out_both]">
         {who === "kine" ? <KineOffer /> : <PatientOffers />}
       </div>
     </div>

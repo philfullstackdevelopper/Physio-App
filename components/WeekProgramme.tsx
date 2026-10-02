@@ -32,10 +32,15 @@ export default function WeekProgramme({
   weeks,
   dayDetails,
   currentWeekNumber,
+  pending = false,
 }: {
   weeks: WeekInfo[];
   dayDetails: Record<string, SessionDetail[]>;
   currentWeekNumber: number;
+  /** Aucun programme attribué : le titre de la section annonce qu'il arrive,
+   *  au lieu d'un bloc séparé au-dessus qui prenait trop de place (Philippe,
+   *  2026-10-01). */
+  pending?: boolean;
 }) {
   const loggedDateKeys = new Set(Object.keys(dayDetails).filter((k) => dayDetails[k].length > 0));
   const weekHasActivity = (week: WeekInfo) => daysOfWeek(week, loggedDateKeys).some((d) => d.hasSession);
@@ -119,11 +124,13 @@ export default function WeekProgramme({
         }`,
         content: (
           <>
-            <span className="flex items-center gap-1.5 text-3xl font-semibold">
-              {week.weekNumber}
+            {/* « Semaine N » plutôt qu'un numéro seul, dates entre
+                parenthèses (Philippe, 2026-10-01). */}
+            <span className="flex items-center gap-1.5 text-2xl font-semibold">
+              Semaine {week.weekNumber}
               {active && <CheckCircle2 className="h-5 w-5" strokeWidth={2} />}
             </span>
-            <span className="text-xs font-medium opacity-90">{week.rangeLabel}</span>
+            <span className="text-xs font-medium opacity-90">({week.rangeLabel})</span>
           </>
         ),
       };
@@ -139,8 +146,25 @@ export default function WeekProgramme({
             of floating as separate cards. */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-ink">Mon programme, semaine par semaine</h2>
-            <p className="mt-1 text-sm text-muted">Cliquez sur une semaine pour voir le détail jour par jour.</p>
+            {pending ? (
+              <>
+                <h2 className="text-lg font-semibold text-ink">Votre programme arrive bientôt</h2>
+                <p className="mt-1 text-sm text-muted">
+                  Votre kiné prépare vos exercices personnalisés. Vous serez prévenu·e dès qu&apos;ils seront prêts.{" "}
+                  {/* « Modifier », pas « Compléter » : on n'arrive sur l'accueil
+                      qu'après l'onboarding (app/patient/layout.tsx), donc la
+                      situation est toujours déjà renseignée. */}
+                  <Link href="/patient/onboarding" className="font-medium text-brand hover:underline">
+                    Modifier ma situation en attendant
+                  </Link>
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-semibold text-ink">Mon programme, semaine par semaine</h2>
+                <p className="mt-1 text-sm text-muted">Cliquez sur une semaine pour voir le détail jour par jour.</p>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <button

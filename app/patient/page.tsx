@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Quote, Stethoscope } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+import WavingHand from "@/components/WavingHand";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { loadPatientHome } from "@/lib/patient/home-data";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
-import { quoteOfTheDay } from "@/lib/patient/quotes";
 import WeekProgramme, { type SessionDetail } from "@/components/WeekProgramme";
 import MountainScene from "@/components/MountainScene";
 
@@ -21,7 +21,13 @@ export default async function PatientDashboard() {
   const user = await requireUser(supabase);
 
   const home = await loadPatientHome(supabase, user.id);
-  const quote = quoteOfTheDay();
+  // Date du jour sous la salutation, heure de Paris (le serveur peut tourner en UTC).
+  const today = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "Europe/Paris",
+  }).format(new Date());
 
   const { data: patientRow } = await supabase.from("patients").select("created_at").eq("id", user.id).maybeSingle();
   const weeks = buildWeeks((patientRow?.created_at as string | undefined) ?? new Date().toISOString());
@@ -59,8 +65,8 @@ export default async function PatientDashboard() {
     (dayDetails[key] ??= []).push(entry);
   }
 
-  // "Mon programme" summary card at the bottom of Accueil (Philippe,
-  // 2026-09-08): a quick "what's left this week" recap that links through to
+  // "Mon programme" summary card, top right of Accueil since 2026-10-01
+  // (was at the bottom, Philippe 2026-09-08): a quick "what's left this week" recap that links through to
   // the full /patient/programme page, same numbers loadPatientHome already
   // computes for "séance du jour" — no separate query needed.
   const target = home.activeWorkout?.times_per_week ?? null;
@@ -103,39 +109,63 @@ export default async function PatientDashboard() {
           (mt-8, double this group's own rhythm) rather than the same value
           repeated everywhere (Philippe, 2026-09-08 spacing pass). */}
       <div className="mx-auto max-w-5xl space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <h1 className="text-2xl font-semibold text-ink">
-            Bonjour {home.fullName ? home.fullName.split(" ")[0] : ""}
-          </h1>
-
-          {/* Daily quote — same for every patient on a given day (Philippe, 2026-09-08). */}
-          <div className="relative max-w-sm overflow-hidden rounded-2xl border border-line bg-brand-soft p-4 shadow-sm">
-            <MountainScene variant="quote" className="pointer-events-none absolute -bottom-3 -right-3 h-16 w-24 text-brand opacity-40" />
-            <div className="relative flex items-start gap-3">
-              <Quote className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
-              <div>
-                <p className="text-sm italic text-ink">{quote.text}</p>
-                {/* text-muted (#64748b) on bg-brand-soft only measures ~4.2:1 —
-                    under WCAG AA's 4.5:1 for normal text (Philippe, 2026-09-08
-                    audit) — text-ink/70 clears it comfortably on this background. */}
-                <p className="mt-1 text-xs text-ink/70">— {quote.author}</p>
-              </div>
+        {/* Deux cartes symétriques, même largeur et même hauteur (grille,
+            étirées) : salutation à gauche, « Mon programme » à droite
+            (Philippe, 2026-10-01). */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="group flex items-center rounded-2xl border border-line bg-surface px-5 py-4 shadow-md">
+            <div className="min-w-0">
+              <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
+                <span className="truncate">Bonjour {home.fullName ? home.fullName.split(" ")[0] : ""}</span>
+                <WavingHand className="h-9 w-9 shrink-0" />
+              </h1>
+              <p className="mt-0.5 text-sm capitalize text-muted">{today}</p>
             </div>
           </div>
-        </div>
 
-        {!home.conditionName && (
-          <div className="rounded-2xl border border-line bg-surface p-5 text-center shadow-sm">
-            <Stethoscope className="mx-auto h-6 w-6 text-brand" strokeWidth={1.75} />
-            <p className="mt-2 font-medium text-ink">Votre programme arrive bientôt</p>
-            <p className="mt-1 text-sm text-muted">
-              Votre kiné prépare vos exercices personnalisés. Vous serez prévenu·e dès qu&apos;ils seront prêts.
-            </p>
-            <Link href="/patient/onboarding" className="mt-3 inline-block text-sm font-medium text-brand hover:underline">
-              Compléter ma situation en attendant
-            </Link>
-          </div>
-        )}
+          {/* Carte « Mon programme » en haut à droite, à la place de la citation
+              du jour (Philippe, 2026-10-01) — elle était en bas de page, sous
+              la frise. Dégradé plutôt qu'une carte blanche de plus : c'est
+              l'endroit où la page s'autorise un peu d'audace visuelle. La
+              montagne garde le randonneur qui marque la progression ; la fine
+              barre dit la même chose en clair. */}
+          <section
+            className={`group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r px-5 py-4 shadow-md transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl ${
+              programmeCard.done ? "from-ok to-green-700" : "from-brand to-brand-dark"
+            }`}
+          >
+            <MountainScene
+              variant="goal"
+              progress={weekProgress}
+              className="pointer-events-none absolute -bottom-1 left-0 h-20 w-28 text-white/90"
+            />
+            <div className="relative pl-24">
+              {/* Pas de « Semaine 0 » quand aucun programme n'a commencé. */}
+              {home.week > 0 && (
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/75">
+                  {programmeCard.done && <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />}
+                  Semaine {home.week}
+                </p>
+              )}
+              <p className="mt-0.5 text-base font-semibold text-white">{programmeCard.title}</p>
+              <p className="mt-0.5 text-sm text-white/85">{programmeCard.subtitle}</p>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <div className="h-1.5 w-full max-w-[8rem] overflow-hidden rounded-full bg-white/20">
+                  <div className="h-full rounded-full bg-white transition-[width]" style={{ width: `${Math.round(weekProgress * 100)}%` }} />
+                </div>
+                <Link
+                  href="/patient/programme"
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-sm font-semibold shadow-sm transition hover:bg-white/90 motion-safe:animate-[ctaPulse_2.4s_ease-out_infinite] motion-safe:group-hover:animate-none ${
+                    programmeCard.done ? "text-ok" : "text-brand"
+                  }`}
+                >
+                  {programmeCard.cta}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
+                </Link>
+              </div>
+            </div>
+          </section>
+        </div>
 
         {/* The brake, explained gently. The patient never sees the clinical wording
             of `decision.reason` — that phrasing is written for the practitioner. */}
@@ -168,66 +198,20 @@ export default async function PatientDashboard() {
           content width (up to the sidebar), not the reading-width column
           everything else on this page uses (Philippe, 2026-09-08). */}
       <div className="mt-8 w-full min-w-0">
-        <WeekProgramme weeks={weeks} dayDetails={dayDetails} currentWeekNumber={currentWeekNumber(weeks)} />
+        {/* Pas encore de programme : c'est le titre de cette section qui
+            l'annonce (pending), plus de bloc séparé au-dessus. */}
+        <WeekProgramme
+          weeks={weeks}
+          dayDetails={dayDetails}
+          currentWeekNumber={currentWeekNumber(weeks)}
+          // « En attente » = aucune séance attribuée cette semaine — PAS
+          // « pas de condition » : le kiné peut attribuer une séance sans
+          // condition, et le patient restait alors bloqué sur « Votre
+          // programme arrive bientôt » (Philippe, 2026-10-01, patient Padraig).
+          pending={!home.activeWorkout}
+        />
       </div>
 
-      {/* Tight gap to the timeline above (mt-4, same value as the status
-          cluster's own rhythm) — this card is a continuation/summary of the
-          programme zone, not a new subject, so it should read as attached to
-          it rather than floating a full "section gap" away. */}
-      <div className="mx-auto mt-4 max-w-5xl">
-        {/* A gradient bar rather than another white bordered card (Philippe,
-            2026-09-08: every other section on this page already is one of
-            those — this is the one place to spend some visual boldness).
-            The mountain sits as a background motif with the hiker still
-            marking progress on it; the thin track below states the same
-            number literally, in case the illustration alone isn't legible. */}
-        <section
-          className={`relative overflow-hidden rounded-2xl bg-gradient-to-r px-6 py-5 shadow-md ${
-            programmeCard.done ? "from-ok to-green-700" : "from-brand to-brand-dark"
-          }`}
-        >
-          <MountainScene
-            variant="goal"
-            progress={weekProgress}
-            // -bottom-5 used to crop the trailhead (path start, low progress)
-            // right off the visible card — the hiker was invisible until a
-            // session or two in (Philippe, 2026-09-08, live check). -bottom-1
-            // keeps the whole path on-card at every progress value.
-            // Sized down at the smallest breakpoint (Philippe, 2026-09-08
-            // spacing pass): at h-32 w-44 the fixed pl-28 reservation left as
-            // little as ~160px of card width for the title/subtitle text on a
-            // 375px phone once the card's own p-6 was subtracted — this
-            // illustration was fighting the text for room on exactly the
-            // device most patients actually use it on.
-            className="pointer-events-none absolute -bottom-1 left-0 h-24 w-32 text-white/90 sm:h-32 sm:w-44"
-          />
-          <div className="relative pl-20 sm:pl-36">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/75">
-                  {programmeCard.done && <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />}
-                  Semaine {home.week}
-                </p>
-                <p className="mt-0.5 text-base font-semibold text-white">{programmeCard.title}</p>
-                <p className="mt-1 text-sm text-white/85">{programmeCard.subtitle}</p>
-              </div>
-              <Link
-                href="/patient/programme"
-                className={`flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold shadow-sm transition hover:bg-white/90 ${
-                  programmeCard.done ? "text-ok" : "text-brand"
-                }`}
-              >
-                {programmeCard.cta}
-                <ArrowRight className="h-4 w-4" strokeWidth={2} />
-              </Link>
-            </div>
-            <div className="mt-4 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/20">
-              <div className="h-full rounded-full bg-white transition-[width]" style={{ width: `${Math.round(weekProgress * 100)}%` }} />
-            </div>
-          </div>
-        </section>
-      </div>
     </main>
   );
 }

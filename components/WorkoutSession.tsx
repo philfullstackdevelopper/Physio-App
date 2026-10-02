@@ -10,7 +10,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { Flame, CheckCircle2, Check, Play, Pause } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Prescription } from "@/lib/exercise/prescription";
+import { goalTextFor, type Prescription } from "@/lib/exercise/prescription";
 import { fetchStreak } from "@/lib/exercise/streak";
 import { getYoutubeEmbedId, isVideoFileUrl, isImageFileUrl } from "@/lib/exercise/media";
 import { parseSteps } from "@/lib/exercise/steps";
@@ -198,7 +198,7 @@ export default function WorkoutSession({
 
   const total = exercises.length;
   const current = exercises[idx];
-  const goalText = `${prescription.goalSets} séries × ${prescription.goalReps} répétitions`;
+  const goalText = goalTextFor(current?.instructions ?? null, prescription);
 
   const finish = async () => {
     // Log the completed workout (RLS: patient can insert their own logs),

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Écran peu haut (portable zoomé, petit écran) : `short:` resserre les mises
+   en page qui doivent tenir sur un écran sans défiler (hero de la landing). */
+@custom-variant short (@media (max-height: 800px));
+
 :root {
   --background: #f8fafb;
   --foreground: #0f172a;
@@ -65,6 +69,15 @@ body {
   }
 }
 
+/* Petit tremblement « il manque quelque chose ici » — bloc Condition du menu
+   « Gérer » quand le patient n'en a pas (Philippe, 2026-10-01). Toujours
+   appelé via motion-safe: (prefers-reduced-motion). */
+@keyframes nudgeShake {
+  0%, 100% { transform: translateX(0); }
+  15%, 55% { transform: translateX(-5px); }
+  35%, 75% { transform: translateX(5px); }
+}
+
 @keyframes gentlePulse {
   0%, 100% {
     transform: scale(1);
@@ -73,6 +86,48 @@ body {
   50% {
     transform: scale(1.4);
     opacity: 0.5;
+  }
+}
+
+/* Bouton « Voir mon programme » de l'accueil patient (Philippe, 2026-10-01 :
+   « pourrait vibrer / pulser ») — halo blanc qui s'élargit et s'efface, plus
+   un très léger gonflement. Toujours appelé via motion-safe: pour respecter
+   prefers-reduced-motion. */
+/* Main qui salue (components/WavingHand.tsx) — quelques allers-retours
+   puis retour au repos. handWaveAgain = mêmes étapes sous un autre nom : un
+   navigateur ne rejoue pas une animation dont le nom n'a pas changé, d'où un
+   second nom pour resaluer au survol. */
+@keyframes handWaveAgain {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(16deg); }
+  30% { transform: rotate(-8deg); }
+  45% { transform: rotate(14deg); }
+  60% { transform: rotate(-4deg); }
+  75% { transform: rotate(8deg); }
+}
+@keyframes handWave {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(16deg); }
+  30% { transform: rotate(-8deg); }
+  45% { transform: rotate(14deg); }
+  60% { transform: rotate(-4deg); }
+  75% { transform: rotate(8deg); }
+}
+
+@keyframes ctaPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    transform: scale(1);
   }
 }
 

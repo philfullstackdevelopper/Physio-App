@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, Dumbbell, Plus, Search, X } from "lucide-react";
+import { CalendarRange, Check, ChevronLeft, Dumbbell, Plus, Repeat, Search, Trash2, X } from "lucide-react";
 import { type BodyPart } from "@/lib/exercise/category";
 import SubmitButton from "@/components/SubmitButton";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
+import { addWeeksToKey } from "@/lib/exercise/activeRecommendation";
+import { thisWeekStartDateKey } from "@/lib/patient/weeks";
+
+/** Choix « jusqu'à quand ? » de l'étape 2 (null = jusqu'à la prochaine séance). */
+const DURATION_CHOICES: (number | null)[] = [null, 1, 2, 3, 4, 6, 8, 12];
 
 export type ModalExercise = { id: string; name: string };
 export type AddableExercise = ModalExercise & { bodyPartIds: string[] };
@@ -75,6 +80,13 @@ export default function AdjustWorkoutModal({
   const [addIds, setAddIds] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
   const [qTemplate, setQTemplate] = useState("");
+  // Pendant combien de semaines la séance choisie s'applique ("" = jusqu'à
+  // la prochaine séance attribuée) — migration 0059, Philippe 2026-10-01.
+  const [weekCount, setWeekCount] = useState("");
+  // Séance cliquée à l'étape 1 → étape 2 (« appliquer — jusqu'à quand ? »).
+  const [pickedId, setPickedId] = useState<string | null>(null);
+  // « Retirer cette séance » demande une confirmation (action destructive).
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const firstBodyPartId = bodyParts[0]?.id ?? null;
   // Which body-part tile is selected in each picker — "Ajouter un exercice"
   // (exercises view) and "Choisir/Changer de séance" (template view) filter
@@ -83,6 +95,7 @@ export default function AdjustWorkoutModal({
   // on open, and typing in that picker's search box overrides it.
   const [exerciseBodyPartId, setExerciseBodyPartId] = useState<string | null>(firstBodyPartId);
   const [templateBodyPartId, setTemplateBodyPartId] = useState<string | null>(firstBodyPartId);
+  const removeFormId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -99,6 +112,9 @@ export default function AdjustWorkoutModal({
     setAddIds(new Set());
     setQ("");
     setQTemplate("");
+    setConfirmRemove(false);
+    setPickedId(null);
+    setWeekCount("");
     triggerRef.current?.focus();
   };
 
@@ -205,6 +221,17 @@ export default function AdjustWorkoutModal({
   );
 
   const triggerDisabled = !workout && addableWorkouts.length === 0;
+  const picked = pickedId ? (addableWorkouts.find((w) => w.id === pickedId) ?? null) : null;
+  // Période de l'étape 2 : à partir de la semaine choisie dans la frise.
+  const fromKey = weekStartDate ?? thisWeekStartDateKey();
+  const shortDate = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
+  const startLabel = shortDate(new Date(`${fromKey}T12:00:00Z`));
+  // Dernier jour (dimanche) d'une période de n semaines.
+  const endLabel = (n: number) => {
+    const d = new Date(`${addWeeksToKey(fromKey, n)}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 1);
+    return shortDate(d);
+  };
 
   return (
     <>
@@ -254,12 +281,32 @@ export default function AdjustWorkoutModal({
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
+                {/* Recherche de séance dans l'en-tête (étape 1) : la ligne du
+                    dessous reste entière pour les catégories. */}
+                {view === "template" && !picked && addableWorkouts.length > 3 && (
+  <label className="relative hidden w-56 md:block">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.75} />
+                    <input
+                      type="search"
+                      value={qTemplate}
+                      onChange={(e) => setQTemplate(e.target.value)}
+                      placeholder="Rechercher une séance…"
+                      className="w-full rounded-lg border border-line bg-surface py-1.5 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
+                    />
+                  </label>
+                )}
                 {view === "exercises" && workout && addableWorkouts.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => setView("template")}
-                    className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-app-bg"
+                    onClick={() => {
+                      setPickedId(null);
+                      setView("template");
+                    }}
+                    // Bleu plein foncé (Philippe, 2026-10-01 : « encore plus
+                    // visible, dans un bleu plus foncé »).
+                    className="inline-flex items-center gap-1.5 rounded-full bg-brand-dark px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand"
                   >
+                    <Repeat className="h-4 w-4" strokeWidth={2} />
                     Changer de séance
                   </button>
                 )}
@@ -289,10 +336,18 @@ export default function AdjustWorkoutModal({
 
                 {/* Sur desktop chaque colonne scrolle indépendamment (min-h-0 +
                     overflow-y-auto) ; sur mobile la grille entière scrolle. */}
-                <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-6 md:grid-cols-[2fr_3fr] md:overflow-hidden">
-                  <section className="flex min-h-0 flex-col">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">Exercices actuels</p>
-                    <ul className="mt-2 space-y-1.5 md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
+                <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
+                  {/* Séance actuelle : un panneau à part, sur fond gris, pour
+                      bien la distinguer de la bibliothèque à droite. */}
+                  <section className="flex min-h-0 flex-col rounded-xl border border-line bg-app-bg p-4">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted">Séance actuelle</p>
+                      <span className="text-xs text-muted">
+                        {workout.exercises.length} exercice{workout.exercises.length > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted">Cliquez sur un exercice pour le retirer.</p>
+                    <ul className="mt-3 space-y-1.5 md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
                       {workout.exercises.map((ex) => {
                         const marked = removeIds.has(ex.id);
                         return (
@@ -300,14 +355,14 @@ export default function AdjustWorkoutModal({
                             <button
                               type="button"
                               onClick={() => setRemoveIds((s) => toggle(s, ex.id))}
-                              className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                                marked ? "border-danger-soft bg-danger-soft text-danger" : "border-line bg-surface text-ink hover:bg-app-bg"
+                              className={`flex w-full items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-left text-sm transition-colors ${
+                                marked ? "border-danger/30 bg-danger-soft text-danger line-through" : "border-line bg-surface text-ink hover:border-danger/30"
                               }`}
                             >
-                              <ExerciseIllustration name={ex.name} animate={false} className={`h-9 w-9 shrink-0 ${marked ? "text-danger" : "text-brand"}`} />
+                              <ExerciseIllustration name={ex.name} animate={false} className={`h-8 w-8 shrink-0 ${marked ? "text-danger" : "text-brand"}`} />
                               <span className="flex-1 truncate">{ex.name}</span>
                               {marked ? (
-                                <span className="flex items-center gap-1 text-xs font-medium">À retirer <X className="h-3.5 w-3.5" strokeWidth={2} /></span>
+                                <span className="flex items-center gap-1 text-xs font-medium no-underline">À retirer <X className="h-3.5 w-3.5" strokeWidth={2} /></span>
                               ) : (
                                 <Check className="h-4 w-4 text-brand" strokeWidth={2} />
                               )}
@@ -315,7 +370,24 @@ export default function AdjustWorkoutModal({
                           </li>
                         );
                       })}
-                      {workout.exercises.length === 0 && <li className="text-sm text-muted">Cette séance est vide.</li>}
+                      {[...addIds].map((id) => {
+                        const ex = addableExercises.find((e) => e.id === id);
+                        if (!ex) return null;
+                        return (
+                          <li key={`new-${id}`}>
+                            <button
+                              type="button"
+                              onClick={() => setAddIds((s) => toggle(s, id))}
+                              className="flex w-full items-center gap-2.5 rounded-lg border border-ok/30 bg-ok-soft px-2.5 py-1.5 text-left text-sm text-ok transition-colors"
+                            >
+                              <ExerciseIllustration name={ex.name} animate={false} className="h-8 w-8 shrink-0 text-ok" />
+                              <span className="flex-1 truncate">{ex.name}</span>
+                              <span className="text-xs font-medium">Ajouté</span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                      {workout.exercises.length === 0 && addIds.size === 0 && <li className="text-sm text-muted">Cette séance est vide.</li>}
                     </ul>
                   </section>
 
@@ -332,52 +404,64 @@ export default function AdjustWorkoutModal({
                       />
                     </label>
                     {!query && (
-                      // Tuiles larges (jusqu'à 6 colonnes) : la rangée reste
-                      // basse, donc la liste d'exercices en dessous garde de
-                      // la hauteur et n'a pas à scroller sauf nécessité.
-                      <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-6">
+                      // Même format que les catégories de séances (Philippe,
+                      // 2026-10-01) : une case par catégorie, toutes sur une
+                      // ligne et de même largeur. La colonne est plus étroite,
+                      // donc icône au-dessus du libellé ; nombre d'exercices
+                      // au survol. Sur téléphone, la ligne défile.
+                      <div
+                        style={{ gridTemplateColumns: `repeat(${bodyParts.length}, minmax(0, 1fr))` }}
+                        className="mt-2 flex gap-1 overflow-x-auto md:grid md:overflow-visible"
+                      >
                         {bodyParts.map((bp) => {
                           const active = bp.id === exerciseBodyPartId;
+                          const count = exerciseCountByBodyPart.get(bp.id) ?? 0;
                           return (
                             <button
                               key={bp.id}
                               type="button"
+                              title={`${bp.label} — ${count} exercice${count > 1 ? "s" : ""}`}
                               onClick={() => setExerciseBodyPartId(bp.id)}
-                              className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-colors ${
-                                active ? "border-brand bg-brand-soft" : "border-line bg-surface hover:bg-app-bg"
+                              disabled={count === 0}
+                              className={`flex w-20 shrink-0 flex-col items-center gap-0.5 rounded-xl border px-1 py-1 text-center text-[10px] font-medium leading-tight transition-colors disabled:cursor-not-allowed disabled:opacity-40 md:w-auto md:min-w-0 ${
+                                active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
                               }`}
                             >
-                              <BodyPartIllustration slug={bp.slug} className="h-5 w-5" active={active} />
-                              <span className="text-[11px] font-medium leading-tight text-ink">{bp.label}</span>
-                              <span className="text-[10px] text-muted">{exerciseCountByBodyPart.get(bp.id) ?? 0}</span>
+                              <BodyPartIllustration slug={bp.slug} className="h-7 w-7 shrink-0" active={active} />
+                              <span className="line-clamp-2">{bp.label}</span>
                             </button>
                           );
                         })}
                       </div>
                     )}
-                    <div className="mt-2 max-h-72 space-y-1 overflow-y-auto pr-1 md:min-h-0 md:max-h-none md:flex-1">
+                    <div className="mt-3 max-h-80 overflow-y-auto pr-1 md:min-h-0 md:max-h-none md:flex-1">
                       {filteredExercises.length === 0 && (
                         <p className="text-sm text-muted">
                           {query ? `Aucun exercice ne correspond à « ${q.trim()} ».` : "Aucun exercice dans cette catégorie."}
                         </p>
                       )}
-                      {filteredExercises.map((ex) => {
-                        const marked = addIds.has(ex.id);
-                        return (
-                          <button
-                            key={ex.id}
-                            type="button"
-                            onClick={() => setAddIds((s) => toggle(s, ex.id))}
-                            className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                              marked ? "border-ok-soft bg-ok-soft text-ok" : "border-line bg-surface text-ink hover:bg-app-bg"
-                            }`}
-                          >
-                            <ExerciseIllustration name={ex.name} animate={false} className={`h-9 w-9 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
-                            <span className="flex-1 truncate">{ex.name}</span>
-                            {marked ? <span className="text-xs font-medium">À ajouter</span> : <Plus className="h-4 w-4 text-brand" strokeWidth={2} />}
-                          </button>
-                        );
-                      })}
+                      {/* Lignes compactes, sur 2 colonnes en grand écran : bien
+                          plus d'exercices visibles d'un coup. */}
+                      <div className="grid content-start gap-1.5 lg:grid-cols-2">
+                        {filteredExercises.map((ex) => {
+                          const marked = addIds.has(ex.id);
+                          return (
+                            <button
+                              key={ex.id}
+                              type="button"
+                              onClick={() => setAddIds((s) => toggle(s, ex.id))}
+                              title={ex.name}
+                              className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-left text-sm transition-colors ${
+                                marked ? "border-ok/30 bg-ok-soft text-ok" : "border-line bg-surface text-ink hover:border-brand/40 hover:bg-app-bg"
+                              }`}
+                            >
+                              <ExerciseIllustration name={ex.name} animate={false} className={`h-7 w-7 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
+                              <span className="flex-1 truncate">{ex.name}</span>
+                              {marked ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Plus className="h-4 w-4 shrink-0 text-brand" strokeWidth={2} />}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </section>
                 </div>
@@ -394,11 +478,37 @@ export default function AdjustWorkoutModal({
                   )}
                   <div className="flex items-center justify-between gap-2">
                     {recId ? (
-                      <form action={removeAction} onSubmit={close}>
-                        <input type="hidden" name="patient_id" value={patientId} />
-                        <input type="hidden" name="rec_id" value={recId} />
-                        <button type="submit" className="text-xs font-medium text-danger hover:underline">Retirer cette séance</button>
-                      </form>
+                      confirmRemove ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm text-ink">Retirer la séance de {patientFirstName} ?</span>
+                          {/* Lié par l'attribut `form` au formulaire de retrait
+                              rendu à côté : un <form> ne peut pas être imbriqué
+                              dans un autre <form>, sinon erreur d'hydratation. */}
+                          <button
+                            type="submit"
+                            form={removeFormId}
+                            className="rounded-full bg-danger px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+                          >
+                            Oui, retirer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmRemove(false)}
+                            className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-app-bg"
+                          >
+                            Non
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmRemove(true)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-danger/30 px-4 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-soft"
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+                          Retirer cette séance
+                        </button>
+                      )
                     ) : <span />}
                     <div className="flex gap-2">
                       <button type="button" onClick={close} className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg">Annuler</button>
@@ -413,44 +523,158 @@ export default function AdjustWorkoutModal({
                   </div>
                 </div>
               </form>
-            ) : (
-              <div className="flex min-h-0 flex-1 flex-col">
-                {addableWorkouts.length > 3 && (
-                  <div className="border-b border-line px-6 py-3">
-                    <label className="relative block">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.75} />
-                      <input
-                        type="search"
-                        value={qTemplate}
-                        onChange={(e) => setQTemplate(e.target.value)}
-                        placeholder="Rechercher une séance…"
-                        className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-                      />
-                    </label>
-                    {!templateQuery && (
-                      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-                        {bodyParts.map((bp) => {
-                          const active = bp.id === templateBodyPartId;
+            ) : null}
+            {view === "exercises" && workout && recId && (
+              <form id={removeFormId} action={removeAction} onSubmit={close} className="hidden">
+                <input type="hidden" name="patient_id" value={patientId} />
+                <input type="hidden" name="rec_id" value={recId} />
+              </form>
+            )}
+            {view === "exercises" && workout ? null : picked ? (
+              // Étape 2 : « Voulez-vous lui appliquer cette séance — jusqu'à
+              // quand ? » (Philippe, 2026-10-01 : choisir la séance d'abord,
+              // la période ensuite).
+              <form action={assignAction} onSubmit={close} className="flex min-h-0 flex-1 flex-col">
+                <input type="hidden" name="patient_id" value={patientId} />
+                <input type="hidden" name="workout_id" value={picked.id} />
+                {weekStartDate && <input type="hidden" name="week_start_date" value={weekStartDate} />}
+                {weekCount && <input type="hidden" name="week_count" value={weekCount} />}
+                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setPickedId(null)}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-muted hover:text-ink"
+                  >
+                    <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+                    Retour à la liste des séances
+                  </button>
+
+                  <div className="mx-auto mt-3 grid max-w-5xl gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                    <section className="rounded-xl border border-line bg-app-bg p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted">Séance choisie</p>
+                      <p className="mt-1 text-base font-semibold text-ink">{picked.name}</p>
+                      <p className="mt-0.5 text-xs text-muted">
+                        {[
+                          picked.conditionName,
+                          picked.stageLabel,
+                          picked.durationMinutes != null ? `${picked.durationMinutes} min` : null,
+                          picked.timesPerWeek ? `${picked.timesPerWeek}×/semaine` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                      {picked.description && <p className="mt-1 text-xs text-muted">{picked.description}</p>}
+                      <ul className="mt-3 grid grid-cols-2 gap-2">
+                        {picked.exerciseNames.map((n, i) => (
+                          <li key={`${n}-${i}`} className="flex items-center gap-2 rounded-lg bg-surface p-1.5">
+                            <ExerciseIllustration name={n} animate={false} className="h-9 w-9 shrink-0 text-brand" />
+                            <span className="line-clamp-2 text-xs text-ink">{n}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+
+                    <section>
+                      <h3 className="text-base font-semibold text-ink">Appliquer cette séance à {patientFirstName} ?</h3>
+                      {workout && <p className="mt-0.5 truncate text-xs text-muted">Remplace {workout.name}</p>}
+
+                      {/* Une rangée de pastilles courtes + UNE ligne de résumé
+                          qui suit le choix (Philippe, 2026-10-01 : « trop de
+                          texte, plus esthétique »). */}
+                      <p className="mt-4 text-sm font-medium text-ink">Jusqu&apos;à quand ?</p>
+                      <div role="radiogroup" aria-label="Jusqu'à quand" className="mt-2 flex flex-wrap items-center gap-1.5">
+                        {DURATION_CHOICES.map((n) => {
+                          const value = n === null ? "" : String(n);
+                          const selected = weekCount === value;
+                          const tone = selected ? "border-brand bg-brand text-white" : "border-line bg-surface text-ink hover:border-brand/50";
                           return (
                             <button
-                              key={bp.id}
+                              key={value || "open"}
                               type="button"
-                              onClick={() => setTemplateBodyPartId(bp.id)}
-                              className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-colors ${
-                                active ? "border-brand bg-brand-soft" : "border-line bg-surface hover:bg-app-bg"
-                              }`}
+                              role="radio"
+                              aria-checked={selected}
+                              aria-label={n === null ? "Sans limite" : `${n} semaine${n > 1 ? "s" : ""}`}
+                              onClick={() => setWeekCount(value)}
+                              className={`rounded-full border text-sm font-medium transition-colors ${
+                                n === null ? "mr-1.5 px-3.5 py-1.5" : "h-9 w-9"
+                              } ${tone}`}
                             >
-                              <BodyPartIllustration slug={bp.slug} className="h-6 w-6" active={active} />
-                              <span className="text-[11px] font-medium leading-tight text-ink">{bp.label}</span>
-                              <span className="text-[10px] text-muted">{workoutCountByBodyPart.get(bp.id) ?? 0} séance{(workoutCountByBodyPart.get(bp.id) ?? 0) > 1 ? "s" : ""}</span>
+                              {n === null ? "Sans limite" : n}
                             </button>
                           );
                         })}
+                        <span className="ml-0.5 text-sm text-muted">semaines</span>
                       </div>
-                    )}
+                      <p className="mt-3 flex items-center gap-2 rounded-xl bg-app-bg px-3 py-2 text-sm text-ink">
+                        <CalendarRange className="h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
+                        {weekCount ? (
+                          <span>
+                            Du <span className="font-semibold">{startLabel}</span> au{" "}
+                            <span className="font-semibold">{endLabel(Number(weekCount))}</span>
+                          </span>
+                        ) : (
+                          <span>
+                            Dès le <span className="font-semibold">{startLabel}</span>, jusqu&apos;à la prochaine séance
+                          </span>
+                        )}
+                      </p>
+                    </section>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 border-t border-line px-6 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setPickedId(null)}
+                    className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg"
+                  >
+                    Retour
+                  </button>
+                  <button type="submit" className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
+                    Appliquer la séance
+                  </button>
+                </div>
+              </form>
+            ) : (
+              // Étape 1 : choisir la séance. Recherche + catégories sur UNE
+              // ligne (pastilles qui défilent si elles débordent), liste en
+              // cartes compactes jusqu'à 3 colonnes (Philippe, 2026-10-01 :
+              // « pas assez de place »).
+              <div className="flex min-h-0 flex-1 flex-col">
+                {addableWorkouts.length > 3 && (
+                  <div className="flex items-center border-b border-line px-6 py-2">
+                    {/* Une case par catégorie, toutes de même largeur sur une seule ligne
+                        (le libellé passe sur 2 lignes si besoin) ; sur
+                        téléphone, la ligne défile. */}
+                    <div
+                      style={{ gridTemplateColumns: `repeat(${bodyParts.length}, minmax(0, 1fr))` }}
+                      className={`flex min-w-0 flex-1 gap-1.5 overflow-x-auto md:grid md:overflow-visible ${templateQuery ? "opacity-40" : ""}`}
+                    >
+                      {bodyParts.map((bp) => {
+                        const active = !templateQuery && bp.id === templateBodyPartId;
+                        const count = workoutCountByBodyPart.get(bp.id) ?? 0;
+                        return (
+                          <button
+                            key={bp.id}
+                            type="button"
+                            title={`${count} séance${count > 1 ? "s" : ""}`}
+                            onClick={() => {
+                              setQTemplate("");
+                              setTemplateBodyPartId(bp.id);
+                            }}
+                            className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-1.5 py-1 text-left text-[11px] font-medium leading-tight transition-colors md:min-w-0 ${
+                              active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
+                            }`}
+                          >
+                            <BodyPartIllustration slug={bp.slug} className="h-7 w-7 shrink-0" active={active} />
+                            <span className="line-clamp-2 whitespace-nowrap md:whitespace-normal">{bp.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
-                <div className="min-h-0 flex-1 overflow-y-auto p-6">
+                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
                   {addableWorkouts.length === 0 ? (
                     <p className="text-sm text-muted">Aucune séance disponible — créez-en une dans Mes séances.</p>
                   ) : filteredWorkouts.length === 0 ? (
@@ -458,51 +682,55 @@ export default function AdjustWorkoutModal({
                       {templateQuery ? `Aucune séance ne correspond à « ${qTemplate} ».` : "Aucune séance dans cette catégorie."}
                     </p>
                   ) : (
-                    // Cartes compactes en 2 colonnes sur desktop : deux fois
-                    // plus de séances visibles sans scroller.
-                    <ul className="grid gap-2 lg:grid-cols-2">
+                    <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                       {filteredWorkouts.map((w, i) => {
                         const newGroup = i === 0 || filteredWorkouts[i - 1].conditionName !== w.conditionName;
+                        const pick = () => {
+                          setWeekCount("");
+                          setPickedId(w.id);
+                        };
                         return (
                           <li key={w.id} className="contents">
                             {newGroup && (
-                              <p className={`text-xs font-semibold uppercase tracking-wide text-muted lg:col-span-2 ${i === 0 ? "" : "mt-3"}`}>
+                              <p className={`text-xs font-semibold uppercase tracking-wide text-muted md:col-span-2 xl:col-span-3 ${i === 0 ? "" : "mt-2"}`}>
                                 {w.conditionName ?? "Sans condition"}
                               </p>
                             )}
-                            <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 transition-colors hover:border-brand/40">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-app-bg">
-                                {w.exerciseNames[0] ? (
-                                  <ExerciseIllustration name={w.exerciseNames[0]} animate={false} className="h-7 w-7 text-brand" />
-                                ) : (
-                                  <Dumbbell className="h-5 w-5 text-muted" strokeWidth={1.75} />
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <p className="truncate text-sm font-semibold text-ink">{w.name}</p>
-                                  {w.editHref && (
-                                    <Link href={w.editHref} className="shrink-0 text-xs font-medium text-brand underline underline-offset-2 hover:no-underline">
-                                      Modifier
-                                    </Link>
+                            <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface px-2.5 py-2 transition-colors hover:border-brand/40">
+                              <button type="button" onClick={pick} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-app-bg">
+                                  {w.exerciseNames[0] ? (
+                                    <ExerciseIllustration name={w.exerciseNames[0]} animate={false} className="h-7 w-7 text-brand" />
+                                  ) : (
+                                    <Dumbbell className="h-5 w-5 text-muted" strokeWidth={1.75} />
                                   )}
-                                </div>
-                                <p className="mt-0.5 truncate text-xs text-muted">
-                                  {w.stageLabel && `${w.stageLabel} · `}
-                                  {w.durationMinutes} min
-                                  {w.timesPerWeek ? ` · ${w.timesPerWeek}×/semaine` : ""}
-                                  {w.exerciseNames.length > 0 ? ` · ${w.exerciseNames.length} exercice${w.exerciseNames.length > 1 ? "s" : ""}` : ""}
-                                </p>
-                                {w.description && <p className="mt-0.5 line-clamp-1 text-xs text-muted">{w.description}</p>}
-                              </div>
-                              <form action={assignAction} onSubmit={close} className="shrink-0">
-                                <input type="hidden" name="patient_id" value={patientId} />
-                                <input type="hidden" name="workout_id" value={w.id} />
-                                {weekStartDate && <input type="hidden" name="week_start_date" value={weekStartDate} />}
-                                <button type="submit" className="rounded-full border border-brand/30 px-3 py-1 text-xs font-medium text-brand hover:bg-brand-soft">
-                                  Choisir
-                                </button>
-                              </form>
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate text-sm font-semibold text-ink">{w.name}</span>
+                                  <span className="block truncate text-xs text-muted">
+                                    {[
+                                      w.stageLabel,
+                                      w.durationMinutes != null ? `${w.durationMinutes} min` : null,
+                                      w.timesPerWeek ? `${w.timesPerWeek}×/sem.` : null,
+                                      w.exerciseNames.length > 0 ? `${w.exerciseNames.length} exo${w.exerciseNames.length > 1 ? "s" : ""}` : null,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  </span>
+                                </span>
+                              </button>
+                              {w.editHref && (
+                                <Link href={w.editHref} className="shrink-0 text-xs font-medium text-muted underline underline-offset-2 hover:text-brand">
+                                  Modifier
+                                </Link>
+                              )}
+                              <button
+                                type="button"
+                                onClick={pick}
+                                className="shrink-0 rounded-full border border-brand/30 px-3 py-1 text-xs font-medium text-brand hover:bg-brand-soft"
+                              >
+                                Choisir
+                              </button>
                             </div>
                           </li>
                         );

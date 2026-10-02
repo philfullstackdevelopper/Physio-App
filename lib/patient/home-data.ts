@@ -106,13 +106,13 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
       : Promise.resolve({ data: null }),
     supabase
       .from("patient_recommended_workouts")
-      .select(`week_start_date, workouts ( ${WORKOUT_FIELDS} )`)
+      .select(`week_start_date, week_count, workouts ( ${WORKOUT_FIELDS} )`)
       .eq("patient_id", userId),
   ]);
 
   const recommended = (recRows ?? [])
-    .map((r) => ({ weekStartDate: r.week_start_date as string, workout: r.workouts as unknown as Workout | null }))
-    .filter((r): r is { weekStartDate: string; workout: Workout } => r.workout != null);
+    .map((r) => ({ weekStartDate: r.week_start_date as string, weekCount: (r.week_count as number | null) ?? null, workout: r.workouts as unknown as Workout | null }))
+    .filter((r): r is { weekStartDate: string; weekCount: number | null; workout: Workout } => r.workout != null);
 
   const weekStart = startOfWeekISO();
   const weekCounts: Record<string, number> = {};
@@ -124,7 +124,7 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
   }
 
   const activeId = resolveWorkoutForWeek(
-    recommended.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate })),
+    recommended.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate, weekCount: r.weekCount })),
     thisWeekStartDateKey(),
   );
   const activeWorkout = recommended.find((r) => r.workout.id === activeId)?.workout ?? null;

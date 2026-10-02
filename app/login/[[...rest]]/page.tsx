@@ -13,8 +13,13 @@ const ENCOURAGEMENTS = [
 ];
 
 export default function LoginPage() {
+  // Doit tenir sur un seul écran, sans scroll, y compris sur le PC de Philippe
+  // (zoom 150 % → ~1262×549) : padding vertical réduit, pas de doublon du lien
+  // d'inscription (Clerk l'affiche déjà en pied de carte), sous-titre Clerk
+  // masqué. min-h-dvh (et non h-dvh + overflow-hidden) : sur un écran vraiment
+  // trop petit, la page défile au lieu d'être coupée.
   return (
-    <main className="relative min-h-screen bg-[#f6f8fd]">
+    <main className="relative min-h-dvh bg-[#f6f8fd]">
       <Link
         href="/"
         className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm backdrop-blur transition-colors hover:text-slate-900 lg:left-6 lg:top-6"
@@ -23,9 +28,9 @@ export default function LoginPage() {
         Retour
       </Link>
 
-      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col lg:flex-row lg:items-stretch">
+      <div className="relative mx-auto flex min-h-dvh max-w-6xl flex-col lg:flex-row lg:items-stretch">
         {/* Left: login form */}
-        <div className="flex flex-1 items-center justify-center p-4 py-16 lg:p-16">
+        <div className="flex flex-1 items-center justify-center px-4 pb-6 pt-16 lg:px-16 lg:py-4">
           <div className="w-full max-w-sm">
             <Link href="/" className="mb-6 flex items-center justify-center gap-2.5 lg:hidden">
               <LogoMark size={36} />
@@ -39,16 +44,20 @@ export default function LoginPage() {
               fallbackRedirectUrl="/apres-connexion"
               signUpUrl="/signup"
               appearance={{
-                elements: { rootBox: "w-full", cardBox: "w-full" },
+                elements: {
+                  rootBox: "w-full",
+                  cardBox: "w-full",
+                  // « pour continuer vers My Application » : nom d'appli Clerk
+                  // par défaut, en anglais, et une ligne de hauteur en moins.
+                  headerSubtitle: "hidden",
+                  // Espacements Clerk resserrés (32px partout par défaut) pour
+                  // que la carte, champ mot de passe compris, tienne en 549px.
+                  card: { paddingTop: "1.5rem", paddingBottom: "1.5rem", gap: "1.25rem" },
+                  main: { gap: "1rem" },
+                  form: { gap: "1.25rem" },
+                },
               }}
             />
-
-            <p className="mt-6 text-center text-sm text-slate-500">
-              Pas encore de compte ?{" "}
-              <Link href="/signup" className="font-medium text-blue-700 hover:underline">
-                Créer un compte
-              </Link>
-            </p>
           </div>
         </div>
 

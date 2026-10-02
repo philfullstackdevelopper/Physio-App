@@ -13,7 +13,7 @@ function WorkoutCard({ w, isRec, done = false }: { w: Workout; isRec: boolean; d
     .filter(Boolean) as string[];
   return (
     <Link
-      href={`/patient/${w.id}`}
+      href={`/patient/${w.id}/seance`}
       className={`block rounded-2xl border border-line bg-surface p-5 shadow-sm transition hover:shadow-md ${
         done || isRec ? "border-l-[3px] border-l-brand" : ""
       }`}
@@ -47,7 +47,7 @@ function WorkoutCard({ w, isRec, done = false }: { w: Workout; isRec: boolean; d
         </ul>
       )}
       <span className="mt-4 inline-block text-sm font-medium text-brand">
-        {done ? "Refaire la séance →" : "Voir la séance →"}
+        {done ? "Refaire la séance →" : "Commencer la séance →"}
       </span>
     </Link>
   );

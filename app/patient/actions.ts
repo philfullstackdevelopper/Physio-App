@@ -23,26 +23,6 @@ export async function acceptTerms() {
   revalidatePath("/patient", "layout");
 }
 
-// Patient marks a whole workout session as completed.
-export async function completeWorkout(formData: FormData) {
-  const supabase = await createClient();
-  const user = await requireUser(supabase);
-
-  const workoutId = String(formData.get("workout_id") ?? "");
-  if (!workoutId) redirect("/patient");
-
-  const { error } = await supabase
-    .from("workout_logs")
-    .insert({ patient_id: user.id, workout_id: workoutId });
-  if (error) {
-    redirect(`/patient/${workoutId}?error=${encodeURIComponent(error.message)}`);
-  }
-
-  revalidatePath("/patient");
-  revalidatePath(`/patient/${workoutId}`);
-  redirect(`/patient/${workoutId}?done=1`);
-}
-
 // Patient marks every unread message from their instructor as read (the
 // kiné then sees the double check mark on those messages).
 export async function markMessageRead() {

@@ -186,13 +186,14 @@ export default function KineJourneyDemo() {
   // at how there's no white space surrounding [a video demo]").
   return (
     <div ref={ref}>
-      <div className="flex flex-wrap items-center justify-center gap-3">
+      {/* Pastille masquée sur téléphone et écran peu haut : la place va à la démo. */}
+      <div className="hidden flex-wrap items-center justify-center gap-3 sm:flex sm:short:hidden">
         <span className="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white">Démo interactive</span>
       </div>
 
       <div
         ref={setStage}
-        className="relative mt-6 flex w-full overflow-hidden rounded-2xl border border-line bg-surface shadow-md"
+        className="relative flex w-full overflow-hidden sm:mt-6 sm:short:mt-0 rounded-2xl border border-line bg-surface shadow-md"
         aria-hidden
       >
         <SidebarMock />
@@ -336,14 +337,14 @@ export default function KineJourneyDemo() {
       {/* Commentaire — en gras, lisible sans avoir à suivre le curseur, et qui
           ne change qu'entre les étapes (pas à chaque micro-mouvement) pour
           rester lisible à un rythme lent (Philippe, 2026-09-09). */}
-      <div className="mt-3 text-center">
+      <div className="mt-3 text-center sm:short:mt-2">
         <AnimatePresence mode="wait">
           <motion.p
             key={captionLead}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.3 } }}
             exit={{ opacity: 0, transition: { duration: 0.12 } }}
-            className="text-base leading-relaxed text-slate-600"
+            className="text-base leading-relaxed text-slate-600 sm:short:text-sm"
           >
             <span className="font-semibold text-slate-900">{captionLead}</span> {captionRest}
           </motion.p>

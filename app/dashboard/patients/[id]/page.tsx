@@ -1,23 +1,23 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, ArrowDown, ArrowUp, CheckCircle2, ChevronRight, Flame, Minus } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowDown, ArrowUp, CheckCircle2, Minus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { resolveWorkoutForWeek } from "@/lib/exercise/activeRecommendation";
 import { buildWeeks, currentWeekNumber, localDateKey, thisWeekStartDateKey } from "@/lib/patient/weeks";
-import { computeStreak } from "@/lib/exercise/streak";
 import { computeAdherence, adherenceLabel, adherenceTone } from "@/lib/exercise/adherence";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
+import { programmeWarning } from "@/lib/dashboard/programmeWarning";
 import { relativeDay } from "@/lib/format/relativeDay";
 import { initials } from "@/lib/format/initials";
-import { STAGE_LABELS, STAGE_SHORT, type InjuryStage } from "@/lib/exercise/prescription";
+import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { ageFromDob } from "@/lib/exercise/patientProfile";
 import { EQUIPMENT_LABELS, type EquipmentId } from "@/lib/exercise/equipment";
 import { paymentEligibleForDeletion } from "@/lib/patient/paymentStatus";
 import { type AddableWorkout } from "@/components/AdjustWorkoutModal";
 import KineWeekProgramme, { type KineWorkoutSummary } from "@/components/KineWeekProgramme";
-import PatientMessagesButton from "@/components/PatientMessagesButton";
 import PatientActionsMenu from "@/components/PatientActionsMenu";
+import ConditionSelect from "@/components/ConditionSelect";
 import type { SessionDetail } from "@/components/WeekProgramme";
 import {
   assignCondition,
@@ -87,7 +87,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     supabase.from("patient_feedback").select("workout_log_id, pain_score, difficulty, notes").eq("patient_id", id),
     supabase.from("workouts").select(WORKOUT_FIELDS).eq("created_by", user.id),
     supabase.from("workouts").select(WORKOUT_FIELDS).is("created_by", null),
-    supabase.from("patient_recommended_workouts").select("id, week_start_date, workout_id, created_at").eq("patient_id", id).order("week_start_date", { ascending: false }),
+    supabase.from("patient_recommended_workouts").select("id, week_start_date, week_count, workout_id, created_at").eq("patient_id", id).order("week_start_date", { ascending: false }),
     supabase.from("exercises").select("id, name, exercise_body_parts(body_part_id)").order("name"),
     supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
     supabase.from("body_parts").select("id, slug, label, position").order("position"),
@@ -107,11 +107,11 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   // which tracks compliance over time, not just the current séance) — the
   // one currently in effect is resolved separately right after.
   const recommended = (recRows ?? [])
-    .map((r) => ({ recId: r.id as string, weekStartDate: r.week_start_date as string, createdAt: r.created_at as string, workout: workoutById.get(r.workout_id as string) }))
-    .filter((r): r is { recId: string; weekStartDate: string; createdAt: string; workout: Workout } => r.workout != null);
+    .map((r) => ({ recId: r.id as string, weekStartDate: r.week_start_date as string, weekCount: (r.week_count as number | null) ?? null, createdAt: r.created_at as string, workout: workoutById.get(r.workout_id as string) }))
+    .filter((r): r is { recId: string; weekStartDate: string; weekCount: number | null; createdAt: string; workout: Workout } => r.workout != null);
 
   const activeWorkoutId = resolveWorkoutForWeek(
-    recommended.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate })),
+    recommended.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate, weekCount: r.weekCount })),
     thisWeekStartDateKey(),
   );
   const activeRec = recommended.find((r) => r.workout.id === activeWorkoutId) ?? null;
@@ -126,13 +126,11 @@ export default async function PatientDetailPage({ params, searchParams }: { para
 
   // Stats.
   const completed = (allLogs ?? []).map((l) => l.completed_at as string);
-  const totalSessions = completed.length;
-  const streak = computeStreak(completed);
   const lastLog = (allLogs ?? []).reduce<{ completed_at: string; workout_id: string } | null>((best, l) => (!best || (l.completed_at as string) > best.completed_at ? { completed_at: l.completed_at as string, workout_id: l.workout_id as string } : best), null);
   const lastWorkout = lastLog ? workoutById.get(lastLog.workout_id) : undefined;
   const adherence = computeAdherence({
     completedAt: completed,
-    assignments: recommended.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate, timesPerWeek: r.workout.times_per_week })),
+    assignments: recommended.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate, weekCount: r.weekCount, timesPerWeek: r.workout.times_per_week })),
     now,
   });
   const tone = adherenceTone(adherence.pct);
@@ -160,7 +158,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   }
   // La frise résout elle-même la séance effective de chaque semaine à partir
   // de la liste complète des assignations + un résumé de chaque séance.
-  const assignments = recommended.map((r) => ({ id: r.recId, workoutId: r.workout.id, weekStartDate: r.weekStartDate }));
+  const assignments = recommended.map((r) => ({ id: r.recId, workoutId: r.workout.id, weekStartDate: r.weekStartDate, weekCount: r.weekCount }));
   const workoutSummaries: Record<string, KineWorkoutSummary> = {};
   for (const r of recommended) {
     workoutSummaries[r.workout.id] ??= {
@@ -173,6 +171,12 @@ export default async function PatientDetailPage({ params, searchParams }: { para
         .map((e) => ({ id: e.id, name: e.name })),
     };
   }
+  const warning = programmeWarning({
+    weeks,
+    currentWeekNumber: currentWeekNumber(weeks, now),
+    assignments,
+    exerciseCountByWorkoutId: Object.fromEntries(Object.values(workoutSummaries).map((w) => [w.id, w.exercises.length])),
+  });
 
   // Modale « Ajuster » : exercices ajoutables = tous − masqués − déjà dans la séance.
   // v1 : calculé pour la séance de la SEMAINE COURANTE uniquement. Si le kiné
@@ -232,80 +236,51 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     <main className="min-h-screen">
       {/* max-w-7xl comme la liste patients (Philippe, 2026-09-09 : « prendre
           toute la place ») — la frise a besoin de largeur. */}
-      <div className="mx-auto max-w-7xl p-6 sm:p-8">
+      <div className="mx-auto max-w-7xl px-6 py-5 sm:px-8 sm:py-6">
         <Link href="/dashboard/patients" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"><ArrowLeft className="h-4 w-4" strokeWidth={1.75} />Retour à la liste</Link>
-        <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
-          <div>
+        {/* En-tête épuré (Philippe, 2026-10-01 : « trop d'information ») :
+            le nom, les alertes et « Gérer ». Condition, profil déclaré et
+            messages sont dans le menu « Gérer » ; phase et jours d'affilée
+            ont été retirés de l'en-tête. */}
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold text-ink">{patient.full_name}</h1>
-            <form action={assignCondition} className="mt-2 flex flex-wrap items-center gap-2">
-              <input type="hidden" name="patient_id" value={patient.id} />
-              <select name="condition_id" defaultValue={patient.condition_id ?? ""} className="rounded-lg border border-line bg-surface px-2 py-1 text-sm text-ink">
-                <option value="" disabled={!patient.condition_id}>Choisir une condition…</option>
-                {conditions?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <button type="submit" className="rounded-full border border-line px-3 py-1 text-xs font-medium text-ink hover:bg-app-bg">Changer</button>
-              {stage && <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-ink" title={STAGE_LABELS[stage]}>{STAGE_SHORT[stage]}</span>}
-              <span className="inline-flex items-center gap-1 text-xs text-muted"><Flame className="h-3.5 w-3.5" strokeWidth={1.75} />{streak} j d&apos;affilée · {totalSessions} séance{totalSessions > 1 ? "s" : ""}</span>
-              {patient.payment_lapsed_at && (
-                <span className="rounded-full bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">Ne paie plus</span>
-              )}
-            </form>
+            {/* Alerte programme à côté du nom (Philippe, 2026-09-29) — le
+                texte complet reste au survol. */}
+            {warning && (
+              <span title={warning.detail} className="inline-flex items-center gap-1.5 rounded-full bg-warn-soft px-3 py-1 text-xs font-medium text-warn">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+                {warning.label}
+              </span>
+            )}
+            {patient.payment_lapsed_at && (
+              <span className="rounded-full bg-warn-soft px-3 py-1 text-xs font-medium text-warn">Ne paie plus</span>
+            )}
           </div>
-          {/* La séance se gère semaine par semaine depuis la frise ci-dessous ;
-              ici il ne reste que la conversation, en popup pour ne pas quitter
-              la fiche (point 4 de l'audit du 2026-09-09). */}
-          <div className="flex items-center gap-2">
-            <PatientMessagesButton
-              patient={{ id: patient.id, name: (patient.full_name as string | null) ?? "Patient", initials: initials(patient.full_name as string | null) }}
-              unreadCount={unreadCount ?? 0}
-              getThread={getPatientThread}
-              sendMessage={sendPatientMessage}
-            />
-            <PatientActionsMenu
-              patientId={patient.id}
-              patientName={firstName}
-              paymentLapsedAt={patient.payment_lapsed_at as string | null}
-              paymentEligibleForDeletion={paymentEligibleForDeletion(patient.payment_lapsed_at as string | null, now)}
-              redirectTo={`/dashboard/patients/${patient.id}`}
-              markPaymentLapsed={markPaymentLapsed}
-              clearPaymentLapsed={clearPaymentLapsed}
-              deletePatient={deletePatient}
-            />
-          </div>
-        </div>
-
-        {error && <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
-        {adjusted === "1" && <p className="mt-4 flex items-center gap-2 rounded-xl bg-ok-soft px-4 py-3 text-sm text-ok"><CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />Séance ajustée — le patient a été prévenu.</p>}
-
-        {/* Trois stats */}
-        <div className="mt-6 grid divide-y divide-line rounded-xl border border-line bg-surface sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          <div className="p-4">
-            <p className="text-xs font-medium text-muted">Douleur</p>
-            <p className={`mt-1 text-2xl font-semibold tabular-nums ${pain.latest !== null && pain.latest >= 6 ? "text-danger" : "text-ink"}`}>{pain.latest !== null ? `${pain.latest}/10` : "—"}</p>
-            <div className="mt-1"><PainDelta latest={pain.latest} previous={pain.previous} /></div>
-          </div>
-          <div className="p-4">
-            <p className="text-xs font-medium text-muted">Adhérence</p>
-            <p className={`mt-1 text-2xl font-semibold tabular-nums ${TONE_TEXT[tone]}`}>{adherence.pct !== null ? `${adherence.pct} %` : "—"}</p>
-            {adherenceLabel(adherence.pct) && <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TONE_BG[tone]}`}>{adherenceLabel(adherence.pct)}</span>}
-          </div>
-          <div className="p-4">
-            <p className="text-xs font-medium text-muted">Dernière séance</p>
-            <p className="mt-1 text-2xl font-semibold text-ink">{relativeDay(lastLog?.completed_at ?? null, now)}</p>
-            {lastWorkout && <p className="mt-1 text-xs text-muted">{lastWorkout.duration_minutes ?? "—"} min · {lastWorkout.workout_exercises.length} exercice{lastWorkout.workout_exercises.length > 1 ? "s" : ""}</p>}
-          </div>
-        </div>
-
-        {/* Profil déclaré — replié par défaut (Philippe, 2026-09-09 : la fiche
-            ne doit pas nécessiter de scroll ; cette section sert rarement). */}
-        <details className="mt-6 group rounded-xl border border-line bg-surface p-4">
-          <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-wide text-muted marker:content-none">
-            <span className="inline-flex items-center gap-1">
-              Profil déclaré
-              <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" strokeWidth={2} />
-            </span>
-          </summary>
-          {profile ? (
+          <PatientActionsMenu
+            patientId={patient.id}
+            patientName={firstName}
+            paymentLapsedAt={patient.payment_lapsed_at as string | null}
+            paymentEligibleForDeletion={paymentEligibleForDeletion(patient.payment_lapsed_at as string | null, now)}
+            redirectTo={`/dashboard/patients/${patient.id}`}
+            markPaymentLapsed={markPaymentLapsed}
+            clearPaymentLapsed={clearPaymentLapsed}
+            deletePatient={deletePatient}
+            messages={{
+              patient: { id: patient.id, name: (patient.full_name as string | null) ?? "Patient", initials: initials(patient.full_name as string | null) },
+              unreadCount: unreadCount ?? 0,
+              getThread: getPatientThread,
+              sendMessage: sendPatientMessage,
+            }}
+            conditionMissing={!patient.condition_id}
+            conditionSlot={
+              <form action={assignCondition} className="flex flex-wrap items-center gap-2">
+                <input type="hidden" name="patient_id" value={patient.id} />
+                <ConditionSelect currentConditionId={(patient.condition_id as string | null) ?? null} conditions={conditions ?? []} />
+              </form>
+            }
+            profileSlot={
+          profile ? (
             <div className="mt-2 space-y-1">
               <p className="text-sm text-ink">
                 {[
@@ -345,8 +320,34 @@ export default async function PatientDetailPage({ params, searchParams }: { para
             </div>
           ) : (
             <p className="mt-2 text-sm text-muted">Le patient n&apos;a pas encore complété son admission.</p>
-          )}
-        </details>
+          )
+            }
+          />
+        </div>
+
+        {error && <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
+        {adjusted === "1" && <p className="mt-4 flex items-center gap-2 rounded-xl bg-ok-soft px-4 py-3 text-sm text-ok"><CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />Séance ajustée — le patient a été prévenu.</p>}
+
+        {/* Trois stats — une barre fine (valeur + détail sur la même ligne)
+            plutôt que trois grandes cases, pour que la frise tienne à l'écran
+            sans scroller (Philippe, 2026-09-29). */}
+        <div className="mt-4 grid divide-y divide-line rounded-xl border border-line bg-surface sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2.5">
+            <p className="text-xs font-medium text-muted">Douleur</p>
+            <p className={`text-lg font-semibold tabular-nums ${pain.latest !== null && pain.latest >= 6 ? "text-danger" : "text-ink"}`}>{pain.latest !== null ? `${pain.latest}/10` : "—"}</p>
+            {pain.latest !== null && <PainDelta latest={pain.latest} previous={pain.previous} />}
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2.5">
+            <p className="text-xs font-medium text-muted">Adhérence</p>
+            <p className={`text-lg font-semibold tabular-nums ${TONE_TEXT[tone]}`}>{adherence.pct !== null ? `${adherence.pct} %` : "—"}</p>
+            {adherenceLabel(adherence.pct) && <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TONE_BG[tone]}`}>{adherenceLabel(adherence.pct)}</span>}
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2.5">
+            <p className="text-xs font-medium text-muted">Dernière séance</p>
+            <p className="text-lg font-semibold text-ink">{relativeDay(lastLog?.completed_at ?? null, now)}</p>
+            {lastWorkout && <p className="text-xs text-muted">{lastWorkout.duration_minutes ?? "—"} min · {lastWorkout.workout_exercises.length} exercice{lastWorkout.workout_exercises.length > 1 ? "s" : ""}</p>}
+          </div>
+        </div>
 
         {/* Frise semaine par semaine — remplace le calendrier mensuel et le
             graphique « Historique douleur » (audit Philippe, 2026-09-09) : une
@@ -356,7 +357,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
             DANS la carte « Cette semaine » de la frise (Philippe, 2026-09-09,
             deuxième retour : « mets-les sur la frise, qu'elle grossisse ») —
             plus de section séparée à faire défiler pour les voir. */}
-        <div className="mt-8 w-full min-w-0">
+        <div className="mt-5 w-full min-w-0">
           <KineWeekProgramme
             weeks={weeks}
             currentWeekNumber={currentWeekNumber(weeks, now)}

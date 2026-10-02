@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 
 // Supabase client for use in Server Components, Route Handlers, and Server Actions.
 //
@@ -25,9 +25,36 @@ import { auth } from "@clerk/nextjs/server";
 // (the Clerk domain/JWKS Supabase trusts doesn't match this Clerk instance),
 // not something fixable from this file — see Clerk Dashboard → Configure →
 // Integrations → Supabase for the values Supabase's side needs.
+//
+// Fraîcheur du jeton : getToken() renvoie le jeton de session du cookie de la
+// requête, qui ne vit que 60 s. Clerk l'accepte jusqu'au bout (et même 5 s
+// après), mais une page lente à rendre (compilation Turbopack en dev, réveil
+// du PC) peut le laisser expirer AVANT que PostgREST ne le vérifie → « JWT
+// expired » (Philippe, 2026-10-01, crash dans resolveAppUserId). S'il reste
+// moins de MIN_TOKEN_LIFETIME_S, on en demande un neuf à Clerk — un appel
+// réseau seulement dans ce cas rare, donc sans risque pour le rate limit.
+const MIN_TOKEN_LIFETIME_S = 30;
+
+function secondsLeft(jwt: string): number {
+  try {
+    const payload = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString("utf8"));
+    return typeof payload.exp === "number" ? payload.exp - Date.now() / 1000 : Infinity;
+  } catch {
+    return Infinity;
+  }
+}
+
 const getAccessToken = cache(async () => {
-  const { getToken } = await auth();
-  return (await getToken()) ?? null;
+  const { getToken, sessionId } = await auth();
+  const token = await getToken();
+  if (!token || !sessionId || secondsLeft(token) >= MIN_TOKEN_LIFETIME_S) return token ?? null;
+  try {
+    const fresh = await (await clerkClient()).sessions.getToken(sessionId);
+    return fresh.jwt;
+  } catch {
+    // Clerk injoignable : on tente quand même avec l'ancien jeton.
+    return token;
+  }
 });
 
 export const createClient = cache(async () => {
