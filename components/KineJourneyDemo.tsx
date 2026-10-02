@@ -218,7 +218,9 @@ export default function KineJourneyDemo() {
             patients list or the patient page, and a shared fixed height
             left a slab of dead white space under it (Philippe,
             2026-09-09: "take ALL the space"). */}
-        <motion.div layout transition={{ layout: { duration: 0.35, ease: "easeInOut" } }} className="relative">
+        {/* Sur téléphone, hauteur fixée à celle de la plus grande scène : la
+            démo ne fait plus sauter la page à chaque étape (2026-10-02). */}
+        <motion.div layout transition={{ layout: { duration: 0.35, ease: "easeInOut" } }} className="relative min-h-[27.75rem] sm:min-h-0">
           <AnimatePresence mode="wait">
             {ph.scene === 1 && (
               <motion.div key="scene1" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4 } }} exit={{ opacity: 0, transition: { duration: 0.12 } }} className="p-5">
@@ -267,10 +269,13 @@ export default function KineJourneyDemo() {
                   </div>
                   <span ref={setAdjustEl as never} className="rounded-full bg-brand px-4 py-2 text-xs font-medium text-white">Ajuster la séance</span>
                 </div>
-                <div className="mt-5 grid divide-y divide-line rounded-xl border border-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                  <div className="p-4"><p className="text-xs font-medium text-muted">Douleur</p><p className="mt-1 text-xl font-semibold text-danger">5/10</p><p className="mt-0.5 text-[11px] text-danger">↑2 depuis hier</p></div>
-                  <div className="p-4"><p className="text-xs font-medium text-muted">Adhérence</p><p className="mt-1 text-xl font-semibold text-ink">82 %</p><span className="mt-0.5 inline-flex rounded-full bg-ok-soft px-2 py-0.5 text-[11px] font-medium text-ok">Bonne</span></div>
-                  <div className="p-4"><p className="text-xs font-medium text-muted">Dernière séance</p><p className="mt-1 text-xl font-semibold text-ink">Aujourd&apos;hui</p><p className="mt-0.5 text-[11px] text-muted">15 min · 3 exercices</p></div>
+                {/* Trois colonnes même sur téléphone : empilées, elles
+                    rendaient cette scène deux fois plus haute que les autres
+                    et la démo sautait à chaque étape (Philippe, 2026-10-02). */}
+                <div className="mt-4 grid grid-cols-3 divide-x divide-line rounded-xl border border-line sm:mt-5">
+                  <div className="p-2.5 sm:p-4"><p className="text-[11px] font-medium text-muted sm:text-xs">Douleur</p><p className="mt-1 text-lg font-semibold text-danger sm:text-xl">5/10</p><p className="mt-0.5 text-[10px] text-danger sm:text-[11px]">↑2 depuis hier</p></div>
+                  <div className="p-2.5 sm:p-4"><p className="text-[11px] font-medium text-muted sm:text-xs">Adhérence</p><p className="mt-1 text-lg font-semibold text-ink sm:text-xl">82 %</p><span className="mt-0.5 inline-flex rounded-full bg-ok-soft px-2 py-0.5 text-[10px] font-medium text-ok sm:text-[11px]">Bonne</span></div>
+                  <div className="p-2.5 sm:p-4"><p className="text-[11px] font-medium text-muted sm:text-xs"><span className="sm:hidden">Séance</span><span className="hidden sm:inline">Dernière séance</span></p><p className="mt-1 text-lg font-semibold text-ink sm:text-xl"><span className="sm:hidden">Auj.</span><span className="hidden sm:inline">Aujourd&apos;hui</span></p><p className="mt-0.5 text-[10px] text-muted sm:text-[11px]">15 min · 3 ex<span className="sm:hidden">.</span><span className="hidden sm:inline">ercices</span></p></div>
                 </div>
                 <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-muted">Séance de cette semaine — Initiation genou</p>
                 <ul className="mt-2 divide-y divide-line rounded-xl border border-line">
@@ -284,33 +289,33 @@ export default function KineJourneyDemo() {
             {ph.scene === 3 && (
               <motion.div key="scene3" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4 } }} exit={{ opacity: 0, transition: { duration: 0.12 } }} className="p-5">
                 <p className="text-base font-semibold text-ink">Ajuster la séance</p>
-                <p className="text-xs text-muted">Initiation genou — les modifications ne concernent que Marc.</p>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <p className="hidden text-xs text-muted sm:block">Initiation genou — les modifications ne concernent que Marc.</p>
+                <div className="mt-3 grid gap-3 sm:mt-4 sm:grid-cols-2 sm:gap-4">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">Exercices actuels</p>
                     <div className="mt-2 space-y-1.5">
                       {["Extension du genou assise", "Montée de marche"].map((e) => (
-                        <div key={e} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs text-ink"><Fig label={e} size="h-6 w-6" /><span className="flex-1 truncate">{e}</span><Check className="h-3.5 w-3.5 text-brand" strokeWidth={2} /></div>
+                        <div key={e} className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs text-ink sm:py-2"><Fig label={e} size="h-6 w-6" /><span className="flex-1 truncate">{e}</span><Check className="h-3.5 w-3.5 text-brand" strokeWidth={2} /></div>
                       ))}
-                      <div ref={setSquatEl as never} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors duration-300 ${ph.squatOut ? "border-danger-soft bg-danger-soft text-danger" : "border-line text-ink"}`}>
+                      <div ref={setSquatEl as never} className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors duration-300 sm:py-2 ${ph.squatOut ? "border-danger-soft bg-danger-soft text-danger" : "border-line text-ink"}`}>
                         <Fig label="Squat assisté" size="h-6 w-6" /><span className="flex-1 truncate">Squat assisté</span>{ph.squatOut ? <span className="flex items-center gap-0.5 font-medium">À retirer <X className="h-3.5 w-3.5" strokeWidth={2} /></span> : <Check className="h-3.5 w-3.5 text-brand" strokeWidth={2} />}
                       </div>
                     </div>
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">Ajouter un exercice</p>
-                    <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs text-muted"><Search className="h-3.5 w-3.5" strokeWidth={1.75} />Rechercher…</div>
-                    <div className="mt-1.5 space-y-1.5">
-                      <div className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs text-ink"><Fig label="Fente statique" size="h-6 w-6" /><span className="flex-1 truncate">Fente statique</span><Plus className="h-3.5 w-3.5 text-brand" strokeWidth={2} /></div>
-                      <div ref={setPontEl as never} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors duration-300 ${ph.pontIn ? "border-ok-soft bg-ok-soft text-ok" : "border-line text-ink"}`}>
+                    <div className="mt-2 hidden items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs text-muted sm:flex"><Search className="h-3.5 w-3.5" strokeWidth={1.75} />Rechercher…</div>
+                    <div className="mt-2 space-y-1.5 sm:mt-1.5">
+                      <div className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs text-ink sm:py-2"><Fig label="Fente statique" size="h-6 w-6" /><span className="flex-1 truncate">Fente statique</span><Plus className="h-3.5 w-3.5 text-brand" strokeWidth={2} /></div>
+                      <div ref={setPontEl as never} className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors duration-300 sm:py-2 ${ph.pontIn ? "border-ok-soft bg-ok-soft text-ok" : "border-line text-ink"}`}>
                         <Fig label="Pont fessier" size="h-6 w-6" /><span className="flex-1 truncate">Pont fessier</span>{ph.pontIn ? <span className="font-medium">À ajouter</span> : <Plus className="h-3.5 w-3.5 text-brand" strokeWidth={2} />}
                       </div>
-                      <div className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs text-ink"><Fig label="Extension ischio debout" size="h-6 w-6" /><span className="flex-1 truncate">Extension ischio debout</span><Plus className="h-3.5 w-3.5 text-brand" strokeWidth={2} /></div>
+                      <div className="hidden items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs text-ink sm:flex"><Fig label="Extension ischio debout" size="h-6 w-6" /><span className="flex-1 truncate">Extension ischio debout</span><Plus className="h-3.5 w-3.5 text-brand" strokeWidth={2} /></div>
                     </div>
                   </div>
                 </div>
                 {(ph.squatOut || ph.pontIn) && (
-                  <div className="mt-4 flex flex-wrap gap-1.5">
+                  <div className="mt-4 hidden flex-wrap gap-1.5 sm:flex">
                     {ph.squatOut && <span className="rounded-full bg-danger-soft px-3 py-1 text-xs font-medium text-danger">1 exercice retiré</span>}
                     {ph.pontIn && <span className="rounded-full bg-ok-soft px-3 py-1 text-xs font-medium text-ok">1 exercice ajouté</span>}
                   </div>

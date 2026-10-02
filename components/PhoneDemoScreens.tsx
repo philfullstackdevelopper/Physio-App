@@ -197,7 +197,7 @@ export function ExerciseScreen({
     <>
       <div className="flex items-center gap-2.5">
         <ChevronLeft className="h-4 w-4 text-slate-700" strokeWidth={2} />
-        <span className="text-xs font-semibold text-slate-700">Shoulder Circles</span>
+        <span className="text-xs font-semibold text-slate-700">Cercles d&apos;épaules</span>
         <span className="ml-auto text-[11px] font-semibold text-slate-400">2 / 3</span>
       </div>
 

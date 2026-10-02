@@ -69,8 +69,12 @@ export default function Home() {
             (Philippe, 2026-09-29) : la section fait la hauteur de l'écran
             (min-h-dvh, pt = place du header fixe), le texte se resserre sur
             les écrans peu hauts (variante `short`, app/globals.css) et le
-            téléphone se réduit tout seul dans la place restante (FitToBox). */}
-        <section className="flex min-h-dvh flex-col gap-4 pb-4 pt-20 lg:grid lg:grid-cols-[minmax(0,36rem)_18rem] lg:items-center lg:justify-center lg:gap-24 lg:pb-6 lg:pt-24 lg:short:pt-20">
+            téléphone se réduit tout seul dans la place restante (FitToBox).
+            Exception sur téléphone (< 640 px) : le texte prend déjà presque
+            tout l'écran, le téléphone y tombait au tiers de sa taille,
+            illisible (Philippe, 2026-10-02) — il passe donc juste en dessous,
+            à la hauteur d'un écran. */}
+        <section className="flex flex-col gap-4 pb-4 pt-20 sm:min-h-dvh lg:grid lg:grid-cols-[minmax(0,36rem)_18rem] lg:items-center lg:justify-center lg:gap-24 lg:pb-6 lg:pt-24 lg:short:pt-20">
           <div>
             <h1 className="font-display animate-[fadeInUp_0.6s_ease-out_both] max-w-xl text-3xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem] lg:short:text-[2.6rem]">
               La rééducation ne s&apos;arrête pas en sortant du cabinet.
@@ -105,7 +109,7 @@ export default function Home() {
           <FitToBox
             width={280}
             height={620}
-            className="min-h-0 flex-1 animate-[fadeInUp_0.7s_ease-out_both] [animation-delay:250ms] lg:h-full lg:self-stretch"
+            className="h-[min(620px,calc(100svh-6rem))] min-h-0 sm:h-auto sm:flex-1 animate-[fadeInUp_0.7s_ease-out_both] [animation-delay:250ms] lg:h-full lg:self-stretch"
           >
             <PhoneMockup />
           </FitToBox>
@@ -115,16 +119,16 @@ export default function Home() {
         <Reveal>
         <section id="cote-kine" className="mt-16 scroll-mt-24 sm:mt-24">
           <div className="mx-auto max-w-2xl text-center sm:short:max-w-5xl">
-            <h2 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
+            <h2 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:text-3xl">
               Côté kiné : de son tableau de bord à la fiche de chaque patient.
             </h2>
-            <p className="mt-4 text-lg leading-relaxed text-slate-600 sm:short:mt-1 sm:short:text-sm">
+            <p className="mt-3 text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg sm:short:mt-1 sm:short:text-sm">
               Tout ce qui se passe entre deux séances, en un coup d&apos;œil. Comprendre, décider, ajuster : 2 clics suffisent.
             </p>
           </div>
 
           {/* La démo déborde de la colonne de texte : pleine largeur jusqu'à 1 200 px. */}
-          <FitToViewport stable className="mx-auto mt-12 max-w-7xl sm:short:mt-4 lg:-mx-16">
+          <FitToViewport stable className="mx-auto mt-4 max-w-7xl sm:mt-12 sm:short:mt-4 lg:-mx-16">
             <KineJourneyDemo />
           </FitToViewport>
 
