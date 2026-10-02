@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, Dumbbell, Trash2, MoreVertical, Pencil, EyeOff, Eye, Plus } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
-import SubmitButton from "@/components/SubmitButton";
+import NewSeanceModal from "@/components/NewSeanceModal";
+import { type PickerExercise } from "@/components/ExerciseLibraryPicker";
+import { type BodyPart } from "@/lib/exercise/category";
 import { STAGE_SHORT, STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 
 type ListItem = {
@@ -262,88 +264,6 @@ function ExerciseNamesList({ names }: { names?: string[] }) {
   return <p className="mt-1 line-clamp-2 text-xs text-muted">{names.join(" · ")}</p>;
 }
 
-// The collapsible creation panel itself — the trigger button now lives in
-// the page header (top right, matching the patients page's "Ajouter un
-// patient" button) so its open state is owned by the parent and passed in.
-function NewSeanceForm({
-  open,
-  onClose,
-  conditions,
-  stages,
-  createSeance,
-}: {
-  open: boolean;
-  onClose: () => void;
-  conditions: { id: string; name: string }[];
-  stages: [InjuryStage, string][];
-  createSeance: (formData: FormData) => void;
-}) {
-  if (!open) return null;
-
-  return (
-    <div className="mb-4">
-      <form
-        action={createSeance}
-        className="rounded-xl border border-line bg-surface p-5"
-      >
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-ink">Nouvelle séance</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-sm text-muted hover:text-ink"
-          >
-            Annuler
-          </button>
-        </div>
-        <div className="mt-3 flex flex-col gap-3">
-          <input
-            name="name"
-            required
-            placeholder="Nom de la séance"
-            className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-          />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <select
-              name="condition_id"
-              required
-              defaultValue=""
-              className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-            >
-              <option value="" disabled>
-                Condition…
-              </option>
-              {conditions.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <select
-              name="stage"
-              defaultValue=""
-              className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-            >
-              <option value="">Phase (toutes)</option>
-              {stages.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <SubmitButton
-          pendingText="Création…"
-          className="mt-3 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95"
-        >
-          Créer et composer
-        </SubmitButton>
-      </form>
-    </div>
-  );
-}
-
 function VoirPlusButton({ onClick }: { onClick: () => void }) {
   return (
     <div className="mt-6 flex justify-center">
@@ -369,7 +289,18 @@ export default function SeancesTabs({
   createSeance,
   conditions,
   stages,
+  openNewSeance = false,
+  exercises,
+  bodyParts,
+  returnTo,
 }: {
+  exercises: PickerExercise[];
+  bodyParts: BodyPart[];
+  /** Fiche patient d'où vient le kiné (« Créer une séance »), validée côté serveur. */
+  returnTo?: string;
+  /** Arrivée via « Créer une séance » (fenêtre Changer de séance de la fiche
+   *  patient, /dashboard/seances?nouvelle=1) : formulaire déjà ouvert. */
+  openNewSeance?: boolean;
   error?: string;
   mine: ListItem[];
   templates: ListItem[];
@@ -386,7 +317,8 @@ export default function SeancesTabs({
   const [templateQuery, setTemplateQuery] = useState("");
   const [templatesShown, setTemplatesShown] = useState(REVEAL_INITIAL);
   const [showHiddenTemplates, setShowHiddenTemplates] = useState(false);
-  const [newSeanceOpen, setNewSeanceOpen] = useState(false);
+  const [newSeanceOpen, setNewSeanceOpen] = useState(openNewSeance);
+  const closeNewSeance = useCallback(() => setNewSeanceOpen(false), []);
 
   const filteredMine = useMemo(() => {
     const q = mineQuery.trim().toLowerCase();
@@ -473,13 +405,17 @@ export default function SeancesTabs({
 
       {tab === "mine" && (
         <div className="mt-3">
-          <NewSeanceForm
-            open={newSeanceOpen}
-            onClose={() => setNewSeanceOpen(false)}
-            conditions={conditions}
-            stages={stages}
-            createSeance={createSeance}
-          />
+          {newSeanceOpen && (
+            <NewSeanceModal
+              onClose={closeNewSeance}
+              conditions={conditions}
+              stages={stages}
+              exercises={exercises}
+              bodyParts={bodyParts}
+              createSeance={createSeance}
+              returnTo={returnTo}
+            />
+          )}
 
           {mine.length > 0 && (
             <div className="relative mb-3">

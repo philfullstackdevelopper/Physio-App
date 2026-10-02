@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { CalendarRange, Check, ChevronLeft, Dumbbell, Plus, Repeat, Search, Trash2, X } from "lucide-react";
 import { type BodyPart } from "@/lib/exercise/category";
 import SubmitButton from "@/components/SubmitButton";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
+import ExerciseLibraryPicker from "@/components/ExerciseLibraryPicker";
 import { addWeeksToKey } from "@/lib/exercise/activeRecommendation";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 
@@ -78,7 +80,6 @@ export default function AdjustWorkoutModal({
   const [view, setView] = useState<"exercises" | "template">(workout ? "exercises" : "template");
   const [removeIds, setRemoveIds] = useState<Set<string>>(new Set());
   const [addIds, setAddIds] = useState<Set<string>>(new Set());
-  const [q, setQ] = useState("");
   const [qTemplate, setQTemplate] = useState("");
   // Pendant combien de semaines la séance choisie s'applique ("" = jusqu'à
   // la prochaine séance attribuée) — migration 0059, Philippe 2026-10-01.
@@ -93,7 +94,6 @@ export default function AdjustWorkoutModal({
   // independently, same click-a-category-first pattern as the exercise
   // library (components/ExerciseLibraryGrid.tsx): a category is pre-selected
   // on open, and typing in that picker's search box overrides it.
-  const [exerciseBodyPartId, setExerciseBodyPartId] = useState<string | null>(firstBodyPartId);
   const [templateBodyPartId, setTemplateBodyPartId] = useState<string | null>(firstBodyPartId);
   const removeFormId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -101,7 +101,6 @@ export default function AdjustWorkoutModal({
 
   const openModal = () => {
     setView(workout ? "exercises" : "template");
-    setExerciseBodyPartId(firstBodyPartId);
     setTemplateBodyPartId(firstBodyPartId);
     setOpen(true);
   };
@@ -110,7 +109,6 @@ export default function AdjustWorkoutModal({
     setOpen(false);
     setRemoveIds(new Set());
     setAddIds(new Set());
-    setQ("");
     setQTemplate("");
     setConfirmRemove(false);
     setPickedId(null);
@@ -164,23 +162,6 @@ export default function AdjustWorkoutModal({
       document.body.style.overflow = previous;
     };
   }, [open]);
-
-  const query = q.trim().toLowerCase();
-
-  // A non-empty search looks across every addable exercise regardless of the
-  // selected tile — narrowing to one category first would defeat the point
-  // of a search box. Clearing it falls back to the tile filter. Same rule as
-  // ExerciseLibraryGrid's own library search.
-  const filteredExercises = useMemo(() => {
-    if (query) return addableExercises.filter((ex) => ex.name.toLowerCase().includes(query));
-    return exerciseBodyPartId ? addableExercises.filter((ex) => ex.bodyPartIds.includes(exerciseBodyPartId)) : [];
-  }, [addableExercises, exerciseBodyPartId, query]);
-
-  const exerciseCountByBodyPart = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const ex of addableExercises) for (const bpId of ex.bodyPartIds) counts.set(bpId, (counts.get(bpId) ?? 0) + 1);
-    return counts;
-  }, [addableExercises]);
 
   const templateQuery = qTemplate.trim().toLowerCase();
   const filteredWorkouts = useMemo(() => {
@@ -243,10 +224,18 @@ export default function AdjustWorkoutModal({
         title={triggerDisabled ? "Aucune séance disponible — créez-en une dans Mes séances." : undefined}
         className="inline-flex items-center rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {workout ? "Ajuster la séance" : "Choisir une séance"}
+        {/* « Ajuster / changer » : le même bouton ouvre les deux (modifier les
+            exercices, ou « Changer de séance ») — Philippe, 2026-10-02. */}
+        {workout ? "Ajuster / changer la séance" : "Choisir une séance"}
       </button>
 
-      {open && (
+      {/* Portail vers document.body, comme NewSeanceModal : un ancêtre avec
+          un `transform` (animation d'entrée) limiterait sinon le fond
+          assombri à une partie de l'écran. Ouvert seulement au clic, donc
+          toujours côté navigateur. */}
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-4" onClick={close}>
           <div
             ref={panelRef}
@@ -261,26 +250,32 @@ export default function AdjustWorkoutModal({
             // la page (Philippe, 2026-09-09).
             className="flex h-[90vh] w-full max-w-6xl flex-col rounded-2xl bg-surface shadow-sm outline-none"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-line px-6 py-4">
-              <div className="min-w-0">
-                {view === "exercises" && workout ? (
-                  <>
-                    <h2 className="text-lg font-semibold text-ink">Ajuster la séance</h2>
-                    <p className="mt-0.5 text-sm text-muted">
-                      {workout.name} — les modifications ne concernent que {patientFirstName}.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-lg font-semibold text-ink">{workout ? "Changer de séance" : "Choisir une séance"}</h2>
-                    <p className="mt-0.5 text-sm text-muted">
-                      {weekLabel ? `À partir de la ${weekLabel.charAt(0).toLowerCase()}${weekLabel.slice(1)}` : "À partir de cette semaine"}
-                      {workout ? ` — remplace la séance actuelle de ${patientFirstName}.` : "."}
-                    </p>
-                  </>
-                )}
+            {/* Titre + précision sur UNE ligne (Philippe, 2026-10-02 : même
+                rigueur que « Nouvelle séance » — le haut ne doit pas manger la
+                place de la composition). */}
+            <div className="flex items-center justify-between gap-3 border-b border-line px-6 py-3">
+              <div className="flex min-w-0 items-baseline gap-3">
+                <h2 className="shrink-0 text-lg font-semibold text-ink">
+                  {view === "exercises" && workout ? "Ajuster la séance" : workout ? "Changer de séance" : "Choisir une séance"}
+                </h2>
+                <p className="truncate text-sm text-muted">
+                  {view === "exercises" && workout
+                    ? `${workout.name} · pour ${patientFirstName} uniquement`
+                    : `${weekLabel ?? "Cette semaine"}${workout ? ` · remplace ${workout.name}` : ""}`}
+                </p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
+                {/* « Créer une séance » (Philippe, 2026-10-02) : mène au
+                    formulaire « Nouvelle séance » de Mes séances, déjà ouvert. */}
+                {view === "template" && !picked && (
+                  <Link
+                    href={`/dashboard/seances?nouvelle=1&retour=/dashboard/patients/${patientId}`}
+                    className="mr-1 inline-flex items-center gap-1.5 rounded-full bg-brand-dark px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand"
+                  >
+                    <Plus className="h-4 w-4" strokeWidth={2} />
+                    Créer une séance
+                  </Link>
+                )}
                 {/* Recherche de séance dans l'en-tête (étape 1) : la ligne du
                     dessous reste entière pour les catégories. */}
                 {view === "template" && !picked && addableWorkouts.length > 3 && (
@@ -304,7 +299,7 @@ export default function AdjustWorkoutModal({
                     }}
                     // Bleu plein foncé (Philippe, 2026-10-01 : « encore plus
                     // visible, dans un bleu plus foncé »).
-                    className="inline-flex items-center gap-1.5 rounded-full bg-brand-dark px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-brand-dark px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand"
                   >
                     <Repeat className="h-4 w-4" strokeWidth={2} />
                     Changer de séance
@@ -336,7 +331,7 @@ export default function AdjustWorkoutModal({
 
                 {/* Sur desktop chaque colonne scrolle indépendamment (min-h-0 +
                     overflow-y-auto) ; sur mobile la grille entière scrolle. */}
-                <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
+                <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
                   {/* Séance actuelle : un panneau à part, sur fond gris, pour
                       bien la distinguer de la bibliothèque à droite. */}
                   <section className="flex min-h-0 flex-col rounded-xl border border-line bg-app-bg p-4">
@@ -391,92 +386,16 @@ export default function AdjustWorkoutModal({
                     </ul>
                   </section>
 
-                  <section className="flex min-h-0 flex-col">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">Ajouter un exercice</p>
-                    <label className="relative mt-2">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.75} />
-                      <input
-                        type="search"
-                        value={q}
-                        onChange={(e) => setQ(e.target.value)}
-                        placeholder="Rechercher un exercice…"
-                        className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-                      />
-                    </label>
-                    {!query && (
-                      // Même format que les catégories de séances (Philippe,
-                      // 2026-10-01) : une case par catégorie, toutes sur une
-                      // ligne et de même largeur. La colonne est plus étroite,
-                      // donc icône au-dessus du libellé ; nombre d'exercices
-                      // au survol. Sur téléphone, la ligne défile.
-                      <div
-                        style={{ gridTemplateColumns: `repeat(${bodyParts.length}, minmax(0, 1fr))` }}
-                        className="mt-2 flex gap-1 overflow-x-auto md:grid md:overflow-visible"
-                      >
-                        {bodyParts.map((bp) => {
-                          const active = bp.id === exerciseBodyPartId;
-                          const count = exerciseCountByBodyPart.get(bp.id) ?? 0;
-                          return (
-                            <button
-                              key={bp.id}
-                              type="button"
-                              title={`${bp.label} — ${count} exercice${count > 1 ? "s" : ""}`}
-                              onClick={() => setExerciseBodyPartId(bp.id)}
-                              disabled={count === 0}
-                              className={`flex w-20 shrink-0 flex-col items-center gap-0.5 rounded-xl border px-1 py-1 text-center text-[10px] font-medium leading-tight transition-colors disabled:cursor-not-allowed disabled:opacity-40 md:w-auto md:min-w-0 ${
-                                active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
-                              }`}
-                            >
-                              <BodyPartIllustration slug={bp.slug} className="h-7 w-7 shrink-0" active={active} />
-                              <span className="line-clamp-2">{bp.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                    <div className="mt-3 max-h-80 overflow-y-auto pr-1 md:min-h-0 md:max-h-none md:flex-1">
-                      {filteredExercises.length === 0 && (
-                        <p className="text-sm text-muted">
-                          {query ? `Aucun exercice ne correspond à « ${q.trim()} ».` : "Aucun exercice dans cette catégorie."}
-                        </p>
-                      )}
-                      {/* Lignes compactes, sur 2 colonnes en grand écran : bien
-                          plus d'exercices visibles d'un coup. */}
-                      <div className="grid content-start gap-1.5 lg:grid-cols-2">
-                        {filteredExercises.map((ex) => {
-                          const marked = addIds.has(ex.id);
-                          return (
-                            <button
-                              key={ex.id}
-                              type="button"
-                              onClick={() => setAddIds((s) => toggle(s, ex.id))}
-                              title={ex.name}
-                              className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-left text-sm transition-colors ${
-                                marked ? "border-ok/30 bg-ok-soft text-ok" : "border-line bg-surface text-ink hover:border-brand/40 hover:bg-app-bg"
-                              }`}
-                            >
-                              <ExerciseIllustration name={ex.name} animate={false} className={`h-7 w-7 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
-                              <span className="flex-1 truncate">{ex.name}</span>
-                              {marked ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Plus className="h-4 w-4 shrink-0 text-brand" strokeWidth={2} />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </section>
+                  <ExerciseLibraryPicker
+                    exercises={addableExercises}
+                    bodyParts={bodyParts}
+                    selectedIds={addIds}
+                    onToggle={(id) => setAddIds((set) => toggle(set, id))}
+                  />
                 </div>
 
-                <div className="border-t border-line px-6 py-4">
-                  {(removed > 0 || added > 0) && (
-                    <div className="mb-3 flex flex-wrap gap-2">
-                      {removed > 0 && <span className="rounded-full bg-danger-soft px-3 py-1 text-xs font-medium text-danger">{removed} exercice{removed > 1 ? "s" : ""} retiré{removed > 1 ? "s" : ""}</span>}
-                      {added > 0 && <span className="rounded-full bg-ok-soft px-3 py-1 text-xs font-medium text-ok">{added} exercice{added > 1 ? "s" : ""} ajouté{added > 1 ? "s" : ""}</span>}
-                    </div>
-                  )}
-                  {wouldBeEmpty && (
-                    <p className="mb-3 text-xs text-danger">Une séance doit garder au moins un exercice.</p>
-                  )}
-                  <div className="flex items-center justify-between gap-2">
+                <div className="border-t border-line px-6 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     {recId ? (
                       confirmRemove ? (
                         <div className="flex flex-wrap items-center gap-2">
@@ -503,14 +422,24 @@ export default function AdjustWorkoutModal({
                         <button
                           type="button"
                           onClick={() => setConfirmRemove(true)}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-danger/30 px-4 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-soft"
+                          className="inline-flex items-center gap-1.5 rounded-full border border-danger/30 px-4 py-1.5 text-sm font-medium text-danger transition-colors hover:bg-danger-soft"
                         >
                           <Trash2 className="h-4 w-4" strokeWidth={1.75} />
                           Retirer cette séance
                         </button>
                       )
                     ) : <span />}
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Compteurs et avertissement à côté des boutons plutôt
+                          qu'au-dessus : une ligne de moins. */}
+                      {wouldBeEmpty ? (
+                        <span className="text-xs text-danger">Une séance doit garder au moins un exercice.</span>
+                      ) : (
+                        <>
+                          {removed > 0 && <span className="rounded-full bg-danger-soft px-3 py-1 text-xs font-medium text-danger">{removed} retiré{removed > 1 ? "s" : ""}</span>}
+                          {added > 0 && <span className="rounded-full bg-ok-soft px-3 py-1 text-xs font-medium text-ok">{added} ajouté{added > 1 ? "s" : ""}</span>}
+                        </>
+                      )}
                       <button type="button" onClick={close} className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg">Annuler</button>
                       <SubmitButton
                         pendingText="Enregistrement…"
@@ -742,7 +671,7 @@ export default function AdjustWorkoutModal({
             )}
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   );
 }

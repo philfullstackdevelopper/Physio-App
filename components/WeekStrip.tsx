@@ -55,11 +55,14 @@ export function SegmentRow({
   height,
   scrollable,
   scrollerRef,
+  compact = false,
 }: {
   items: SegmentItem[];
   height: number;
   scrollable: boolean;
   scrollerRef?: RefObject<HTMLDivElement | null>;
+  /** Marges intérieures réduites — pour la démo de la landing (KineJourneyDemo), où la frise tient dans un écran miniature. */
+  compact?: boolean;
 }) {
   const notch = scrollable ? 30 : 16; // px — depth of the arrow tip / matching notch
   const rightTip = `polygon(0 0, calc(100% - ${notch}px) 0, 100% 50%, calc(100% - ${notch}px) 100%, 0 100%, ${notch}px 50%)`;
@@ -124,7 +127,7 @@ export function SegmentRow({
               style={{ viewTransitionName: item.viewTransitionName } as VTStyle}
               className={`flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-2xl py-2 text-center shadow-md transition ${
                 item.disabled ? "cursor-default" : "hover:-translate-y-1 hover:shadow-xl hover:brightness-95"
-              } ${i === 0 ? "pl-6 pr-11" : "pl-11 pr-11"} ${TONE_CLASS[item.tone]} ${
+              } ${compact ? (i === 0 ? "pl-2 pr-5" : "pl-5 pr-5") : i === 0 ? "pl-6 pr-11" : "pl-11 pr-11"} ${TONE_CLASS[item.tone]} ${
                 item.ringSelected ? "ring-2 ring-ink ring-offset-1" : ""
               }`}
             >

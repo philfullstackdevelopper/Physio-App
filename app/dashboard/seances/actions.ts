@@ -45,7 +45,22 @@ export async function createSeance(formData: FormData) {
   if (error) {
     redirect(`/dashboard/seances?error=${encodeURIComponent(error.message)}`);
   }
-  redirect(`/dashboard/seances/${data.id}`);
+
+  // Exercices choisis dans la fenêtre « Nouvelle séance », dans l'ordre de clic.
+  const exerciseIds = formData.getAll("exercise_ids").map(String).filter(Boolean);
+  if (exerciseIds.length) {
+    const { error: exError } = await supabase
+      .from("workout_exercises")
+      .insert(exerciseIds.map((exId, i) => ({ workout_id: data.id, exercise_id: exId, position: i })));
+    if (exError) redirect(`/dashboard/seances/${data.id}?error=${encodeURIComponent(exError.message)}`);
+  }
+
+  // Venu d'une fiche patient (« Créer une séance ») : on y retourne pour
+  // attribuer la nouvelle séance. Seule une fiche patient est acceptée.
+  const returnTo = String(formData.get("return_to") ?? "");
+  if (/^\/dashboard\/patients\/[0-9a-f-]{36}$/.test(returnTo)) redirect(returnTo);
+  // Sinon : séance composée ici, retour à la liste.
+  redirect(exerciseIds.length ? "/dashboard/seances" : `/dashboard/seances/${data.id}`);
 }
 
 // Save a séance's details AND its exercise list (add/remove).

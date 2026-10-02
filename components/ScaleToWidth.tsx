@@ -56,6 +56,10 @@ export default function ScaleToWidth({
   }, [designWidth, stable]);
 
   const scaled = fit !== null && fit.scale < 1;
+  // Tant que l'échelle n'est pas connue, le contenu est déjà posé à
+  // `designWidth` (et caché) : mesuré à la largeur du téléphone, il serait
+  // bien plus haut, et `stable` garderait cette hauteur fausse.
+  const unknown = fit === null;
   return (
     <div ref={outerRef} className={className} style={scaled ? { height: fit.height } : undefined}>
       <div
@@ -63,7 +67,9 @@ export default function ScaleToWidth({
         style={
           scaled
             ? { width: designWidth, transform: `scale(${fit.scale})`, transformOrigin: "top left" }
-            : undefined
+            : unknown
+              ? { width: designWidth, visibility: "hidden" }
+              : undefined
         }
       >
         {children}

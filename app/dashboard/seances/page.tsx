@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import SeancesTabs from "@/components/SeancesTabs";
+import { type BodyPart } from "@/lib/exercise/category";
 import { createSeance, duplicateSeance, deleteSeance, hideTemplateWorkout, unhideTemplateWorkout } from "./actions";
 
 const STAGES = Object.entries(STAGE_LABELS) as [InjuryStage, string][];
@@ -39,14 +40,33 @@ function exerciseNames(rows: WorkoutExerciseRow[] | null | undefined): string[] 
 export default async function SeancesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; nouvelle?: string; retour?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, nouvelle, retour } = await searchParams;
+  // Seul retour accepté : une fiche patient du tableau de bord (jamais une URL externe).
+  const returnTo = retour && /^\/dashboard\/patients\/[0-9a-f-]{36}$/.test(retour) ? retour : undefined;
 
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
   const { data: conditions } = await supabase.from("conditions").select("id, name").order("name");
+
+  // Bibliothèque pour la fenêtre « Nouvelle séance » (même source que
+  // l'éditeur de séance), sans les exercices que ce kiné a masqués.
+  const [{ data: bodyParts }, { data: exerciseRows }, { data: hiddenExerciseRows }] = await Promise.all([
+    supabase.from("body_parts").select("id, slug, label, position").order("position"),
+    supabase.from("exercises").select("id, name, search_keywords, exercise_body_parts(body_part_id)").order("name"),
+    supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
+  ]);
+  const hiddenExerciseIds = new Set((hiddenExerciseRows ?? []).map((r) => r.exercise_id as string));
+  const pickerExercises = (exerciseRows ?? [])
+    .filter((ex) => !hiddenExerciseIds.has(ex.id as string))
+    .map((ex) => ({
+      id: ex.id as string,
+      name: ex.name as string,
+      searchKeywords: (ex.search_keywords as string[] | null) ?? null,
+      bodyPartIds: ((ex.exercise_body_parts as { body_part_id: string }[] | null) ?? []).map((t) => t.body_part_id),
+    }));
   const conditionName = (cid: string | null) => conditions?.find((c) => c.id === cid)?.name;
 
   // Séances created by this instructor.
@@ -124,6 +144,10 @@ export default async function SeancesPage({
       <div className="mx-auto max-w-7xl p-6 sm:p-8">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms]">
           <SeancesTabs
+            openNewSeance={nouvelle === "1"}
+            exercises={pickerExercises}
+            bodyParts={(bodyParts ?? []) as BodyPart[]}
+            returnTo={returnTo}
             error={error}
             mine={seances.map((s) => ({
               id: s.id,

@@ -70,6 +70,11 @@ function VendoredIllustration({
 
 /** Honest placeholder for exercises with no real demonstration yet. */
 function NoIllustration({ name, className }: { name: string; className: string }) {
+  // Petite vignette (hauteur Tailwind ≤ h-16, ex. listes d'exercices en
+  // 28-40 px) : icône seule — le texte « Démonstration à venir » débordait de
+  // la case (Philippe, 2026-10-02).
+  const h = className.match(/(?:^|\s)h-(\d+)(?:\s|$)/);
+  const small = h !== null && Number(h[1]) <= 16;
   return (
     <div
       className={`flex items-center justify-center ${className}`}
@@ -77,8 +82,8 @@ function NoIllustration({ name, className }: { name: string; className: string }
       aria-label={`Pas de démonstration disponible : ${name}`}
     >
       <div className="flex flex-col items-center gap-1.5 text-slate-300">
-        <ImageOff className="h-6 w-6" strokeWidth={1.75} />
-        <span className="text-xs text-slate-400">Démonstration à venir</span>
+        <ImageOff className={small ? "h-4 w-4" : "h-6 w-6"} strokeWidth={1.75} />
+        {!small && <span className="text-xs text-slate-400">Démonstration à venir</span>}
       </div>
     </div>
   );
