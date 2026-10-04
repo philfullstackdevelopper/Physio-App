@@ -101,7 +101,10 @@ export default async function PatientDashboard() {
         };
 
   return (
-    <main className="p-4 pt-5 sm:min-h-screen sm:p-8">
+    /* Téléphone : la page occupe exactement l'écran au-dessus de la barre
+       d'onglets, et la frise prend toute la place restante (Philippe,
+       2026-10-04 : « que TOUT l'espace soit utilisé »). */
+    <main className="p-4 pt-5 max-sm:flex max-sm:min-h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] max-sm:flex-col sm:min-h-screen sm:p-8">
       {/* This cluster (greeting, onboarding notice, clinical banner) is one
           status group — "here's where you stand today" — so its internal
           gap (space-y-4) stays tight and uniform. The jump to the programme
@@ -201,7 +204,7 @@ export default async function PatientDashboard() {
       {/* Outside the max-w-5xl column on purpose — the timeline uses the whole
           content width (up to the sidebar), not the reading-width column
           everything else on this page uses (Philippe, 2026-09-08). */}
-      <div className="mt-5 w-full min-w-0 sm:mt-8">
+      <div className="mt-5 w-full min-w-0 max-sm:flex max-sm:flex-1 max-sm:flex-col sm:mt-8">
         {/* Pas encore de programme : c'est le titre de cette section qui
             l'annonce (pending), plus de bloc séparé au-dessus. */}
         <WeekProgramme

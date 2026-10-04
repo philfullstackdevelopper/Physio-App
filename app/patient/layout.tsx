@@ -97,7 +97,9 @@ export default async function PatientLayout({ children }: { children: React.Reac
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink sm:flex-row">
       <PatientNav patientName={(patient.full_name as string | null) ?? null} unreadCount={unreadCount ?? 0} />
-      <div className="relative min-w-0 flex-1 pb-20 sm:pb-0">{children}</div>
+      {/* Téléphone : la marge du bas suit la vraie hauteur de la barre d'onglets,
+          zone de la « home bar » des iPhone comprise (env(safe-area-inset-bottom)). */}
+      <div className="relative min-w-0 flex-1 pb-20 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0">{children}</div>
     </div>
   );
 }

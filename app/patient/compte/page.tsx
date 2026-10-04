@@ -78,8 +78,8 @@ export default async function CompteePage({
     // Téléphone (Philippe, 2026-10-04 : tout sur un écran, plus efficace) :
     // cartes resserrées, textes secondaires masqués, offre + prix sur une
     // ligne. Dès sm : inchangé.
-    <main className="bg-app-bg p-4 pt-5 sm:min-h-screen sm:p-8">
-      <div className="mx-auto max-w-7xl">
+    <main className="bg-app-bg p-4 pt-5 max-sm:flex max-sm:min-h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] max-sm:flex-col sm:min-h-screen sm:p-8">
+      <div className="mx-auto max-w-7xl max-sm:flex max-sm:w-full max-sm:flex-1 max-sm:flex-col">
         <h1 className="text-xl font-semibold text-ink sm:text-2xl">Paramètres</h1>
         <p className="mt-1 hidden text-sm text-muted sm:block">Gérez votre compte, votre abonnement et vos données.</p>
 
@@ -215,7 +215,7 @@ export default async function CompteePage({
 
         {/* Actions secondaires — pas le même poids que résilier ou supprimer,
             un simple lien suffit (Philippe, 2026-09-11 : "pas forcément vital"). */}
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted sm:mt-6 sm:gap-x-6 sm:text-sm">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted max-sm:mt-auto max-sm:pt-4 sm:mt-6 sm:gap-x-6 sm:text-sm">
           <Link href="/patient/compte/export" prefetch={false} className="inline-flex items-center gap-1.5 hover:text-ink">
             <Download className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
             Télécharger mes données

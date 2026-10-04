@@ -70,6 +70,21 @@ export default function WeekProgramme({
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
 
   const scrollerRef = useRef<HTMLDivElement>(null);
+  // Téléphone : hauteur des cartes de la frise = toute la place disponible
+  // jusqu'à la barre d'onglets (la boîte autour est en flex-1, on la mesure).
+  const stripBoxRef = useRef<HTMLDivElement>(null);
+  const [phoneCardHeight, setPhoneCardHeight] = useState(150);
+  useEffect(() => {
+    const box = stripBoxRef.current;
+    if (!box || !isPhone) return;
+    // La frise ajoute py-14 (112 px) autour des cartes ; les marges
+    // négatives de la boîte (-mt-3 -mb-12) sont déjà comptées dans sa hauteur.
+    const update = () => setPhoneCardHeight(Math.max(150, Math.min(420, box.clientHeight - 112)));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [isPhone, view]);
   const currentCardRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (view !== "strip") return;
@@ -86,7 +101,9 @@ export default function WeekProgramme({
     const scrollerRect = scroller.getBoundingClientRect();
     const elOffsetInScroller = elRect.left - scrollerRect.left + scroller.scrollLeft;
     const target = elOffsetInScroller - scroller.clientWidth / 2 + elRect.width / 2;
-    scroller.scrollTo({ left: Math.max(0, target) });
+    // « instant » : la frise a scroll-smooth, et une animation encore en cours
+    // à l'arrivée laissait la semaine en cours à moitié hors de l'écran.
+    scroller.scrollTo({ left: Math.max(0, target), behavior: "instant" });
     // isPhone : la hauteur des cartes change une fois l'écran détecté —
     // recentrer à ce moment-là, sinon la semaine en cours reste hors champ.
   }, [view, isPhone]);
@@ -144,18 +161,35 @@ export default function WeekProgramme({
           <>
             {/* « Semaine N » plutôt qu'un numéro seul, dates entre
                 parenthèses (Philippe, 2026-10-01). */}
-            <span className="flex items-center gap-1.5 text-xl font-semibold sm:text-2xl">
+            <span className="flex items-center gap-1.5 text-2xl font-semibold">
               Semaine {week.weekNumber}
               {active && <CheckCircle2 className="h-5 w-5" strokeWidth={2} />}
             </span>
-            <span className="text-xs font-medium opacity-90">({week.rangeLabel})</span>
+            <span className="text-sm font-medium opacity-90 sm:text-xs">({week.rangeLabel})</span>
+            {/* Téléphone : la carte est haute — une ligne d'état et les 7 jours
+                de la semaine en pastilles (vert = séance faite). */}
+            <span className="mt-3 text-sm font-medium opacity-90 sm:hidden">
+              {active ? "Séances réalisées" : isCurrent ? "Semaine en cours" : week.weekNumber > currentWeekNumber ? "À venir" : "Aucune séance"}
+            </span>
+            <span className="mt-4 flex gap-1 sm:hidden" aria-hidden>
+              {daysOfWeek(week, loggedDateKeys).map((d) => (
+                <span
+                  key={d.dayLabel}
+                  className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${
+                    d.hasSession ? "bg-ok text-white" : "border border-current/25 bg-white/50"
+                  }`}
+                >
+                  {d.dayLabel.charAt(0)}
+                </span>
+              ))}
+            </span>
           </>
         ),
       };
     });
 
     return (
-      <div className="flex w-full min-w-0 flex-col">
+      <div className="flex w-full min-w-0 flex-col max-sm:flex-1">
         {/* 1. Landing view — full width, sized to its own content (Philippe,
             2026-09-08: dropped the old min-h-screen stretch now that the
             "Mon programme" card sits right below it — everything needs to
@@ -210,8 +244,8 @@ export default function WeekProgramme({
 
         {/* Téléphone : cartes moins hautes et marge du bas rognée (la frise
             garde py-14 pour la pastille « Vous êtes ici » au-dessus). */}
-        <div className="-mb-8 -mt-3 sm:m-0">
-          <SegmentRow items={weekItems} height={isPhone ? 150 : 208} scrollable scrollerRef={scrollerRef} />
+        <div ref={stripBoxRef} className="-mb-12 -mt-3 max-sm:min-h-0 max-sm:flex-1 sm:m-0">
+          <SegmentRow items={weekItems} height={isPhone ? phoneCardHeight : 208} scrollable scrollerRef={scrollerRef} />
         </div>
       </div>
     );
@@ -243,7 +277,7 @@ export default function WeekProgramme({
   const closeDayDetail = () => setSelectedDayKey(null);
 
   return (
-    <div className="w-full">
+    <div className="w-full max-sm:flex max-sm:flex-1 max-sm:flex-col">
       {/* 2. Zoom on the selected week — day by day. Shares its view-transition-name
           with the strip segment that opened it, so the browser morphs one into the
           other (see runViewTransition above). The 7 days use the exact same
@@ -257,7 +291,7 @@ export default function WeekProgramme({
         // l'Accueil) — la semaine prend tout l'écran, sans défiler.
         data-week-open=""
         style={{ viewTransitionName: `week-strip-${selectedWeek.weekNumber}` } as VTStyle}
-        className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5"
+        className="rounded-2xl border border-line bg-surface p-4 shadow-sm max-sm:flex max-sm:flex-1 max-sm:flex-col sm:p-5"
       >
         <button
           type="button"
@@ -298,7 +332,8 @@ export default function WeekProgramme({
         {/* Téléphone : les 7 jours en frise verticale — nom complet du jour,
             date et statut sur une ligne, reliés par un trait comme une frise
             chronologique ; tout tient dans l'écran. */}
-        <ol className="relative mt-3 sm:hidden">
+        {/* Les 7 lignes se partagent toute la hauteur restante (flex-1). */}
+        <ol className="relative mt-3 flex flex-1 flex-col sm:hidden">
           <span aria-hidden className="absolute bottom-5 left-[15px] top-5 w-0.5 bg-line" />
           {days.map((d) => {
             const key = localDateKey(d.date);
@@ -310,7 +345,7 @@ export default function WeekProgramme({
                 ? "border-brand bg-brand/10 text-brand"
                 : "border-line bg-surface text-muted";
             return (
-              <li key={key} className="relative">
+              <li key={key} className="relative flex flex-1 items-center">
                 <button
                   type="button"
                   disabled={sessions.length === 0}
@@ -325,10 +360,10 @@ export default function WeekProgramme({
                   >
                     {d.hasSession ? <CheckCircle2 className="h-4 w-4" strokeWidth={2.25} /> : <Circle className="h-2.5 w-2.5 fill-current" strokeWidth={0} />}
                   </span>
-                  <span className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 ${tone}`}>
+                  <span className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border px-3 py-3 ${tone}`}>
                     <span className="flex min-w-0 items-baseline gap-2">
-                      <span className="text-sm font-semibold capitalize">{d.dayLabel}</span>
-                      <span className="truncate text-xs opacity-80">{d.dateLabel}</span>
+                      <span className="text-base font-semibold capitalize">{d.dayLabel}</span>
+                      <span className="truncate text-sm opacity-80">{d.dateLabel}</span>
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium">
                       {isToday && <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">Aujourd&apos;hui</span>}

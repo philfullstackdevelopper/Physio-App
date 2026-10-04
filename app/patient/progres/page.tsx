@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { computeAdherence, adherenceLabel, adherenceTone, ADHERENCE_WINDOW_DAYS } from "@/lib/exercise/adherence";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
-import PainHistoryChart from "@/components/PainHistoryChart";
+import FillPainChart from "@/components/FillPainChart";
 
 const TONE_BG = { ok: "bg-ok-soft text-ok", warn: "bg-warn-soft text-warn", danger: "bg-danger-soft text-danger", muted: "bg-app-bg text-muted" } as const;
 
@@ -53,8 +53,8 @@ export default async function ProgresPage() {
     // Téléphone (Philippe, 2026-10-04 : « no scrolling at all ») : les 3
     // chiffres côte à côte, phrases longues masquées, « Zone concernée »
     // ramenée à une ligne sous le titre. Dès sm : inchangé.
-    <main className="p-4 pt-5 sm:min-h-screen sm:p-8">
-      <div className="mx-auto max-w-5xl">
+    <main className="p-4 pt-5 max-sm:flex max-sm:min-h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] max-sm:flex-col sm:min-h-screen sm:p-8">
+      <div className="mx-auto max-w-5xl max-sm:flex max-sm:w-full max-sm:flex-1 max-sm:flex-col">
         <h1 className="text-xl font-semibold text-ink sm:text-2xl">Mes progrès</h1>
         <p className="mt-1 text-xs text-muted sm:text-sm">
           Suivez vos résultats au fil du temps (30 derniers jours).
@@ -106,8 +106,8 @@ export default async function ProgresPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-6 sm:mt-6 lg:grid-cols-[1fr_320px]">
-          <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+        <div className="mt-4 grid gap-6 max-sm:flex max-sm:flex-1 max-sm:flex-col sm:mt-6 lg:grid-cols-[1fr_320px]">
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm max-sm:flex max-sm:flex-1 max-sm:flex-col sm:p-5">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-base font-semibold text-ink sm:text-lg">Évolution de la douleur</h2>
               <Link href="/patient/historique" className="flex shrink-0 items-center gap-1 text-sm font-medium text-brand hover:underline">
@@ -116,8 +116,8 @@ export default async function ProgresPage() {
                 <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
               </Link>
             </div>
-            <div className="mt-3">
-              <PainHistoryChart series={pain} />
+            <div className="mt-3 max-sm:flex max-sm:flex-1 max-sm:flex-col">
+              <FillPainChart series={pain} />
             </div>
           </section>
 
