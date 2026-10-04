@@ -50,49 +50,69 @@ export default async function ProgresPage() {
   const conditionName = (condition?.name as string | undefined) ?? null;
 
   return (
-    <main className="min-h-screen p-6 sm:p-8">
+    // Téléphone (Philippe, 2026-10-04 : « no scrolling at all ») : les 3
+    // chiffres côte à côte, phrases longues masquées, « Zone concernée »
+    // ramenée à une ligne sous le titre. Dès sm : inchangé.
+    <main className="p-4 pt-5 sm:min-h-screen sm:p-8">
       <div className="mx-auto max-w-5xl">
-        <h1 className="text-2xl font-semibold text-ink">Mes progrès</h1>
-        <p className="mt-1 text-sm text-muted">Suivez vos résultats au fil du temps (30 derniers jours).</p>
+        <h1 className="text-xl font-semibold text-ink sm:text-2xl">Mes progrès</h1>
+        <p className="mt-1 text-xs text-muted sm:text-sm">
+          Suivez vos résultats au fil du temps (30 derniers jours).
+          {conditionName && <span className="sm:hidden"> Zone : {conditionName}.</span>}
+        </p>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
+        <div className="mt-4 grid grid-cols-3 gap-2 sm:mt-6 sm:gap-4">
+          <div className="rounded-xl border border-line bg-surface p-3 shadow-sm sm:p-4">
             <p className="text-xs font-medium text-muted">Adhérence</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-ink">{adherenceNow.pct !== null ? `${adherenceNow.pct}%` : "—"}</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-ink sm:text-2xl">{adherenceNow.pct !== null ? `${adherenceNow.pct}%` : "—"}</p>
             {adherenceNow.pct !== null && (
               <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${TONE_BG[adherenceTone(adherenceNow.pct)]}`}>
                 {adherenceLabel(adherenceNow.pct)}
               </span>
             )}
-            <p className="mt-1 text-xs text-muted">
+            <p className="mt-1 text-xs text-muted sm:hidden">
+              {adherenceNow.done}/{adherenceNow.expected} séances
+            </p>
+            <p className="mt-1 hidden text-xs text-muted sm:block">
               Vous avez suivi {adherenceNow.done} séance{adherenceNow.done > 1 ? "s" : ""} sur {adherenceNow.expected} attendue{adherenceNow.expected > 1 ? "s" : ""}
             </p>
           </div>
-          <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
-            <p className="text-xs font-medium text-muted">Douleur moyenne</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-ink">{painAvgNow !== null ? `${painAvgNow.toFixed(1)}/10` : "—"}</p>
+          <div className="rounded-xl border border-line bg-surface p-3 shadow-sm sm:p-4">
+            <p className="text-xs font-medium text-muted">
+              <span className="sm:hidden">Douleur</span>
+              <span className="hidden sm:inline">Douleur moyenne</span>
+            </p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-ink sm:text-2xl">{painAvgNow !== null ? `${painAvgNow.toFixed(1)}/10` : "—"}</p>
             {painDelta !== null && (
               <p className={`mt-1 text-xs ${painDelta <= 0 ? "text-ok" : "text-danger"}`}>
                 {painDelta <= 0 ? "" : "+"}
-                {painDelta.toFixed(1)} vs la période précédente
+                {painDelta.toFixed(1)}
+                <span className="hidden sm:inline"> vs la période précédente</span>
               </p>
             )}
           </div>
-          <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
-            <p className="text-xs font-medium text-muted">Adhérence — tendance</p>
-            <p className={`mt-1 text-2xl font-semibold tabular-nums ${adherenceDelta !== null && adherenceDelta >= 0 ? "text-ok" : "text-ink"}`}>
+          <div className="rounded-xl border border-line bg-surface p-3 shadow-sm sm:p-4">
+            <p className="text-xs font-medium text-muted">
+              <span className="sm:hidden">Tendance</span>
+              <span className="hidden sm:inline">Adhérence — tendance</span>
+            </p>
+            <p className={`mt-1 text-xl font-semibold sm:text-2xl tabular-nums ${adherenceDelta !== null && adherenceDelta >= 0 ? "text-ok" : "text-ink"}`}>
               {adherenceDelta !== null ? `${adherenceDelta >= 0 ? "+" : ""}${adherenceDelta}%` : "—"}
             </p>
-            <p className="mt-1 text-xs text-muted">vs les 28 jours précédents</p>
+            <p className="mt-1 text-xs text-muted">
+              <span className="sm:hidden">vs 28 j avant</span>
+              <span className="hidden sm:inline">vs les 28 jours précédents</span>
+            </p>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
-          <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-ink">Évolution de la douleur</h2>
-              <Link href="/patient/historique" className="flex items-center gap-1 text-sm font-medium text-brand hover:underline">
-                Historique complet
+        <div className="mt-4 grid gap-6 sm:mt-6 lg:grid-cols-[1fr_320px]">
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold text-ink sm:text-lg">Évolution de la douleur</h2>
+              <Link href="/patient/historique" className="flex shrink-0 items-center gap-1 text-sm font-medium text-brand hover:underline">
+                <span className="sm:hidden">Historique</span>
+                <span className="hidden sm:inline">Historique complet</span>
                 <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
               </Link>
             </div>
@@ -102,7 +122,7 @@ export default async function ProgresPage() {
           </section>
 
           {conditionName && (
-            <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+            <section className="hidden rounded-2xl border border-line bg-surface p-5 shadow-sm sm:block">
               <h2 className="flex items-center gap-1.5 text-lg font-semibold text-ink">
                 <MapPin className="h-4 w-4 text-brand" strokeWidth={1.75} />
                 Zone concernée

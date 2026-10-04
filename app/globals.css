@@ -4,6 +4,12 @@
    en page qui doivent tenir sur un écran sans défiler (hero de la landing). */
 @custom-variant short (@media (max-height: 800px));
 
+/* Téléphone tenu à l'horizontale : écran tactile, paysage, moins de 500 px de
+   haut. Ne touche JAMAIS le PC (souris, 549 px de haut au minimum chez
+   Philippe) ni l'iPad (plus de 700 px de haut) — Philippe, 2026-10-04 : « only
+   changes to the phone side ». */
+@custom-variant phone-land (@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse));
+
 :root {
   --background: #f8fafb;
   --foreground: #0f172a;
@@ -239,5 +245,15 @@ body {
   ::view-transition-old(*),
   ::view-transition-new(*) {
     animation-duration: 0.01ms !important;
+  }
+}
+
+/* Accueil patient sur téléphone : une semaine ouverte (WeekProgramme,
+   data-week-open) prend tout l'écran — salutation et carte programme
+   s'effacent le temps de la consulter (Philippe, 2026-10-04 : « no
+   scrolling »). Sans effet dès 640 px. */
+@media (max-width: 639px) {
+  body:has([data-week-open]) [data-hide-when-week-open] {
+    display: none;
   }
 }

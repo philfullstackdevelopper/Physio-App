@@ -15,6 +15,17 @@ const LINKS = [
   { href: "/patient/compte", label: "Paramètres", icon: Settings },
 ];
 
+// Barre du bas sur téléphone : 4 onglets au lieu de 5 (Philippe, 2026-10-04 :
+// « 5 tabs is too much »). « Mon programme » n'y figure plus : la grande carte
+// de l'Accueil y mène, et sa page reste rattachée à l'onglet Accueil. Le menu
+// latéral sur ordinateur garde ses 5 entrées, inchangé.
+const MOBILE_LINKS: { href: string; label: string; icon: typeof Home; exact?: boolean; alsoActive?: string[] }[] = [
+  { href: "/patient", label: "Accueil", icon: Home, exact: true, alsoActive: ["/patient/programme", "/patient/seance-du-jour"] },
+  { href: "/patient/progres", label: "Progrès", icon: TrendingUp },
+  { href: "/patient/messages", label: "Messages", icon: MessageCircle },
+  { href: "/patient/compte", label: "Paramètres", icon: Settings },
+];
+
 // Same shell as DashboardSidebar (dark column on desktop, scrollable bar on
 // mobile, same tokens/spacing) — Philippe, 2026-09-05: the patient ("client")
 // interface should read as the same product as the kiné dashboard, not a
@@ -93,20 +104,20 @@ export default function PatientNav({
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         {!onOnboarding &&
-          LINKS.map((link) => {
-            const active = isActive(link.href, link.exact);
+          MOBILE_LINKS.map((link) => {
+            const active = isActive(link.href, link.exact) || (link.alsoActive ?? []).some((h) => pathname.startsWith(h));
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition ${
+                className={`relative flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition ${
                   active ? "text-white" : "text-white/60"
                 }`}
               >
                 <link.icon className="h-5 w-5" strokeWidth={active ? 2.1 : 1.75} />
                 {link.label}
                 {link.href === "/patient/messages" && unreadCount > 0 && (
-                  <span className="absolute right-[22%] top-1 h-2 w-2 rounded-full bg-brand" />
+                  <span className="absolute right-[30%] top-1.5 h-2 w-2 rounded-full bg-brand" />
                 )}
               </Link>
             );

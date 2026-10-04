@@ -74,17 +74,20 @@ export default function Home() {
             tout l'écran, le téléphone y tombait au tiers de sa taille,
             illisible (Philippe, 2026-10-02) — il passe donc juste en dessous,
             à la hauteur d'un écran. */}
-        <section className="flex flex-col gap-4 pb-4 pt-20 sm:min-h-dvh lg:grid lg:grid-cols-[minmax(0,36rem)_18rem] lg:items-center lg:justify-center lg:gap-24 lg:pb-6 lg:pt-24 lg:short:pt-20">
+        {/* phone-land: téléphone à l'horizontale (globals.css) — texte à gauche,
+            téléphone à droite comme sur PC, le tout dans la hauteur de l'écran
+            (Philippe, 2026-10-04 : « quand on tourne le téléphone, tout bugge »). */}
+        <section className="flex flex-col gap-4 pb-4 pt-20 sm:min-h-dvh lg:grid lg:grid-cols-[minmax(0,36rem)_18rem] lg:items-center lg:justify-center lg:gap-24 lg:pb-6 lg:pt-24 lg:short:pt-20 phone-land:grid phone-land:h-dvh phone-land:min-h-0 phone-land:grid-cols-[minmax(0,1fr)_10rem] phone-land:items-center phone-land:gap-6 phone-land:pb-2 phone-land:pt-16">
           <div>
-            <h1 className="font-display animate-[fadeInUp_0.6s_ease-out_both] max-w-xl text-3xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem] lg:short:text-[2.6rem]">
+            <h1 className="font-display animate-[fadeInUp_0.6s_ease-out_both] max-w-xl text-3xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem] lg:short:text-[2.6rem] phone-land:text-[1.7rem]">
               La rééducation ne s&apos;arrête pas en sortant du cabinet.
             </h1>
-            <p className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:160ms] mt-3 max-w-lg text-base leading-relaxed text-slate-600 sm:mt-5 sm:text-lg lg:short:mt-3 lg:short:text-base">
+            <p className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:160ms] mt-3 max-w-lg text-base leading-relaxed text-slate-600 sm:mt-5 sm:text-lg lg:short:mt-3 lg:short:text-base phone-land:mt-2 phone-land:text-sm">
               Chaque exercice choisi par votre kiné. Chaque séance guidée en vidéo. Chaque progrès
               visible pour lui, entre deux rendez-vous.
             </p>
 
-            <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:220ms] mt-5 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center lg:short:mt-5">
+            <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:220ms] mt-5 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center lg:short:mt-5 phone-land:mt-3">
               <PrimaryCta href="/signup/kine">Créer un compte praticien</PrimaryCta>
               <Link
                 href="/login"
@@ -94,7 +97,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <ul className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:280ms] mt-5 flex flex-col gap-1.5 sm:mt-8 sm:gap-2.5 lg:short:mt-5 lg:short:gap-1.5">
+            <ul className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:280ms] mt-5 flex flex-col gap-1.5 sm:mt-8 sm:gap-2.5 lg:short:mt-5 lg:short:gap-1.5 phone-land:mt-3 phone-land:gap-1">
               {HERO_CHIPS.map((chip) => (
                 <li key={chip.label} className="flex items-center gap-2">
                   <chip.icon className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={1.75} />
@@ -109,7 +112,7 @@ export default function Home() {
           <FitToBox
             width={280}
             height={620}
-            className="h-[min(620px,calc(100svh-6rem))] min-h-0 sm:h-auto sm:flex-1 animate-[fadeInUp_0.7s_ease-out_both] [animation-delay:250ms] lg:h-full lg:self-stretch"
+            className="h-[min(620px,calc(100svh-6rem))] min-h-0 sm:h-auto sm:flex-1 phone-land:h-full phone-land:self-stretch animate-[fadeInUp_0.7s_ease-out_both] [animation-delay:250ms] lg:h-full lg:self-stretch"
           >
             <PhoneMockup />
           </FitToBox>
@@ -119,7 +122,7 @@ export default function Home() {
         <Reveal>
         <section id="cote-kine" className="mt-16 scroll-mt-24 sm:mt-24">
           <div className="mx-auto max-w-2xl text-center sm:short:max-w-5xl">
-            <h2 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:text-3xl">
+            <h2 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
               Côté kiné : de son tableau de bord à la fiche de chaque patient.
             </h2>
             <p className="mt-3 text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg sm:short:mt-1 sm:short:text-sm">
@@ -128,7 +131,7 @@ export default function Home() {
           </div>
 
           {/* La démo déborde de la colonne de texte : pleine largeur jusqu'à 1 200 px. */}
-          <FitToViewport stable className="mx-auto mt-4 max-w-7xl sm:mt-12 sm:short:mt-4 lg:-mx-16">
+          <FitToViewport stable className="mx-auto mt-4 max-w-7xl sm:mt-12 sm:short:mt-4 lg:-mx-16 phone-land:mt-2 phone-land:max-w-[calc((100dvh-8.5rem)*1.65)]">
             <KineJourneyDemo />
           </FitToViewport>
 

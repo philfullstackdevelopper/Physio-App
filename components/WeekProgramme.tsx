@@ -28,6 +28,21 @@ export interface SessionDetail {
  * completion + every logged day's session detail) is loaded once by the page
  * and handed down, so switching weeks/days here is instant, no refetch.
  */
+// Téléphone (< 640 px) : frise plus basse et semaine affichée en frise
+// VERTICALE (Philippe, 2026-10-04 : « on ne voit même pas le nom entier de
+// chaque jour, aucun effet frise »). Ordinateur et tablette : inchangés.
+function useIsPhone() {
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const update = () => setPhone(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return phone;
+}
+
 export default function WeekProgramme({
   weeks,
   dayDetails,
@@ -45,6 +60,7 @@ export default function WeekProgramme({
   const loggedDateKeys = new Set(Object.keys(dayDetails).filter((k) => dayDetails[k].length > 0));
   const weekHasActivity = (week: WeekInfo) => daysOfWeek(week, loggedDateKeys).some((d) => d.hasSession);
   const todayKey = localDateKey(new Date());
+  const isPhone = useIsPhone();
 
   // 3 stages, one visible at a time (Philippe, 2026-09-08: the mockup's 3 panels
   // were 3 SCREENS, not 3 sections stacked on one page): land on the strip alone
@@ -71,7 +87,9 @@ export default function WeekProgramme({
     const elOffsetInScroller = elRect.left - scrollerRect.left + scroller.scrollLeft;
     const target = elOffsetInScroller - scroller.clientWidth / 2 + elRect.width / 2;
     scroller.scrollTo({ left: Math.max(0, target) });
-  }, [view]);
+    // isPhone : la hauteur des cartes change une fois l'écran détecté —
+    // recentrer à ce moment-là, sinon la semaine en cours reste hors champ.
+  }, [view, isPhone]);
 
   const selectedWeek = weeks.find((w) => w.weekNumber === selectedWeekNumber) ?? weeks[weeks.length - 1];
   const days = daysOfWeek(selectedWeek, loggedDateKeys);
@@ -126,7 +144,7 @@ export default function WeekProgramme({
           <>
             {/* « Semaine N » plutôt qu'un numéro seul, dates entre
                 parenthèses (Philippe, 2026-10-01). */}
-            <span className="flex items-center gap-1.5 text-2xl font-semibold">
+            <span className="flex items-center gap-1.5 text-xl font-semibold sm:text-2xl">
               Semaine {week.weekNumber}
               {active && <CheckCircle2 className="h-5 w-5" strokeWidth={2} />}
             </span>
@@ -148,8 +166,8 @@ export default function WeekProgramme({
           <div>
             {pending ? (
               <>
-                <h2 className="text-lg font-semibold text-ink">Votre programme arrive bientôt</h2>
-                <p className="mt-1 text-sm text-muted">
+                <h2 className="text-base font-semibold text-ink sm:text-lg">Votre programme arrive bientôt</h2>
+                <p className="mt-1 text-xs text-muted sm:text-sm">
                   Votre kiné prépare vos exercices personnalisés. Vous serez prévenu·e dès qu&apos;ils seront prêts.{" "}
                   {/* « Modifier », pas « Compléter » : on n'arrive sur l'accueil
                       qu'après l'onboarding (app/patient/layout.tsx), donc la
@@ -161,12 +179,16 @@ export default function WeekProgramme({
               </>
             ) : (
               <>
-                <h2 className="text-lg font-semibold text-ink">Mon programme, semaine par semaine</h2>
-                <p className="mt-1 text-sm text-muted">Cliquez sur une semaine pour voir le détail jour par jour.</p>
+                <h2 className="text-base font-semibold text-ink sm:text-lg">Mon programme, semaine par semaine</h2>
+                <p className="mt-1 text-xs text-muted sm:text-sm">
+                  <span className="sm:hidden">Touchez une semaine pour voir chaque jour.</span>
+                  <span className="hidden sm:inline">Cliquez sur une semaine pour voir le détail jour par jour.</span>
+                </p>
               </>
             )}
           </div>
-          <div className="flex items-center gap-1">
+          {/* Flèches masquées sur téléphone : on fait glisser la frise du doigt. */}
+          <div className="hidden items-center gap-1 sm:flex">
             <button
               type="button"
               aria-label="Semaines précédentes"
@@ -186,7 +208,11 @@ export default function WeekProgramme({
           </div>
         </div>
 
-        <SegmentRow items={weekItems} height={208} scrollable scrollerRef={scrollerRef} />
+        {/* Téléphone : cartes moins hautes et marge du bas rognée (la frise
+            garde py-14 pour la pastille « Vous êtes ici » au-dessus). */}
+        <div className="-mb-8 -mt-3 sm:m-0">
+          <SegmentRow items={weekItems} height={isPhone ? 150 : 208} scrollable scrollerRef={scrollerRef} />
+        </div>
       </div>
     );
   }
@@ -226,8 +252,12 @@ export default function WeekProgramme({
           down). Clicking a day with a séance opens its detail as a popup (below)
           instead of a side panel — there's nothing to show until a day is picked. */}
       <section
+        // data-week-open : sur téléphone, globals.css masque alors ce qui est
+        // marqué data-hide-when-week-open (salutation, carte programme de
+        // l'Accueil) — la semaine prend tout l'écran, sans défiler.
+        data-week-open=""
         style={{ viewTransitionName: `week-strip-${selectedWeek.weekNumber}` } as VTStyle}
-        className="rounded-2xl border border-line bg-surface p-5 shadow-sm"
+        className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5"
       >
         <button
           type="button"
@@ -261,7 +291,56 @@ export default function WeekProgramme({
         </div>
         <p className="text-sm text-muted">{selectedWeek.rangeLabel}</p>
 
-        <SegmentRow items={dayItems} height={172} scrollable={false} />
+        <div className="hidden sm:block">
+          <SegmentRow items={dayItems} height={172} scrollable={false} />
+        </div>
+
+        {/* Téléphone : les 7 jours en frise verticale — nom complet du jour,
+            date et statut sur une ligne, reliés par un trait comme une frise
+            chronologique ; tout tient dans l'écran. */}
+        <ol className="relative mt-3 sm:hidden">
+          <span aria-hidden className="absolute bottom-5 left-[15px] top-5 w-0.5 bg-line" />
+          {days.map((d) => {
+            const key = localDateKey(d.date);
+            const sessions = dayDetails[key] ?? [];
+            const isToday = key === todayKey;
+            const tone = d.hasSession
+              ? "border-ok-soft bg-ok-soft text-ok"
+              : isToday
+                ? "border-brand bg-brand/10 text-brand"
+                : "border-line bg-surface text-muted";
+            return (
+              <li key={key} className="relative">
+                <button
+                  type="button"
+                  disabled={sessions.length === 0}
+                  onClick={() => setSelectedDayKey(selectedDayKey === key ? null : key)}
+                  aria-label={`${d.dayLabel} ${d.dateLabel}${d.hasSession ? ", séance réalisée" : ", non fait"}${isToday ? " — aujourd'hui" : ""}`}
+                  className="flex w-full items-center gap-3 py-0.5 text-left"
+                >
+                  <span
+                    className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${
+                      d.hasSession ? "border-ok bg-ok text-white" : isToday ? "border-brand bg-surface text-brand" : "border-line bg-surface text-muted"
+                    }`}
+                  >
+                    {d.hasSession ? <CheckCircle2 className="h-4 w-4" strokeWidth={2.25} /> : <Circle className="h-2.5 w-2.5 fill-current" strokeWidth={0} />}
+                  </span>
+                  <span className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 ${tone}`}>
+                    <span className="flex min-w-0 items-baseline gap-2">
+                      <span className="text-sm font-semibold capitalize">{d.dayLabel}</span>
+                      <span className="truncate text-xs opacity-80">{d.dateLabel}</span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium">
+                      {isToday && <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">Aujourd&apos;hui</span>}
+                      {d.hasSession ? "Réalisée" : "Non fait"}
+                      {sessions.length > 0 && <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
       </section>
 
       {selectedDayKey && selectedDaySessions.length > 0 && (

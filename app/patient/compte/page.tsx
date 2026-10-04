@@ -75,10 +75,13 @@ export default async function CompteePage({
   const priceCents = isTierKey(billing.subPlan) ? TIERS[billing.subPlan].amount : null;
 
   return (
-    <main className="min-h-screen bg-app-bg p-6 sm:p-8">
+    // Téléphone (Philippe, 2026-10-04 : tout sur un écran, plus efficace) :
+    // cartes resserrées, textes secondaires masqués, offre + prix sur une
+    // ligne. Dès sm : inchangé.
+    <main className="bg-app-bg p-4 pt-5 sm:min-h-screen sm:p-8">
       <div className="mx-auto max-w-7xl">
-        <h1 className="text-2xl font-semibold text-ink">Paramètres</h1>
-        <p className="mt-1 text-sm text-muted">Gérez votre compte, votre abonnement et vos données.</p>
+        <h1 className="text-xl font-semibold text-ink sm:text-2xl">Paramètres</h1>
+        <p className="mt-1 hidden text-sm text-muted sm:block">Gérez votre compte, votre abonnement et vos données.</p>
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger">{error}</p>}
         {(refreshed === "1" || changed === "1") && (
@@ -88,9 +91,9 @@ export default async function CompteePage({
           </p>
         )}
 
-        <div className="mt-6 grid gap-5 lg:grid-cols-[3fr_2fr]">
+        <div className="mt-4 grid gap-3 sm:mt-6 sm:gap-5 lg:grid-cols-[3fr_2fr]">
           {/* Mon abonnement */}
-          <section className="rounded-2xl border border-line bg-surface p-6 shadow-sm">
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6">
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2 font-medium text-ink">
                 <CreditCard className="h-4 w-4 text-brand" strokeWidth={1.75} />
@@ -99,22 +102,24 @@ export default async function CompteePage({
               <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{badge.label}</span>
             </div>
 
-            <p className="mt-4 text-lg font-semibold text-ink">{offerLabel}</p>
+            <div className="mt-3 flex flex-wrap items-baseline gap-x-2 sm:mt-4 sm:block">
+            <p className="text-lg font-semibold text-ink">{offerLabel}</p>
             {priceCents !== null && (
               <p className="text-sm text-muted">
                 {(priceCents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })}&nbsp;€ / mois
               </p>
             )}
+            </div>
 
             {nextChargeLine && (
-              <div className="mt-4 flex items-center gap-2 border-t border-line pt-4 text-sm text-muted">
+              <div className="mt-3 flex items-center gap-2 border-t border-line pt-3 text-sm text-muted sm:mt-4 sm:pt-4">
                 <Calendar className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
                 {nextChargeLine}
               </div>
             )}
 
             {hasCustomer ? (
-              <div className="mt-5">
+              <div className="mt-3 sm:mt-5">
                 {/* Deux boutons de même poids, côte à côte : "gérer" couvre
                     déjà changer de carte, voir les factures ET résilier (page
                     Stripe) — un 3ème bouton "annuler" séparé était redondant
@@ -128,7 +133,8 @@ export default async function CompteePage({
                       type="submit"
                       className="flex w-full items-center justify-center gap-1.5 rounded-full bg-brand py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
                     >
-                      Gérer mon abonnement
+                      <span className="sm:hidden">Gérer</span>
+                      <span className="hidden sm:inline">Gérer mon abonnement</span>
                     </button>
                   </form>
                   {isTierKey(billing.subPlan) ? (
@@ -160,14 +166,14 @@ export default async function CompteePage({
           </section>
 
           {/* Mon compte */}
-          <section className="rounded-2xl border border-line bg-surface p-6 shadow-sm">
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6">
             <h2 className="flex items-center gap-2 font-medium text-ink">
               <User className="h-4 w-4 text-brand" strokeWidth={1.75} />
               Mon compte
             </h2>
             <Link
               href="/patient/compte/informations"
-              className="mt-4 flex items-center justify-between gap-3 border-t border-line py-4 first:border-t-0 first:pt-0 hover:opacity-80"
+              className="mt-3 flex items-center justify-between gap-3 border-t border-line py-2 first:border-t-0 first:pt-0 hover:opacity-80 sm:mt-4 sm:py-4"
             >
               <div>
                 <p className="text-sm font-medium text-ink">Mes informations</p>
@@ -179,27 +185,28 @@ export default async function CompteePage({
         </div>
 
         {/* Zone de danger */}
-        <section className="mt-5 rounded-2xl border border-danger/30 bg-danger-soft p-6">
+        <section className="mt-3 rounded-2xl border border-danger/30 bg-danger-soft p-4 sm:mt-5 sm:p-6">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-danger" strokeWidth={1.75} />
             <div className="min-w-0 flex-1">
               <h2 className="font-medium text-danger">Zone de danger</h2>
-              <p className="mt-1 text-sm text-muted">
+              <p className="mt-1 text-xs text-muted sm:text-sm">
                 Supprimer votre compte est définitif : profil, séances et messages seront effacés.
               </p>
-              <form action={deleteMyAccount} className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <form action={deleteMyAccount} className="mt-3 flex gap-2 sm:mt-4 sm:flex-row sm:items-center">
                 <input
                   type="text"
                   name="confirmation"
                   placeholder="Tapez SUPPRIMER pour confirmer"
                   required
-                  className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-danger focus:outline-none focus:ring-2 focus:ring-danger-soft sm:max-w-xs"
+                  className="w-full min-w-0 rounded-lg border border-line bg-surface px-3 py-2 text-base text-ink sm:text-sm focus:border-danger focus:outline-none focus:ring-2 focus:ring-danger-soft sm:max-w-xs"
                 />
                 <button
                   type="submit"
                   className="shrink-0 rounded-full bg-danger px-4 py-2 text-sm font-medium text-white hover:brightness-95"
                 >
-                  Supprimer mon compte
+                  <span className="sm:hidden">Supprimer</span>
+                  <span className="hidden sm:inline">Supprimer mon compte</span>
                 </button>
               </form>
             </div>
@@ -208,13 +215,14 @@ export default async function CompteePage({
 
         {/* Actions secondaires — pas le même poids que résilier ou supprimer,
             un simple lien suffit (Philippe, 2026-09-11 : "pas forcément vital"). */}
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted sm:mt-6 sm:gap-x-6 sm:text-sm">
           <Link href="/patient/compte/export" prefetch={false} className="inline-flex items-center gap-1.5 hover:text-ink">
             <Download className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
             Télécharger mes données
           </Link>
           <Link href="/confidentialite" className="hover:text-ink hover:underline">
-            Politique de confidentialité
+            <span className="sm:hidden">Confidentialité</span>
+            <span className="hidden sm:inline">Politique de confidentialité</span>
           </Link>
           <SignOutButton redirectUrl="/login">
             <button type="button" className="hover:text-ink">

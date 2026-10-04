@@ -101,25 +101,29 @@ export default async function PatientDashboard() {
         };
 
   return (
-    <main className="min-h-screen p-6 sm:p-8">
+    <main className="p-4 pt-5 sm:min-h-screen sm:p-8">
       {/* This cluster (greeting, onboarding notice, clinical banner) is one
           status group — "here's where you stand today" — so its internal
           gap (space-y-4) stays tight and uniform. The jump to the programme
           zone below is a real change of subject, so it gets a bigger gap
           (mt-8, double this group's own rhythm) rather than the same value
           repeated everywhere (Philippe, 2026-09-08 spacing pass). */}
-      <div className="mx-auto max-w-5xl space-y-4">
+      <div data-hide-when-week-open="" className="mx-auto max-w-5xl space-y-3 sm:space-y-4">
         {/* Deux cartes symétriques, même largeur et même hauteur (grille,
             étirées) : salutation à gauche, « Mon programme » à droite
             (Philippe, 2026-10-01). */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="group flex items-center rounded-2xl border border-line bg-surface px-5 py-4 shadow-md">
-            <div className="min-w-0">
-              <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
+        {/* Téléphone (Philippe, 2026-10-04) : salutation sur une ligne, sans
+            carte, et grand bouton « Voir mon programme » pleine largeur — la
+            frise doit apparaître dès l'arrivée, sans défiler. Rien ne change
+            dès sm (ordinateur, tablette). */}
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+          <div className="group flex items-center sm:rounded-2xl sm:border sm:border-line sm:bg-surface sm:px-5 sm:py-4 sm:shadow-md">
+            <div className="flex min-w-0 items-baseline gap-2 sm:block">
+              <h1 className="flex items-center gap-2 text-xl font-semibold text-ink sm:text-2xl">
                 <span className="truncate">Bonjour {home.fullName ? home.fullName.split(" ")[0] : ""}</span>
-                <WavingHand className="h-9 w-9 shrink-0" />
+                <WavingHand className="h-7 w-7 shrink-0 sm:h-9 sm:w-9" />
               </h1>
-              <p className="mt-0.5 text-sm capitalize text-muted">{today}</p>
+              <p className="text-xs capitalize text-muted max-sm:truncate sm:mt-0.5 sm:text-sm">{today}</p>
             </div>
           </div>
 
@@ -139,7 +143,7 @@ export default async function PatientDashboard() {
               progress={weekProgress}
               className="pointer-events-none absolute -bottom-1 left-0 h-20 w-28 text-white/90"
             />
-            <div className="relative pl-24">
+            <div className="relative pl-24 max-sm:pl-20">
               {/* Pas de « Semaine 0 » quand aucun programme n'a commencé. */}
               {home.week > 0 && (
                 <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/75">
@@ -149,13 +153,13 @@ export default async function PatientDashboard() {
               )}
               <p className="mt-0.5 text-base font-semibold text-white">{programmeCard.title}</p>
               <p className="mt-0.5 text-sm text-white/85">{programmeCard.subtitle}</p>
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <div className="h-1.5 w-full max-w-[8rem] overflow-hidden rounded-full bg-white/20">
+              <div className="mt-3 flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-stretch">
+                <div className="h-1.5 w-full max-w-[8rem] overflow-hidden rounded-full bg-white/20 max-sm:max-w-none">
                   <div className="h-full rounded-full bg-white transition-[width]" style={{ width: `${Math.round(weekProgress * 100)}%` }} />
                 </div>
                 <Link
                   href="/patient/programme"
-                  className={`flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-sm font-semibold shadow-sm transition hover:bg-white/90 motion-safe:animate-[ctaPulse_2.4s_ease-out_infinite] motion-safe:group-hover:animate-none ${
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-sm font-semibold max-sm:justify-center max-sm:whitespace-nowrap max-sm:py-3 max-sm:text-base shadow-sm transition hover:bg-white/90 motion-safe:animate-[ctaPulse_2.4s_ease-out_infinite] motion-safe:group-hover:animate-none ${
                     programmeCard.done ? "text-ok" : "text-brand"
                   }`}
                 >
@@ -197,7 +201,7 @@ export default async function PatientDashboard() {
       {/* Outside the max-w-5xl column on purpose — the timeline uses the whole
           content width (up to the sidebar), not the reading-width column
           everything else on this page uses (Philippe, 2026-09-08). */}
-      <div className="mt-8 w-full min-w-0">
+      <div className="mt-5 w-full min-w-0 sm:mt-8">
         {/* Pas encore de programme : c'est le titre de cette section qui
             l'annonce (pending), plus de bloc séparé au-dessus. */}
         <WeekProgramme
