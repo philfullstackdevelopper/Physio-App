@@ -131,7 +131,7 @@ export default function Home() {
           </div>
 
           {/* La démo déborde de la colonne de texte : pleine largeur jusqu'à 1 200 px. */}
-          <FitToViewport stable className="mx-auto mt-4 max-w-7xl sm:mt-12 sm:short:mt-4 lg:-mx-16 phone-land:mt-2 phone-land:max-w-[calc((100dvh-8.5rem)*1.65)]">
+          <FitToViewport stable className="mx-auto mt-4 max-w-7xl sm:mt-12 sm:short:mt-4 lg:-mx-16 phone-land:mt-2 phone-land:max-w-[calc((100dvh-10.5rem)*1.65)]">
             <KineJourneyDemo />
           </FitToViewport>
 
@@ -147,20 +147,20 @@ export default function Home() {
         {/* Dès lg : titre à gauche, tableau à droite — le titre ne prend plus
             de hauteur au-dessus du tableau (tenir sur un écran, Philippe
             2026-09-29). */}
-        <section id="comparaison" className="mt-24 scroll-mt-24 sm:mt-32 lg:grid lg:grid-cols-[1fr_3fr] lg:items-center lg:gap-10">
+        <section id="comparaison" className="mt-24 scroll-mt-24 sm:mt-32 lg:grid lg:grid-cols-[1fr_3fr] lg:items-center lg:gap-10 phone-land:mt-12">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
+              <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
                 Ce qui change vraiment pour le patient
               </h2>
-              <p className="mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1">
+              <p className="mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 phone-land:hidden">
                 La plupart des programmes s&apos;arrêtent à la porte du cabinet.{" "}
                 <br className="hidden sm:block lg:hidden" />
                 EasyPhysio assure un suivi continu, personnalisé et efficace.
               </p>
             </div>
           </div>
-          <FitToViewport className="mt-8 sm:short:mt-4 lg:mt-0">
+          <FitToViewport className="mt-8 sm:short:mt-4 lg:mt-0 phone-land:mt-2">
             <ComparisonTable />
           </FitToViewport>
         </section>
@@ -168,8 +168,8 @@ export default function Home() {
 
         {/* ── Témoignages ──────────────────────────────────────── */}
         <Reveal>
-        <section className="mt-24 sm:mt-32">
-          <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
+        <section className="mt-24 sm:mt-32 phone-land:mt-12 phone-land:grid phone-land:grid-cols-[1fr_3fr] phone-land:items-center phone-land:gap-5">
+          <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
             Utilisé au cabinet,
             <br className="sm:hidden" />{" "}
             et surtout à la maison
@@ -188,11 +188,11 @@ export default function Home() {
             de lib/billing/plans.ts (même source que /patient/abonnement). */}
         <Reveal>
         <section id="tarifs" className="mt-24 scroll-mt-24 text-center sm:mt-32">
-          <h2 className="font-display mx-auto max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
+          <h2 className="font-display mx-auto max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
             Le patient paie son kiné. Le kiné paie EasyPhysio.
           </h2>
 
-          <FitToViewport className="mt-10 text-left sm:short:mt-5">
+          <FitToViewport className="mt-10 text-left sm:short:mt-5 phone-land:mt-2">
             <PricingSection />
           </FitToViewport>
         </section>
@@ -200,12 +200,14 @@ export default function Home() {
 
         {/* ── FAQ ──────────────────────────────────────────────── */}
         <Reveal>
-        <section id="faq" className="mx-auto mt-24 max-w-2xl scroll-mt-28 sm:mt-32">
-          <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Encore un doute&nbsp;?</p>
-          <h2 className="font-display mt-2 text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
-            Les réponses à toutes vos questions
-          </h2>
-          <div className="mt-8 sm:short:mt-4">
+        <section id="faq" className="mx-auto mt-24 max-w-2xl scroll-mt-28 sm:mt-32 phone-land:mt-12 phone-land:grid phone-land:max-w-none phone-land:grid-cols-[1fr_2fr] phone-land:items-center phone-land:gap-5">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Encore un doute&nbsp;?</p>
+            <h2 className="font-display mt-2 text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
+              Les réponses à toutes vos questions
+            </h2>
+          </div>
+          <div className="mt-8 sm:short:mt-4 phone-land:mt-0">
             <FaqSection />
           </div>
         </section>
@@ -213,19 +215,19 @@ export default function Home() {
 
         {/* ── Final CTA ────────────────────────────────────────── */}
         <Reveal>
-        <section className="my-24 sm:my-32">
-          <div className="rounded-[2rem] bg-slate-900 px-8 py-14 text-center shadow-xl sm:px-14">
-            <h2 className="font-display mx-auto max-w-xl text-3xl font-semibold leading-tight text-white sm:text-4xl">
+        <section className="my-24 sm:my-32 phone-land:my-12">
+          <div className="rounded-[2rem] bg-slate-900 px-8 py-14 text-center shadow-xl sm:px-14 phone-land:py-6">
+            <h2 className="font-display mx-auto max-w-xl text-3xl font-semibold leading-tight text-white sm:text-4xl phone-land:text-2xl">
               Prêt à suivre vos patients entre les séances ?
             </h2>
             <p className="mx-auto mt-4 max-w-md leading-relaxed text-slate-300">
               Créez votre compte, composez un premier programme et invitez un patient en quelques
               minutes.
             </p>
-            <p className="mt-6 text-sm font-medium text-blue-300">
+            <p className="mt-6 text-sm font-medium text-blue-300 phone-land:mt-3">
               Le programme reste conçu et piloté par vous. L&apos;app ne décide rien à votre place.
             </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row phone-land:mt-4">
               <Link
                 href="/signup/kine"
                 className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-6 py-3 font-medium text-slate-900 shadow-sm transition hover:bg-slate-100 active:scale-95"

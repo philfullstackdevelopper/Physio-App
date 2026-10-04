@@ -42,11 +42,24 @@ export default function FitToViewport({
     if (!outer || !inner) return;
     let maxNatural = 0;
 
+    // Téléphone à l'horizontale (même requête que la variante phone-land de
+    // globals.css) : pas de « stable » (sa hauteur maximale peut venir d'un
+    // instant où le contenu n'était pas encore réduit) et réduction permise
+    // jusqu'à 0,62 pour que chaque section tienne dans ~300 px de haut
+    // (Philippe, 2026-10-04). Ordinateur et tablette : inchangés.
+    const phoneLand = window.matchMedia(
+      "(orientation: landscape) and (max-height: 500px) and (pointer: coarse)",
+    ).matches;
+    const floor = phoneLand ? Math.min(minScale, 0.62) : minScale;
+
     const update = () => {
       const natural = inner.offsetHeight;
       if (natural === 0) return;
-      maxNatural = stable ? Math.max(maxNatural, natural) : natural;
-      if (window.innerWidth < 640) {
+      maxNatural = stable && !phoneLand ? Math.max(maxNatural, natural) : natural;
+      // Démo kiné (stable) à l'horizontale sur téléphone : sa largeur est déjà
+      // calculée pour tenir dans l'écran (app/page.tsx, phone-land:max-w) —
+      // la réduire une 2e fois la rendait minuscule.
+      if (window.innerWidth < 640 || (phoneLand && stable)) {
         setFit({ scale: 1, natural });
         return;
       }
@@ -55,7 +68,7 @@ export default function FitToViewport({
       const section = outer.closest("section") ?? outer.parentElement!;
       const others = section.getBoundingClientRect().height - outer.getBoundingClientRect().height;
       const available = window.innerHeight - HEADER_SPACE - others;
-      const scale = Math.max(minScale, Math.min(1, available / maxNatural));
+      const scale = Math.max(floor, Math.min(1, available / maxNatural));
       setFit({ scale, natural });
     };
 

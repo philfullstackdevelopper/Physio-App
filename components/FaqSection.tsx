@@ -61,7 +61,7 @@ export default function FaqSection() {
               type="button"
               onClick={() => setOpenIndex(open ? null : i)}
               aria-expanded={open}
-              className="flex w-full items-center justify-between gap-4 py-4 text-left"
+              className="flex w-full items-center justify-between gap-4 py-4 text-left phone-land:py-2.5"
             >
               <span className={`text-sm font-medium transition-colors ${open ? "text-blue-700" : "text-slate-700"}`}>
                 {q.question}

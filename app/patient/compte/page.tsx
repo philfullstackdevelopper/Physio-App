@@ -148,7 +148,7 @@ export default async function CompteePage({
                     <span />
                   )}
                 </div>
-                <p className="mt-2 flex items-center justify-center gap-1 text-center text-xs text-muted">
+                <p className="mt-2 hidden items-center justify-center gap-1 text-center text-xs text-muted sm:flex">
                   <ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
                   Facturation et résiliation gérées via Stripe
                 </p>
@@ -167,13 +167,13 @@ export default async function CompteePage({
 
           {/* Mon compte */}
           <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6">
-            <h2 className="flex items-center gap-2 font-medium text-ink">
+            <h2 className="hidden items-center gap-2 font-medium text-ink sm:flex">
               <User className="h-4 w-4 text-brand" strokeWidth={1.75} />
               Mon compte
             </h2>
             <Link
               href="/patient/compte/informations"
-              className="mt-3 flex items-center justify-between gap-3 border-t border-line py-2 first:border-t-0 first:pt-0 hover:opacity-80 sm:mt-4 sm:py-4"
+              className="flex items-center justify-between gap-3 border-t border-line py-0 first:border-t-0 first:pt-0 hover:opacity-80 max-sm:border-t-0 sm:mt-4 sm:py-4"
             >
               <div>
                 <p className="text-sm font-medium text-ink">Mes informations</p>
