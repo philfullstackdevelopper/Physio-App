@@ -47,23 +47,27 @@ export default async function MessagesPage({
   const unreadFromKine = rows.filter((m) => m.sender === "instructor" && !m.read_at).length;
 
   return (
-    <main className="min-h-screen p-6 max-sm:min-h-0 max-sm:p-4 max-sm:pt-2 sm:p-8">
+    // Téléphone (maquette de Philippe, 2026-10-06) : la page EST la conversation
+    // — en-tête du kiné, fil, saisie en bas — sans titre au-dessus ; pas de
+    // liste de conversations (un patient n'a qu'un kiné) ni de pièces jointes
+    // (retirées du produit, migration 0056).
+    <main className="min-h-screen p-6 max-sm:min-h-0 max-sm:p-0 sm:p-8">
       <div className="mx-auto max-w-4xl">
-        <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink max-sm:hidden">
           <MessageCircle className="h-5 w-5 text-brand max-sm:hidden" strokeWidth={1.75} />
           Messages
         </h1>
-        <p className="mt-1 text-sm text-muted max-sm:mt-0.5">Échangez avec {instructorName}.</p>
+        <p className="mt-1 text-sm text-muted max-sm:hidden">Échangez avec {instructorName}.</p>
 
-        {error && <p className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger">{error}</p>}
+        {error && <p className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger max-sm:m-3">{error}</p>}
 
-        <section className="mt-6 flex h-[32rem] max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm max-sm:mt-3 max-sm:h-[calc(100dvh-var(--phone-chrome)-6.25rem)] max-sm:max-h-none max-sm:border-0 max-sm:shadow-soft">
-          <header className="flex items-center gap-3 border-b border-line px-5 py-4">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand">
+        <section className="mt-6 flex h-[32rem] max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm max-sm:mt-0 max-sm:h-[calc(100dvh-var(--phone-chrome))] max-sm:max-h-none max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:shadow-none">
+          <header className="flex items-center gap-3 border-b border-line px-5 py-4 max-sm:bg-surface max-sm:px-4 max-sm:py-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand max-sm:h-11 max-sm:w-11">
               {initials(instructorFullName)}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-ink">{instructorName}</p>
+              <p className="truncate text-sm font-semibold text-ink max-sm:text-base">{instructorName}</p>
               <p className="text-xs text-muted">Votre kinésithérapeute</p>
             </div>
           </header>
@@ -83,16 +87,18 @@ export default async function MessagesPage({
             </form>
           )}
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          {/* Téléphone : colonne inversée = le fil s'ouvre sur le dernier message, comme une messagerie. */}
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 max-sm:flex max-sm:flex-col-reverse max-sm:px-4">
             <MessageThread
               messages={thread}
               mineSender="patient"
               emptyText={`Vous n'avez pas encore échangé de messages avec ${instructorName}. Écrivez-lui pour poser une question sur votre programme.`}
+              otherInitials={initials(instructorFullName)}
             />
           </div>
 
-          <div className="border-t border-line px-5 py-4">
-            <MessageComposer patientId={user.id} action={sendPatientMessage} placeholder={`Écrire à ${instructorName}…`} />
+          <div className="border-t border-line px-5 py-4 max-sm:bg-surface max-sm:px-3 max-sm:py-2.5">
+            <MessageComposer patientId={user.id} action={sendPatientMessage} placeholder={`Écrire à ${instructorName}…`} chat />
           </div>
         </section>
       </div>

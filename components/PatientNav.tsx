@@ -138,7 +138,7 @@ export default function PatientNav({
               <Link
                 key={link.href}
                 href={link.href}
-                className={`relative flex flex-1 flex-col items-center gap-1 pb-2.5 pt-3 text-xs transition ${
+                className={`relative flex h-20 flex-1 flex-col items-center justify-center gap-1 pb-1 text-xs transition ${
                   active ? "font-semibold text-brand" : "font-medium text-muted"
                 }`}
               >
