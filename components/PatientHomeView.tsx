@@ -53,7 +53,7 @@ export default function PatientHomeView({
     /* Téléphone : la page occupe exactement l'écran au-dessus de la barre
        d'onglets, et la frise prend toute la place restante (Philippe,
        2026-10-04 : « que TOUT l'espace soit utilisé »). */
-    <main className="p-4 pt-5 max-sm:flex max-sm:min-h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] max-sm:flex-col sm:min-h-screen sm:p-8">
+    <main className="p-4 pt-5 max-sm:flex max-sm:pt-2 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:flex-col sm:min-h-screen sm:p-8">
       {/* This cluster (greeting, onboarding notice, clinical banner) is one
           status group — "here's where you stand today" — so its internal
           gap (space-y-4) stays tight and uniform. The jump to the programme
@@ -71,7 +71,7 @@ export default function PatientHomeView({
               dès sm (ordinateur, tablette). */}
           <div className="group flex items-center sm:rounded-2xl sm:border sm:border-line sm:bg-surface sm:px-5 sm:py-4 sm:shadow-md">
             <div className="flex min-w-0 items-baseline gap-2 sm:block">
-              <h1 className="flex items-center gap-2 text-xl font-semibold text-ink sm:text-2xl">
+              <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
                 <span className="truncate">Bonjour {firstName}</span>
                 <WavingHand className="h-7 w-7 shrink-0 sm:h-9 sm:w-9" />
               </h1>

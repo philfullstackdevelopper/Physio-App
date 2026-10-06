@@ -42,7 +42,7 @@ export default function AccueilPatientPrototype() {
   const week = currentWeekNumber(weeks, now);
 
   return (
-    <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-warm-bg sm:flex-row">
+    <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
       <PatientNav patientName="Léa Martin" unreadCount={1} pathnameOverride="/patient" />
       <div className="relative min-w-0 flex-1 pb-20 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0">
         <PatientHomeView

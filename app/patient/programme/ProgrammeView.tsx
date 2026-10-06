@@ -50,7 +50,7 @@ export default function ProgrammeView({
   const totalDone = workouts.reduce((sum, w) => sum + Math.min(w.doneThisWeek, w.timesPerWeek ?? Infinity), 0);
 
   return (
-    <main className="flex min-h-[calc(100dvh-5rem)] flex-col p-4 sm:min-h-dvh sm:p-6 short:sm:py-4">
+    <main className="flex min-h-[calc(100dvh-var(--phone-chrome))] flex-col p-4 sm:min-h-dvh sm:p-6 short:sm:py-4">
       <div className="flex flex-1 flex-col">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

@@ -47,17 +47,17 @@ export default async function MessagesPage({
   const unreadFromKine = rows.filter((m) => m.sender === "instructor" && !m.read_at).length;
 
   return (
-    <main className="min-h-screen p-6 sm:p-8">
+    <main className="min-h-screen p-6 max-sm:min-h-0 max-sm:p-4 max-sm:pt-2 sm:p-8">
       <div className="mx-auto max-w-4xl">
         <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
-          <MessageCircle className="h-5 w-5 text-brand" strokeWidth={1.75} />
+          <MessageCircle className="h-5 w-5 text-brand max-sm:hidden" strokeWidth={1.75} />
           Messages
         </h1>
-        <p className="mt-1 text-sm text-muted">Échangez avec {instructorName}.</p>
+        <p className="mt-1 text-sm text-muted max-sm:mt-0.5">Échangez avec {instructorName}.</p>
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger">{error}</p>}
 
-        <section className="mt-6 flex h-[32rem] max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+        <section className="mt-6 flex h-[32rem] max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm max-sm:mt-3 max-sm:h-[calc(100dvh-var(--phone-chrome)-6.25rem)] max-sm:max-h-none max-sm:border-0 max-sm:shadow-soft">
           <header className="flex items-center gap-3 border-b border-line px-5 py-4">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand">
               {initials(instructorFullName)}

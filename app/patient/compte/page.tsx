@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Calendar, CheckCircle2, CreditCard, Download, ShieldCheck, User } from "lucide-react";
+import { AlertTriangle, ArrowRight, Calendar, CheckCircle2, ChevronRight, CreditCard, Download, LogOut, ShieldCheck, Trash2, User } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
@@ -78,8 +78,22 @@ export default async function CompteePage({
     // Téléphone (Philippe, 2026-10-04 : tout sur un écran, plus efficace) :
     // cartes resserrées, textes secondaires masqués, offre + prix sur une
     // ligne. Dès sm : inchangé.
-    <main className="bg-app-bg p-4 pt-5 max-sm:flex max-sm:min-h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] max-sm:flex-col sm:min-h-screen sm:p-8">
-      <div className="mx-auto max-w-7xl max-sm:flex max-sm:w-full max-sm:flex-1 max-sm:flex-col max-sm:justify-between">
+    <main className="bg-app-bg p-4 pt-5 max-sm:bg-transparent max-sm:pt-2 max-sm:flex max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:flex-col sm:min-h-screen sm:p-8">
+      <PhoneSettings
+        fullName={(patient?.full_name as string | null) ?? null}
+        error={error}
+        notice={changed === "1" ? "Offre changée avec succès." : refreshed === "1" ? "Abonnement mis à jour." : null}
+        offerLabel={offerLabel}
+        priceCents={priceCents}
+        badgeLabel={badge.label}
+        badgeClass={badgeClass}
+        nextChargeLine={nextChargeLine}
+        hasCustomer={hasCustomer}
+        canChangeOffer={isTierKey(billing.subPlan)}
+        active={active}
+      />
+
+      <div className="mx-auto max-w-7xl max-sm:hidden max-sm:flex max-sm:w-full max-sm:flex-1 max-sm:flex-col max-sm:justify-between">
         <h1 className="text-xl font-semibold text-ink sm:text-2xl">Paramètres</h1>
         <p className="mt-1 hidden text-sm text-muted sm:block">Gérez votre compte, votre abonnement et vos données.</p>
 
@@ -232,5 +246,171 @@ export default async function CompteePage({
         </div>
       </div>
     </main>
+  );
+}
+
+// Téléphone uniquement (Philippe, 2026-10-06, maquette fournie) : la page en
+// liste façon réglages d'appli — carte profil, puis sections étiquetées avec
+// des lignes icône + texte + chevron. Exactement les mêmes actions que la
+// version ordinateur ci-dessus (rien d'ajouté) ; la suppression du compte se
+// déplie depuis sa ligne pour que tout tienne sur un écran.
+const ROW = "flex w-full items-center gap-3 px-4 py-3 text-left";
+const ROW_ICON = "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-bg text-ink";
+
+function PhoneSettings({
+  fullName,
+  error,
+  notice,
+  offerLabel,
+  priceCents,
+  badgeLabel,
+  badgeClass,
+  nextChargeLine,
+  hasCustomer,
+  canChangeOffer,
+  active,
+}: {
+  fullName: string | null;
+  error?: string;
+  notice: string | null;
+  offerLabel: string;
+  priceCents: number | null;
+  badgeLabel: string;
+  badgeClass: string;
+  nextChargeLine: string | null;
+  hasCustomer: boolean;
+  canChangeOffer: boolean;
+  active: boolean;
+}) {
+  const priceLine = priceCents !== null ? `${(priceCents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € / mois` : null;
+  return (
+    <div className="flex flex-1 flex-col gap-3 sm:hidden">
+      <div>
+        <h1 className="text-2xl font-semibold text-ink">Paramètres</h1>
+        <p className="mt-0.5 text-sm text-muted">Gérez votre compte, votre abonnement et vos données.</p>
+      </div>
+
+      {error && <p className="rounded-xl bg-danger-soft p-3 text-sm text-danger">{error}</p>}
+      {notice && (
+        <p className="flex items-center gap-1.5 rounded-xl bg-ok-soft p-3 text-sm text-ok">
+          <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          {notice}
+        </p>
+      )}
+
+      <Link href="/patient/compte/informations" className="flex items-center gap-3 rounded-2xl bg-surface p-3.5 shadow-soft">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
+          <User className="h-5 w-5" strokeWidth={1.75} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-base font-semibold text-ink">{fullName ?? "Mes informations"}</span>
+          <span className="block truncate text-xs text-muted">Mes informations · profil, situation, coordonnées</span>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
+      </Link>
+
+      <section>
+        <h2 className="mb-1.5 px-1 text-sm font-semibold text-ink">Mon abonnement</h2>
+        <div className="rounded-2xl bg-surface p-3.5 shadow-soft">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
+              <CreditCard className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-ink">{offerLabel}</span>
+              {(priceLine || nextChargeLine) && (
+                <span className="block truncate text-xs text-muted">{[priceLine, nextChargeLine].filter(Boolean).join(" · ")}</span>
+              )}
+            </span>
+            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${badgeClass}`}>{badgeLabel}</span>
+          </div>
+          {hasCustomer ? (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <form action={openBillingPortal}>
+                <input type="hidden" name="intent" value="manage" />
+                <button type="submit" className="w-full rounded-full bg-brand py-2.5 text-sm font-semibold text-white">
+                  Gérer
+                </button>
+              </form>
+              {canChangeOffer ? (
+                <Link
+                  href="/patient/compte/changer-offre"
+                  className="flex w-full items-center justify-center rounded-full border border-brand py-2.5 text-sm font-semibold text-brand"
+                >
+                  Changer d&rsquo;offre
+                </Link>
+              ) : (
+                <span />
+              )}
+            </div>
+          ) : (
+            !active && (
+              <Link href="/patient/abonnement" className="mt-3 block rounded-full bg-brand py-2.5 text-center text-sm font-semibold text-white">
+                Choisir une offre
+              </Link>
+            )
+          )}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-1.5 px-1 text-sm font-semibold text-ink">Mes données</h2>
+        <div className="divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-soft">
+          <Link href="/patient/compte/export" prefetch={false} className={ROW}>
+            <span className={ROW_ICON}>
+              <Download className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </span>
+            <span className="flex-1 text-sm font-medium text-ink">Télécharger mes données</span>
+            <ChevronRight className="h-4 w-4 text-muted" strokeWidth={2} />
+          </Link>
+          <Link href="/confidentialite" className={ROW}>
+            <span className={ROW_ICON}>
+              <ShieldCheck className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </span>
+            <span className="flex-1 text-sm font-medium text-ink">Politique de confidentialité</span>
+            <ChevronRight className="h-4 w-4 text-muted" strokeWidth={2} />
+          </Link>
+        </div>
+      </section>
+
+      <div className="divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-soft">
+        <SignOutButton redirectUrl="/login">
+          <button type="button" className={ROW}>
+            <span className={ROW_ICON}>
+              <LogOut className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </span>
+            <span className="flex-1 text-sm font-medium text-ink">Se déconnecter</span>
+            <ChevronRight className="h-4 w-4 text-muted" strokeWidth={2} />
+          </button>
+        </SignOutButton>
+        <details className="group">
+          <summary className={`${ROW} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger-soft text-danger">
+              <Trash2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </span>
+            <span className="flex-1 text-sm font-medium text-danger">Supprimer mon compte</span>
+            <ChevronRight className="h-4 w-4 text-muted transition-transform group-open:rotate-90" strokeWidth={2} />
+          </summary>
+          <div className="px-4 pb-4">
+            <p className="flex items-start gap-1.5 text-xs text-muted">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-danger" strokeWidth={1.75} />
+              Définitif : profil, séances et messages seront effacés.
+            </p>
+            <form action={deleteMyAccount} className="mt-2 flex gap-2">
+              <input
+                type="text"
+                name="confirmation"
+                placeholder="Tapez SUPPRIMER"
+                required
+                className="w-full min-w-0 rounded-lg border border-line bg-surface px-3 py-2 text-base text-ink focus:border-danger focus:outline-none focus:ring-2 focus:ring-danger-soft"
+              />
+              <button type="submit" className="shrink-0 rounded-full bg-danger px-4 py-2 text-sm font-medium text-white">
+                Supprimer
+              </button>
+            </form>
+          </div>
+        </details>
+      </div>
+    </div>
   );
 }

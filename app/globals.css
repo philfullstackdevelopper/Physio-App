@@ -15,15 +15,23 @@
   --foreground: #0f172a;
   --brand: #155dfc; /* blue-600 */
   --brand-dark: #1447c9; /* blue-700 */
+  /* Téléphone, appli patient : hauteur des deux barres fixes (en-tête du
+     haut 3.25rem + onglets du bas 5rem) — les pages « un seul écran » s'en
+     servent : min-h-[calc(100dvh-var(--phone-chrome))]. */
+  --phone-chrome: calc(8.25rem + env(safe-area-inset-top) + env(safe-area-inset-bottom));
 }
 
 /* Palette de l'application kiné (/dashboard/*) — une seule, partagée.
    Le site vitrine garde ses classes slate ; ne pas mélanger. */
 @theme {
   --color-app-bg: #f5f7fb;
-  /* Fond de l'appli patient sur téléphone : blanc cassé chaud plutôt que
-     gris-bleu (Philippe, 2026-10-06 : plus chaleureux). */
-  --color-warm-bg: #f8f6f2;
+  /* Appli patient sur téléphone (Philippe, 2026-10-06, maquette fournie) :
+     fond bleuté très clair, cartes blanches sans bordure à ombre douce,
+     icônes dans des pastilles pâles. */
+  --color-phone-bg: #f4f7fc;
+  --color-violet: #7c3aed;
+  --color-violet-soft: #f1ebfe;
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 20px rgba(15, 23, 42, 0.05);
   --color-surface: #ffffff;
   --color-line: #e5e9f0;
   --color-ink: #0f172a;

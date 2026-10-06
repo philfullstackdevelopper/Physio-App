@@ -64,6 +64,28 @@ export default function PatientNav({
 
   return (
     <>
+      {/* Téléphone : en-tête fin en haut de chaque page — logo à gauche,
+          initiales à droite qui mènent aux Paramètres (Philippe, 2026-10-06,
+          maquette fournie). Même identité que le haut de la barre latérale
+          ordinateur, rien de nouveau. Hauteur comptée dans --phone-chrome. */}
+      <header
+        className="sticky top-0 z-30 flex h-[calc(3.25rem+env(safe-area-inset-top))] items-center justify-between bg-phone-bg/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur sm:hidden"
+      >
+        <Link href="/patient" className="flex items-center gap-2">
+          <LogoMark size={24} />
+          <span className="text-lg font-semibold text-ink">EasyPhysio</span>
+        </Link>
+        {!onOnboarding && (
+          <Link
+            href="/patient/compte"
+            aria-label="Paramètres"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand"
+          >
+            {initials(patientName)}
+          </Link>
+        )}
+      </header>
+
       {/* Desktop */}
       <aside className="hidden w-56 shrink-0 flex-col bg-sidebar p-4 text-white sm:flex">
         <Link href="/" className="flex items-center gap-2.5 px-2 py-1">
@@ -103,10 +125,10 @@ export default function PatientNav({
       </aside>
 
       {/* Mobile: fixed bottom tab bar, thumb-reachable, safe-area aware.
-          Barre claire, onglet actif dans une pastille bleu doux (Philippe,
-          2026-10-06 : plus chaleureux, façon Doctolib) — mêmes onglets. */}
+          Barre blanche, onglet actif en bleu (Philippe, 2026-10-06, maquette
+          fournie) — mêmes onglets. */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface/95 shadow-[0_-4px_16px_rgba(15,23,42,0.05)] backdrop-blur sm:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line/70 bg-surface/95 shadow-[0_-4px_16px_rgba(15,23,42,0.04)] backdrop-blur sm:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         {!onOnboarding &&
@@ -116,16 +138,14 @@ export default function PatientNav({
               <Link
                 key={link.href}
                 href={link.href}
-                className={`relative flex flex-1 flex-col items-center gap-0.5 pb-2 pt-1.5 text-xs transition ${
+                className={`relative flex flex-1 flex-col items-center gap-1 pb-2.5 pt-3 text-xs transition ${
                   active ? "font-semibold text-brand" : "font-medium text-muted"
                 }`}
               >
-                <span className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${active ? "bg-brand-soft" : ""}`}>
-                  <link.icon className="h-5 w-5" strokeWidth={active ? 2.1 : 1.75} />
-                </span>
+                <link.icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.1 : 1.6} />
                 {link.label}
                 {link.href === "/patient/messages" && unreadCount > 0 && (
-                  <span className="absolute right-[30%] top-1.5 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-surface" />
+                  <span className="absolute right-[32%] top-2 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-surface" />
                 )}
               </Link>
             );
