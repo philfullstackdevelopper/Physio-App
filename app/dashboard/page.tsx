@@ -9,8 +9,10 @@ import { loadUnreadMessages } from "@/lib/dashboard/unreadMessages";
 import { relativeDay } from "@/lib/format/relativeDay";
 import { initials } from "@/lib/format/initials";
 
-const TO_TREAT_LIMIT = 6;
-const UNREAD_LIMIT = 5;
+// 4 lignes par colonne : au-delà, « Voir tout ». Avec ces limites l'accueil
+// tient dans ~480 px de haut (PC de Philippe : 549 px utiles).
+const TO_TREAT_LIMIT = 4;
+const UNREAD_LIMIT = 4;
 
 function Delta({ tile }: { tile: Tile }) {
   if (tile.delta === null) return null;
@@ -24,13 +26,30 @@ function Delta({ tile }: { tile: Tile }) {
   );
 }
 
+// Une cellule de la barre d'indicateurs : valeur + libellé + écart sur une
+// seule ligne (même principe que la barre de la fiche patient), pour que
+// l'accueil tienne sur un écran sans scroller (Philippe, 2026-10-02).
 function StatTile({ value, label, tone, tile }: { value: number; label: string; tone: "ok" | "danger" | "warn" | "ink"; tile?: Tile }) {
   const color = { ok: "text-ok", danger: "text-danger", warn: "text-warn", ink: "text-ink" }[tone];
   return (
-    <div className="rounded-xl border border-line bg-app-bg p-4">
-      <p className={`text-3xl font-semibold tabular-nums ${color}`}>{value}</p>
-      <p className="mt-1 text-sm text-ink">{label}</p>
-      <div className="mt-1 h-4">{tile && <Delta tile={tile} />}</div>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-3">
+      <p className={`text-2xl font-semibold tabular-nums ${color}`}>{value}</p>
+      <p className="text-sm text-ink">{label}</p>
+      {tile && <Delta tile={tile} />}
+    </div>
+  );
+}
+
+// Case carrée de la version téléphone (grille 2 × 2).
+function PhoneSquare({ value, label, tone, tile }: { value: number; label: string; tone: "ok" | "danger" | "warn" | "ink"; tile?: Tile }) {
+  const color = { ok: "text-ok", danger: "text-danger", warn: "text-warn", ink: "text-ink" }[tone];
+  return (
+    <div className="flex aspect-square flex-col justify-between rounded-2xl border border-line bg-surface p-4">
+      <p className={`text-4xl font-semibold tabular-nums ${color}`}>{value}</p>
+      <div>
+        <p className="text-sm font-medium text-ink">{label}</p>
+        {tile && <div className="mt-0.5"><Delta tile={tile} /></div>}
+      </div>
     </div>
   );
 }
@@ -53,30 +72,59 @@ export default async function DashboardPage() {
 
   return (
     <main className="min-h-screen">
-      <div className="mx-auto max-w-7xl p-6 sm:p-8">
+      <div className="mx-auto max-w-7xl px-6 py-5 sm:px-8 sm:py-6">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-baseline justify-between gap-2">
           <h1 className="text-2xl font-semibold text-ink">Bonjour {h.firstName}</h1>
           <p className="text-sm text-muted">{h.todayLabel}</p>
         </div>
 
-        {/* 1 — Aujourd'hui : les chiffres du jour, d'un coup d'œil. */}
-        <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-6 rounded-xl border border-line bg-surface p-6 sm:p-8">
-          <h2 className="text-lg font-semibold text-ink">Aujourd&apos;hui</h2>
-          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <StatTile value={h.sessionsToday.value} label="Séances faites" tone="ok" tile={h.sessionsToday} />
-            <StatTile value={h.painToday.value} label="Douleurs signalées" tone="danger" tile={h.painToday} />
-            <StatTile value={h.patientCount} label="Patients suivis" tone="ink" />
-          </div>
+        {/* Téléphone : 4 cases carrées en 2 × 2, sans scroller (Philippe,
+            2026-10-02). La 4e case résume les patients à suivre et ouvre la
+            liste filtrée ; la barre et les listes ci-dessous sont réservées
+            aux écrans plus larges. */}
+        <section aria-label="Aujourd'hui" className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-4 grid grid-cols-2 gap-3 sm:hidden">
+          <PhoneSquare value={h.sessionsToday.value} label="Séances faites aujourd'hui" tone="ok" tile={h.sessionsToday} />
+          <PhoneSquare value={h.painToday.value} label="Douleurs signalées" tone="danger" tile={h.painToday} />
+          <PhoneSquare value={h.patientCount} label="Patients suivis" tone="ink" />
+          <Link
+            href="/dashboard/patients?filtre=surveiller"
+            className={`flex aspect-square flex-col justify-between rounded-2xl border p-4 transition-colors ${
+              h.surveillerCount > 0 ? "border-warn-soft bg-warn-soft" : "border-line bg-surface"
+            }`}
+          >
+            <p className={`text-4xl font-semibold tabular-nums ${h.surveillerCount > 0 ? "text-warn" : "text-ink"}`}>{h.surveillerCount}</p>
+            <div>
+              <p className="flex items-center gap-1 text-sm font-medium text-ink">
+                Patients à suivre <ChevronRight className="h-4 w-4 shrink-0" strokeWidth={2} />
+              </p>
+              {unreadRows.length > 0 && (
+                <p className="mt-0.5 text-xs text-muted">
+                  {unreadRows.length} message{unreadRows.length > 1 ? "s" : ""} non lu{unreadRows.length > 1 ? "s" : ""}
+                </p>
+              )}
+            </div>
+          </Link>
         </section>
 
-        {/* 2 — Patients à suivre : ce qui demande une action, priorité clinique d'abord. */}
-        <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:200ms] mt-6 rounded-xl border border-line bg-surface p-6 sm:p-8">
+        {/* 1 — Aujourd'hui : les chiffres du jour, en une barre fine. */}
+        <section
+          aria-label="Aujourd'hui"
+          className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-4 hidden divide-line rounded-xl border border-line bg-surface sm:grid sm:grid-cols-3 sm:divide-x"
+        >
+          <StatTile value={h.sessionsToday.value} label="Séances faites aujourd'hui" tone="ok" tile={h.sessionsToday} />
+          <StatTile value={h.painToday.value} label="Douleurs signalées" tone="danger" tile={h.painToday} />
+          <StatTile value={h.patientCount} label="Patients suivis" tone="ink" />
+        </section>
+
+        {/* 2 — Patients à suivre : ce qui demande une action, priorité clinique
+            d'abord. « À traiter » et « Messages non lus » côte à côte dès lg. */}
+        <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:200ms] mt-4 hidden rounded-xl border border-line bg-surface p-5 sm:block">
           <h2 className="text-lg font-semibold text-ink">Patients à suivre</h2>
 
           {nothingToFollow ? (
-            <p className="mt-4 text-sm text-muted">Aucun patient ne nécessite d&apos;attention pour l&apos;instant.</p>
+            <p className="mt-3 text-sm text-muted">Aucun patient ne nécessite d&apos;attention pour l&apos;instant.</p>
           ) : (
-            <div className="mt-5 space-y-6">
+            <div className="mt-3 grid gap-5 lg:grid-cols-2">
               {h.toTreat.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between">
@@ -92,7 +140,7 @@ export default async function DashboardPage() {
                       <li key={r.id}>
                         <Link
                           href={`/dashboard/patients/${r.id}`}
-                          className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                          className={`flex items-center gap-3 rounded-xl border px-3 py-2 transition-colors ${
                             r.kind === "pain" ? "border-danger-soft bg-danger-soft hover:border-danger/30" : "border-line bg-app-bg hover:bg-line"
                           }`}
                         >
@@ -130,9 +178,9 @@ export default async function DashboardPage() {
                       <li key={m.patientId}>
                         <Link
                           href={`/dashboard/messages?patient=${m.patientId}`}
-                          className="flex items-center gap-3 px-3 py-2.5 hover:bg-app-bg"
+                          className="flex items-center gap-3 px-3 py-2 hover:bg-app-bg"
                         >
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
                             {initials(m.patientName)}
                           </span>
                           <span className="min-w-0 flex-1">
@@ -150,30 +198,9 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        {/* 3 — Activité récente : ce qui vient de se passer. */}
-        <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:280ms] mt-6 rounded-xl border border-line bg-surface p-6 sm:p-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-ink">Activité récente</h2>
-            {h.recent.length > 0 && (
-              <Link href="/dashboard/patients" className="text-xs font-medium text-brand hover:underline">Voir tout ({h.patientCount})</Link>
-            )}
-          </div>
-          {h.recent.length === 0 ? (
-            <p className="mt-4 text-sm text-muted">Aucune séance cette semaine.</p>
-          ) : (
-            <ul className="mt-4 divide-y divide-line">
-              {h.recent.map((r) => (
-                <li key={r.logId}>
-                  <Link href={`/dashboard/patients/${r.patientId}`} className="flex items-center gap-3 px-1 py-2.5 hover:bg-app-bg">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ok-soft text-[11px] font-semibold text-ok">{r.initials}</span>
-                    <span className="min-w-0 flex-1 truncate text-sm text-ink"><span className="font-semibold">{r.name}</span> a terminé sa séance</span>
-                    <span className="shrink-0 text-xs text-muted">{r.whenLabel}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        {/* « Activité récente » retirée (Philippe, 2026-10-02) : l'accueil doit
+            tenir sur un écran, sans scroller — on garde les indicateurs du
+            jour et les patients à suivre. */}
       </div>
     </main>
   );

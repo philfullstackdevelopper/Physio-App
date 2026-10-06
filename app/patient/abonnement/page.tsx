@@ -4,7 +4,6 @@ import { AlertCircle, Check, LogOut, ShieldCheck, Sparkles } from "lucide-react"
 import { SignOutButton } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { LogoMark } from "@/components/Logo";
 import SubmitButton from "@/components/SubmitButton";
 import { TIERS, TIER_KEYS, TRIAL_DAYS, resolveTierPrices, type InstructorTierPriceRow, type TierKey } from "@/lib/billing/plans";
 import { HIGHLIGHT, featuresFor } from "@/lib/billing/tierCopy";
@@ -111,14 +110,9 @@ export default async function AbonnementPage({
           au milieu de la page (Philippe, 2026-09-11). */}
       <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-10">
-        <Link href="/" className="flex items-center gap-2.5">
-          <LogoMark size={36} />
-          <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
-        </Link>
-
-        <div className="mx-auto mt-8 max-w-2xl text-center">
+        <div className="mx-auto max-w-2xl text-center">
           <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-            Choisissez votre accompagnement
+            <span className="text-blue-700">EasyPhysio ·</span>{" "}Choisissez votre accompagnement
           </h1>
           <p className="mt-3 text-base leading-relaxed text-slate-600">
             {TRIAL_DAYS} jours gratuits pour essayer, puis facturation mensuelle

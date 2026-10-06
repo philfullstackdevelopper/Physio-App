@@ -46,12 +46,9 @@ export default async function ExercisesPage({
 
   return (
     <main className="min-h-screen">
-      <div className="mx-auto max-w-7xl p-6 sm:p-8">
-        <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
-            <p className="mt-1 text-sm text-muted">Créez vos propres exercices et filmez-en une démonstration ; elles seront disponibles à ajouter dans vos séances.</p>
-          </div>
+      <div className="mx-auto max-w-7xl px-6 py-5 sm:px-8 sm:py-6">
+        <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
           <Link href="/dashboard/seances" className="text-sm font-medium text-brand hover:underline">← Mes séances</Link>
         </div>
 

@@ -1,6 +1,5 @@
 import { AlertCircle, LogOut } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
-import { LogoMark } from "@/components/Logo";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 
 // Shown in place of every /patient/* page (onboarding included) when this
@@ -20,17 +19,12 @@ export default function PatientNoRecordGate() {
       <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col lg:flex-row lg:items-stretch">
         <div className="flex flex-1 items-center justify-center p-4 py-16 lg:p-16">
           <div className="w-full max-w-sm">
-            <div className="mb-6 flex items-center justify-center gap-2.5 lg:hidden">
-              <LogoMark size={32} />
-              <span className="font-display text-lg font-semibold text-slate-900">EasyPhysio</span>
-            </div>
-
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
               <AlertCircle className="h-6 w-6" strokeWidth={1.75} />
             </span>
 
             <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-              Compte non associé à un kinésithérapeute
+              <span className="text-blue-700">EasyPhysio ·</span>{" "}Compte non associé à un kinésithérapeute
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
               Nous ne retrouvons aucun profil patient lié à ce compte. EasyPhysio est réservé aux
@@ -51,12 +45,8 @@ export default function PatientNoRecordGate() {
           </div>
         </div>
 
-        <div className="hidden flex-1 flex-col px-16 py-10 lg:sticky lg:top-0 lg:flex lg:h-screen">
-          <div className="flex items-center gap-2.5">
-            <LogoMark size={36} />
-            <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
-          </div>
-          <div className="mt-8 min-h-0 flex-1">
+        <div className="hidden flex-1 flex-col px-16 py-6 lg:sticky lg:top-0 lg:flex lg:h-screen">
+          <div className="min-h-0 flex-1">
             <LoginExerciseShowcase />
           </div>
         </div>

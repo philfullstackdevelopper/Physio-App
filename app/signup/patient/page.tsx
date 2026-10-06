@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ArrowRight, Calendar, Lightbulb, Mail, ShieldCheck, UserRound } from "lucide-react";
-import { LogoMark } from "@/components/Logo";
 import PatientReferralMessage from "@/components/PatientReferralMessage";
 
 const STEPS = [
@@ -19,14 +18,9 @@ export default function SignupPatientPage() {
       <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-blue-100/50 blur-3xl" />
 
       <div className="relative mx-auto max-w-4xl">
-        <Link href="/" className="mb-10 flex items-center justify-center gap-2.5">
-          <LogoMark size={36} />
-          <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
-        </Link>
-
         <div className="text-center">
           <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Votre kiné doit d&apos;abord
+            <span className="text-blue-700">EasyPhysio ·</span>{" "}Votre kiné doit d&apos;abord
             <br />
             vous inviter
           </h1>

@@ -17,11 +17,6 @@ const NAV_LINKS = [
 
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
-  // Direction-aware, not just a presence toggle: scrolling back up toward
-  // the top hides it, scrolling down brings it back — so it never competes
-  // with the header for attention while someone is reading their way back
-  // up the page (Philippe, 2026-09-09).
-  const [showResume, setShowResume] = useState(true);
   // The main header itself: visible only while actively scrolling down.
   // Scrolling up hides it immediately, and so does pausing — it's an
   // auto-hide toolbar, not a permanent fixture, once scrolled past the hero
@@ -52,10 +47,7 @@ export default function SiteHeader() {
         clearTimeout(hideTimer.current);
       }
 
-      if (Math.abs(delta) > 4) {
-        setShowResume(delta > 0 || y < 24);
-        lastY.current = y;
-      }
+      if (Math.abs(delta) > 4) lastY.current = y;
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -67,28 +59,6 @@ export default function SiteHeader() {
 
   return (
     <>
-      {/* Pinned to the page's own top-left corner, independent of the
-          floating/centered header below — it must never compete for space
-          inside that header's flex row (that's what was pushing "Se
-          connecter" onto two lines whenever this was also visible) and it
-          must stay reachable even once the header has shrunk to its
-          scrolled pill (Philippe, 2026-09-09). */}
-      {isLoaded && isSignedIn && (
-        <motion.div
-          initial={false}
-          animate={{ y: showResume ? 0 : -56, opacity: showResume ? 1 : 0 }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
-          className="fixed left-3 top-3 z-[60] hidden sm:block"
-        >
-          <Link
-            href="/patient"
-            className="inline-flex items-center whitespace-nowrap rounded-full border border-blue-100 bg-white/90 px-3 py-1 text-xs font-medium text-blue-700 shadow-sm backdrop-blur transition hover:bg-blue-50"
-          >
-            ← Reprendre mon inscription
-          </Link>
-        </motion.div>
-      )}
-
       <motion.header
         animate={{ y: showHeader ? 0 : -80, opacity: showHeader ? 1 : 0 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
@@ -128,19 +98,21 @@ export default function SiteHeader() {
               </span>
             )}
 
-            {/* Always visible and always functional: signed out, it shows the
-                Clerk login form; already signed in, Clerk forwards straight to
-                /dashboard (which itself routes instructor vs. patient
-                correctly) — either way this link takes you somewhere real. */}
+            {/* Always visible and always functional: signed out, « Se
+                connecter » opens the Clerk login form; signed in, it becomes
+                « Mon espace » and goes straight to /dashboard (which itself
+                routes instructor vs. patient) — no login page flash on the
+                way (Philippe, 2026-10-02; proxy.ts does the same for every
+                other /login link). */}
             <Link
-              href="/login"
+              href={isLoaded && isSignedIn ? "/dashboard" : "/login"}
               className={`hidden shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition active:scale-[0.97] sm:inline-flex ${
                 scrolled
                   ? "border-slate-300 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50/50"
                   : "border-slate-300 bg-white/60 text-slate-700 hover:border-blue-200 hover:bg-white"
               }`}
             >
-              Se connecter
+              {isLoaded && isSignedIn ? "Mon espace" : "Se connecter"}
             </Link>
 
             {isLoaded && !isSignedIn && (

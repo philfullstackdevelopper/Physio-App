@@ -56,6 +56,7 @@ export function SegmentRow({
   scrollable,
   scrollerRef,
   compact = false,
+  perView = false,
 }: {
   items: SegmentItem[];
   height: number;
@@ -63,8 +64,12 @@ export function SegmentRow({
   scrollerRef?: RefObject<HTMLDivElement | null>;
   /** Marges intérieures réduites — pour la démo de la landing (KineJourneyDemo), où la frise tient dans un écran miniature. */
   compact?: boolean;
+  /** Frise défilante dont les cartes se partagent la largeur comme dans la
+   *  démo de la landing : 1 semaine visible sur mobile, 3 dès md (semaine
+   *  précédente, en cours, suivante). Encoche fine (16 px) au lieu de 30. */
+  perView?: boolean;
 }) {
-  const notch = scrollable ? 30 : 16; // px — depth of the arrow tip / matching notch
+  const notch = scrollable && !perView ? 30 : 16; // px — depth of the arrow tip / matching notch
   const rightTip = `polygon(0 0, calc(100% - ${notch}px) 0, 100% 50%, calc(100% - ${notch}px) 100%, 0 100%, ${notch}px 50%)`;
   const firstSegment = `polygon(0 0, calc(100% - ${notch}px) 0, 100% 50%, calc(100% - ${notch}px) 100%, 0 100%)`;
 
@@ -73,15 +78,23 @@ export function SegmentRow({
       ref={scrollerRef}
       className={`flex w-full min-w-0 items-center ${
         scrollable
-          ? "snap-x overflow-x-auto scroll-smooth py-14 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          ? `snap-x overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+              perView ? "pb-2 pt-10 [--per:1] md:[--per:3]" : "py-14"
+            }`
           : "pb-2 pt-10"
       }`}
     >
       {items.map((item, i) => (
         <div
           key={item.key}
-          className={`relative ${scrollable ? "w-64 shrink-0 snap-start" : "min-w-0 flex-1"}`}
-          style={{ zIndex: i, marginLeft: i === 0 ? 0 : -notch }}
+          className={`relative ${scrollable ? `shrink-0 snap-start ${perView ? "" : "w-64"}` : "min-w-0 flex-1"}`}
+          style={{
+            zIndex: i,
+            marginLeft: i === 0 ? 0 : -notch,
+            // Les cartes se chevauchent de `notch` px : pour en voir exactement
+            // --per, chacune fait (100 % + (per − 1) × notch) / per.
+            ...(perView ? { width: `calc((100% + (var(--per) - 1) * ${notch}px) / var(--per))` } : {}),
+          }}
         >
           {/* Divider between segments traces the same notch/tip angle as the
               segments themselves, rather than a plain vertical bar. */}

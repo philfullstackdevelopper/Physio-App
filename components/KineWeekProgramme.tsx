@@ -162,7 +162,12 @@ export default function KineWeekProgramme({
     setSelectedWeekNumber(n);
     setSelectedDayKey(null);
   };
-  const scrollStrip = (dir: 1 | -1) => scrollerRef.current?.scrollBy({ left: dir * 260, behavior: "smooth" });
+  // Une semaine par clic : largeur d'une carte moins le chevauchement (16 px).
+  const scrollStrip = (dir: 1 | -1) => {
+    const scroller = scrollerRef.current;
+    const card = scroller?.firstElementChild as HTMLElement | null;
+    scroller?.scrollBy({ left: dir * ((card?.offsetWidth ?? 276) - 16), behavior: "smooth" });
+  };
 
   // ---- Vue 1 : la frise des semaines -----------------------------------------
   if (view === "strip") {
@@ -204,10 +209,10 @@ export default function KineWeekProgramme({
               <span className="text-xs font-medium opacity-90">({week.rangeLabel})</span>
             </div>
             {workout && workout.exercises.length > 0 ? (
-              <span className="flex w-full flex-wrap items-start justify-center gap-x-3 gap-y-2 px-2 pb-1">
+              <span className="flex w-full flex-wrap items-start justify-center gap-x-2 gap-y-2 px-1 pb-1">
                 {workout.exercises.map((e) => (
-                  <span key={e.id} className="flex w-16 flex-col items-center gap-1">
-                    <ExerciseIllustration name={e.name} animate={false} className="h-16 w-16 shrink-0" />
+                  <span key={e.id} className="flex w-[3.75rem] flex-col items-center gap-1">
+                    <ExerciseIllustration name={e.name} animate={false} className="h-14 w-14 shrink-0" />
                     <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight">{e.name}</span>
                   </span>
                 ))}
@@ -225,10 +230,9 @@ export default function KineWeekProgramme({
     return (
       <div className="flex w-full min-w-0 flex-col">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-ink">Programme, semaine par semaine</h2>
-            <p className="mt-1 text-sm text-muted">Cliquez sur une semaine pour voir le détail jour par jour et changer la séance.</p>
-          </div>
+          <h2 className="text-lg font-semibold text-ink" title="Cliquez sur une semaine pour voir le détail jour par jour et changer la séance.">
+            Programme, semaine par semaine
+          </h2>
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -249,7 +253,11 @@ export default function KineWeekProgramme({
           </div>
         </div>
 
-        <SegmentRow items={weekItems} height={288} scrollable scrollerRef={scrollerRef} />
+        {/* Même espacement que la démo de la landing (Philippe, 2026-10-02) :
+            3 semaines visibles qui se partagent la largeur, la semaine en
+            cours au centre ; hauteur réduite pour que toute la frise tienne
+            à l'écran en arrivant sur la fiche. */}
+        <SegmentRow items={weekItems} height={248} scrollable perView compact scrollerRef={scrollerRef} />
       </div>
     );
   }

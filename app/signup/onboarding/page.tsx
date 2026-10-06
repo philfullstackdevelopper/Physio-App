@@ -3,7 +3,6 @@ import Link from "next/link";
 import { requireUser } from "@/lib/supabase/require-user";
 import { createClient } from "@/lib/supabase/server";
 import DotCanvas from "@/components/DotCanvas";
-import { LogoMark } from "@/components/Logo";
 import { saveInstructorOnboarding } from "./actions";
 
 // Cabinet/practice details, asked once right after Clerk signup (see
@@ -42,13 +41,8 @@ export default async function SignupOnboardingPage({
       <DotCanvas />
 
       <div className="relative mx-auto w-full max-w-lg">
-        <Link href="/" className="mb-6 flex items-center justify-center gap-2.5">
-          <LogoMark size={36} />
-          <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
-        </Link>
-
         <div className="rounded-3xl border border-blue-100 bg-white/90 p-8 shadow-sm backdrop-blur">
-          <h1 className="font-display text-2xl font-semibold text-slate-900">Votre cabinet</h1>
+          <h1 className="font-display text-2xl font-semibold text-slate-900"><span className="text-blue-700">EasyPhysio ·</span>{" "}Votre cabinet</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
             Quelques informations professionnelles avant l&apos;activation de votre compte —
             elles nous permettent de vérifier votre inscription.

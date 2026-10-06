@@ -2,8 +2,9 @@
 
 // =============================================================================
 // ExerciseLibraryGrid — browse the whole exercise library (yours + platform)
-// by body part. A top row of category tiles (capped, with "voir plus") opens
-// a filtered 3-per-row card grid for the selected category. Each card shows
+// by body part. A compact row of category chips (all visible — Philippe,
+// 2026-10-02: the page must show exercises without scrolling) filters a
+// 2-to-4-per-row card grid. Each card shows
 // an honest image placeholder (ExerciseIllustration) until real illustrations
 // exist, plus the existing video-upload control.
 // =============================================================================
@@ -14,8 +15,6 @@ import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 import ExerciseVideoUpload from "@/components/ExerciseVideoUpload";
 import SubmitButton from "@/components/SubmitButton";
-
-const TILES_COLLAPSED_COUNT = 6;
 
 export interface BodyPart {
   id: string;
@@ -114,7 +113,6 @@ export default function ExerciseLibraryGrid({
   unhideExercise: (formData: FormData) => void | Promise<void>;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(bodyParts[0]?.id ?? null);
-  const [showAllTiles, setShowAllTiles] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
   const [query, setQuery] = useState("");
@@ -144,8 +142,6 @@ export default function ExerciseLibraryGrid({
     return counts;
   }, [exercises]);
 
-  const visibleTiles = showAllTiles ? bodyParts : bodyParts.slice(0, TILES_COLLAPSED_COUNT);
-
   // A non-empty search searches the whole library regardless of the selected
   // body-part tile — narrowing to a single category first would defeat the
   // point of a search bar. Clearing it falls back to the category filter.
@@ -172,69 +168,57 @@ export default function ExerciseLibraryGrid({
   }, [exercises, selectedId, query]);
 
   return (
-    <div className="mt-8">
-      <h2 className="text-lg font-semibold text-ink">Bibliothèque d&apos;exercices</h2>
-      <p className="mt-1 text-sm text-muted">
-        {exercises.length - hiddenCount} exercices, classés par zone du corps.
-      </p>
-
-      <div className="relative mt-4">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
-          strokeWidth={1.5}
-        />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher un exercice…"
-          className="w-full rounded-lg border border-line py-2 pl-9 pr-3 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-        />
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {visibleTiles.map((bp) => {
-          const active = bp.id === selectedId;
-          return (
-            <button
-              key={bp.id}
-              type="button"
-              onClick={() => selectBodyPart(bp.id)}
-              className={`flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors duration-150 ${
-                active
-                  ? "border-brand bg-brand-soft"
-                  : "border-line bg-surface hover:bg-app-bg"
-              }`}
-            >
-              <BodyPartIllustration slug={bp.slug} className="h-8 w-8" active={active} />
-              <span className="text-sm font-medium text-ink">{bp.label}</span>
-              <span className="text-xs text-muted">{countByBodyPart.get(bp.id) ?? 0} exercices</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-3 flex flex-col items-start gap-3">
-        {bodyParts.length > TILES_COLLAPSED_COUNT && (
-          <button
-            type="button"
-            onClick={() => setShowAllTiles((v) => !v)}
-            className="text-sm font-medium text-brand hover:underline"
-          >
-            {showAllTiles ? "Voir moins" : "Voir plus"}
-          </button>
-        )}
-
+    <div className="mt-4">
+      {/* Recherche + création sur une seule ligne, puis les catégories en
+          pastilles compactes : les exercices apparaissent dès l'arrivée sur
+          la page (Philippe, 2026-10-02). */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative min-w-[14rem] flex-1">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+            strokeWidth={1.5}
+          />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Rechercher parmi ${exercises.length - hiddenCount} exercices…`}
+            className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
+          />
+        </div>
         {selectedId && (
           <button
             type="button"
             onClick={() => setShowCreateForm((v) => !v)}
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95"
+            className="shrink-0 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95"
           >
-            + Ajouter un nouvel exercice
+            + Ajouter un exercice
           </button>
         )}
       </div>
+
+      {!query.trim() && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {bodyParts.map((bp) => {
+            const active = bp.id === selectedId;
+            const count = countByBodyPart.get(bp.id) ?? 0;
+            return (
+              <button
+                key={bp.id}
+                type="button"
+                onClick={() => selectBodyPart(bp.id)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
+                  active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
+                }`}
+              >
+                <BodyPartIllustration slug={bp.slug} className="h-5 w-5" active={active} />
+                {bp.label}
+                <span className={active ? "text-brand/70" : "text-muted"}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {selectedId && showCreateForm && (
         <form
@@ -297,7 +281,7 @@ export default function ExerciseLibraryGrid({
         </form>
       )}
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.length === 0 ? (
           <p className="col-span-full rounded-xl border border-line bg-surface p-6 text-center text-sm text-muted">
             {query.trim()
@@ -308,14 +292,14 @@ export default function ExerciseLibraryGrid({
           filtered.map((ex) => (
             <div key={ex.id} className="rounded-xl border border-line bg-surface p-4">
               <div className="flex items-start justify-between gap-2">
-                <ExerciseIllustration name={ex.name} className="h-28 w-full text-brand" />
+                <ExerciseIllustration name={ex.name} className="h-24 w-full text-brand" />
                 <ExerciseCardMenu
                   hidden={ex.hidden}
                   onHide={() => runAction(hideExercise, ex.id)}
                   onUnhide={() => runAction(unhideExercise, ex.id)}
                 />
               </div>
-              <p className="mt-3 font-medium text-ink">{ex.name}</p>
+              <p className="mt-2 font-medium text-ink">{ex.name}</p>
               {ex.created_by === currentUserId && (
                 <span className="mt-1 inline-block text-xs text-brand">Votre exercice</span>
               )}

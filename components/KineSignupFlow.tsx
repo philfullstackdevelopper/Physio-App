@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SignUp } from "@clerk/nextjs";
+import { brandedHeaderTitle } from "@/lib/clerk/brandedTitle";
 
 // Cabinet details FIRST, account creation LAST — the order a professional
 // signup on a real B2B site follows (Philippe, 2026-09-10), reversed from
@@ -79,7 +80,7 @@ export default function KineSignupFlow() {
           <SignUp
             fallbackRedirectUrl="/signup/finalize"
             signInUrl="/login"
-            appearance={{ elements: { rootBox: "w-full", cardBox: "w-full" } }}
+            appearance={{ elements: { rootBox: "w-full", cardBox: "w-full", headerTitle: brandedHeaderTitle } }}
           />
           <p className="mt-4 text-center text-xs leading-relaxed text-slate-400">
             Votre demande sera vérifiée avant activation de votre compte praticien.
@@ -91,7 +92,7 @@ export default function KineSignupFlow() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold text-slate-900">Votre cabinet</h1>
+      <h1 className="font-display text-2xl font-semibold text-slate-900"><span className="text-blue-700">EasyPhysio ·</span>{" "}Votre cabinet</h1>
       <p className="mt-2 text-sm leading-relaxed text-slate-600">
         Quelques informations professionnelles avant de créer votre compte — elles nous
         permettent de vérifier votre inscription.

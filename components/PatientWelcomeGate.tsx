@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { HeartHandshake, ShieldCheck } from "lucide-react";
-import { LogoMark } from "@/components/Logo";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 import { acceptTerms } from "@/app/patient/actions";
 
@@ -23,17 +22,12 @@ export default function PatientWelcomeGate({ instructorName }: { instructorName:
         {/* Left: welcome message + CGU */}
         <div className="flex flex-1 items-center justify-center p-4 py-16 lg:p-16">
           <div className="w-full max-w-sm">
-            <Link href="/" className="mb-6 flex items-center justify-center gap-2.5 lg:hidden">
-              <LogoMark size={32} />
-              <span className="font-display text-lg font-semibold text-slate-900">EasyPhysio</span>
-            </Link>
-
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
               <HeartHandshake className="h-6 w-6" strokeWidth={1.75} />
             </span>
 
             <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-              Bienvenue{instructorName ? "" : " !"}
+              <span className="text-blue-700">EasyPhysio ·</span>{" "}Bienvenue{instructorName ? "" : " !"}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
               {instructorName ? (
@@ -79,12 +73,8 @@ export default function PatientWelcomeGate({ instructorName }: { instructorName:
 
         {/* Right: same sticky exercise showcase as /login, /invitation and
             /patient/onboarding. */}
-        <div className="hidden flex-1 flex-col px-16 py-10 lg:sticky lg:top-0 lg:flex lg:h-screen">
-          <Link href="/" className="flex items-center gap-2.5">
-            <LogoMark size={36} />
-            <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
-          </Link>
-          <div className="mt-8 min-h-0 flex-1">
+        <div className="hidden flex-1 flex-col px-16 py-6 lg:sticky lg:top-0 lg:flex lg:h-screen">
+          <div className="min-h-0 flex-1">
             <LoginExerciseShowcase />
           </div>
         </div>

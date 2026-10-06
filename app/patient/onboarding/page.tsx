@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { EQUIPMENT_OPTIONS, EQUIPMENT_LABELS, type EquipmentId } from "@/lib/exercise/equipment";
-import { LogoMark } from "@/components/Logo";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { saveOnboarding } from "./actions";
@@ -83,14 +82,9 @@ export default async function OnboardingPage({
           {/* max-h-full + flex-col : la carte ne dépasse jamais l'écran, c'est
               sa zone de champs qui défile (OnboardingWizard). */}
           <div className="mx-auto flex max-h-full min-h-0 w-full max-w-2xl flex-col">
-            <Link href="/" className="mb-4 flex items-center justify-center gap-2.5 lg:hidden">
-              <LogoMark size={32} />
-              <span className="font-display text-lg font-semibold text-slate-900">EasyPhysio</span>
-            </Link>
-
             <div className="text-center">
               <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl short:text-xl">
-                Votre situation
+                <span className="text-blue-700">EasyPhysio ·</span>{" "}Votre situation
               </h1>
             </div>
 
@@ -120,12 +114,8 @@ export default async function OnboardingPage({
         {/* Right: same sticky exercise showcase as /login and /invitation —
             gives the "why" while the wizard gives the "how long" (Philippe,
             2026-09-09). */}
-        <div className="hidden flex-1 flex-col px-16 py-10 lg:sticky lg:top-0 lg:flex lg:h-screen">
-          <Link href="/" className="flex items-center gap-2.5">
-            <LogoMark size={36} />
-            <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
-          </Link>
-          <div className="mt-8 min-h-0 flex-1">
+        <div className="hidden flex-1 flex-col px-16 py-6 lg:sticky lg:top-0 lg:flex lg:h-screen">
+          <div className="min-h-0 flex-1">
             <LoginExerciseShowcase />
           </div>
         </div>

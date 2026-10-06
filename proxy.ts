@@ -9,7 +9,19 @@ import { NextResponse } from "next/server";
 // no built-in way to read the request pathname, and app/patient/layout.tsx
 // needs it to gate incomplete-onboarding patients to /patient/onboarding
 // without looping when they're already there.
-export default clerkMiddleware((_auth, req) => {
+export default clerkMiddleware(async (auth, req) => {
+  // Already signed in and asking for the login page (any « Se connecter »
+  // link): go straight to the app instead of flashing Clerk's <SignIn> while
+  // it notices the session and forwards (Philippe, 2026-10-02 — confusing for
+  // users). /dashboard itself sends patients on to /patient. Exact "/login"
+  // only: Clerk's own sub-steps (/login/factor-one, /login/sso-callback…)
+  // must keep working mid-sign-in.
+  if (req.nextUrl.pathname === "/login") {
+    const { userId } = await auth();
+    if (userId) return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+
   // Must be set on the *request* headers (not just the response) — only
   // request headers are forwarded into the Server Component render, which is
   // where app/patient/layout.tsx reads x-pathname via headers(). Setting it

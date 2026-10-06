@@ -35,11 +35,15 @@ const MOBILE_LINKS: { href: string; label: string; icon: typeof Home; exact?: bo
 export default function PatientNav({
   patientName,
   unreadCount,
+  pathnameOverride,
 }: {
   patientName: string | null;
   unreadCount: number;
+  /** Page de prévisualisation (/prototypes/accueil-patient) : quel onglet montrer actif. */
+  pathnameOverride?: string;
 }) {
-  const pathname = usePathname();
+  const realPathname = usePathname();
+  const pathname = pathnameOverride ?? realPathname;
 
   // The guided session is a full-focus, one-task flow with its own "Quitter"
   // link — a persistent nav here would compete with the in-session
@@ -98,9 +102,11 @@ export default function PatientNav({
         </SignOutButton>
       </aside>
 
-      {/* Mobile: fixed bottom tab bar, thumb-reachable, safe-area aware */}
+      {/* Mobile: fixed bottom tab bar, thumb-reachable, safe-area aware.
+          Barre claire, onglet actif dans une pastille bleu doux (Philippe,
+          2026-10-06 : plus chaleureux, façon Doctolib) — mêmes onglets. */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-sidebar sm:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface/95 shadow-[0_-4px_16px_rgba(15,23,42,0.05)] backdrop-blur sm:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         {!onOnboarding &&
@@ -110,21 +116,23 @@ export default function PatientNav({
               <Link
                 key={link.href}
                 href={link.href}
-                className={`relative flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition ${
-                  active ? "text-white" : "text-white/60"
+                className={`relative flex flex-1 flex-col items-center gap-0.5 pb-2 pt-1.5 text-xs transition ${
+                  active ? "font-semibold text-brand" : "font-medium text-muted"
                 }`}
               >
-                <link.icon className="h-5 w-5" strokeWidth={active ? 2.1 : 1.75} />
+                <span className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${active ? "bg-brand-soft" : ""}`}>
+                  <link.icon className="h-5 w-5" strokeWidth={active ? 2.1 : 1.75} />
+                </span>
                 {link.label}
                 {link.href === "/patient/messages" && unreadCount > 0 && (
-                  <span className="absolute right-[30%] top-1.5 h-2 w-2 rounded-full bg-brand" />
+                  <span className="absolute right-[30%] top-1.5 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-surface" />
                 )}
               </Link>
             );
           })}
         {onOnboarding && (
           <SignOutButton redirectUrl="/login">
-            <button type="button" className="flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-white/60">
+            <button type="button" className="flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted">
               <LogOut className="h-5 w-5" strokeWidth={1.75} />
               Se déconnecter
             </button>

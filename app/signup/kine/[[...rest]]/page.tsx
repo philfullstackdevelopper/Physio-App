@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import RandomLine from "@/components/RandomLine";
-import { LogoMark } from "@/components/Logo";
 import DotCanvas from "@/components/DotCanvas";
 import KineSignupFlow from "@/components/KineSignupFlow";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
@@ -18,23 +17,20 @@ export default function SignupPage() {
     <main className="relative min-h-screen overflow-hidden bg-[#f6f8fd]">
       <DotCanvas />
 
-      <Link
-        href="/signup"
-        className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm backdrop-blur transition-colors hover:text-slate-900 lg:left-6 lg:top-6"
-      >
-        <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
-        Retour
-      </Link>
+      <div className="absolute left-4 top-4 z-10 flex items-center gap-4 lg:left-6 lg:top-6">
+        <Link
+          href="/signup"
+          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm backdrop-blur transition-colors hover:text-slate-900"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
+          Retour
+        </Link>
+      </div>
 
       <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col lg:flex-row lg:items-center">
         {/* Left: signup form */}
         <div className="flex flex-1 items-center justify-center p-4 py-16 lg:p-16">
           <div className="w-full max-w-sm">
-            <Link href="/" className="mb-6 flex items-center justify-center gap-2.5 lg:hidden">
-              <LogoMark size={36} />
-              <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
-            </Link>
-
             {/* Cabinet details first, Clerk account creation last — the
                 order a professional signup on a real B2B site follows
                 (Philippe, 2026-09-10): a visitor sees they're on the kiné
@@ -57,12 +53,8 @@ export default function SignupPage() {
             pages (components/LoginExerciseShowcase.tsx) — Philippe,
             2026-09-10: keep the moving exercise filmstrip here too, instead
             of a static feature list. */}
-        <div className="hidden flex-1 flex-col px-16 py-10 lg:sticky lg:top-0 lg:flex lg:h-screen">
-          <Link href="/" className="flex items-center gap-2.5">
-            <LogoMark size={36} />
-            <span className="font-display text-xl font-semibold text-slate-900">EasyPhysio</span>
-          </Link>
-          <p className="mt-4 mb-6 max-w-sm text-base leading-relaxed text-slate-600">
+        <div className="hidden flex-1 flex-col px-16 py-6 lg:sticky lg:top-0 lg:flex lg:h-screen">
+          <p className="mb-6 max-w-sm text-base leading-relaxed text-slate-600">
             <RandomLine options={ENCOURAGEMENTS} />
           </p>
           <div className="min-h-0 flex-1">

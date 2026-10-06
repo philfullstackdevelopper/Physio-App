@@ -21,6 +21,9 @@
    Le site vitrine garde ses classes slate ; ne pas mélanger. */
 @theme {
   --color-app-bg: #f5f7fb;
+  /* Fond de l'appli patient sur téléphone : blanc cassé chaud plutôt que
+     gris-bleu (Philippe, 2026-10-06 : plus chaleureux). */
+  --color-warm-bg: #f8f6f2;
   --color-surface: #ffffff;
   --color-line: #e5e9f0;
   --color-ink: #0f172a;
