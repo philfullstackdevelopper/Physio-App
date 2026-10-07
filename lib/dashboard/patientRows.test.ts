@@ -46,7 +46,7 @@ test("douleur, phase courte, adhérence et libellés", () => {
   assert.equal(marc.lastSessionLabel, "Aujourd'hui");
   assert.equal(marc.signal.kind, "pain");
   assert.equal(marc.signal.label, "Douleur signalée 7/10"); // dernière note, pas la moyenne
-  assert.equal(marc.adherence.expected, 12);
+  assert.equal(marc.adherence.expected, 10); // 3 semaines × 3 + semaine en cours proratisée (jeudi : 1) — voir adherence.ts
   assert.equal(marc.adherence.done, 2);
   assert.equal(marc.adherenceTone, "danger");
 });

@@ -50,7 +50,7 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
   const [{ data: profile }, { data: patient }, { data: feedbackRows }, { data: logs }, { data: sub }] = await Promise.all([
     supabase
       .from("patient_profiles")
-      .select("condition_id, injury_stage, date_of_birth, height_cm, weight_kg, activity_level, updated_at")
+      .select("condition_id, injury_stage, date_of_birth, height_cm, weight_kg, activity_level, updated_at, stage_declared_at")
       .eq("id", userId)
       .maybeSingle(),
     supabase.from("patients").select("full_name, condition_id, trial_ends_at").eq("id", userId).maybeSingle(),
@@ -93,12 +93,18 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
     rows
       .filter((r) => r[field] != null)
       .map((r) => ({ value: r[field] as number, at: r.created_at as string }));
-  const decision = stageWithFeedback(declaredStage, profile!.updated_at as string, {
+  // Date de référence de la semaine de soin : le moment où le patient a
+  // déclaré son étape actuelle (stage_declared_at, migration 0061), pas
+  // updated_at — sinon corriger son poids remettait la rééducation à la
+  // semaine 1 (Philippe, 2026-10-07). updated_at reste le repli des lignes
+  // antérieures à la colonne.
+  const stageDeclaredAt = ((profile!.stage_declared_at as string | null) ?? profile!.updated_at) as string;
+  const decision = stageWithFeedback(declaredStage, stageDeclaredAt, {
     painScores: rated(feedbackRows ?? [], "pain_score"),
     difficulties: rated(feedbackRows ?? [], "difficulty"),
   });
   const stage = decision.stage;
-  const week = careWeek(declaredStage, profile!.updated_at as string);
+  const week = careWeek(declaredStage, stageDeclaredAt);
 
   const [{ data: condition }, { data: recRows }] = await Promise.all([
     assignedConditionId

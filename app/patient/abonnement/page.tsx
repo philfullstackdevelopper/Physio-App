@@ -9,6 +9,7 @@ import { TIERS, TIER_KEYS, TRIAL_DAYS, resolveTierPrices, type InstructorTierPri
 import { HIGHLIGHT, featuresFor } from "@/lib/billing/tierCopy";
 import { hasActiveTier } from "@/lib/billing/access";
 import { getTierBilling } from "@/lib/billing/context";
+import { openBillingPortal } from "@/app/billing/actions";
 import { startTierCheckout } from "./actions";
 
 const FEATURED: TierKey = "standard";
@@ -58,12 +59,23 @@ export default async function AbonnementPage({
   // Déjà une offre active (ou un accès historique) : rien à choisir ici.
   if (hasActiveTier(await getTierBilling(supabase, user.id))) redirect("/patient");
 
-  const { data: patient } = await supabase
-    .from("patients")
-    .select("instructor_id")
-    .eq("id", user.id)
-    .maybeSingle();
+  const [{ data: patient }, { data: sub }] = await Promise.all([
+    supabase.from("patients").select("instructor_id").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("subscriptions")
+      .select("stripe_customer_id, stripe_subscription_id, status")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
   const instructorId = (patient?.instructor_id as string | null) ?? null;
+
+  // (Philippe, 2026-10-07) Paiement en échec (past_due/unpaid) : l'abonnement
+  // existe toujours chez Stripe — on propose de corriger la carte (portail
+  // Stripe), pas d'en souscrire un deuxième (startTierCheckout refuse aussi).
+  const paymentFailed =
+    (sub?.status === "past_due" || sub?.status === "unpaid") && !!(sub?.stripe_customer_id as string | null);
+  // Même règle que startTierCheckout : l'essai gratuit n'est offert qu'une fois.
+  const trialAvailable = !(sub?.stripe_subscription_id as string | null) && !(sub?.stripe_customer_id as string | null);
 
   const [{ data: kine }, { data: connect }] = await Promise.all([
     instructorId
@@ -115,7 +127,7 @@ export default async function AbonnementPage({
             <span className="text-blue-700">EasyPhysio ·</span>{" "}Choisissez votre accompagnement
           </h1>
           <p className="mt-3 text-base leading-relaxed text-slate-600">
-            {TRIAL_DAYS} jours gratuits pour essayer, puis facturation mensuelle
+            {trialAvailable ? `${TRIAL_DAYS} jours gratuits pour essayer, puis facturation mensuelle` : "Facturation mensuelle"}
             {kineName ? (
               <>
                 {" "}
@@ -127,6 +139,22 @@ export default async function AbonnementPage({
         </div>
 
         {error && <Notice tone="danger">{error}</Notice>}
+        {paymentFailed && (
+          <div className="mx-auto mt-6 flex max-w-xl flex-col items-center gap-3 text-center">
+            <Notice tone="danger">
+              Le dernier prélèvement de votre abonnement a échoué. Mettez à jour votre carte pour le réactiver — inutile
+              de souscrire une nouvelle offre.
+            </Notice>
+            <form action={openBillingPortal}>
+              <SubmitButton
+                pendingText="Ouverture…"
+                className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              >
+                Mettre à jour ma carte
+              </SubmitButton>
+            </form>
+          </div>
+        )}
         {checkout === "cancel" && (
           <Notice tone="warn">Paiement annulé — vous pouvez choisir une offre quand vous voulez.</Notice>
         )}
@@ -152,7 +180,7 @@ export default async function AbonnementPage({
               >
                 {featured && (
                   <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
-                    {TRIAL_DAYS} jours gratuits · le plus choisi
+                    {trialAvailable ? `${TRIAL_DAYS} jours gratuits · le plus choisi` : "Le plus choisi"}
                   </span>
                 )}
 
@@ -192,13 +220,15 @@ export default async function AbonnementPage({
                   <span className={`text-sm ${featured ? "text-blue-100" : "text-slate-500"}`}>/mois</span>
                 </p>
                 <p className={`mt-1 text-xs ${featured ? "text-blue-100" : "text-slate-500"}`}>
-                  0 € aujourd&rsquo;hui · premier prélèvement le {firstChargeDate}
+                  {trialAvailable
+                    ? <>0 € aujourd&rsquo;hui · premier prélèvement le {firstChargeDate}</>
+                    : "Prélevé dès aujourd’hui, puis chaque mois"}
                 </p>
 
                 <form action={startTierCheckout} className="mt-6">
                   <input type="hidden" name="tier" value={key} />
                   <SubmitButton
-                    disabled={!paymentsReady}
+                    disabled={!paymentsReady || paymentFailed}
                     pendingText="Redirection vers le paiement…"
                     className={
                       featured
@@ -206,7 +236,7 @@ export default async function AbonnementPage({
                         : "w-full rounded-full bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
                     }
                   >
-                    Commencer mes {TRIAL_DAYS} jours gratuits
+                    {trialAvailable ? `Commencer mes ${TRIAL_DAYS} jours gratuits` : "Choisir cette offre"}
                   </SubmitButton>
                 </form>
                 <p
@@ -234,9 +264,18 @@ export default async function AbonnementPage({
         </div>
 
         <p className="mx-auto mt-10 max-w-2xl text-center text-xs leading-relaxed text-slate-500">
-          Paiement sécurisé par Stripe. Votre carte est enregistrée aujourd&rsquo;hui et débitée pour la première fois
-          le {firstChargeDate}, sauf annulation avant. Vous pourrez changer ou annuler votre offre à tout moment depuis
-          vos paramètres.
+          {trialAvailable ? (
+            <>
+              Paiement sécurisé par Stripe. Votre carte est enregistrée aujourd&rsquo;hui et débitée pour la première
+              fois le {firstChargeDate}, sauf annulation avant.
+            </>
+          ) : (
+            <>
+              Paiement sécurisé par Stripe. Vous avez déjà profité de l&rsquo;essai gratuit : le premier mois est
+              débité dès aujourd&rsquo;hui.
+            </>
+          )}{" "}
+          Vous pourrez changer ou annuler votre offre à tout moment depuis vos paramètres.
         </p>
       </div>
       </div>

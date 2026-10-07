@@ -4,9 +4,11 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/supabase/require-user";
+import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { applyAdjustment, adjustmentMessage } from "@/lib/exercise/adjustPlan";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
+import { cancelPatientSubscription } from "@/lib/billing/cancelSubscription";
+import { deleteAppUserByEmail } from "@/lib/db/admin";
 
 // PatientActionsMenu is used both on the patient detail page and inline in
 // the "Mes patients" table, so its forms carry where to land afterwards.
@@ -23,7 +25,7 @@ function ownRedirect(formData: FormData, fallback: string): string {
 // account, so this is a manual record, not a webhook-driven one).
 export async function markPaymentLapsed(formData: FormData) {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const dest = ownRedirect(formData, `/dashboard/patients/${patientId}`);
@@ -42,7 +44,7 @@ export async function markPaymentLapsed(formData: FormData) {
 // Reverses the above — the patient resumed paying, or it was marked by mistake.
 export async function clearPaymentLapsed(formData: FormData) {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const dest = ownRedirect(formData, `/dashboard/patients/${patientId}`);
@@ -84,7 +86,7 @@ export async function clearPaymentLapsed(formData: FormData) {
 // email may need a retry or Philippe's help clearing the stale Clerk identity.
 export async function deletePatient(formData: FormData) {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const { data: patient } = await supabase
@@ -94,6 +96,34 @@ export async function deletePatient(formData: FormData) {
     .eq("instructor_id", user.id)
     .maybeSingle();
   if (!patient) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Patient introuvable.")}`);
+
+  // Ordre revu (Philippe, 2026-10-07) : avant, l'identité Clerk et la ligne
+  // app_users étaient supprimées AVANT la ligne patients — si cette dernière
+  // échouait, il restait un patient sans compte de connexion, impossible à
+  // réinviter proprement. Désormais :
+  //   1. on arrête l'abonnement Stripe du patient (sinon il continuerait
+  //      d'être prélevé après la suppression — ne lève pas d'erreur s'il n'y
+  //      a pas d'abonnement) ;
+  //   2. on supprime la ligne patients (la donnée que le kiné a demandé de
+  //      retirer) et on s'arrête net en cas d'échec ;
+  //   3. seulement ensuite, le nettoyage Clerk (toujours en meilleur effort) ;
+  //   4. puis la correspondance app_users, via la connexion serveur directe
+  //      (lib/db/admin.ts) et non plus via PostgREST, qui n'y a plus accès.
+  try {
+    await cancelPatientSubscription(patientId);
+  } catch (e) {
+    // Résiliation Stripe en échec : on ne supprime RIEN, sinon le patient
+    // continuerait d'être prélevé sans plus avoir de compte.
+    console.error("deletePatient: Stripe cancellation failed", e);
+    redirect(
+      `/dashboard/patients/${patientId}?error=${encodeURIComponent(
+        "Impossible de résilier l'abonnement du patient. Rien n'a été supprimé, réessayez dans un instant.",
+      )}`,
+    );
+  }
+
+  const { error } = await supabase.from("patients").delete().eq("id", patientId).eq("instructor_id", user.id);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
 
   try {
     const client = await clerkClient();
@@ -108,10 +138,13 @@ export async function deletePatient(formData: FormData) {
     console.error("deletePatient: Clerk cleanup failed", e);
   }
 
-  await supabase.from("app_users").delete().eq("email", patient!.email);
-
-  const { error } = await supabase.from("patients").delete().eq("id", patientId).eq("instructor_id", user.id);
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
+  try {
+    await deleteAppUserByEmail(patient!.email);
+  } catch (e) {
+    // Le patient est déjà supprimé : on ne bloque pas le kiné pour ça, mais
+    // la trace reste côté serveur pour un nettoyage manuel éventuel.
+    console.error("deletePatient: app_users cleanup failed", e);
+  }
 
   revalidatePath("/dashboard/patients");
   redirect("/dashboard/patients");
@@ -122,7 +155,7 @@ export async function deletePatient(formData: FormData) {
 // they belonged to the old condition's workouts.
 export async function assignCondition(formData: FormData) {
   const supabase = await createClient();
-  await requireUser(supabase);
+  await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const conditionId = String(formData.get("condition_id") ?? "");
@@ -154,7 +187,7 @@ export async function assignCondition(formData: FormData) {
 // reacting to a recent session). RLS re-checks the patient is really theirs.
 export async function sendMessage(formData: FormData) {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
@@ -186,7 +219,7 @@ export async function sendMessage(formData: FormData) {
 // them correctly.
 export async function addRecommendedWorkout(formData: FormData) {
   const supabase = await createClient();
-  await requireUser(supabase);
+  await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const workoutId = String(formData.get("workout_id") ?? "");
@@ -217,7 +250,7 @@ export async function addRecommendedWorkout(formData: FormData) {
 // Unassigns the patient's recommended workout, with no replacement.
 export async function removeRecommendedWorkout(formData: FormData) {
   const supabase = await createClient();
-  await requireUser(supabase);
+  await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const recId = String(formData.get("rec_id") ?? "");
@@ -236,7 +269,7 @@ export async function removeRecommendedWorkout(formData: FormData) {
 // Schéma : migration 0044_patient_workouts.sql (workouts.patient_id, source_workout_id).
 export async function adjustPatientWorkout(formData: FormData) {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const workoutId = String(formData.get("workout_id") ?? "");
@@ -297,7 +330,13 @@ export async function adjustPatientWorkout(formData: FormData) {
       const { error: copyExercisesError } = await supabase.from("workout_exercises").insert(
         originalRows.map((r) => ({ workout_id: targetId, exercise_id: r.exercise_id, position: r.position })),
       );
-      if (copyExercisesError) return fail(copyExercisesError.message);
+      if (copyExercisesError) {
+        // (Philippe, 2026-10-07 : la copie venait d'être créée — on la
+        // retire, comme dans les autres chemins d'échec ci-dessous, pour ne
+        // pas laisser une séance personnelle orpheline.)
+        await supabase.from("workouts").delete().eq("id", targetId);
+        return fail(copyExercisesError.message);
+      }
     }
 
     const { data: repointed, error: recError } = await supabase

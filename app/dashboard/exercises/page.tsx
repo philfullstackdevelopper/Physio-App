@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { isAdminEmail } from "@/lib/admin";
 import ExerciseLibraryGrid, { type LibraryExercise } from "@/components/ExerciseLibraryGrid";
 import { createExercise, hideExercise, unhideExercise } from "./actions";
 
@@ -61,6 +62,7 @@ export default async function ExercisesPage({
             bodyParts={bodyParts ?? []}
             exercises={libraryExercises}
             currentUserId={user.id}
+            isAdmin={isAdminEmail(user.email)}
             createExercise={createExercise}
             hideExercise={hideExercise}
             unhideExercise={unhideExercise}

@@ -101,6 +101,7 @@ export default function ExerciseLibraryGrid({
   bodyParts,
   exercises,
   currentUserId,
+  isAdmin = false,
   createExercise,
   hideExercise,
   unhideExercise,
@@ -108,6 +109,7 @@ export default function ExerciseLibraryGrid({
   bodyParts: BodyPart[];
   exercises: LibraryExercise[];
   currentUserId: string;
+  isAdmin?: boolean;
   createExercise: (formData: FormData) => void | Promise<void>;
   hideExercise: (formData: FormData) => void | Promise<void>;
   unhideExercise: (formData: FormData) => void | Promise<void>;
@@ -306,11 +308,19 @@ export default function ExerciseLibraryGrid({
               {ex.instructions && (
                 <p className="mt-1 line-clamp-2 text-sm text-muted">{ex.instructions}</p>
               )}
-              <ExerciseVideoUpload
-                exerciseId={ex.id}
-                initialUrl={ex.media_url}
-                initialStartSeconds={ex.media_start_seconds}
-              />
+              {/* (Philippe, 2026-10-07 : l'envoi de vidéo n'apparaît plus que
+                  sur les exercices du kiné connecté — les exercices plateforme
+                  et ceux des autres kinés sont en lecture seule, CLAUDE.md §3.
+                  Exception : l'administrateur gère les vidéos des exercices
+                  plateforme, via une Server Action vérifiée côté serveur.) */}
+              {(ex.created_by === currentUserId || (isAdmin && ex.created_by === null)) && (
+                <ExerciseVideoUpload
+                  exerciseId={ex.id}
+                  initialUrl={ex.media_url}
+                  initialStartSeconds={ex.media_start_seconds}
+                  viaAdmin={ex.created_by === null}
+                />
+              )}
             </div>
           ))
         )}

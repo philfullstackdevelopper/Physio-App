@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
 import { isClerkAPIResponseError } from "@clerk/shared/error";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/supabase/require-user";
+import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { precreateAppUserId } from "@/lib/auth/user-map";
 import type { ThreadMessage } from "@/components/MessageThread";
 
@@ -15,10 +15,14 @@ import type { ThreadMessage } from "@/components/MessageThread";
 // records the patient row owned by the inviting instructor.
 export async function addPatient(formData: FormData) {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user, instructor } = await requireApprovedInstructor(supabase);
 
   const fullName = String(formData.get("full_name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
+  // (Philippe, 2026-10-07 : en minuscules partout — Clerk stocke les e-mails
+  // en minuscules et lib/auth/user-map.ts compare l'e-mail tel quel, donc une
+  // invitation tapée « Jean.Dupont@… » laissait le patient orphelin à sa
+  // première connexion.)
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
 
   if (!fullName || !email) {
     redirect(`/dashboard/patients/new?error=${encodeURIComponent("Veuillez remplir tous les champs.")}`);
@@ -26,12 +30,6 @@ export async function addPatient(formData: FormData) {
 
   const hdrs = await headers();
   const origin = hdrs.get("origin") ?? `https://${hdrs.get("host")}`;
-
-  const { data: instructor } = await supabase
-    .from("instructors")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle();
 
   // Reserve the internal uuid BEFORE the invite goes out, so patients.id and
   // app_users.app_id agree from day one (resolveAppUserId will find this row
@@ -132,7 +130,7 @@ export async function addPatient(formData: FormData) {
 // CLAUDE.md §5).
 export async function reactivatePatient(formData: FormData): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user, instructor } = await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   if (!patientId) return { error: "Patient introuvable." };
@@ -147,7 +145,6 @@ export async function reactivatePatient(formData: FormData): Promise<{ ok: true 
   if (patient.terms_accepted_at) return { error: "Ce patient a déjà activé son compte." };
   if (!patient.email) return { error: "Ce patient n'a pas d'adresse e-mail enregistrée." };
 
-  const { data: instructor } = await supabase.from("instructors").select("full_name").eq("id", user.id).maybeSingle();
 
   const hdrs = await headers();
   const origin = hdrs.get("origin") ?? `https://${hdrs.get("host")}`;
@@ -187,7 +184,7 @@ export async function reactivatePatient(formData: FormData): Promise<{ ok: true 
 
 export async function getPatientThread(patientId: string): Promise<{ thread: ThreadMessage[] } | { error: string }> {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   const { data: patient } = await supabase
     .from("patients")
@@ -235,7 +232,7 @@ export async function getPatientThread(patientId: string): Promise<{ thread: Thr
 
 export async function sendPatientMessage(formData: FormData): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();

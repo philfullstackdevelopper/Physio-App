@@ -1,5 +1,9 @@
+"use client";
+
+import { useActionState } from "react";
 import Link from "next/link";
-import { HeartHandshake, ShieldCheck } from "lucide-react";
+import { SignOutButton } from "@clerk/nextjs";
+import { AlertCircle, HeartHandshake, LogOut, ShieldCheck } from "lucide-react";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 import { acceptTerms } from "@/app/patient/actions";
 
@@ -15,9 +19,25 @@ import { acceptTerms } from "@/app/patient/actions";
 // /invitation. Bringing it into the shared shell instead of inventing its
 // own makes the very first thing a patient sees read as one continuous
 // product, not four different screens stitched together.
+//
+// Composant client depuis le 2026-10-07 (Philippe) : l’échec de
+// l’acceptation s’affiche ici (useActionState) au lieu d’être perdu dans un
+// ?error= que rien ne lisait, et « Se déconnecter » est offert comme sur les
+// autres barrières (onboarding, PatientNoRecordGate).
 export default function PatientWelcomeGate({ instructorName }: { instructorName: string | null }) {
+  const [state, formAction, pending] = useActionState(acceptTerms, { error: null });
   return (
     <main className="relative min-h-screen bg-[#f6f8fd]">
+      <SignOutButton redirectUrl="/login">
+        <button
+          type="button"
+          className="absolute bottom-4 left-4 z-10 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-slate-600 lg:bottom-6 lg:left-6"
+        >
+          <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          Se déconnecter
+        </button>
+      </SignOutButton>
+
       <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col lg:flex-row lg:items-stretch">
         {/* Left: welcome message + CGU */}
         <div className="flex flex-1 items-center justify-center p-4 py-16 lg:p-16">
@@ -41,7 +61,7 @@ export default function PatientWelcomeGate({ instructorName }: { instructorName:
               Avant de commencer, il reste une étape.
             </p>
 
-            <form action={acceptTerms} className="mt-8">
+            <form action={formAction} className="mt-8">
               {/* Informational, not an interactive checkbox — "J'accepte et je
                   continue" below is the actual consent action (same pattern
                   as the original), so this shouldn't look clickable on its
@@ -61,11 +81,19 @@ export default function PatientWelcomeGate({ instructorName }: { instructorName:
                 </p>
               </div>
 
+              {state.error && (
+                <p role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm text-red-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
+                  {state.error}
+                </p>
+              )}
+
               <button
                 type="submit"
-                className="mt-4 w-full rounded-full bg-blue-600 py-2.5 text-sm font-medium text-white shadow-sm transition active:scale-[0.98] hover:bg-blue-700"
+                disabled={pending}
+                className="mt-4 w-full rounded-full bg-blue-600 py-2.5 text-sm font-medium text-white shadow-sm transition active:scale-[0.98] hover:bg-blue-700 disabled:opacity-60"
               >
-                J&rsquo;accepte et je continue
+                {pending ? "Enregistrement…" : <>J&rsquo;accepte et je continue</>}
               </button>
             </form>
           </div>

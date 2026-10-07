@@ -18,19 +18,37 @@ export async function GET(req: Request) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const { data: sub } = await supabase
-    .from("subscriptions")
-    .select("stripe_customer_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const [{ data: sub }, { data: patient }] = await Promise.all([
+    supabase.from("subscriptions").select("stripe_customer_id").eq("user_id", user.id).maybeSingle(),
+    supabase.from("patients").select("instructor_id").eq("id", user.id).maybeSingle(),
+  ]);
   const customerId = (sub?.stripe_customer_id as string | null) ?? null;
+
+  // (Philippe, 2026-10-07) Le client Stripe du patient vit sur le compte
+  // Connect de SON kiné (Direct charge) : sans `stripeAccount`, la liste
+  // échouait toujours (« No such customer »), erreur avalée — rien n'était
+  // jamais resynchronisé. Même résolution que app/billing/actions.ts.
+  const instructorId = (patient?.instructor_id as string | null) ?? null;
+  const { data: connect } = instructorId
+    ? await supabase
+        .from("instructor_connect_accounts")
+        .select("stripe_connect_account_id")
+        .eq("instructor_id", instructorId)
+        .maybeSingle()
+    : { data: null };
+  const stripeAccount = (connect?.stripe_connect_account_id as string | null) ?? null;
+
   if (customerId) {
     try {
-      const list = await getStripe().subscriptions.list({ customer: customerId, status: "all", limit: 1 });
+      const list = await getStripe().subscriptions.list(
+        { customer: customerId, status: "all", limit: 1 },
+        stripeAccount ? { stripeAccount } : undefined,
+      );
       const latest = list.data[0];
-      if (latest) await syncSubscription(latest, { user_id: user.id });
-    } catch {
-      /* ignore — still return the user to their settings */
+      if (latest) await syncSubscription(latest, { user_id: user.id }, { stripeAccount });
+    } catch (err) {
+      // Still return the user to their settings — but never silently.
+      console.error("[billing/refresh] resynchronisation impossible :", err);
     }
   }
 

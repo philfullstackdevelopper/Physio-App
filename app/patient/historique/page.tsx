@@ -3,7 +3,7 @@ import { ChevronRight, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getTierBilling } from "@/lib/billing/context";
-import { TIERS, isTierKey } from "@/lib/billing/plans";
+import { formatHistoryDay, historyDaysVisibleFor } from "@/lib/patient/historyWindow";
 
 type LogRow = {
   id: string;
@@ -11,9 +11,6 @@ type LogRow = {
   workouts: { name: string } | null;
 };
 
-function formatDay(iso: string) {
-  return new Date(iso).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-}
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
@@ -36,21 +33,20 @@ export default async function HistoriquePage() {
   // Group by day for a readable list — most recent day first.
   const groups: { day: string; logs: LogRow[] }[] = [];
   for (const log of logs) {
-    const day = formatDay(log.completed_at);
+    const day = formatHistoryDay(log.completed_at);
     const group = groups.find((g) => g.day === day);
     if (group) group.logs.push(log);
     else groups.push({ day, logs: [log] });
   }
 
-  // Offre du patient -> combien de jours (groupes) en clair avant verrou.
-  // Plan inconnu/historique (patient_monthly, grandfathering) = illimité,
-  // pas de mauvaise surprise sur un abonnement qui n'a jamais eu cette règle.
-  const historyDaysVisible = isTierKey(billing.subPlan) ? TIERS[billing.subPlan].historyDaysVisible : null;
+  // Offre du patient -> combien de jours (groupes) en clair avant verrou
+  // (règle partagée avec le détail d'une séance, lib/patient/historyWindow.ts).
+  const historyDaysVisible = historyDaysVisibleFor(billing.subPlan);
   const visibleGroups = historyDaysVisible === null ? groups : groups.slice(0, historyDaysVisible);
   const lockedGroups = historyDaysVisible === null ? [] : groups.slice(historyDaysVisible);
 
   return (
-    <main className="min-h-screen p-6 sm:p-8">
+    <main className="p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] sm:min-h-screen sm:p-8">
       <div className="mx-auto max-w-2xl">
         <h1 className="font-display text-3xl font-semibold text-slate-900">Historique</h1>
         <p className="mt-1 text-sm text-slate-500">Toutes vos séances terminées.</p>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertCircle, LogOut } from "lucide-react";
+import { AlertCircle, LogOut, X } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
@@ -62,6 +62,20 @@ export default async function OnboardingPage({
           Se déconnecter
         </button>
       </SignOutButton>
+
+      {/* Modification d'un profil existant (depuis « Modifier ma situation ») :
+          une porte de sortie sans enregistrer, retour au compte. Le premier
+          onboarding (pas encore de consentement) reste inchangé — il n'y a
+          nulle part où revenir (Philippe, 2026-10-07). */}
+      {!needsConsent && (
+        <Link
+          href="/patient/compte"
+          className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 max-sm:right-3 max-sm:top-1 transition-colors hover:text-slate-700 lg:right-6 lg:top-6"
+        >
+          <X className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          Annuler
+        </Link>
+      )}
 
       <div className="relative mx-auto flex h-full max-w-6xl flex-col overflow-y-auto lg:flex-row lg:items-stretch lg:overflow-hidden">
         {/* Left: the wizard itself */}

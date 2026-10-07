@@ -145,26 +145,27 @@ export default function PatientHomeView({
         </div>
 
         {/* The brake, explained gently. The patient never sees the clinical wording
-            of `decision.reason` — that phrasing is written for the practitioner. */}
+            of `decision.reason` — that phrasing is written for the practitioner.
+            Textes revus (Philippe, 2026-10-07) : ne rien promettre d'automatique
+            — rien ne branche decision.stage sur la prescription ; c'est le kiné,
+            qui voit ces retours, qui ajuste le programme. */}
         {(decision.concerning || decision.held) &&
           (decision.held && !decision.concerning ? (
             <div className="rounded-2xl border border-line bg-surface p-5 pl-4 shadow-sm border-l-[3px] border-l-brand">
               <p className="font-medium text-ink">Vous allez mieux</p>
               <p className="mt-1 text-sm text-muted">
-                Vos retours s&apos;améliorent. Nous augmentons vos séances petit à petit, une étape
-                par semaine, pour éviter toute rechute.
+                Vos retours s&apos;améliorent. Votre kiné les voit et fera évoluer votre programme
+                à votre rythme.
               </p>
             </div>
           ) : (
             <div className="rounded-2xl border border-line bg-surface p-5 pl-4 shadow-sm border-l-[3px] border-l-warn">
               <p className="font-medium text-ink">
-                {decision.held ? "Nous avons adapté votre programme" : "Vos derniers retours ont été transmis"}
+                Vos derniers retours ont été transmis
               </p>
               <p className="mt-1 text-sm text-muted">
-                {decision.held
-                  ? "Vos derniers retours indiquent que les exercices restent difficiles. Nous vous proposons donc des séances plus douces pour le moment — c'est normal, et c'est fait pour vous protéger."
-                  : "Vous signalez encore des douleurs importantes. Votre praticien en est informé."}{" "}
-                Parlez-en à votre praticien si cela persiste.
+                Votre kiné voit ce que vous ressentez et pourra adapter votre programme. D&apos;ici là,
+                allez-y doucement, sans forcer — et parlez-lui si la douleur persiste.
               </p>
             </div>
           ))}

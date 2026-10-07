@@ -3,12 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/supabase/require-user";
+import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
 // Envoie un message depuis la boîte de réception du kiné (/dashboard/messages).
 export async function sendInboxMessage(formData: FormData) {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
@@ -41,7 +41,7 @@ export async function sendInboxMessage(formData: FormData) {
 // lu jusqu'au prochain rechargement complet (Philippe, 2026-09-09).
 export async function markConversationRead(patientId: string) {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   await supabase
     .from("patient_messages")
@@ -59,7 +59,7 @@ export async function markConversationRead(patientId: string) {
 // existante limite la mise à jour aux patients du kiné connecté.
 export async function toggleFollowUp(formData: FormData) {
   const supabase = await createClient();
-  await requireUser(supabase);
+  await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const on = formData.get("follow_up") === "1";

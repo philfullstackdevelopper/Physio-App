@@ -11,16 +11,21 @@ import { requireUser } from "@/lib/supabase/require-user";
 // write their own row directly, so this goes through the narrow
 // accept_patient_terms() RPC instead (supabase/migrations/0057), which only
 // ever touches terms_accepted_at and only for the calling patient's own id.
-export async function acceptTerms() {
+// Renvoie l'erreur au formulaire (useActionState dans PatientWelcomeGate) au
+// lieu de rediriger vers /patient?error=… : la barrière CGU s'affiche à la
+// place de la page, qui ne lisait jamais ce paramètre — l'échec était muet
+// (Philippe, 2026-10-07).
+export async function acceptTerms(): Promise<{ error: string | null }> {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
   const { error } = await supabase.rpc("accept_patient_terms", { p_patient_id: user.id });
   if (error) {
-    redirect(`/patient?error=${encodeURIComponent(error.message)}`);
+    return { error: "L'acceptation n'a pas pu être enregistrée. Vérifiez votre connexion et réessayez." };
   }
 
   revalidatePath("/patient", "layout");
+  return { error: null };
 }
 
 // Patient marks every unread message from their instructor as read (the

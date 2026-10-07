@@ -14,6 +14,13 @@ test("isSubscriptionActive : active/trialing oui, canceled non, période échue 
   assert.equal(isSubscriptionActive(null, null, now), false);
 });
 
+test("isSubscriptionActive : past_due garde l'accès jusqu'à la fin de période, pas au-delà", () => {
+  assert.equal(isSubscriptionActive("past_due", future, now), true);
+  assert.equal(isSubscriptionActive("past_due", past, now), false);
+  assert.equal(isSubscriptionActive("past_due", null, now), false);
+  assert.equal(isSubscriptionActive("unpaid", future, now), false);
+});
+
 test("hasActiveTier : offre en essai Stripe (trialing) → accès", () => {
   assert.equal(hasActiveTier({ subPlan: "standard", subStatus: "trialing", subCurrentPeriodEnd: future }, now), true);
 });

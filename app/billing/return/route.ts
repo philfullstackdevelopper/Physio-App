@@ -60,10 +60,14 @@ export async function GET(req: Request) {
       }
       const sub = session.subscription;
       if (sub && typeof sub !== "string") {
-        await syncSubscription(sub, {
-          user_id: session.metadata?.user_id,
-          plan: session.metadata?.plan,
-        });
+        await syncSubscription(
+          sub,
+          {
+            user_id: session.metadata?.user_id,
+            plan: session.metadata?.plan,
+          },
+          { stripeAccount: connect?.account ?? null },
+        );
       }
     } catch (err) {
       // requireUser() signals "not signed in" by throwing a redirect — let

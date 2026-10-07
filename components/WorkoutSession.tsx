@@ -190,6 +190,12 @@ export default function WorkoutSession({
   // timestamp), so the patient's history can show what they felt for it.
   const [logId, setLogId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState(false);
+  // Garde contre le double appui sur « Terminer la séance » / « Réessayer » :
+  // sans elle, deux taps rapides inséraient deux workout_logs (Philippe,
+  // 2026-10-07). Le ref bloque la ré-entrée immédiate, le state désactive les
+  // boutons à l'écran.
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   // End-of-session feeling capture — the only feedback this app collects.
   const [pain, setPain] = useState<number | null>(null);
   const [note, setNote] = useState("");
@@ -205,6 +211,9 @@ export default function WorkoutSession({
     // then recompute the daily streak to celebrate it. A failed insert must
     // NOT show the success celebration — the patient needs to know their
     // session wasn't actually recorded, and can retry.
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
     setSaveError(false);
     try {
       const supabase = createClient();
@@ -218,6 +227,9 @@ export default function WorkoutSession({
       setStreak(await fetchStreak(supabase, patientId));
     } catch {
       setSaveError(true);
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
     setPhase("finished");
   };
@@ -263,6 +275,9 @@ export default function WorkoutSession({
   const next = () => {
     if (idx < total - 1) {
       setIdx(idx + 1);
+      // Réarme le bouton « J'ai terminé cet exercice » : sinon il restait
+      // désactivé dès le 2e exercice (Philippe, 2026-10-07).
+      setCompleting(false);
       setPhase("exercise");
     } else {
       finish();
@@ -293,9 +308,10 @@ export default function WorkoutSession({
           </p>
           <button
             onClick={finish}
-            className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700"
+            disabled={saving}
+            className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            Réessayer
+            {saving ? "Enregistrement…" : "Réessayer"}
           </button>
           <Link
             href="/patient"
@@ -418,9 +434,10 @@ export default function WorkoutSession({
 
           <button
             onClick={next}
-            className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700"
+            disabled={saving}
+            className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {idx < total - 1 ? "Exercice suivant →" : "Terminer la séance"}
+            {idx < total - 1 ? "Exercice suivant →" : saving ? "Enregistrement…" : "Terminer la séance"}
           </button>
         </div>
       ) : (

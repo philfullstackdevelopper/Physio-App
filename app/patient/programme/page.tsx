@@ -82,7 +82,11 @@ export default async function ProgrammePage() {
     allAssignments.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate, weekCount: r.weekCount })),
     thisWeekStartDateKey(),
   );
-  const recommended = allAssignments.filter((r) => r.workout.id === activeWorkoutId).map((r) => ({ workout: r.workout }));
+  // Une seule ligne, même si la même séance est assignée sur plusieurs
+  // semaines : filter() les gardait toutes → séance affichée en double, clé
+  // React dupliquée (Philippe, 2026-10-07).
+  const activeAssignment = allAssignments.find((r) => r.workout.id === activeWorkoutId);
+  const recommended = activeAssignment ? [{ workout: activeAssignment.workout }] : [];
 
   const weekStart = startOfWeekISO();
   const workoutIds = recommended.map((r) => r.workout.id);

@@ -54,7 +54,7 @@ export default function CguPage() {
           <section>
             <h2 className="font-display font-semibold text-slate-900">4. Inscription et comptes</h2>
             <p className="mt-1">
-              L&apos;usage d'EasyPhysio par le patient est libre et volontaire — le
+              L&apos;usage d&apos;EasyPhysio par le patient est libre et volontaire — le
               kinésithérapeute ne peut conditionner la poursuite du suivi kinésithérapique
               classique à la souscription du patient.
             </p>

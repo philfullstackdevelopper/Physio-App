@@ -16,7 +16,7 @@ export default function ConfidentialitePage() {
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           <strong>Brouillon.</strong> Ce document est en cours de rédaction et n&apos;a pas
           encore été validé par un avocat. Il ne constitue pas encore un engagement juridique
-          définitif d'EasyPhysio.
+          définitif d&apos;EasyPhysio.
         </div>
 
         <h1 className="font-display mt-6 text-2xl font-semibold text-slate-900">

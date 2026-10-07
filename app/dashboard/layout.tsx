@@ -23,6 +23,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const status = (instructor.status as string | null) ?? "approved";
 
+  // En attente SANS coordonnées de cabinet (inscription Clerk directe, cookie
+  // perdu) : renvoyer vers le formulaire, sinon l'écran d'attente n'offre
+  // aucun moyen de les compléter (audit du 2026-10-07).
+  if (status === "pending" && !instructor.cabinet_name) redirect("/signup/onboarding");
+
   if (status !== "approved") {
     const pending = status === "pending";
     return (

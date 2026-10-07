@@ -6,12 +6,19 @@
 // Storage bucket, then writes the public URL + start point through
 // set_exercise_media() — a narrow RPC (see migration 0022) so this works on
 // platform exercises too, without opening up their name/instructions.
+//
+// (Philippe, 2026-10-07 : la RPC n'accepte plus que les exercices du kiné
+// connecté. Pour les exercices PLATEFORME, seul l'administrateur voit ce
+// composant, avec viaAdmin : l'URL et le point de départ passent alors par la
+// Server Action adminSetExerciseMedia, qui revérifie le statut admin côté
+// serveur. L'envoi du fichier vers le stockage, lui, ne change pas.)
 // =============================================================================
 
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadFile } from "@/lib/storage/client";
 import { getYoutubeEmbedId, isVideoFileUrl } from "@/lib/exercise/media";
+import { adminSetExerciseMedia } from "@/app/dashboard/exercises/actions";
 
 const BUCKET = "exercise-media";
 const MAX_MB = 100;
@@ -20,12 +27,38 @@ export default function ExerciseVideoUpload({
   exerciseId,
   initialUrl,
   initialStartSeconds = 0,
+  viaAdmin = false,
 }: {
   exerciseId: string;
   initialUrl: string | null;
   initialStartSeconds?: number;
+  viaAdmin?: boolean;
 }) {
   const supabase = createClient();
+
+  // Écrit l'URL + le point de départ, par la RPC (exercice du kiné) ou par la
+  // Server Action admin (exercice plateforme). Lève une vraie Error avec le
+  // message lisible : les erreurs Supabase sont de simples objets, pas des
+  // instances d'Error — l'ancien `e instanceof Error` perdait leur message
+  // (Philippe, 2026-10-07).
+  const saveMedia = async (mediaUrl: string, seconds: number) => {
+    if (viaAdmin) {
+      const res = await adminSetExerciseMedia(exerciseId, mediaUrl, seconds);
+      if ("error" in res) throw new Error(res.error);
+      return;
+    }
+    const { error: rpcErr } = await supabase.rpc("set_exercise_media", {
+      p_exercise_id: exerciseId,
+      p_media_url: mediaUrl,
+      p_start_seconds: seconds,
+    });
+    if (rpcErr) throw new Error(rpcErr.message || "Échec de l'enregistrement.");
+  };
+
+  const errorMessage = (e: unknown, fallback: string) => {
+    const msg = (e as { message?: unknown } | null)?.message;
+    return typeof msg === "string" && msg ? msg : fallback;
+  };
   const videoRef = useRef<HTMLVideoElement>(null);
   const [url, setUrl] = useState(initialUrl);
   const [startSeconds, setStartSeconds] = useState(initialStartSeconds);
@@ -47,17 +80,12 @@ export default function ExerciseVideoUpload({
       const { error: upErr, publicUrl } = await uploadFile(BUCKET, path, file);
       if (upErr || !publicUrl) throw new Error(upErr ?? "Échec de l'envoi.");
 
-      const { error: rpcErr } = await supabase.rpc("set_exercise_media", {
-        p_exercise_id: exerciseId,
-        p_media_url: publicUrl,
-        p_start_seconds: 0,
-      });
-      if (rpcErr) throw rpcErr;
+      await saveMedia(publicUrl, 0);
 
       setUrl(publicUrl);
       setStartSeconds(0);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Échec de l'envoi de la vidéo.");
+      setError(errorMessage(e, "Échec de l'envoi de la vidéo."));
     } finally {
       setBusy(false);
     }
@@ -69,17 +97,12 @@ export default function ExerciseVideoUpload({
     const seconds = Math.floor(v.currentTime);
     setError(null);
     try {
-      const { error: rpcErr } = await supabase.rpc("set_exercise_media", {
-        p_exercise_id: exerciseId,
-        p_media_url: url,
-        p_start_seconds: seconds,
-      });
-      if (rpcErr) throw rpcErr;
+      await saveMedia(url, seconds);
       setStartSeconds(seconds);
       setSavedStart(true);
       setTimeout(() => setSavedStart(false), 2000);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Échec de l'enregistrement du point de départ.");
+      setError(errorMessage(e, "Échec de l'enregistrement du point de départ."));
     }
   };
 
@@ -142,7 +165,6 @@ export default function ExerciseVideoUpload({
         <input
           type="file"
           accept="video/*"
-          capture="environment"
           className="hidden"
           disabled={busy}
           onChange={(e) => {

@@ -48,6 +48,11 @@ export default async function MessagesPage({
       ? patientParam
       : (conversations[0]?.patientId ?? null);
   const selected = conversations.find((c) => c.patientId === selectedId) ?? null;
+  // Sans ?patient=, la première conversation s'affiche par défaut, mais le
+  // kiné ne l'a pas ouverte lui-même : on ne la marque donc PAS comme lue —
+  // sinon ses messages non lus disparaissaient du badge sans avoir été vus
+  // (Philippe, 2026-10-07).
+  const explicitlyOpened = !!selected && patientParam === selected.patientId;
 
   let thread: ThreadMessage[] = [];
   if (selectedId) {
@@ -105,7 +110,7 @@ export default async function MessagesPage({
               <p className="m-auto p-6 text-center text-sm text-muted">Aucun patient pour l&apos;instant.</p>
             ) : (
               <>
-                <MarkThreadRead patientId={selected.patientId} action={markConversationRead} />
+                {explicitlyOpened && <MarkThreadRead patientId={selected.patientId} action={markConversationRead} />}
                 <header className="flex items-center gap-3 border-b border-line px-5 py-4">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand">
                     {selected.initials}

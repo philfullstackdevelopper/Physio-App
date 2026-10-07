@@ -14,10 +14,12 @@ export default async function SeanceEditorPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const { id } = await params;
-  const { saved } = await searchParams;
+  // (Philippe, 2026-10-07 : ?error= était envoyé par saveSeance/createSeance
+  // mais jamais affiché.)
+  const { saved, error } = await searchParams;
 
   const supabase = await createClient();
   const user = await requireUser(supabase);
@@ -71,7 +73,11 @@ export default async function SeanceEditorPage({
           <h1 className="mt-3 text-2xl font-semibold text-ink">Composer la séance</h1>
         </div>
 
-        {saved && (
+        {error && (
+          <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>
+        )}
+
+        {saved && !error && (
           <div className="animate-[fadeInUp_0.6s_ease-out_both] mt-4 flex items-center gap-1.5 rounded-xl bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
             <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.5} />
             Séance enregistrée

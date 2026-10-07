@@ -13,7 +13,10 @@ import { getInstructor } from "./instructor.ts";
 
 export interface DashboardHomeInput {
   now?: Date;
-  patients: { id: string; full_name: string | null; created_at: string }[];
+  /** terms_accepted_at : porte des CGU (app/patient/layout.tsx). */
+  patients: { id: string; full_name: string | null; created_at: string; terms_accepted_at: string | null }[];
+  /** health_data_consent_at : dernière étape de l'inscription (questionnaire santé). */
+  profiles: { id: string; health_data_consent_at: string | null }[];
   logs: { id: string; patient_id: string; completed_at: string }[];
   /** 14 derniers jours. */
   feedback: { patient_id: string; pain_score: number | null; difficulty: number | null; created_at: string }[];
@@ -38,7 +41,7 @@ export interface DashboardHome {
 
 const TODAY_FMT = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
-export function buildDashboardHome({ now = new Date(), patients, logs, feedback }: DashboardHomeInput): Omit<DashboardHome, "firstName"> {
+export function buildDashboardHome({ now = new Date(), patients, profiles, logs, feedback }: DashboardHomeInput): Omit<DashboardHome, "firstName"> {
   const nameOf = new Map(patients.map((p) => [p.id, p.full_name ?? "Patient"]));
   const isToday = (iso: string) => daysBetween(iso, now) === 0;
   const isYesterday = (iso: string) => daysBetween(iso, now) === 1;
@@ -62,8 +65,17 @@ export function buildDashboardHome({ now = new Date(), patients, logs, feedback 
     if (f.difficulty != null) b.difficulties.push({ value: f.difficulty, at: f.created_at });
   }
 
+  // Patients encore en inscription (CGU non acceptées, ou questionnaire santé
+  // pas terminé) : exclus de « Patients à suivre », exactement comme le
+  // filtre « À surveiller » de PatientsTable (même règle que onboardingStage
+  // dans patientRows.ts). Avant, le tableau de bord les comptait comme
+  // « inactifs » et les deux chiffres ne concordaient pas (Philippe, 2026-10-07).
+  const consented = new Set(profiles.filter((pr) => pr.health_data_consent_at).map((pr) => pr.id));
+  const isOnboarding = (p: DashboardHomeInput["patients"][number]) => !p.terms_accepted_at || !consented.has(p.id);
+
   const toTreat: ToTreatRow[] = [];
   for (const p of patients) {
+    if (isOnboarding(p)) continue;
     const sig = signalsBy.get(p.id) ?? { painScores: [], difficulties: [], lastPain: null, lastPainAt: "" };
     const a = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties });
     const s = computeSignal({ concerning: a.concerning, severe: a.severe, lastPain: sig.lastPain, lastSessionAt: lastSession.get(p.id) ?? null, createdAt: p.created_at, now });
@@ -104,9 +116,10 @@ export function buildDashboardHome({ now = new Date(), patients, logs, feedback 
 
 export async function loadDashboardHome(supabase: SupabaseClient, userId: string, now: Date = new Date()): Promise<DashboardHome> {
   const since14 = new Date(now.getTime() - 14 * 86_400_000).toISOString();
-  const [instructor, { data: patients }, { data: logs }, { data: feedback }] = await Promise.all([
+  const [instructor, { data: patients }, { data: profiles }, { data: logs }, { data: feedback }] = await Promise.all([
     getInstructor(supabase, userId),
-    supabase.from("patients").select("id, full_name, created_at"),
+    supabase.from("patients").select("id, full_name, created_at, terms_accepted_at"),
+    supabase.from("patient_profiles").select("id, health_data_consent_at"),
     supabase.from("workout_logs").select("id, patient_id, completed_at"),
     supabase.from("patient_feedback").select("patient_id, pain_score, difficulty, created_at").gte("created_at", since14),
   ]);
@@ -116,6 +129,7 @@ export async function loadDashboardHome(supabase: SupabaseClient, userId: string
     ...buildDashboardHome({
       now,
       patients: (patients ?? []) as DashboardHomeInput["patients"],
+      profiles: (profiles ?? []) as DashboardHomeInput["profiles"],
       logs: (logs ?? []) as DashboardHomeInput["logs"],
       feedback: (feedback ?? []) as DashboardHomeInput["feedback"],
     }),

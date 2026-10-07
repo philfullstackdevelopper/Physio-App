@@ -14,6 +14,8 @@ import {
   type InstructorTierPriceRow,
 } from "@/lib/billing/plans";
 import { PLATFORM_FEE_RATE } from "@/lib/billing/platformFee";
+import { hasActiveTier } from "@/lib/billing/access";
+import { getTierBilling } from "@/lib/billing/context";
 
 // Démarre un Stripe Checkout (page hébergée) pour l'offre choisie et y
 // redirige le patient. Appelé depuis un <form action={startTierCheckout}>
@@ -39,6 +41,27 @@ export async function startTierCheckout(formData: FormData) {
 
   const supabase = await createClient();
   const user = await requireUser(supabase);
+
+  // (Philippe, 2026-10-07) Revérifié côté serveur : un double clic, un
+  // onglet resté ouvert ou un formulaire rejoué ne doit jamais créer un
+  // DEUXIÈME abonnement (deux prélèvements par mois) à côté de celui en cours.
+  const [billing, { data: existingSub }] = await Promise.all([
+    getTierBilling(supabase, user.id),
+    supabase
+      .from("subscriptions")
+      .select("stripe_customer_id, stripe_subscription_id, status")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
+  if (hasActiveTier(billing)) redirect("/patient");
+  if (existingSub?.status === "past_due" || existingSub?.status === "unpaid") {
+    fail("Un paiement de votre abonnement a échoué : mettez à jour votre carte plutôt que de souscrire à nouveau.");
+  }
+  // Essai gratuit : une seule fois par patient. Toute trace d'un abonnement
+  // passé (même résilié) l'exclut — avant, chaque nouvelle souscription
+  // offrait 7 jours de plus, indéfiniment.
+  const storedCustomerId = (existingSub?.stripe_customer_id as string | null) ?? null;
+  const hadSubscription = !!existingSub?.stripe_subscription_id || !!storedCustomerId;
 
   const { data: patient } = await supabase
     .from("patients")
@@ -75,11 +98,27 @@ export async function startTierCheckout(formData: FormData) {
   const proto = host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https";
   const base = `${proto}://${host}`;
   const kineName = (kine?.full_name as string | null) ?? "votre kiné";
+  const stripe = getStripe();
 
   // redirect() fonctionne en levant une exception interne à Next : il doit
   // rester HORS du try, sinon le catch l'avalerait.
   let checkoutUrl: string | null = null;
   try {
+    // Réutiliser le client Stripe déjà connu (même carte, historique de
+    // factures, et un seul client à retrouver côté webhook) — seulement s'il
+    // existe bien sur le compte Connect de CE kiné : un client d'un ancien
+    // abonnement plateforme ou d'un autre kiné n'y existe pas.
+    let customerId: string | null = null;
+    if (storedCustomerId) {
+      try {
+        const c = await stripe.customers.retrieve(storedCustomerId, undefined, { stripeAccount: destination });
+        if (!("deleted" in c && c.deleted)) customerId = c.id;
+      } catch {
+        /* introuvable sur ce compte — un nouveau client sera créé */
+      }
+    }
+
+
     // Paiement direct (Direct charge) : la session est créée SUR le compte
     // Connect du kiné (option `stripeAccount`, pas transfer_data.destination)
     // — Stripe recommande ce mode pour les comptes "Standard" (le type utilisé
@@ -92,15 +131,15 @@ export async function startTierCheckout(formData: FormData) {
     // R.4321-70/71/72 CSP) assumé en connaissance de cause, question posée
     // au CNOMK en parallèle — ce mode de paiement ne change rien à ce
     // risque, seulement à qui est légalement le vendeur de la transaction.
-    const session = await getStripe().checkout.sessions.create(
+    const session = await stripe.checkout.sessions.create(
       {
         mode: "subscription",
-        customer_email: user.email ?? undefined,
+        ...(customerId ? { customer: customerId } : { customer_email: user.email ?? undefined }),
         client_reference_id: user.id,
         metadata: { user_id: user.id, plan: tier.key },
         subscription_data: {
           metadata: { user_id: user.id, plan: tier.key },
-          trial_period_days: TRIAL_DAYS,
+          ...(hadSubscription ? {} : { trial_period_days: TRIAL_DAYS }),
           application_fee_percent: PLATFORM_FEE_RATE * 100,
         },
         line_items: [

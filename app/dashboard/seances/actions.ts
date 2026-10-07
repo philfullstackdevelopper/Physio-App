@@ -3,18 +3,14 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/supabase/require-user";
+import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-// Ensure the caller is a logged-in instructor; returns their user id.
+// Ensure the caller is an approved instructor; returns their user id.
+// (Philippe, 2026-10-07 : délègue à la garde commune, qui vérifie aussi que
+// le compte kiné a été validé — avant, un kiné « pending » passait ici.)
 async function requireInstructor(supabase: SupabaseClient): Promise<string> {
-  const user = await requireUser(supabase);
-  const { data: instr } = await supabase
-    .from("instructors")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!instr) redirect("/patient");
+  const { user } = await requireApprovedInstructor(supabase);
   return user.id;
 }
 
@@ -83,17 +79,48 @@ export async function saveSeance(formData: FormData) {
   const duration = Number(formData.get("duration_minutes")) || null;
   const tpw = Number(formData.get("times_per_week")) || null;
 
-  await supabase
-    .from("workouts")
-    .update({ name, condition_id: conditionId, stage, duration_minutes: duration, times_per_week: tpw })
-    .eq("id", id);
+  // (Philippe, 2026-10-07 : chaque écriture est maintenant vérifiée — avant,
+  // une erreur passait inaperçue et la page affichait quand même « Séance
+  // enregistrée ».)
+  const fail = (msg: string): never => redirect(`/dashboard/seances/${id}?error=${encodeURIComponent(msg)}`);
 
   // Replace the exercise list with the checked exercises (in DOM order).
   const exerciseIds = formData.getAll("exercise_ids").map(String).filter(Boolean);
-  await supabase.from("workout_exercises").delete().eq("workout_id", id);
-  if (exerciseIds.length) {
-    const rows = exerciseIds.map((exId, i) => ({ workout_id: id, exercise_id: exId, position: i }));
-    await supabase.from("workout_exercises").insert(rows);
+  // Une séance sans exercice serait vide pour tous les patients qui l'ont
+  // déjà attribuée — même règle que « Ajuster la séance ».
+  if (exerciseIds.length === 0) fail("Une séance doit garder au moins un exercice.");
+  if (!name) fail("Le nom de la séance est requis.");
+
+  const { error: updateError } = await supabase
+    .from("workouts")
+    .update({ name, condition_id: conditionId, stage, duration_minutes: duration, times_per_week: tpw })
+    .eq("id", id);
+  if (updateError) fail("Impossible d'enregistrer la séance : " + updateError.message);
+
+  // Pas de transaction possible ici : pour ne jamais laisser la séance vide
+  // (elle est partagée par tous les patients à qui elle est attribuée), on
+  // insère d'abord la nouvelle liste, puis on supprime l'ancienne. Si
+  // l'insertion échoue, l'ancienne liste reste intacte. Si c'est la
+  // suppression qui échoue, on retire la nouvelle liste pour revenir à
+  // l'état d'avant.
+  const { data: oldRows, error: readError } = await supabase
+    .from("workout_exercises")
+    .select("id")
+    .eq("workout_id", id);
+  if (readError) fail("Impossible de lire les exercices de la séance : " + readError.message);
+  const oldIds = (oldRows ?? []).map((r) => r.id as string);
+
+  const rows = exerciseIds.map((exId, i) => ({ workout_id: id, exercise_id: exId, position: i }));
+  const { data: inserted, error: insertError } = await supabase.from("workout_exercises").insert(rows).select("id");
+  if (insertError) fail("Impossible d'enregistrer les exercices : " + insertError.message);
+
+  if (oldIds.length) {
+    const { error: deleteError } = await supabase.from("workout_exercises").delete().in("id", oldIds);
+    if (deleteError) {
+      const newIds = (inserted ?? []).map((r) => r.id as string);
+      if (newIds.length) await supabase.from("workout_exercises").delete().in("id", newIds);
+      fail("Impossible de mettre à jour les exercices : " + deleteError.message);
+    }
   }
 
   revalidatePath(`/dashboard/seances/${id}`);
@@ -139,9 +166,12 @@ export async function duplicateSeance(formData: FormData) {
     .eq("workout_id", templateId)
     .order("position");
   if (exs && exs.length) {
-    await supabase.from("workout_exercises").insert(
+    const { error: exError } = await supabase.from("workout_exercises").insert(
       exs.map((e) => ({ workout_id: created.id, exercise_id: e.exercise_id, position: e.position })),
     );
+    if (exError) {
+      redirect(`/dashboard/seances/${created.id}?error=${encodeURIComponent("Exercices non copiés : " + exError.message)}`);
+    }
   }
 
   redirect(`/dashboard/seances/${created.id}`);
@@ -223,7 +253,10 @@ export async function deleteSeance(formData: FormData) {
     );
   }
 
-  await supabase.from("workouts").delete().eq("id", id);
+  const { error: deleteError } = await supabase.from("workouts").delete().eq("id", id);
+  if (deleteError) {
+    redirect(`/dashboard/seances?error=${encodeURIComponent("Impossible de supprimer la séance : " + deleteError.message)}`);
+  }
   revalidatePath("/dashboard/seances");
   redirect("/dashboard/seances");
 }

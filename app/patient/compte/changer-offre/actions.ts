@@ -61,13 +61,27 @@ export async function changeTier(formData: FormData) {
   const kineName = (kine?.full_name as string | null) ?? "votre kiné";
 
   const stripe = getStripe();
+
+  // (Philippe, 2026-10-07) redirect() — donc fail() — lève une exception
+  // interne à Next : jamais à l'intérieur d'un try dont le catch attrape
+  // tout. Avant, « Abonnement introuvable » était avalé par le catch plus
+  // bas et remplacé par le message générique. On note l'erreur, on
+  // redirige après.
+  let failure: string | null = null;
+  let itemId: string | undefined;
   try {
     // Le compte connecté du kiné est la seule source de vérité pour l'item
     // d'abonnement à remplacer — jamais mis en cache localement.
     const current = await stripe.subscriptions.retrieve(subscriptionId, undefined, { stripeAccount: destination });
-    const itemId = current.items.data[0]?.id;
-    if (!itemId) fail("Abonnement introuvable côté Stripe.");
+    itemId = current.items.data[0]?.id;
+  } catch (e) {
+    console.error("changeTier: Stripe retrieve failed", e);
+    failure = "Le changement d'offre a échoué. Réessayez dans quelques minutes.";
+  }
+  if (failure) fail(failure);
+  if (!itemId) fail("Abonnement introuvable côté Stripe.");
 
+  try {
     // Subscription-item price_data wants an existing Product id (unlike
     // Checkout's line_items.price_data, which takes inline product_data) —
     // created fresh on the kiné's own connected account each time, same as
@@ -98,8 +112,9 @@ export async function changeTier(formData: FormData) {
     );
   } catch (e) {
     console.error("changeTier: Stripe update failed", e);
-    fail("Le changement d'offre a échoué. Réessayez dans quelques minutes.");
+    failure = "Le changement d'offre a échoué. Réessayez dans quelques minutes.";
   }
+  if (failure) fail(failure);
 
   redirect("/patient/compte?changed=1");
 }

@@ -38,17 +38,25 @@ export async function upsertSubscription(params: {
   );
 }
 
-// Not privileged in the RLS sense (app_users already has an open policy) —
-// used here specifically because it needs no Clerk-authenticated session at
-// all, unlike the normal supabase-js client. Account deletion calls this
-// AFTER already deleting the Clerk identity itself, at which point a fresh
-// Clerk token may no longer be obtainable.
+// Suppression d'un compte (et, en cascade, de toutes ses données). Depuis la
+// migration 0061, app_users n'est plus modifiable via PostgREST : ces deux
+// fonctions passent par internal.delete_app_user_by_* (laissez-passer
+// `app_users`). Pas besoin de session Clerk — utile quand l'identité Clerk
+// vient d'être supprimée.
 export async function deleteAppUserById(appId: string): Promise<void> {
-  await getPool().query("delete from public.app_users where app_id = $1", [appId]);
+  await getPool().query("select internal.delete_app_user_by_id($1)", [appId]);
 }
 
 export async function deleteAppUserByEmail(email: string): Promise<void> {
-  await getPool().query("delete from public.app_users where email = $1", [email]);
+  await getPool().query("select internal.delete_app_user_by_email($1)", [email.trim().toLowerCase()]);
+}
+
+// Vidéo d'un exercice de la PLATEFORME (created_by null) — réservé à
+// l'administrateur : l'appelant doit avoir vérifié isAdminEmail() côté serveur
+// avant (app/dashboard/exercises/actions.ts). Les kinés, eux, ne peuvent plus
+// changer que la vidéo de leurs propres exercices (set_exercise_media, 0061).
+export async function adminSetExerciseMedia(exerciseId: string, url: string | null, startSeconds: number): Promise<void> {
+  await getPool().query("select internal.admin_set_exercise_media($1, $2, $3)", [exerciseId, url, startSeconds]);
 }
 
 export async function upsertConnectAccount(params: {

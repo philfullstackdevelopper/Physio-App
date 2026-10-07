@@ -9,11 +9,12 @@ const at = (daysAgo: number, hour = 10) => new Date(2026, 8, 3 - daysAgo, hour).
 const input = {
   now,
   patients: [
-    { id: "p1", full_name: "Marc T.", created_at: at(60) },
-    { id: "p2", full_name: "Sophie R.", created_at: at(60) },
-    { id: "p3", full_name: "Paul M.", created_at: at(60) },
-    { id: "p4", full_name: "Julie L.", created_at: at(2) },
+    { id: "p1", full_name: "Marc T.", created_at: at(60), terms_accepted_at: at(60) },
+    { id: "p2", full_name: "Sophie R.", created_at: at(60), terms_accepted_at: at(60) },
+    { id: "p3", full_name: "Paul M.", created_at: at(60), terms_accepted_at: at(60) },
+    { id: "p4", full_name: "Julie L.", created_at: at(2), terms_accepted_at: at(2) },
   ],
+  profiles: ["p1", "p2", "p3", "p4"].map((id) => ({ id, health_data_consent_at: at(60) })),
   logs: [
     { id: "l1", patient_id: "p1", completed_at: at(0, 9) },
     { id: "l2", patient_id: "p3", completed_at: at(0, 8) },
@@ -54,4 +55,20 @@ test("activité récente : 5 dernières séances, plus récente d'abord", () => 
 test("bandeau : dernière douleur du jour, sinon null", () => {
   assert.equal(buildDashboardHome(input).banner, "Marc T. a signalé une douleur pendant sa séance.");
   assert.equal(buildDashboardHome({ ...input, feedback: [] }).banner, null);
+});
+
+test("à traiter : les patients encore en inscription ne comptent pas (comme « À surveiller »)", () => {
+  const h = buildDashboardHome({
+    ...input,
+    patients: [
+      ...input.patients,
+      // Invité il y a 30 jours, CGU jamais acceptées : serait « inactif ».
+      { id: "p5", full_name: "Invité X.", created_at: at(30), terms_accepted_at: null },
+      // CGU acceptées mais questionnaire santé pas terminé.
+      { id: "p6", full_name: "Profil Y.", created_at: at(30), terms_accepted_at: at(30) },
+    ],
+  });
+  assert.ok(!h.toTreat.some((r) => r.id === "p5" || r.id === "p6"));
+  assert.equal(h.inactiveCount, 1);
+  assert.equal(h.patientCount, 6);
 });

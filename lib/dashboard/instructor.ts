@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type InstructorSummary = {
   status: string | null;
   full_name: string | null;
+  cabinet_name: string | null;
 };
 
 /** Shared load for the instructor's own row: the dashboard layout (gates on
@@ -14,7 +15,7 @@ export const getInstructor = cache(
   async (supabase: SupabaseClient, userId: string): Promise<InstructorSummary | null> => {
     const { data, error } = await supabase
       .from("instructors")
-      .select("status, full_name")
+      .select("status, full_name, cabinet_name")
       .eq("id", userId)
       .maybeSingle();
     // A query failure (PostgREST unreachable, network blip) used to look

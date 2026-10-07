@@ -145,7 +145,13 @@ export default function PatientNav({
                 <link.icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.1 : 1.6} />
                 {link.label}
                 {link.href === "/patient/messages" && unreadCount > 0 && (
-                  <span className="absolute right-[32%] top-2 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-surface" />
+                  <>
+                    {/* Pastille purement visuelle : texte pour les lecteurs d'écran (Philippe, 2026-10-07). */}
+                    <span aria-hidden="true" className="absolute right-[32%] top-2 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-surface" />
+                    <span className="sr-only">
+                      {" "}({unreadCount} nouveau{unreadCount > 1 ? "x" : ""} message{unreadCount > 1 ? "s" : ""})
+                    </span>
+                  </>
                 )}
               </Link>
             );

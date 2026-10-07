@@ -11,15 +11,17 @@ test("sans assignation → pct null", () => {
   assert.deepEqual(a, { pct: null, done: 1, expected: 0 });
 });
 
-test("une séance assignée depuis plus de 4 semaines, 3×/semaine, 10 faites → 83 %", () => {
+test("une séance assignée depuis plus de 4 semaines, 3×/semaine, 8 faites → 80 %", () => {
   const a = computeAdherence({
-    completedAt: Array.from({ length: 10 }, (_, i) => daysAgo(i * 2)),
+    completedAt: Array.from({ length: 8 }, (_, i) => daysAgo(i * 2)),
     assignments: [{ weekStartDate: "2026-07-06", workoutId: "w1", timesPerWeek: 3 }],
     now,
   });
-  assert.equal(a.expected, 12); // 4 semaines glissantes × 3
-  assert.equal(a.done, 10);
-  assert.equal(a.pct, 83);
+  // 3 semaines complètes × 3 + semaine en cours proratisée (jeudi : 3 jours
+  // écoulés → floor(3 × 3/7) = 1).
+  assert.equal(a.expected, 10);
+  assert.equal(a.done, 8);
+  assert.equal(a.pct, 80);
 });
 
 test("séance assignée seulement cette semaine : attendu proratisé, plafond 100 %", () => {
@@ -28,8 +30,32 @@ test("séance assignée seulement cette semaine : attendu proratisé, plafond 10
     assignments: [{ weekStartDate: "2026-08-31", workoutId: "w1", timesPerWeek: 3 }], // lundi de la semaine en cours
     now,
   });
-  assert.equal(a.expected, 3); // une seule des 4 semaines glissantes est couverte
+  assert.equal(a.expected, 1); // seule la semaine en cours est couverte, et proratisée
   assert.equal(a.pct, 100);
+});
+
+test("séance attribuée aujourd'hui (lundi) : rien d'attendu encore → pas de « Faible »", () => {
+  const monday = new Date(2026, 7, 31, 10); // lundi 2026-08-31
+  const a = computeAdherence({
+    completedAt: [],
+    assignments: [{ weekStartDate: "2026-08-31", workoutId: "w1", timesPerWeek: 3 }],
+    now: monday,
+  });
+  assert.deepEqual(a, { pct: null, done: 0, expected: 0 });
+});
+
+test("seules les séances des 4 semaines mesurées comptent", () => {
+  // Fenêtre : du lundi 2026-08-10 00:00 à maintenant (jeudi 2026-09-03).
+  const a = computeAdherence({
+    completedAt: [
+      new Date(2026, 7, 9, 18).toISOString(), // dimanche 08-09 : hors fenêtre
+      new Date(2026, 7, 10, 9).toISOString(), // lundi 08-10 : dans la fenêtre
+      new Date(2026, 8, 4, 9).toISOString(), // demain : ignoré
+    ],
+    assignments: [{ weekStartDate: "2026-07-06", workoutId: "w1", timesPerWeek: 3 }],
+    now,
+  });
+  assert.equal(a.done, 1);
 });
 
 test("changement de séance en cours de route : pas de double comptage", () => {
@@ -42,9 +68,10 @@ test("changement de séance en cours de route : pas de double comptage", () => {
     ],
     now,
   });
-  // Semaines du 08-17, 08-24 et 08-31 (courante) -> B (5 chacune) ; seule la
-  // 4e semaine glissante (08-10) tombe encore avant B, donc sur A (3).
-  assert.equal(a.expected, 3 + 5 + 5 + 5);
+  // Semaines du 08-17 et 08-24 -> B (5 chacune), semaine courante (08-31) ->
+  // B proratisée (jeudi : floor(5 × 3/7) = 2) ; seule la 4e semaine (08-10)
+  // tombe encore avant B, donc sur A (3).
+  assert.equal(a.expected, 3 + 5 + 5 + 2);
 });
 
 test("timesPerWeek null compte pour 1", () => {
@@ -53,7 +80,7 @@ test("timesPerWeek null compte pour 1", () => {
     assignments: [{ weekStartDate: "2026-07-06", workoutId: "w1", timesPerWeek: null }],
     now,
   });
-  assert.equal(a.expected, 4);
+  assert.equal(a.expected, 3); // 3 semaines complètes ; semaine en cours : floor(1 × 3/7) = 0
 });
 
 test("libellés et tons", () => {

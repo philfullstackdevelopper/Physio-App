@@ -67,9 +67,20 @@ export async function saveOnboarding(formData: FormData) {
   // there's no consent on file yet.
   const { data: existing } = await supabase
     .from("patient_profiles")
-    .select("health_data_consent_at")
+    .select("health_data_consent_at, injury_stage, stage_declared_at, updated_at")
     .eq("id", user.id)
     .maybeSingle();
+
+  // La semaine de soin (lib/patient/home-data.ts) part de stage_declared_at :
+  // on ne la remet à maintenant que si l'étape change vraiment (ou au premier
+  // enregistrement) — modifier son poids ne doit plus relancer la
+  // rééducation à la semaine 1 (Philippe, 2026-10-07). Même repli sur
+  // updated_at que home-data.ts pour une ligne encore sans la colonne.
+  const previousDeclaredAt = (existing?.stage_declared_at ?? existing?.updated_at ?? null) as string | null;
+  const stageDeclaredAt =
+    existing && existing.injury_stage === injuryStage && previousDeclaredAt
+      ? previousDeclaredAt
+      : new Date().toISOString();
 
   let healthDataConsentAt = existing?.health_data_consent_at ?? null;
   if (!healthDataConsentAt) {
@@ -97,6 +108,7 @@ export async function saveOnboarding(formData: FormData) {
       activity_level: activityLevel,
       equipment,
       health_data_consent_at: healthDataConsentAt,
+      stage_declared_at: stageDeclaredAt,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "id" },

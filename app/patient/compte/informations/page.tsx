@@ -56,7 +56,7 @@ export default async function InformationsPage() {
   const equipment = ((profile?.equipment as EquipmentId[] | null) ?? []).map((id) => EQUIPMENT_LABELS[id]);
 
   return (
-    <main className="min-h-screen bg-app-bg p-6 sm:p-8">
+    <main className="bg-app-bg p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] sm:min-h-screen sm:p-8">
       <div className="mx-auto max-w-2xl">
         <Link href="/patient/compte" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink">
           <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={1.75} />

@@ -1,6 +1,6 @@
 export default function PatientDashboardLoading() {
   return (
-    <main className="min-h-screen p-6 sm:p-8">
+    <main className="p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] sm:min-h-screen sm:p-8">
       <div className="mx-auto max-w-2xl motion-safe:animate-pulse">
         <div className="pt-2 flex justify-center">
           <div className="h-10 w-56 rounded-lg bg-slate-200 sm:h-12 sm:w-72" />

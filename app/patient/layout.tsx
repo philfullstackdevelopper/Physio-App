@@ -94,12 +94,23 @@ export default async function PatientLayout({ children }: { children: React.Reac
     .eq("sender", "instructor")
     .is("read_at", null);
 
+  // Séance guidée (…/seance) : PatientNav n'affiche rien (pas de barre
+  // d'onglets), donc pas de marge du bas non plus — sinon bande vide en bas
+  // du téléphone (Philippe, 2026-10-07). Même test que PatientNav.
+  const inGuidedSession = pathname.endsWith("/seance");
+
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
       <PatientNav patientName={(patient.full_name as string | null) ?? null} unreadCount={unreadCount ?? 0} />
       {/* Téléphone : la marge du bas suit la vraie hauteur de la barre d'onglets,
           zone de la « home bar » des iPhone comprise (env(safe-area-inset-bottom)). */}
-      <div className="relative min-w-0 flex-1 pb-20 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0">{children}</div>
+      <div
+        className={`relative min-w-0 flex-1 ${
+          inGuidedSession ? "" : "pb-20 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0"
+        }`}
+      >
+        {children}
+      </div>
     </div>
   );
 }

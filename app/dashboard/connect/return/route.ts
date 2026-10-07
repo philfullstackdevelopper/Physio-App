@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { upsertConnectAccount } from "@/lib/db/admin";
 import { requireUser } from "@/lib/supabase/require-user";
-import { getStripe } from "@/lib/billing/stripe";
+import { refreshConnectStatus } from "@/lib/billing/connectStatus";
 
 // The kiné lands here after finishing (or leaving) Stripe's own Connect
 // onboarding flow. Checks the account's real status with Stripe directly —
@@ -18,11 +17,20 @@ export async function GET(request: Request) {
     .maybeSingle();
   const accountId = row?.stripe_connect_account_id as string | null;
 
+  const target = new URL("/dashboard/facturation", request.url);
   if (accountId) {
-    const account = await getStripe().accounts.retrieve(accountId);
-    const status = account.details_submitted && account.charges_enabled ? "active" : "onboarding";
-    await upsertConnectAccount({ instructorId: user.id, stripeConnectAccountId: accountId, status });
+    // (Philippe, 2026-10-07) Stripe indisponible ou compte introuvable : un
+    // message lisible sur la page Facturation plutôt qu'une erreur 500 brute.
+    try {
+      await refreshConnectStatus(user.id, accountId);
+    } catch (err) {
+      console.error("[connect/return] vérification du compte Stripe impossible :", err);
+      target.searchParams.set(
+        "error",
+        "Impossible de vérifier votre compte Stripe pour le moment. Rechargez cette page dans quelques minutes.",
+      );
+    }
   }
 
-  return NextResponse.redirect(new URL("/dashboard/facturation", request.url));
+  return NextResponse.redirect(target);
 }

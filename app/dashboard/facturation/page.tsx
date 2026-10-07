@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { TIER_KEYS, resolveTierPrices, type InstructorTierPriceRow } from "@/lib/billing/plans";
 import { loadPatientCounts } from "@/lib/billing/patientCounts";
 import { estimateMonthlySplit } from "@/lib/billing/platformFee";
+import { refreshConnectStatus } from "@/lib/billing/connectStatus";
 import FacturationView, { type ConnectStatus } from "./FacturationView";
 
 // Tarifs et paiements : pour l'instant en lecture seule côté kiné — les prix
@@ -28,12 +29,29 @@ export default async function FacturationPage({
       .select("tier_essentiel_cents, tier_standard_cents, tier_premium_cents")
       .eq("id", user.id)
       .maybeSingle(),
-    supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", user.id).maybeSingle(),
+    supabase
+      .from("instructor_connect_accounts")
+      .select("status, stripe_connect_account_id")
+      .eq("instructor_id", user.id)
+      .maybeSingle(),
     loadPatientCounts(supabase, user.id),
   ]);
 
   const prices = resolveTierPrices(kine as InstructorTierPriceRow | null);
-  const connectStatus = ((connect?.status as string | null) ?? "not_started") as ConnectStatus;
+  let connectStatus = ((connect?.status as string | null) ?? "not_started") as ConnectStatus;
+
+  // (Philippe, 2026-10-07) Le statut stocké peut être en retard sur Stripe
+  // (onboarding terminé plus tard, webhook manqué) : tant qu'il n'est pas
+  // « active », on relit le compte chez Stripe à chaque visite — un seul
+  // appel, et seulement dans ce cas. Échec → on garde le statut stocké.
+  const accountId = (connect?.stripe_connect_account_id as string | null) ?? null;
+  if (accountId && connectStatus !== "active") {
+    try {
+      connectStatus = await refreshConnectStatus(user.id, accountId);
+    } catch (err) {
+      console.error("[facturation] resynchronisation du compte Stripe impossible :", err);
+    }
+  }
 
   // Répartition « roue » : à partir des offres RÉELLEMENT choisies par ses
   // patients aujourd'hui (counts.byTier), pas d'une simulation manuelle.

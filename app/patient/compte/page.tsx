@@ -3,7 +3,7 @@ import { AlertTriangle, ArrowRight, Calendar, CheckCircle2, ChevronRight, Credit
 import { SignOutButton } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { TIERS, isTierKey } from "@/lib/billing/plans";
+import { TIERS, isTierKey, resolveTierPrices, type InstructorTierPriceRow } from "@/lib/billing/plans";
 import { hasActiveTier, isSubscriptionActive } from "@/lib/billing/access";
 import { getTierBilling } from "@/lib/billing/context";
 import { openBillingPortal } from "@/app/billing/actions";
@@ -43,8 +43,20 @@ export default async function CompteePage({
   const [billing, { data: sub }, { data: patient }] = await Promise.all([
     getTierBilling(supabase, user.id),
     supabase.from("subscriptions").select("stripe_customer_id").eq("user_id", user.id).maybeSingle(),
-    supabase.from("patients").select("full_name").eq("id", user.id).maybeSingle(),
+    supabase.from("patients").select("full_name, instructor_id").eq("id", user.id).maybeSingle(),
   ]);
+  // (Philippe, 2026-10-07) Le prix affiché est celui de SON kiné (lisible par
+  // le patient, migration 0028 — même lecture que /patient/abonnement), pas
+  // le défaut plateforme de TIERS : c'est ce montant-là que Stripe prélève.
+  const instructorId = (patient?.instructor_id as string | null) ?? null;
+  const { data: kine } = instructorId
+    ? await supabase
+        .from("instructors")
+        .select("tier_essentiel_cents, tier_standard_cents, tier_premium_cents")
+        .eq("id", instructorId)
+        .maybeSingle()
+    : { data: null };
+  const kinePrices = resolveTierPrices(kine as InstructorTierPriceRow | null);
   const hasCustomer = !!(sub?.stripe_customer_id as string | null);
   const active = hasActiveTier(billing);
   const paid = isSubscriptionActive(billing.subStatus, billing.subCurrentPeriodEnd);
@@ -72,7 +84,7 @@ export default async function CompteePage({
           : !billing.subPlan && billing.trialEndsAt && active
             ? `Jusqu'au ${frDate(billing.trialEndsAt)}`
             : null;
-  const priceCents = isTierKey(billing.subPlan) ? TIERS[billing.subPlan].amount : null;
+  const priceCents = isTierKey(billing.subPlan) ? kinePrices[billing.subPlan] : null;
 
   return (
     // Téléphone (Philippe, 2026-10-04 : tout sur un écran, plus efficace) :

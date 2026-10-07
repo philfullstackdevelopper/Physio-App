@@ -90,6 +90,18 @@ export default async function ProgresPage() {
           Suivez vos résultats au fil du temps (30 derniers jours).
           {conditionName && <span className="sm:hidden"> Zone : {conditionName}.</span>}
         </p>
+        {/* Téléphone sans douleur enregistrée : la carte du graphique (seul lien
+            vers l'historique) est masquée — on garde l'accès ici (Philippe,
+            2026-10-07). Dès sm : rien de nouveau. */}
+        {!hasPain && (
+          <Link
+            href="/patient/historique"
+            className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-brand hover:underline sm:hidden"
+          >
+            Historique
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
+          </Link>
+        )}
 
         {/* Téléphone : aucune donnée encore → une phrase au lieu de tuiles « — »
             (Philippe, 2026-10-06 : « don't add stats if there are none »). */}

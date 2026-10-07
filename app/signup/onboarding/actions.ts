@@ -23,9 +23,16 @@ export async function saveInstructorOnboarding(formData: FormData) {
 
   const { data: instructor } = await supabase
     .from("instructors")
-    .select("full_name")
+    .select("full_name, status")
     .eq("id", user.id)
     .maybeSingle();
+
+  // Seul un compte encore « en attente » passe par ici. Un compte refusé dans
+  // /admin ne doit pas pouvoir se faire ré-approuver en renvoyant ce
+  // formulaire (audit du 2026-10-07) ; un compte déjà validé n'a rien à y faire.
+  if (!instructor) redirect("/signup");
+  if (instructor.status === "approved") redirect("/dashboard");
+  if (instructor.status !== "pending") redirect("/signup/pending");
 
   const cabinetName = String(formData.get("cabinet_name") ?? "").trim();
   const cabinetAddress = String(formData.get("cabinet_address") ?? "").trim();

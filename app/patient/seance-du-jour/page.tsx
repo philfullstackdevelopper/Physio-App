@@ -61,7 +61,7 @@ export default async function SeanceDuJourPage() {
   const { activeWorkout, doneToday, weekComplete } = home;
 
   return (
-    <main className="min-h-screen p-6 sm:p-8">
+    <main className="p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] sm:min-h-screen sm:p-8">
       <div className="mx-auto max-w-2xl">
         <h1 className="text-2xl font-semibold text-ink">Séance du jour</h1>
         <p className="mt-1 text-sm text-muted">La séance suggérée par votre praticien en ce moment.</p>

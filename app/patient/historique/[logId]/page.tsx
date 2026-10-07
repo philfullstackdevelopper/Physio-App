@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { ChevronLeft, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { getTierBilling } from "@/lib/billing/context";
+import { formatHistoryDay, historyDaysVisibleFor } from "@/lib/patient/historyWindow";
 
 type LogDetail = {
   id: string;
@@ -35,6 +37,26 @@ export default async function HistoriqueDetailPage({
   if (!logData) redirect("/patient/historique");
   const log = logData as unknown as LogDetail;
 
+  // Même fenêtre que la liste (lib/patient/historyWindow.ts) : en Essentiel,
+  // une séance au-delà des N derniers jours avec séance est verrouillée — la
+  // liste la grisait, mais son URL restait ouvrable ici (Philippe, 2026-10-07).
+  const historyDaysVisible = historyDaysVisibleFor((await getTierBilling(supabase, user.id)).subPlan);
+  if (historyDaysVisible !== null) {
+    const { data: newer } = await supabase
+      .from("workout_logs")
+      .select("completed_at")
+      .eq("patient_id", user.id)
+      .gte("completed_at", log.completed_at)
+      .order("completed_at", { ascending: false })
+      .limit(200);
+    const thisDay = formatHistoryDay(log.completed_at);
+    const daysBefore = new Set((newer ?? []).map((l) => formatHistoryDay(l.completed_at as string)));
+    daysBefore.delete(thisDay);
+    // Liste tronquée (200 séances, comme la page Historique) : le jour est
+    // forcément hors fenêtre.
+    if ((newer?.length ?? 0) >= 200 || daysBefore.size >= historyDaysVisible) redirect("/patient/historique");
+  }
+
   // Feedback recorded for THIS specific session, not just "around that time" —
   // linked by workout_log_id (older sessions predating that link show none).
   const { data: sessionFeedback } = await supabase
@@ -47,7 +69,7 @@ export default async function HistoriqueDetailPage({
   const hasFeedback = !!sessionFeedback;
 
   return (
-    <main className="min-h-screen p-6 sm:p-8">
+    <main className="p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] sm:min-h-screen sm:p-8">
       <div className="mx-auto max-w-2xl">
         <Link
           href="/patient/historique"

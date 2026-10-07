@@ -3,17 +3,15 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/supabase/require-user";
+import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isAdminEmail } from "@/lib/admin";
+import { adminSetExerciseMedia as dbAdminSetExerciseMedia } from "@/lib/db/admin";
 
+// (Philippe, 2026-10-07 : délègue à la garde commune, qui vérifie aussi que
+// le compte kiné a été validé — avant, un kiné « pending » passait ici.)
 async function requireInstructor(supabase: SupabaseClient): Promise<string> {
-  const user = await requireUser(supabase);
-  const { data: instr } = await supabase
-    .from("instructors")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!instr) redirect("/patient");
+  const { user } = await requireApprovedInstructor(supabase);
   return user.id;
 }
 
@@ -88,4 +86,40 @@ export async function unhideExercise(formData: FormData) {
 
   revalidatePath("/dashboard/exercises");
   redirect("/dashboard/exercises");
+}
+
+// Vidéo de démonstration d'un exercice PLATEFORME (created_by null), réservée
+// à l'administrateur (Philippe, 2026-10-07). La RPC set_exercise_media
+// n'accepte plus que les exercices du kiné connecté ; pour la bibliothèque
+// partagée, l'écriture passe donc par la connexion serveur directe
+// (lib/db/admin.ts), après une double vérification ici même : e-mail admin
+// (jamais une simple prop venue du navigateur) et exercice bien plateforme.
+export async function adminSetExerciseMedia(
+  exerciseId: string,
+  url: string | null,
+  startSeconds: number,
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const { user } = await requireApprovedInstructor(supabase);
+  if (!isAdminEmail(user.email)) return { error: "Action réservée à l'administrateur." };
+
+  if (typeof exerciseId !== "string" || !exerciseId) return { error: "Exercice introuvable." };
+  if (url !== null && (typeof url !== "string" || !/^https:\/\//.test(url))) {
+    return { error: "Adresse de vidéo invalide." };
+  }
+  const seconds = Number.isFinite(startSeconds) && startSeconds >= 0 ? Math.floor(startSeconds) : 0;
+
+  const { data: ex } = await supabase.from("exercises").select("created_by").eq("id", exerciseId).maybeSingle();
+  if (!ex) return { error: "Exercice introuvable." };
+  if (ex.created_by !== null) return { error: "Seuls les exercices de la plateforme passent par ici." };
+
+  try {
+    await dbAdminSetExerciseMedia(exerciseId, url, seconds);
+  } catch (e) {
+    console.error("adminSetExerciseMedia failed", e);
+    return { error: "Échec de l'enregistrement de la vidéo." };
+  }
+
+  revalidatePath("/dashboard/exercises");
+  return { ok: true };
 }

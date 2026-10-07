@@ -25,8 +25,12 @@ export default async function MessagesPage({
   const user = await requireUser(supabase);
 
   const { data: patient } = await supabase.from("patients").select("instructors ( full_name )").eq("id", user.id).maybeSingle();
-  const instructorRow = patient?.instructors as { full_name: string | null }[] | null;
-  const instructorFullName = instructorRow?.[0]?.full_name ?? null;
+  // Jointure plusieurs-vers-un (patients → instructors) : PostgREST renvoie un
+  // OBJET, pas un tableau — lu comme un tableau, le nom du kiné tombait
+  // toujours sur « votre kiné » (Philippe, 2026-10-07 ; même lecture que
+  // app/patient/layout.tsx).
+  const instructorRow = patient?.instructors as unknown as { full_name: string | null } | null;
+  const instructorFullName = instructorRow?.full_name ?? null;
   const instructorName = instructorFullName ?? "votre kiné";
 
   const { data: messages } = await supabase

@@ -34,6 +34,13 @@ export function isSubscriptionActive(
   currentPeriodEnd: string | null | undefined,
   now: Date = new Date(),
 ): boolean {
+  // (Philippe, 2026-10-07) past_due = un prélèvement a échoué mais Stripe
+  // réessaie encore : on ne coupe pas le patient tout de suite, il garde
+  // l'accès jusqu'à la fin de la période connue (jamais sans date). Stripe
+  // passe ensuite l'abonnement en unpaid/canceled s'il abandonne.
+  if (status === "past_due") {
+    return !!currentPeriodEnd && new Date(currentPeriodEnd).getTime() >= now.getTime();
+  }
   if (!status || !ACTIVE_STATUSES.has(status)) return false;
   // Honour the paid period end if Stripe gave us one (grace until then).
   if (currentPeriodEnd && new Date(currentPeriodEnd).getTime() < now.getTime()) return false;

@@ -75,6 +75,15 @@ export default async function SignupFinalizePage() {
     .eq("id", appId)
     .maybeSingle();
 
+  // Un patient connecté qui atterrit ici (lien d'inscription kiné ouvert par
+  // erreur) ne doit pas devenir en plus un « kiné en attente » : sinon chaque
+  // connexion l'enverrait sur l'écran d'attente du dashboard au lieu de son
+  // appli patient (audit du 2026-10-07).
+  if (!existing) {
+    const { data: asPatient } = await supabase.from("patients").select("id").eq("id", appId).maybeSingle();
+    if (asPatient) redirect("/patient");
+  }
+
   if (!existing) {
     const fullName =
       [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||

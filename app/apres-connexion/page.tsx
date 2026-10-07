@@ -21,6 +21,9 @@ import ClientRedirect from "./ClientRedirect";
 // while never letting an actual redirect() escape this one page's render.
 export default async function AfterSignIn() {
   const supabase = await createClient();
+  // La cible est calculée dans le try, le JSX rendu en dehors (règle React :
+  // pas de JSX construit dans un try/catch) — même comportement qu'avant.
+  let to: string;
   try {
     const user = await requireUser(supabase);
     // getInstructor() throws on a real query failure (PostgREST hiccup)
@@ -28,15 +31,16 @@ export default async function AfterSignIn() {
     // sign-in, is exactly where that would otherwise misroute a real
     // instructor to /patient.
     const instructor = await getInstructor(supabase, user.id);
-    return <ClientRedirect to={instructor ? "/dashboard" : "/patient"} />;
+    to = instructor ? "/dashboard" : "/patient";
   } catch (err) {
     const digest = (err as { digest?: unknown })?.digest;
     if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
       const parts = digest.split(";");
-      const to = parts.slice(2, -2).join(";") || "/login";
-      return <ClientRedirect to={to} />;
+      to = parts.slice(2, -2).join(";") || "/login";
+    } else {
+      // Not a redirect — a genuine getInstructor() failure.
+      to = "/connection-error?next=/apres-connexion";
     }
-    // Not a redirect — a genuine getInstructor() failure.
-    return <ClientRedirect to="/connection-error?next=/apres-connexion" />;
   }
+  return <ClientRedirect to={to} />;
 }
