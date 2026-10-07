@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeAdherence, ADHERENCE_WINDOW_DAYS } from "@/lib/exercise/adherence";
+import { buildPainSeries, type PainSeries } from "@/lib/dashboard/painHistory";
 
 export interface ProgressStats {
   /** Adhérence sur la fenêtre courante (null = rien d'attendu encore). */
@@ -10,6 +11,8 @@ export interface ProgressStats {
   painAvg: number | null;
   /** Écart vs les 30 jours d'avant. */
   painDelta: number | null;
+  /** Courbe de douleur des 30 derniers jours (le graphe de la maquette). */
+  painSeries: PainSeries;
 }
 
 /**
@@ -24,7 +27,7 @@ export async function loadProgressStats(supabase: SupabaseClient, patientId: str
   const [{ data: recRows }, { data: logs }, { data: feedback30 }, { data: feedback60 }] = await Promise.all([
     supabase.from("patient_recommended_workouts").select("week_start_date, week_count, workout_id, workouts ( times_per_week )").eq("patient_id", patientId),
     supabase.from("workout_logs").select("completed_at").eq("patient_id", patientId),
-    supabase.from("patient_feedback").select("pain_score").eq("patient_id", patientId).gte("created_at", since30),
+    supabase.from("patient_feedback").select("pain_score, created_at").eq("patient_id", patientId).gte("created_at", since30),
     supabase.from("patient_feedback").select("pain_score").eq("patient_id", patientId).gte("created_at", since60).lt("created_at", since30),
   ]);
 
@@ -50,5 +53,6 @@ export async function loadProgressStats(supabase: SupabaseClient, patientId: str
     adherenceDelta: adherenceNow.pct !== null && adherencePrev.pct !== null ? adherenceNow.pct - adherencePrev.pct : null,
     painAvg,
     painDelta: painAvg !== null && painPrev !== null ? painAvg - painPrev : null,
+    painSeries: buildPainSeries((feedback30 ?? []) as { pain_score: number | null; created_at: string }[]),
   };
 }

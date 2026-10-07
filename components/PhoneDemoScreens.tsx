@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Activity, ArrowDown, ArrowUp, CalendarDays, Check, Home, Lightbulb, MessageCircle, Settings, TrendingUp } from "lucide-react";
+import { ArrowRight, Activity, ArrowDown, ArrowUp, CalendarDays, Check, Home, MessageCircle, Settings, TrendingUp } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import MountainScene from "@/components/MountainScene";
@@ -198,14 +198,22 @@ export function HomeScreen({ tap }: { tap: boolean }) {
           </div>
         </div>
 
-        <div className={`${CARD} mt-2 flex items-start gap-2 p-2.5`}>
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-            <Lightbulb className="h-3 w-3" strokeWidth={2} />
+        {/* Comme l'Accueil patient (PatientHomeView) : le graphe d'évolution
+            de la douleur a remplacé le « Conseil du jour » (Philippe, 2026-10-07). */}
+        <div className={`${CARD} mt-2 p-2.5`}>
+          <span className="flex items-center justify-between">
+            <span className="text-[8.5px] font-semibold text-slate-900">Évolution de la douleur</span>
+            <span className="text-[7.5px] font-medium text-blue-600">Voir le détail</span>
           </span>
-          <span>
-            <span className="block text-[8.5px] font-semibold text-slate-900">Conseil du jour</span>
-            <span className="block text-[8px] leading-snug text-slate-500">Pensez à bien vous échauffer avant vos exercices.</span>
-          </span>
+          <svg viewBox="0 0 160 44" className="mt-1.5 h-11 w-full" aria-hidden>
+            {[6, 22, 38].map((y) => (
+              <line key={y} x1="10" x2="156" y1={y} y2={y} stroke="#e2e8f0" strokeWidth="0.8" />
+            ))}
+            <polyline points="14,22 36,22 58,30 80,26 102,34 124,29 146,29" fill="none" stroke="#dc2626" strokeWidth="1.4" />
+            {[[14, 22], [36, 22], [58, 30], [80, 26], [102, 34], [124, 29], [146, 29]].map(([x, y]) => (
+              <circle key={x} cx={x} cy={y} r="1.8" fill="#dc2626" />
+            ))}
+          </svg>
         </div>
       </div>
     </>

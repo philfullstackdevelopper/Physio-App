@@ -86,9 +86,9 @@ export default async function ProgresPage() {
 
   return (
     // Téléphone (Philippe, 2026-10-07) : « Mes progrès » devient mon parcours
-    // et défile — la semaine en cours dépliée d'abord (CurrentWeekTimeline),
-    // puis les chiffres et la courbe de douleur, puis les semaines précédentes
-    // (PastWeeks). Seule page patient qui défile, à sa demande. Dès sm :
+    // et défile — chiffres et courbe de douleur d'abord (comme la maquette),
+    // puis la frise : semaine en cours dépliée (CurrentWeekTimeline) et
+    // semaines précédentes (PastWeeks). Seule page patient qui défile, à sa demande. Dès sm :
     // inchangé.
     <main className="p-4 pt-5 max-sm:pb-8 max-sm:pt-2 sm:min-h-screen sm:p-8">
       <div className="mx-auto max-w-5xl">
@@ -112,8 +112,6 @@ export default async function ProgresPage() {
 
         {/* Téléphone : aucune donnée encore → une phrase au lieu de tuiles « — »
             (Philippe, 2026-10-06 : « don't add stats if there are none »). */}
-        <CurrentWeekTimeline week={currentWeek} dayDetails={journey.dayDetails} />
-
         {phoneTileCount === 0 && !hasPain && (
           <div className="mt-3 flex flex-col items-center justify-center rounded-2xl bg-surface p-6 text-center shadow-soft sm:hidden">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand">
@@ -229,6 +227,9 @@ export default async function ProgresPage() {
           )}
         </div>
 
+        {/* Téléphone : ordre de la maquette — chiffres et graphe d'abord, puis la
+            frise (semaine en cours dépliée, puis semaines passées). */}
+        <CurrentWeekTimeline week={currentWeek} dayDetails={journey.dayDetails} />
         <PastWeeks weeks={journey.weeks} currentWeekNumber={journey.currentWeekNumber} dayDetails={journey.dayDetails} />
       </div>
     </main>

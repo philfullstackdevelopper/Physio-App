@@ -6,6 +6,7 @@
 
 import PatientNav from "@/components/PatientNav";
 import PatientHomeView from "@/components/PatientHomeView";
+import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import type { SessionDetail } from "@/components/WeekProgramme";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
 
@@ -46,8 +47,7 @@ export default function AccueilPatientPrototype() {
       <PatientNav patientName="Léa Martin" unreadCount={1} pathnameOverride="/patient" />
       <div className="relative min-w-0 flex-1 pb-20 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0">
         <PatientHomeView
-          stats={{ adherencePct: 83, adherenceDelta: 12, painAvg: 3.0, painDelta: -2.0 }}
-          tip="Pensez à bien vous échauffer avant vos exercices."
+          stats={{ adherencePct: 83, adherenceDelta: 12, painAvg: 3.0, painDelta: -2.0, painSeries: buildPainSeries([2,6,10,14,18,22,26].map((d, k) => ({ pain_score: [3,3,2,4,3,5,5][k], created_at: new Date(Date.UTC(2026, 9, 7, 12) - d * 86_400_000).toISOString() }))) }}
           firstName="Léa"
           today={today}
           week={week}
