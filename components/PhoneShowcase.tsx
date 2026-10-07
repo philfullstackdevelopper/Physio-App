@@ -68,7 +68,7 @@ export default function PhoneShowcase() {
 
       {/* Screen-progress dot rail */}
       <div className="mt-8 flex items-center gap-2.5">
-        {[0, 1, 2, 3].map((s) => (
+        {[0, 1, 2].map((s) => (
           <span
             key={s}
             className={`h-2 w-2 rounded-full transition-colors duration-300 ${step.screen === s ? "bg-blue-600" : "bg-slate-300"}`}

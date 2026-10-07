@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Activity, ArrowDown, ArrowUp, CalendarDays, Check, Home, MessageCircle, Settings, TrendingUp } from "lucide-react";
+import { ArrowRight, Activity, ArrowDown, ArrowUp, CalendarDays, Check, Home, MessageCircle, Settings, TrendingUp, Play } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import MountainScene from "@/components/MountainScene";
@@ -16,15 +16,16 @@ import WavingHand from "@/components/WavingHand";
 //   0 Accueil        (components/PatientHomeView.tsx)
 //   1 Mon programme  (app/patient/programme/ProgrammeView.tsx)
 //   2 Séance guidée  (components/WorkoutSession.tsx — sans barre d'onglets)
-//   3 Exercice terminé (même composant, phase « celebrate »)
 // Si ces écrans changent, mettre cette démo à jour avec eux.
-export type Screen = 0 | 1 | 2 | 3;
+export type Screen = 0 | 1 | 2;
 export type Step = {
   screen: Screen;
   duration: number;
   title: string;
   /** Le bouton principal de l'écran est « touché » (ondulation sur le bouton). */
   tap?: boolean;
+  /** Séance : la vidéo de l'exercice est en lecture. */
+  playing?: boolean;
 };
 
 export const STEPS: Step[] = [
@@ -32,9 +33,13 @@ export const STEPS: Step[] = [
   { screen: 0, duration: 650, title: "Son programme de la semaine, en un coup d'œil.", tap: true },
   { screen: 1, duration: 1700, title: "Les exercices choisis par son kiné." },
   { screen: 1, duration: 650, title: "Les exercices choisis par son kiné.", tap: true },
-  { screen: 2, duration: 2200, title: "Un exercice à la fois, guidé pas à pas." },
-  { screen: 2, duration: 650, title: "Un exercice à la fois, guidé pas à pas.", tap: true },
-  { screen: 3, duration: 1700, title: "Chaque séance terminée, visible par son kiné." },
+  // Séance : la vidéo de démonstration démarre au toucher, puis joue — et la
+  // démo s'arrête là avant de reboucler (Philippe, 2026-10-07 : « dashboard -
+  // voir mon programme - commencer la séance et après la vidéo qui jouera,
+  // et on s'arrête là »).
+  { screen: 2, duration: 1100, title: "Un exercice à la fois, en vidéo." },
+  { screen: 2, duration: 600, title: "Un exercice à la fois, en vidéo.", tap: true },
+  { screen: 2, duration: 3800, title: "Un exercice à la fois, en vidéo.", playing: true },
 ];
 
 // Respect prefers-reduced-motion: freeze on the first frame instead of
@@ -125,8 +130,7 @@ export function PhoneDemoBody({ step, reducedMotion }: { step: Step; stepIndex?:
         >
           {step.screen === 0 && <HomeScreen tap={tap} />}
           {step.screen === 1 && <ProgrammeScreen tap={tap} />}
-          {step.screen === 2 && <SessionScreen tap={tap} />}
-          {step.screen === 3 && <DoneScreen />}
+          {step.screen === 2 && <SessionScreen tap={tap} playing={!!step.playing || reducedMotion} />}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -280,13 +284,13 @@ export function ProgrammeScreen({ tap }: { tap: boolean }) {
   );
 }
 
-function SessionHeader({ doneFirst }: { doneFirst: boolean }) {
+function SessionHeader() {
   return (
     <div className="flex items-center gap-2 px-3.5 pt-3">
       <span className="text-[8.5px] text-slate-400">Quitter</span>
       <div className="flex flex-1 gap-1">
         {[0, 1, 2, 3].map((i) => (
-          <span key={i} className={`h-1 flex-1 rounded-full ${i === 0 ? (doneFirst ? "bg-blue-500" : "bg-blue-200") : "bg-slate-200"}`} />
+          <span key={i} className={`h-1 flex-1 rounded-full ${i === 0 ? "bg-blue-200" : "bg-slate-200"}`} />
         ))}
       </div>
       <span className="text-[8px] font-medium text-slate-400">1/4</span>
@@ -294,49 +298,43 @@ function SessionHeader({ doneFirst }: { doneFirst: boolean }) {
   );
 }
 
-export function SessionScreen({ tap }: { tap: boolean }) {
+export function SessionScreen({ tap, playing }: { tap: boolean; playing: boolean }) {
   return (
     <>
-      <SessionHeader doneFirst={false} />
+      <SessionHeader />
       <div className={`${CARD} mx-3.5 mt-3 p-3`}>
         <p className="text-[7.5px] font-medium uppercase tracking-wide text-blue-600">Exercice 1</p>
         <p className="font-display mt-0.5 text-[15px] font-semibold text-slate-900">Pont fessier</p>
-        <div className="mt-2 flex h-[128px] items-center justify-center rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white">
-          <ExerciseIllustration name="Glute Bridge" animate className="h-[112px] w-[150px] text-blue-600" />
+        {/* La vidéo de démonstration, dans la case de l'illustration : bouton
+            lecture centré, puis lecture avec sa barre de progression. */}
+        <div className="relative mt-2 flex h-[128px] items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white">
+          <ExerciseIllustration key={playing ? "on" : "off"} name="Glute Bridge" animate={playing} className="h-[112px] w-[150px] text-blue-600" />
+          {!playing && (
+            <span
+              className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-600 shadow-lg shadow-blue-600/30 transition-transform duration-150"
+              style={{ transform: `translate(-50%, -50%) scale(${tap ? 0.88 : 1})` }}
+            >
+              <Play className="ml-0.5 h-4 w-4 fill-white text-white" strokeWidth={0} />
+              <Tap on={tap} />
+            </span>
+          )}
+          {playing && (
+            <span className="absolute inset-x-2 bottom-1.5 h-1 overflow-hidden rounded-full bg-blue-100">
+              <motion.span
+                className="block h-full rounded-full bg-blue-600"
+                initial={{ width: "0%" }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 3.8, ease: "linear" }}
+              />
+            </span>
+          )}
         </div>
         <p className="mt-2.5 text-[8.5px] leading-relaxed text-slate-600">
           Allongé sur le dos, genoux fléchis : montez le bassin en serrant les fessiers, tenez 3 secondes, puis redescendez doucement.
         </p>
         <p className="mt-2 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[8px] font-medium text-blue-700">3 séries · 10 répétitions</p>
-        <span
-          className="relative mt-3 flex items-center justify-center gap-1 overflow-hidden rounded-lg bg-blue-600 py-2.5 text-[10.5px] font-semibold text-white transition-transform duration-150"
-          style={{ transform: tap ? "scale(0.95)" : "scale(1)" }}
-        >
+        <span className="mt-3 flex items-center justify-center gap-1 rounded-lg bg-blue-600 py-2.5 text-[10.5px] font-semibold text-white">
           <Check className="h-3.5 w-3.5" strokeWidth={2} /> J&apos;ai terminé cet exercice
-          <Tap on={tap} />
-        </span>
-      </div>
-    </>
-  );
-}
-
-export function DoneScreen() {
-  return (
-    <>
-      <SessionHeader doneFirst />
-      <div className={`${CARD} mx-3.5 mt-[120px] p-5 text-center`}>
-        <motion.span
-          initial={{ scale: 0.6, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 320, damping: 18 }}
-          className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border-2 border-blue-600"
-        >
-          <Check className="h-5 w-5 text-blue-600" strokeWidth={2.5} />
-        </motion.span>
-        <p className="font-display mt-2.5 text-[15px] font-semibold text-slate-900">Pont fessier</p>
-        <p className="mt-0.5 text-[9px] text-slate-500">Exercice 1 sur 4 terminé</p>
-        <span className="mt-4 flex items-center justify-center rounded-lg bg-blue-600 py-2.5 text-[10.5px] font-semibold text-white">
-          Exercice suivant →
         </span>
       </div>
     </>
