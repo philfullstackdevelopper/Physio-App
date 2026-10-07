@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { computeAdherence, adherenceLabel, adherenceTone, ADHERENCE_WINDOW_DAYS } from "@/lib/exercise/adherence";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import FillPainChart from "@/components/FillPainChart";
-import { CurrentWeekTimeline, PastWeeks } from "@/components/PatientJourney";
+import { WeekFrise } from "@/components/PatientJourney";
 import { loadPatientJourney } from "@/lib/patient/journey";
 
 const TONE_BG = { ok: "bg-ok-soft text-ok", warn: "bg-warn-soft text-warn", danger: "bg-danger-soft text-danger", muted: "bg-app-bg text-muted" } as const;
@@ -52,7 +52,6 @@ export default async function ProgresPage() {
   ]);
   // Téléphone : la frise (semaine en cours + semaines passées) vit ici.
   const journey = await loadPatientJourney(supabase, user.id);
-  const currentWeek = journey.weeks.find((w) => w.weekNumber === journey.currentWeekNumber) ?? journey.weeks[journey.weeks.length - 1];
   const { data: condition } = patient?.condition_id
     ? await supabase.from("conditions").select("name").eq("id", patient.condition_id as string).maybeSingle()
     : { data: null };
@@ -229,8 +228,7 @@ export default async function ProgresPage() {
 
         {/* Téléphone : ordre de la maquette — chiffres et graphe d'abord, puis la
             frise (semaine en cours dépliée, puis semaines passées). */}
-        <CurrentWeekTimeline week={currentWeek} dayDetails={journey.dayDetails} />
-        <PastWeeks weeks={journey.weeks} currentWeekNumber={journey.currentWeekNumber} dayDetails={journey.dayDetails} />
+        <WeekFrise weeks={journey.weeks} currentWeekNumber={journey.currentWeekNumber} dayDetails={journey.dayDetails} />
       </div>
     </main>
   );
