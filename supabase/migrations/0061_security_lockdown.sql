@@ -162,8 +162,11 @@ $$;
 alter table public.instructors alter column status set default 'pending';
 
 drop policy if exists instructors_insert_self on public.instructors;
+-- `to public` (pas `authenticated`) : ce rôle n'existe pas sur Scalingo ;
+-- current_app_user_id() est null sans jeton, donc un visiteur anonyme
+-- ne passe de toute façon pas ce contrôle.
 create policy instructors_insert_self on public.instructors
-  for insert to authenticated
+  for insert to public
   with check (id = public.current_app_user_id() and status = 'pending');
 
 create or replace function internal.guard_instructor_status()
