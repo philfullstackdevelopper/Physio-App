@@ -1,18 +1,14 @@
 import Link from "next/link";
 
-/** Three ascending bars with rounded caps — steady progress between
- *  sessions, the product's actual idea, instead of a generic letter-in-a-box
- *  monogram. Plain SVG with explicit fills (no Tailwind classes, no CSS
- *  variables) so it renders identically inside next/og's ImageResponse
- *  (app/icon.tsx, app/opengraph-image.tsx) as it does in the browser. */
+/** Logo EasyPhysio — repris à l'identique de la maquette d'identité visuelle
+ *  de Philippe (2026-10-07 : « exactement le même ») : public/brand/
+ *  easyphysio-icon.png (icône carrée) et easyphysio-logo.png (silhouette +
+ *  « EasyPhysio »), découpés dans la maquette. Pour une icône d'app en haute
+ *  définition (512 px, stores), il faudra le fichier source du logo. */
 export function LogoMark({ size = 32 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="9" fill="#155dfc" />
-      <rect x="7" y="18" width="4.5" height="7" rx="2.25" fill="#ffffff" />
-      <rect x="13.75" y="12" width="4.5" height="13" rx="2.25" fill="#ffffff" />
-      <rect x="20.5" y="6" width="4.5" height="19" rx="2.25" fill="#ffffff" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element -- petit PNG statique, aucun gain avec next/image
+    <img src="/brand/easyphysio-icon.png" width={size} height={size} alt="" className="shrink-0" />
   );
 }
 
@@ -26,10 +22,13 @@ export default function Logo({
   className?: string;
 }) {
   return (
-    <Link href="/" className={`flex items-center gap-2.5 ${className}`}>
-      <LogoMark size={size} />
-      {wordmark && (
-        <span className="font-display text-base font-semibold text-slate-900">EasyPhysio</span>
+    <Link href="/" aria-label="EasyPhysio — accueil" className={`flex items-center ${className}`}>
+      {wordmark ? (
+        // Silhouette + « EasyPhysio », même mise en page que la maquette (370 × 115).
+        // eslint-disable-next-line @next/next/no-img-element -- PNG statique
+        <img src="/brand/easyphysio-logo.png" height={size} width={Math.round((size * 370) / 115)} alt="EasyPhysio" />
+      ) : (
+        <LogoMark size={size} />
       )}
     </Link>
   );
