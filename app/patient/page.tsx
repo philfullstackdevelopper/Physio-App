@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { loadPatientHome } from "@/lib/patient/home-data";
 import { loadPatientJourney } from "@/lib/patient/journey";
 import { loadProgressStats } from "@/lib/patient/progressStats";
+import { tipOfTheDay } from "@/lib/patient/tips";
 import PatientHomeView, { type ProgrammeCard } from "@/components/PatientHomeView";
 
 // Philippe, 2026-09-08: Accueil is now the week-by-week programme browser
@@ -69,6 +70,7 @@ export default async function PatientDashboard() {
   return (
     <PatientHomeView
       stats={stats}
+      tip={tipOfTheDay()}
       firstName={home.fullName ? home.fullName.split(" ")[0] : ""}
       today={today}
       week={home.week}

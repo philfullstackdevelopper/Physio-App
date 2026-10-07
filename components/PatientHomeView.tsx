@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { Activity, ArrowDown, ArrowRight, ArrowUp, CheckCircle2 } from "lucide-react";
+import { Activity, ArrowDown, ArrowRight, ArrowUp, CheckCircle2, Lightbulb } from "lucide-react";
 import WavingHand from "@/components/WavingHand";
 import WeekProgramme, { type SessionDetail } from "@/components/WeekProgramme";
 import MountainScene from "@/components/MountainScene";
-import FillPainChart from "@/components/FillPainChart";
-import type { PainSeries } from "@/lib/dashboard/painHistory";
 import type { WeekInfo } from "@/lib/patient/weeks";
 
 // Affichage de l'Accueil patient, séparé du chargement des données
@@ -36,7 +34,9 @@ export interface PatientHomeViewProps {
   currentWeekNumber: number;
   pending: boolean;
   /** Téléphone : bulles Adhérence / Douleur (lib/patient/progressStats). */
-  stats?: { adherencePct: number | null; adherenceDelta: number | null; painAvg: number | null; painDelta: number | null; painSeries?: PainSeries };
+  stats?: { adherencePct: number | null; adherenceDelta: number | null; painAvg: number | null; painDelta: number | null };
+  /** Téléphone : « Conseil du jour » (lib/patient/tips). */
+  tip?: string;
 }
 
 export default function PatientHomeView({
@@ -53,6 +53,7 @@ export default function PatientHomeView({
   currentWeekNumber,
   pending,
   stats,
+  tip,
 }: PatientHomeViewProps) {
   const showAdherence = stats?.adherencePct != null;
   const showPain = stats?.painAvg != null;
@@ -74,7 +75,7 @@ export default function PatientHomeView({
         {/* Deux cartes symétriques, même largeur et même hauteur (grille,
             étirées) : salutation à gauche, « Mon programme » à droite
             (Philippe, 2026-10-01). */}
-        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+        <div className="grid gap-3 max-sm:flex-1 max-sm:grid-rows-[auto_1fr] sm:grid-cols-2 sm:gap-4">
           {/* Téléphone (Philippe, 2026-10-04) : salutation sur une ligne, sans
               carte, et grand bouton « Voir mon programme » pleine largeur — la
               frise doit apparaître dès l'arrivée, sans défiler. Rien ne change
@@ -97,18 +98,18 @@ export default function PatientHomeView({
               barre dit la même chose en clair. Téléphone : coins plus ronds et
               ombre teintée, plus douce qu'une ombre grise. */}
           <section
-            className={`group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r px-5 py-4 shadow-md transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl max-sm:flex max-sm:flex-col max-sm:rounded-3xl max-sm:pb-5 max-sm:pt-5 max-sm:shadow-lg ${
+            className={`group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r px-5 py-4 shadow-md transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl max-sm:flex max-sm:min-h-[15rem] max-sm:flex-col max-sm:rounded-3xl max-sm:pb-5 max-sm:pt-5 max-sm:shadow-lg ${
               programmeCard.done ? "from-ok to-green-700 max-sm:shadow-ok/25" : "from-brand to-brand-dark max-sm:shadow-brand/30"
             }`}
           >
             <MountainScene
               variant="goal"
               progress={weekProgress}
-              className="pointer-events-none absolute -bottom-1 left-0 h-20 w-28 text-white/90 max-sm:bottom-auto max-sm:left-auto max-sm:right-1 max-sm:top-3 max-sm:h-24 max-sm:w-36"
+              className="pointer-events-none absolute -bottom-1 left-0 h-20 w-28 text-white/90 max-sm:bottom-[4.5rem] max-sm:left-auto max-sm:right-0 max-sm:h-[58%] max-sm:w-[72%]"
             />
             {/* Téléphone : texte en haut, montagne à droite, bouton en bas
                 (mt-auto) — comme la maquette. */}
-            <div className="relative pl-24 max-sm:flex max-sm:flex-1 max-sm:flex-col max-sm:pl-0 max-sm:pr-28">
+            <div className="relative pl-24 max-sm:flex max-sm:flex-1 max-sm:flex-col max-sm:pl-0">
               {/* Pas de « Semaine 0 » quand aucun programme n'a commencé. */}
               {week > 0 && (
                 <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/75">
@@ -118,7 +119,7 @@ export default function PatientHomeView({
               )}
               <p className="mt-0.5 text-base font-semibold text-white">{programmeCard.title}</p>
               <p className="mt-0.5 text-sm text-white/85">{programmeCard.subtitle}</p>
-              <div className="mt-3 flex items-center justify-between gap-3 max-sm:-mr-28 max-sm:mt-auto max-sm:flex-col max-sm:items-stretch">
+              <div className="mt-3 flex items-center justify-between gap-3 max-sm:mt-auto max-sm:flex-col max-sm:items-stretch">
                 {/* Ordinateur : la fine barre, inchangée. */}
                 <div
                   className={`h-1.5 w-full max-w-[8rem] overflow-hidden rounded-full bg-white/20 ${
@@ -191,7 +192,7 @@ export default function PatientHomeView({
                 <p className="text-xs font-medium text-muted">Adhérence</p>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-ink">{stats.adherencePct}%</p>
                 {stats.adherenceDelta !== null && (
-                  <p className={`mt-1 flex items-center gap-0.5 text-xs font-medium [@media(max-height:700px)]:hidden ${stats.adherenceDelta >= 0 ? "text-ok" : "text-danger"}`}>
+                  <p className={`mt-1 flex items-center gap-0.5 text-xs font-medium ${stats.adherenceDelta >= 0 ? "text-ok" : "text-danger"}`}>
                     {stats.adherenceDelta >= 0 ? <ArrowUp className="h-3 w-3" strokeWidth={2.5} /> : <ArrowDown className="h-3 w-3" strokeWidth={2.5} />}
                     {stats.adherenceDelta >= 0 ? "+" : ""}
                     {stats.adherenceDelta}% <span className="font-normal text-muted">vs période préc.</span>
@@ -210,7 +211,7 @@ export default function PatientHomeView({
                   <span className="text-sm font-medium text-muted">/10</span>
                 </p>
                 {stats.painDelta !== null && (
-                  <p className={`mt-1 flex items-center gap-0.5 text-xs font-medium [@media(max-height:700px)]:hidden ${stats.painDelta <= 0 ? "text-ok" : "text-danger"}`}>
+                  <p className={`mt-1 flex items-center gap-0.5 text-xs font-medium ${stats.painDelta <= 0 ? "text-ok" : "text-danger"}`}>
                     {stats.painDelta <= 0 ? <ArrowDown className="h-3 w-3" strokeWidth={2.5} /> : <ArrowUp className="h-3 w-3" strokeWidth={2.5} />}
                     {stats.painDelta > 0 ? "+" : ""}
                     {stats.painDelta.toFixed(1)} <span className="font-normal text-muted">vs 30 j avant</span>
@@ -221,25 +222,18 @@ export default function PatientHomeView({
           </div>
         )}
 
-        {/* Téléphone : le graphe d'évolution de la douleur (Philippe,
-            2026-10-07 : « on perd le graphe de douleurs qui figure dans pas mal
-            du design que j'avais proposé ») — seulement s'il y a des douleurs. */}
-        {stats?.painSeries && stats.painSeries.points.length > 0 && (
-          <section className="flex flex-1 flex-col rounded-2xl bg-surface p-4 shadow-soft sm:hidden">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-ink">Évolution de la douleur</p>
-              <Link href="/patient/progres" className="flex items-center gap-1 text-xs font-medium text-brand">
-                Voir le détail
-                <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
-              </Link>
+        {/* Téléphone : Conseil du jour, comme la maquette. */}
+        {tip && (
+          <div className="flex items-start gap-3 rounded-2xl bg-surface p-4 shadow-soft sm:hidden">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
+              <Lightbulb className="h-4 w-4" strokeWidth={2} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-ink">Conseil du jour</p>
+              <p className="mt-0.5 text-sm text-muted">{tip}</p>
             </div>
-            {/* Le graphe prend toute la place restante jusqu'à la barre d'onglets. */}
-            <div className="mt-2 flex flex-1 flex-col">
-              <FillPainChart series={stats.painSeries} />
-            </div>
-          </section>
+          </div>
         )}
-
       </div>
 
       {/* Outside the max-w-5xl column on purpose — the timeline uses the whole

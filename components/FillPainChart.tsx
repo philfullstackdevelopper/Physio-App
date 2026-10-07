@@ -36,7 +36,7 @@ export default function FillPainChart({ series }: { series: PainSeries }) {
   }, []);
 
   return (
-    <div ref={boxRef} className="relative max-sm:min-h-16 max-sm:flex-1">
+    <div ref={boxRef} className="relative max-sm:min-h-32 max-sm:flex-1">
       {viewHeight === null ? (
         <PainHistoryChart series={series} />
       ) : (
