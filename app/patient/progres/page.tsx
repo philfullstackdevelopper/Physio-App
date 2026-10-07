@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { computeAdherence, adherenceLabel, adherenceTone, ADHERENCE_WINDOW_DAYS } from "@/lib/exercise/adherence";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import FillPainChart from "@/components/FillPainChart";
+import { CurrentWeekTimeline, PastWeeks } from "@/components/PatientJourney";
+import { loadPatientJourney } from "@/lib/patient/journey";
 
 const TONE_BG = { ok: "bg-ok-soft text-ok", warn: "bg-warn-soft text-warn", danger: "bg-danger-soft text-danger", muted: "bg-app-bg text-muted" } as const;
 
@@ -48,6 +50,9 @@ export default async function ProgresPage() {
     supabase.from("patient_feedback").select("pain_score, created_at").eq("patient_id", user.id).gte("created_at", since60).lt("created_at", since30),
     supabase.from("patients").select("condition_id").eq("id", user.id).maybeSingle(),
   ]);
+  // Téléphone : la frise (semaine en cours + semaines passées) vit ici.
+  const journey = await loadPatientJourney(supabase, user.id);
+  const currentWeek = journey.weeks.find((w) => w.weekNumber === journey.currentWeekNumber) ?? journey.weeks[journey.weeks.length - 1];
   const { data: condition } = patient?.condition_id
     ? await supabase.from("conditions").select("name").eq("id", patient.condition_id as string).maybeSingle()
     : { data: null };
@@ -80,11 +85,13 @@ export default async function ProgresPage() {
   const hasPain = (feedback30 ?? []).some((f) => f.pain_score != null);
 
   return (
-    // Téléphone (Philippe, 2026-10-04 : « no scrolling at all ») : les 3
-    // chiffres côte à côte, phrases longues masquées, « Zone concernée »
-    // ramenée à une ligne sous le titre. Dès sm : inchangé.
-    <main className="p-4 pt-5 max-sm:flex max-sm:pt-2 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:flex-col sm:min-h-screen sm:p-8">
-      <div className="mx-auto max-w-5xl max-sm:flex max-sm:w-full max-sm:flex-1 max-sm:flex-col">
+    // Téléphone (Philippe, 2026-10-07) : « Mes progrès » devient mon parcours
+    // et défile — la semaine en cours dépliée d'abord (CurrentWeekTimeline),
+    // puis les chiffres et la courbe de douleur, puis les semaines précédentes
+    // (PastWeeks). Seule page patient qui défile, à sa demande. Dès sm :
+    // inchangé.
+    <main className="p-4 pt-5 max-sm:pb-8 max-sm:pt-2 sm:min-h-screen sm:p-8">
+      <div className="mx-auto max-w-5xl">
         <h1 className="text-2xl font-semibold text-ink">Mes progrès</h1>
         <p className="mt-1 text-sm text-muted max-sm:mt-0.5">
           Suivez vos résultats au fil du temps (30 derniers jours).
@@ -105,8 +112,10 @@ export default async function ProgresPage() {
 
         {/* Téléphone : aucune donnée encore → une phrase au lieu de tuiles « — »
             (Philippe, 2026-10-06 : « don't add stats if there are none »). */}
+        <CurrentWeekTimeline week={currentWeek} dayDetails={journey.dayDetails} />
+
         {phoneTileCount === 0 && !hasPain && (
-          <div className="mt-3 flex flex-1 flex-col items-center justify-center rounded-2xl bg-surface p-6 text-center shadow-soft sm:hidden">
+          <div className="mt-3 flex flex-col items-center justify-center rounded-2xl bg-surface p-6 text-center shadow-soft sm:hidden">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand">
               <LineChart className="h-6 w-6" strokeWidth={1.75} />
             </span>
@@ -185,9 +194,9 @@ export default async function ProgresPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-6 max-sm:mt-3 max-sm:flex max-sm:flex-1 max-sm:flex-col sm:mt-6 lg:grid-cols-[1fr_320px]">
+        <div className="mt-4 grid gap-6 max-sm:mt-3 sm:mt-6 lg:grid-cols-[1fr_320px]">
           <section
-            className={`rounded-2xl border border-line bg-surface p-4 shadow-sm max-sm:flex max-sm:flex-1 max-sm:flex-col max-sm:border-0 max-sm:shadow-soft sm:p-5 ${
+            className={`rounded-2xl border border-line bg-surface p-4 shadow-sm max-sm:rounded-3xl max-sm:border-0 max-sm:shadow-soft sm:p-5 ${
               hasPain ? "" : "max-sm:hidden"
             }`}
           >
@@ -202,7 +211,8 @@ export default async function ProgresPage() {
                 <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
               </Link>
             </div>
-            <div className="mt-3 max-sm:flex max-sm:flex-1 max-sm:flex-col">
+            {/* Téléphone : hauteur fixe, la page défile désormais. */}
+            <div className="mt-3 max-sm:flex max-sm:h-56 max-sm:flex-col">
               <FillPainChart series={pain} />
             </div>
           </section>
@@ -218,6 +228,8 @@ export default async function ProgresPage() {
             </section>
           )}
         </div>
+
+        <PastWeeks weeks={journey.weeks} currentWeekNumber={journey.currentWeekNumber} dayDetails={journey.dayDetails} />
       </div>
     </main>
   );

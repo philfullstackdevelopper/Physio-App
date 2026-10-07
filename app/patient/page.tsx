@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { loadPatientHome } from "@/lib/patient/home-data";
-import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
-import type { SessionDetail } from "@/components/WeekProgramme";
+import { loadPatientJourney } from "@/lib/patient/journey";
+import { loadProgressStats } from "@/lib/patient/progressStats";
+import { tipOfTheDay } from "@/lib/patient/tips";
 import PatientHomeView, { type ProgrammeCard } from "@/components/PatientHomeView";
 
 // Philippe, 2026-09-08: Accueil is now the week-by-week programme browser
@@ -26,41 +27,10 @@ export default async function PatientDashboard() {
     timeZone: "Europe/Paris",
   }).format(new Date());
 
-  const { data: patientRow } = await supabase.from("patients").select("created_at").eq("id", user.id).maybeSingle();
-  const weeks = buildWeeks((patientRow?.created_at as string | undefined) ?? new Date().toISOString());
-  const rangeStartISO = weeks[0].startISO;
-  const rangeEndISO = weeks[weeks.length - 1].endISO;
-
-  const { data: rangeLogs } = await supabase
-    .from("workout_logs")
-    .select("id, completed_at, workouts ( name, duration_minutes )")
-    .eq("patient_id", user.id)
-    .gte("completed_at", rangeStartISO)
-    .lt("completed_at", rangeEndISO);
-
-  const rangeLogIds = (rangeLogs ?? []).map((l) => l.id as string);
-  const { data: rangeFeedback } = rangeLogIds.length
-    ? await supabase.from("patient_feedback").select("workout_log_id, pain_score, difficulty, notes").in("workout_log_id", rangeLogIds)
-    : { data: [] };
-  const feedbackByLogId = new Map((rangeFeedback ?? []).filter((f) => f.workout_log_id).map((f) => [f.workout_log_id as string, f]));
-
-  const dayDetails: Record<string, SessionDetail[]> = {};
-  for (const l of rangeLogs ?? []) {
-    const completedAt = new Date(l.completed_at as string);
-    const key = localDateKey(completedAt);
-    const f = feedbackByLogId.get(l.id as string);
-    const workout = l.workouts as unknown as { name: string; duration_minutes: number | null } | null;
-    const entry: SessionDetail = {
-      logId: l.id as string,
-      workoutName: workout?.name ?? null,
-      time: completedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-      durationMinutes: workout?.duration_minutes ?? null,
-      painScore: (f?.pain_score as number | null) ?? null,
-      difficulty: (f?.difficulty as number | null) ?? null,
-      notes: (f?.notes as string | null) ?? null,
-    };
-    (dayDetails[key] ??= []).push(entry);
-  }
+  const [{ weeks, dayDetails, currentWeekNumber: currentWeek }, stats] = await Promise.all([
+    loadPatientJourney(supabase, user.id),
+    loadProgressStats(supabase, user.id),
+  ]);
 
   // "Mon programme" summary card, top right of Accueil since 2026-10-01
   // (was at the bottom, Philippe 2026-09-08): a quick "what's left this week" recap that links through to
@@ -99,6 +69,8 @@ export default async function PatientDashboard() {
 
   return (
     <PatientHomeView
+      stats={stats}
+      tip={tipOfTheDay()}
       firstName={home.fullName ? home.fullName.split(" ")[0] : ""}
       today={today}
       week={home.week}
@@ -109,7 +81,7 @@ export default async function PatientDashboard() {
       decision={home.decision}
       weeks={weeks}
       dayDetails={dayDetails}
-      currentWeekNumber={currentWeekNumber(weeks)}
+      currentWeekNumber={currentWeek}
       pending={!home.activeWorkout}
     />
   );
