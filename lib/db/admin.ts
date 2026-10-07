@@ -69,3 +69,50 @@ export async function upsertConnectAccount(params: {
     [params.instructorId, params.stripeConnectAccountId, params.status],
   );
 }
+
+// ---------------------------------------------------------------------------
+// Vue d'ensemble /admin et suspension d'un kiné (migration 0062).
+// ---------------------------------------------------------------------------
+
+export type AdminInstructorRow = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  status: string;
+  created_at: string;
+  cabinet_name: string | null;
+  rpps_number: string | null;
+  rpps_verified_at: string | null;
+  patient_count: number;
+  paying_count: number;
+  connect_status: string | null;
+};
+
+export async function listAllInstructors(): Promise<AdminInstructorRow[]> {
+  const { rows } = await getPool().query<AdminInstructorRow>("select * from internal.admin_list_instructors()");
+  return rows;
+}
+
+export type InstructorSubscriptionRow = {
+  patient_id: string;
+  stripe_subscription_id: string;
+  status: string | null;
+  connect_account_id: string | null;
+};
+
+export async function listInstructorSubscriptions(instructorId: string): Promise<InstructorSubscriptionRow[]> {
+  const { rows } = await getPool().query<InstructorSubscriptionRow>(
+    "select * from internal.admin_instructor_subscriptions($1)",
+    [instructorId],
+  );
+  return rows;
+}
+
+/** RPPS déjà porté par un autre compte kiné (non refusé) ? */
+export async function rppsInUse(rppsNumber: string, excludeInstructorId: string | null): Promise<boolean> {
+  const { rows } = await getPool().query<{ used: boolean }>("select internal.rpps_in_use($1, $2) as used", [
+    rppsNumber,
+    excludeInstructorId,
+  ]);
+  return !!rows[0]?.used;
+}

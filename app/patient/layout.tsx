@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Info } from "lucide-react";
 import { headers } from "next/headers";
 import PatientNav from "@/components/PatientNav";
 import PatientWelcomeGate from "@/components/PatientWelcomeGate";
@@ -33,7 +34,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
   // calls it — same pattern as the dashboard layout.
   const { data: patient } = await supabase
     .from("patients")
-    .select("full_name, terms_accepted_at, instructors ( full_name )")
+    .select("full_name, terms_accepted_at, instructors ( full_name, status )")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -51,6 +52,14 @@ export default async function PatientLayout({ children }: { children: React.Reac
     const instructor = patient.instructors as unknown as { full_name: string | null } | null;
     return <PatientWelcomeGate instructorName={instructor?.full_name ?? null} />;
   }
+
+  // Kiné suspendu par l'administrateur (lib/billing/suspendInstructor.ts) :
+  // ses abonnements sont résiliés et remboursés, et ses patients gardent
+  // l'accès GRATUIT à leur programme, historique et données — pas de renvoi
+  // vers le choix d'une offre (Philippe, 2026-10-07 : « I don't want it to be
+  // a problem for the clients »). Seule la messagerie est coupée.
+  const kine = patient.instructors as unknown as { full_name: string | null; status: string | null } | null;
+  const kineSuspended = kine?.status === "suspended";
 
   const pathname = (await headers()).get("x-pathname") ?? "";
   const onOnboardingPath = pathname.startsWith(ONBOARDING_PATH);
@@ -72,7 +81,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
   // browser, so the sidebar flashes/sticks around the abonnement page even
   // though that page is meant to render full-bleed (Philippe, 2026-09-11 —
   // reported as "la barre latérale ne devrait pas être là").
-  if (!onOnboardingPath && !pathname.startsWith(ABONNEMENT_PATH)) {
+  if (!onOnboardingPath && !pathname.startsWith(ABONNEMENT_PATH) && !kineSuspended) {
     if (!hasActiveTier(await getTierBilling(supabase, user.id))) {
       redirect(ABONNEMENT_PATH);
     }
@@ -109,6 +118,15 @@ export default async function PatientLayout({ children }: { children: React.Reac
           inGuidedSession ? "" : "pb-20 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0"
         }`}
       >
+        {kineSuspended && !inGuidedSession && (
+          <p className="m-4 mb-0 flex items-start gap-2 rounded-2xl border border-warn/30 bg-warn-soft p-3 text-sm text-warn sm:mx-8 sm:mt-6">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} />
+            <span>
+              {kine?.full_name ?? "Votre kiné"} n&apos;exerce plus sur EasyPhysio. Votre abonnement a été arrêté et la
+              part non utilisée vous est remboursée. Vous gardez l&apos;accès gratuit à votre programme et à vos données.
+            </span>
+          </p>
+        )}
         {children}
       </div>
     </div>

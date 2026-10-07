@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { setInstructorStatus } from "@/lib/db/admin";
+import { rppsInUse, setInstructorStatus } from "@/lib/db/admin";
 import { verifyRpps } from "@/lib/instructor/rppsVerification";
 
 // Saves the cabinet/practice details collected right after Clerk signup (see
@@ -62,7 +62,8 @@ export async function saveInstructorOnboarding(formData: FormData) {
   // same as the normal signup path in app/signup/finalize/page.tsx — an
   // unverified RPPS, or one whose name doesn't match, still needs a human.
   const verification = await verifyRpps(rppsNumber, instructor?.full_name ?? "");
-  const autoApproved = verification.status === "verified";
+  // Numéro déjà porté par un autre compte : revue manuelle (2026-10-07).
+  const autoApproved = verification.status === "verified" && !(await rppsInUse(rppsNumber, user.id));
 
   const { error } = await supabase
     .from("instructors")

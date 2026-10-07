@@ -59,11 +59,16 @@ export async function sendPatientMessage(formData: FormData) {
 
   const { data: patient } = await supabase
     .from("patients")
-    .select("instructor_id")
+    .select("instructor_id, instructors ( status )")
     .eq("id", user.id)
     .maybeSingle();
   if (!patient?.instructor_id) {
     redirect(`/patient/messages?error=${encodeURIComponent("Kiné introuvable.")}`);
+  }
+  // Kiné suspendu (2026-10-07) : il n'a plus accès à son espace, un message
+  // ne serait jamais lu.
+  if ((patient!.instructors as unknown as { status: string | null } | null)?.status === "suspended") {
+    redirect(`/patient/messages?error=${encodeURIComponent("Votre kiné n'exerce plus sur EasyPhysio : la messagerie est fermée.")}`);
   }
 
   const { error } = await supabase.from("patient_messages").insert({

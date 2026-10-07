@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { resolveAppUserId } from "@/lib/auth/user-map";
 import { createClient } from "@/lib/supabase/server";
-import { setInstructorStatus } from "@/lib/db/admin";
+import { rppsInUse, setInstructorStatus } from "@/lib/db/admin";
 import { verifyRpps } from "@/lib/instructor/rppsVerification";
 
 const PENDING_CABINET_COOKIE = "pending_cabinet";
@@ -94,7 +94,11 @@ export default async function SignupFinalizePage() {
     // skips the manual /admin approval queue entirely (Philippe, 2026-09-10)
     // — an unverified or missing RPPS still needs a human to check it by
     // hand, same as today.
-    const autoApproved = verification?.status === "verified";
+    // Numéro déjà porté par un autre compte : pas d'approbation automatique,
+    // la demande passe en revue manuelle dans /admin (Philippe, 2026-10-07 —
+    // un RPPS et un nom sont publics, on ne valide pas deux comptes dessus).
+    const autoApproved =
+      verification?.status === "verified" && !!pendingCabinet && !(await rppsInUse(pendingCabinet.rppsNumber, appId));
 
     const { error } = await supabase.from("instructors").insert({
       id: appId,

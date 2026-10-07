@@ -24,12 +24,13 @@ export default async function MessagesPage({
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const { data: patient } = await supabase.from("patients").select("instructors ( full_name )").eq("id", user.id).maybeSingle();
+  const { data: patient } = await supabase.from("patients").select("instructors ( full_name, status )").eq("id", user.id).maybeSingle();
   // Jointure plusieurs-vers-un (patients → instructors) : PostgREST renvoie un
   // OBJET, pas un tableau — lu comme un tableau, le nom du kiné tombait
   // toujours sur « votre kiné » (Philippe, 2026-10-07 ; même lecture que
   // app/patient/layout.tsx).
-  const instructorRow = patient?.instructors as unknown as { full_name: string | null } | null;
+  const instructorRow = patient?.instructors as unknown as { full_name: string | null; status: string | null } | null;
+  const kineSuspended = instructorRow?.status === "suspended";
   const instructorFullName = instructorRow?.full_name ?? null;
   const instructorName = instructorFullName ?? "votre kiné";
 
@@ -102,7 +103,11 @@ export default async function MessagesPage({
           </div>
 
           <div className="border-t border-line px-5 py-4 max-sm:bg-surface max-sm:px-3 max-sm:py-2.5">
-            <MessageComposer patientId={user.id} action={sendPatientMessage} placeholder={`Écrire à ${instructorName}…`} chat />
+            {kineSuspended ? (
+              <p className="text-center text-sm text-muted">Votre kiné n&apos;exerce plus sur EasyPhysio : la messagerie est fermée.</p>
+            ) : (
+              <MessageComposer patientId={user.id} action={sendPatientMessage} placeholder={`Écrire à ${instructorName}…`} chat />
+            )}
           </div>
         </section>
       </div>

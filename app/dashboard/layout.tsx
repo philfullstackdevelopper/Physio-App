@@ -45,12 +45,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
             )}
           </span>
           <h1 className="mt-4 text-2xl font-semibold text-ink">
-            {pending ? "Compte en cours de validation" : "Compte non validé"}
+            {pending ? "Compte en cours de validation" : status === "suspended" ? "Compte suspendu" : "Compte non validé"}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             {pending
               ? "Nous vérifions chaque nouveau compte praticien avant de l'activer. Revenez bientôt."
-              : "Votre demande n'a pas été validée. Contactez-nous si vous pensez qu'il s'agit d'une erreur."}
+              : status === "suspended"
+                ? "Votre accès à EasyPhysio a été suspendu. Contactez-nous si vous pensez qu'il s'agit d'une erreur."
+                : "Votre demande n'a pas été validée. Contactez-nous si vous pensez qu'il s'agit d'une erreur."}
           </p>
           <SignOutButton redirectUrl="/login">
             <button
