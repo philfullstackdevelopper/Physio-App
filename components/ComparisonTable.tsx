@@ -2,11 +2,11 @@ import {
   Activity,
   Check,
   Minus,
-  Sparkles,
   UserRound,
   X,
   type LucideIcon,
 } from "lucide-react";
+import { LogoMark } from "@/components/Logo";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 
 // "Ce qui change vraiment pour le patient": a 3-column matrix (EasyPhysio
@@ -16,8 +16,9 @@ import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 
 type Status = "yes" | "partial" | "no";
 
-const COLUMNS: { name: string; sub: string; icon: LucideIcon; highlight?: boolean }[] = [
-  { name: "EasyPhysio", sub: "avec votre kiné", icon: Sparkles, highlight: true },
+// EasyPhysio n'a pas d'icône générique : il affiche le vrai logo (LogoMark).
+const COLUMNS: { name: string; sub: string; icon?: LucideIcon; highlight?: boolean }[] = [
+  { name: "EasyPhysio", sub: "avec votre kiné", highlight: true },
   { name: "Appli fitness généraliste", sub: "sans suivi clinique", icon: Activity },
   { name: "Rien", sub: "mémoire seule", icon: UserRound },
 ];
@@ -73,22 +74,24 @@ export default function ComparisonTable() {
                   Le meilleur choix
                 </span>
               )}
-              <span
-                className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                  col.highlight
-                    ? "bg-blue-600 text-white"
-                    : "border border-slate-200 bg-slate-50 text-slate-400"
-                }`}
-              >
-                <col.icon className="h-5 w-5" strokeWidth={1.75} />
-              </span>
-              <p
-                className={`mt-2 text-sm font-semibold leading-tight ${
-                  col.highlight ? "text-slate-900" : "text-slate-500"
-                }`}
-              >
-                {col.name}
-              </p>
+              {/* Colonne EasyPhysio : la vraie icône et le mot-symbole de la
+                  marque (Philippe, 2026-10-07 : « use my logo / visual
+                  identity »), pas une icône générique. */}
+              {col.highlight ? (
+                <LogoMark size={40} />
+              ) : (
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-400">
+                  {col.icon && <col.icon className="h-5 w-5" strokeWidth={1.75} />}
+                </span>
+              )}
+              {col.highlight ? (
+                <p className="mt-2 text-sm leading-tight tracking-[-0.02em] text-[#0f2a5c]" style={{ fontFamily: "var(--font-brand)" }}>
+                  <span className="font-extrabold">Easy</span>
+                  <span className="font-medium">Physio</span>
+                </p>
+              ) : (
+                <p className="mt-2 text-sm font-semibold leading-tight text-slate-500">{col.name}</p>
+              )}
               <p className="mt-0.5 text-xs text-slate-400">{col.sub}</p>
             </div>
           ))}

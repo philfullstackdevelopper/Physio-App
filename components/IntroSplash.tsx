@@ -19,7 +19,7 @@ const KEY = "ep-intro-seen";
  *  s'exécute pendant la lecture du HTML, avant le premier affichage. */
 export const INTRO_SEEN_SCRIPT = `try{if(sessionStorage.getItem("${KEY}")==="1")document.documentElement.dataset.introSeen="1"}catch(e){}`;
 const LETTERS = [..."Easy"].map((c) => ({ c, bold: true })).concat([..."Physio"].map((c) => ({ c, bold: false })));
-const TOTAL_MS = 2200;
+const TOTAL_MS = 1900;
 
 export default function IntroSplash() {
   const [gone, setGone] = useState(false);
@@ -55,7 +55,7 @@ export default function IntroSplash() {
         html[data-intro-seen="1"] .ep-intro { display: none; }
         @media (prefers-reduced-motion: reduce) { .ep-intro { display: none; } }
         @keyframes ep-intro-icon { 0% { opacity: 0; transform: scale(.6) rotate(-8deg); } 60% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes ep-intro-letter { 0% { opacity: 0; transform: translateY(14px); filter: blur(4px); } 100% { opacity: 1; transform: none; filter: none; } }
+        @keyframes ep-intro-letter { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: none; } }
         @keyframes ep-intro-tag { 0% { opacity: 0; letter-spacing: .5em; } 100% { opacity: 1; letter-spacing: .28em; } }
       `}</style>
       <div
@@ -64,8 +64,10 @@ export default function IntroSplash() {
           setLeaving(true);
           window.setTimeout(() => setGone(true), 450);
         }}
-        className={`ep-intro fixed inset-0 z-[100] flex cursor-pointer flex-col items-center justify-center bg-[#f6fafd] transition-[transform,opacity] duration-500 ease-[cubic-bezier(.7,0,.3,1)] ${
-          leaving ? "-translate-y-full opacity-0" : ""
+        // Fond plein couleur marque, puis fondu (Philippe, 2026-10-07 : « pop up
+        // cleanly like Aurascan ») — plus de glissement vers le haut.
+        className={`ep-intro fixed inset-0 z-[100] flex cursor-pointer flex-col items-center justify-center bg-[#0f2a5c] transition-[opacity,transform] duration-500 ease-out ${
+          leaving ? "scale-[1.04] opacity-0" : ""
         }`}
       >
         <div className="flex items-center gap-4 sm:gap-5">
@@ -78,13 +80,13 @@ export default function IntroSplash() {
             className="h-14 w-14 sm:h-[72px] sm:w-[72px]"
             style={{ animation: "ep-intro-icon .55s cubic-bezier(.2,.8,.2,1) both" }}
           />
-          <p aria-label="EasyPhysio" className="text-4xl tracking-[-0.02em] text-[#0f2a5c] sm:text-6xl" style={{ fontFamily: "var(--font-brand)" }}>
+          <p aria-label="EasyPhysio" className="text-4xl tracking-[-0.02em] text-white sm:text-6xl" style={{ fontFamily: "var(--font-brand)" }}>
             {LETTERS.map((l, i) => (
               <span
                 key={i}
                 aria-hidden
                 className={`inline-block ${l.bold ? "font-extrabold" : "font-medium"}`}
-                style={{ animation: `ep-intro-letter .45s ease-out ${0.35 + i * 0.07}s both` }}
+                style={{ animation: `ep-intro-letter .35s cubic-bezier(.2,.8,.2,1) ${0.25 + i * 0.045}s both` }}
               >
                 {l.c}
               </span>
@@ -92,8 +94,8 @@ export default function IntroSplash() {
           </p>
         </div>
         <p
-          className="mt-5 text-[11px] font-medium uppercase text-slate-500 sm:text-xs"
-          style={{ animation: "ep-intro-tag .7s ease-out 1.1s both", letterSpacing: ".28em" }}
+          className="mt-5 text-[11px] font-medium uppercase text-white/60 sm:text-xs"
+          style={{ animation: "ep-intro-tag .6s ease-out .8s both", letterSpacing: ".28em" }}
         >
           Rééducation · Progression · Bien-être
         </p>

@@ -7,10 +7,11 @@ import { useUser, SignOutButton } from "@clerk/nextjs";
 import { LogOut } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 
+// 4 liens, plus « Comparaison » (Philippe, 2026-10-07 : « too much information
+// on the top bar ») — la section reste atteignable en faisant défiler.
 const NAV_LINKS = [
   { href: "/#comment-ca-marche", label: "Comment ça marche" },
   { href: "/#cote-kine", label: "Praticiens" },
-  { href: "/#comparaison", label: "Comparaison" },
   { href: "/#tarifs", label: "Tarifs" },
   { href: "/#faq", label: "FAQ" },
 ];
@@ -26,7 +27,7 @@ export default function SiteHeader() {
   const [showHeader, setShowHeader] = useState(true);
   const lastY = useRef(0);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn } = useUser();
 
   useEffect(() => {
     lastY.current = window.scrollY;
@@ -62,16 +63,29 @@ export default function SiteHeader() {
       <motion.header
         animate={{ y: showHeader ? 0 : -80, opacity: showHeader ? 1 : 0 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
-        style={{ pointerEvents: showHeader ? "auto" : "none" }}
-        className={`fixed left-1/2 z-50 -translate-x-1/2 transition-[top,width,border-radius,background-color,box-shadow,padding] duration-500 ease-in-out ${
+        style={{
+          pointerEvents: showHeader ? "auto" : "none",
+          // Largeur en style direct (la classe arbitraire min()/calc() n'était
+          // pas générée) : pleine largeur en haut de page, pastille de 900 px
+          // ensuite, avec une transition de largeur fluide (2026-10-07).
+          width: scrolled ? "min(900px, calc(100vw - 24px))" : "100%",
+        }}
+        className={`fixed left-1/2 z-50 -translate-x-1/2 transition-[top,width,border-radius,background-color,box-shadow,padding] duration-700 ease-[cubic-bezier(.22,1,.36,1)] ${
           scrolled
-            ? "top-3 w-[min(1080px,calc(100vw-24px))] rounded-full border border-blue-100/70 bg-white/70 px-6 py-3 shadow-lg shadow-blue-900/5 backdrop-blur-xl"
-            : "top-0 w-full rounded-none border-b border-transparent bg-[#f6f8fd] px-6 py-4"
+            ? "top-3 rounded-full border border-blue-100/70 bg-white/70 px-6 py-3 shadow-lg shadow-blue-900/5 backdrop-blur-xl"
+            : "top-0 rounded-none border-b border-transparent bg-[#f6f8fd] px-6 py-4"
         }`}
       >
+        {/* Pastille de 900 px une fois défilé (au lieu de 1080 : trop de vide,
+            Philippe 2026-10-07) — une largeur FIXE, pas « à la taille du
+            contenu », pour que le passage pleine largeur → pastille reste un
+            glissement fluide et non un saut brutal. */}
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
-            <LogoLockup height={scrolled ? 36 : 40} />
+            {/* Logo et mot « EasyPhysio » sur une ligne, à l'échelle du menu
+                (Philippe, 2026-10-07 : le nom était trop grand par rapport
+                au reste, comme sur aurascan.app). */}
+            <LogoLockup height={26} />
           </Link>
 
           <nav className="hidden items-center gap-5 text-sm font-medium text-slate-600 lg:flex">
@@ -83,18 +97,6 @@ export default function SiteHeader() {
           </nav>
 
           <div className="flex shrink-0 items-center gap-3">
-            {/* Visible proof of connection state, not just a button whose
-                behavior silently changes — someone already logged in should be
-                able to tell at a glance, without clicking anything. */}
-            {isLoaded && isSignedIn && !scrolled && (
-              <span className="hidden max-w-[14rem] truncate text-sm text-slate-500 xl:inline">
-                Connecté·e en tant que{" "}
-                <span className="font-medium text-slate-700">
-                  {user.primaryEmailAddress?.emailAddress ?? user.fullName ?? "vous"}
-                </span>
-              </span>
-            )}
-
             {/* Always visible and always functional: signed out, « Se
                 connecter » opens the Clerk login form; signed in, it becomes
                 « Mon espace » and goes straight to /dashboard (which itself
@@ -103,10 +105,10 @@ export default function SiteHeader() {
                 other /login link). */}
             <Link
               href={isLoaded && isSignedIn ? "/dashboard" : "/login"}
-              className={`hidden shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition active:scale-[0.97] sm:inline-flex ${
-                scrolled
-                  ? "border-slate-300 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50/50"
-                  : "border-slate-300 bg-white/60 text-slate-700 hover:border-blue-200 hover:bg-white"
+              className={`shrink-0 items-center justify-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition active:scale-[0.97] ${
+                isLoaded && isSignedIn
+                  ? "inline-flex bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+                  : "hidden border border-slate-300 bg-white/60 text-slate-700 hover:border-blue-200 hover:bg-white sm:inline-flex"
               }`}
             >
               {isLoaded && isSignedIn ? "Mon espace" : "Se connecter"}
@@ -125,10 +127,11 @@ export default function SiteHeader() {
               <SignOutButton redirectUrl="/login">
                 <button
                   type="button"
-                  className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition active:scale-[0.97] hover:bg-blue-700"
+                  aria-label="Se déconnecter"
+                  title="Se déconnecter"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white/60 text-slate-500 transition active:scale-[0.97] hover:border-blue-200 hover:text-slate-800"
                 >
                   <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                  Se déconnecter
                 </button>
               </SignOutButton>
             )}
