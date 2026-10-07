@@ -2,8 +2,8 @@
 
 import { useRef, useState, type MouseEvent } from "react";
 import { motion } from "motion/react";
-import { Wifi, BatteryFull, Home, ClipboardList, History } from "lucide-react";
-import { usePhoneDemo, PhoneDemoBody } from "@/components/PhoneDemoScreens";
+import { Wifi, BatteryFull } from "lucide-react";
+import { usePhoneDemo, PhoneDemoBody, DemoTabBar } from "@/components/PhoneDemoScreens";
 
 // Resting 3D tilt when the cursor isn't over the phone — angled, not flat,
 // per the floating-device-mockup convention.
@@ -54,7 +54,7 @@ export default function PhoneMockup() {
           <span className="absolute -right-[8px] top-32 h-16 w-1.5 rounded-r-full bg-slate-900" />
 
           {/* Screen */}
-          <div className="relative h-[540px] overflow-hidden rounded-[2.25rem] bg-white">
+          <div className="relative h-[540px] overflow-hidden rounded-[2.25rem] bg-[#f4f7fc]">
             <div className="absolute left-1/2 top-2.5 z-20 h-6 w-24 -translate-x-1/2 rounded-full bg-slate-900" />
 
             {/* Status bar */}
@@ -71,12 +71,8 @@ export default function PhoneMockup() {
                 PhoneShowcase further down the page. */}
             <PhoneDemoBody step={step} stepIndex={stepIndex} reducedMotion={reducedMotion} />
 
-            {/* Bottom nav — mirrors the real patient app's 3 tabs */}
-            <div className="absolute inset-x-0 bottom-0 flex items-center justify-around border-t border-slate-100 bg-white/95 py-3 backdrop-blur">
-              <Home className={`h-4 w-4 ${step.screen === 0 ? "text-blue-600" : "text-slate-300"}`} strokeWidth={2} />
-              <ClipboardList className={`h-4 w-4 ${step.screen === 1 ? "text-blue-600" : "text-slate-300"}`} strokeWidth={1.75} />
-              <History className={`h-4 w-4 ${step.screen === 2 ? "text-blue-600" : "text-slate-300"}`} strokeWidth={1.75} />
-            </div>
+            {/* Barre d'onglets du vrai téléphone patient (absente pendant la séance). */}
+            <DemoTabBar screen={step.screen} />
           </div>
         </div>
       </motion.div>
