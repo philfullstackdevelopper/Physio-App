@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, HeartPulse, Stethoscope } from "lucide-react";
-import { LogoMark } from "@/components/Logo";
+import { LogoLockup } from "@/components/Logo";
 
 // Entry point for "Créer un compte" everywhere on the marketing site — a
 // full-bleed, two-way split rather than a small in-page toggle: the whole
@@ -17,8 +17,7 @@ export default function SignupChooserPage() {
         href="/"
         className="absolute left-4 top-4 z-10 flex items-center gap-2.5 lg:left-8 lg:top-8"
       >
-        <LogoMark size={32} />
-        <span className="font-display text-lg font-semibold text-white">EasyPhysio</span>
+        <LogoLockup height={40} tone="light" />
       </Link>
 
       <div className="flex min-h-screen flex-col lg:flex-row">

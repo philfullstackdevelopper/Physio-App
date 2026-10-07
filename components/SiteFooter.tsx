@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogoMark } from "@/components/Logo";
+import { LogoLockup } from "@/components/Logo";
 
 const COLUMNS = [
   {
@@ -34,8 +34,7 @@ export default function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <Link href="/" className="flex items-center gap-2.5">
-            <LogoMark size={32} />
-            <span className="font-display text-base font-semibold text-slate-900">EasyPhysio</span>
+            <LogoLockup height={40} />
           </Link>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-slate-500">
             Les programmes de rééducation de votre kiné, suivis sérieusement à la maison.

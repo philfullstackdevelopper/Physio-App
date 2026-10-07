@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
 import { Home, CalendarDays, TrendingUp, MessageCircle, Settings, LogOut } from "lucide-react";
-import { LogoMark } from "@/components/Logo";
+import { LogoLockup } from "@/components/Logo";
 import { initials } from "@/lib/format/initials";
 
 const LINKS = [
@@ -72,8 +72,7 @@ export default function PatientNav({
         className="sticky top-0 z-30 flex h-[calc(3.25rem+env(safe-area-inset-top))] items-center justify-between bg-phone-bg/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur sm:hidden"
       >
         <Link href="/patient" className="flex items-center gap-2">
-          <LogoMark size={24} />
-          <span className="text-lg font-semibold text-ink">EasyPhysio</span>
+          <LogoLockup height={32} />
         </Link>
         {!onOnboarding && (
           <Link
@@ -89,8 +88,7 @@ export default function PatientNav({
       {/* Desktop */}
       <aside className="hidden w-56 shrink-0 flex-col bg-sidebar p-4 text-white sm:flex">
         <Link href="/" className="flex items-center gap-2.5 px-2 py-1">
-          <LogoMark size={26} />
-          <span className="text-base font-semibold">EasyPhysio</span>
+          <LogoLockup height={36} tone="light" />
         </Link>
         {!onOnboarding && (
           <nav className="mt-6 flex flex-1 flex-col gap-1">

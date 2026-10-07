@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { useUser, SignOutButton } from "@clerk/nextjs";
 import { LogOut } from "lucide-react";
-import { LogoMark } from "@/components/Logo";
+import { LogoLockup } from "@/components/Logo";
 
 const NAV_LINKS = [
   { href: "/#comment-ca-marche", label: "Comment ça marche" },
@@ -71,10 +71,7 @@ export default function SiteHeader() {
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
-            <LogoMark size={scrolled ? 32 : 34} />
-            <span className="hidden font-display text-base font-semibold text-slate-900 sm:inline">
-              EasyPhysio
-            </span>
+            <LogoLockup height={scrolled ? 36 : 40} />
           </Link>
 
           <nav className="hidden items-center gap-5 text-sm font-medium text-slate-600 lg:flex">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
 import { LayoutDashboard, UsersRound, MessageCircle, Dumbbell, ListChecks, Wallet, LogOut } from "lucide-react";
-import { LogoMark } from "@/components/Logo";
+import { LogoLockup, LogoMark } from "@/components/Logo";
 import { initials } from "@/lib/format/initials";
 
 const LINKS = [
@@ -40,8 +40,7 @@ export default function DashboardSidebar({
           (vertical ou horizontal) du contenu à côté. */}
       <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col overflow-y-auto bg-sidebar p-4 text-white sm:flex">
         <Link href="/" className="flex items-center gap-2.5 px-2 py-1">
-          <LogoMark size={26} />
-          <span className="text-base font-semibold">EasyPhysio</span>
+          <LogoLockup height={36} tone="light" />
         </Link>
         <nav className="mt-6 flex flex-1 flex-col gap-1">
           {LINKS.map((link) => (

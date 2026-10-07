@@ -12,6 +12,32 @@ export function LogoMark({ size = 32 }: { size?: number }) {
   );
 }
 
+/** Logo complet de la maquette (silhouette + « EasyPhysio »), sans la
+ *  bordure Link — pour les en-têtes, menus et pieds de page. `tone="light"` :
+ *  texte blanc, pour les fonds sombres (menus latéraux). Hauteur en px. */
+export function LogoLockup({ height = 32, tone = "dark" }: { height?: number; tone?: "dark" | "light" }) {
+  // Silhouette = image découpée dans la maquette (95 × 108) ; le mot
+  // « EasyPhysio » est du vrai texte (Plus Jakarta Sans, --font-brand) pour
+  // rester parfaitement net à toutes les tailles (Philippe : « il est un peu
+  // flou… il faut que la qualité soit au rendez-vous »).
+  const figureH = height;
+  const figureW = Math.round((height * 95) / 108);
+  return (
+    <span className="inline-flex shrink-0 items-center" style={{ gap: Math.round(height * 0.22) }} aria-label="EasyPhysio" role="img">
+      {/* eslint-disable-next-line @next/next/no-img-element -- PNG statique */}
+      <img src="/brand/easyphysio-figure.png" width={figureW} height={figureH} alt="" />
+      <span
+        aria-hidden
+        className="whitespace-nowrap leading-none tracking-[-0.02em]"
+        style={{ fontFamily: "var(--font-brand)", fontSize: Math.round(height * 0.62) }}
+      >
+        <span className={`font-extrabold ${tone === "light" ? "text-white" : "text-[#0f2a5c]"}`}>Easy</span>
+        <span className={`font-medium ${tone === "light" ? "text-white" : "text-[#0f2a5c]"}`}>Physio</span>
+      </span>
+    </span>
+  );
+}
+
 export default function Logo({
   wordmark = true,
   size = 32,
@@ -24,9 +50,7 @@ export default function Logo({
   return (
     <Link href="/" aria-label="EasyPhysio — accueil" className={`flex items-center ${className}`}>
       {wordmark ? (
-        // Silhouette + « EasyPhysio », même mise en page que la maquette (370 × 115).
-        // eslint-disable-next-line @next/next/no-img-element -- PNG statique
-        <img src="/brand/easyphysio-logo.png" height={size} width={Math.round((size * 370) / 115)} alt="EasyPhysio" />
+        <LogoLockup height={size} />
       ) : (
         <LogoMark size={size} />
       )}

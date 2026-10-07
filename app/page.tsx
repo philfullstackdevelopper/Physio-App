@@ -16,6 +16,7 @@ import ComparisonTable from "@/components/ComparisonTable";
 import PricingSection from "@/components/PricingSection";
 import Testimonials from "@/components/Testimonials";
 import Reveal from "@/components/Reveal";
+import IntroSplash, { INTRO_SEEN_SCRIPT } from "@/components/IntroSplash";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 
 const HERO_CHIPS = [
@@ -45,6 +46,10 @@ function PrimaryCta({
 export default function Home() {
   return (
     <div className="relative min-h-screen bg-[#f6f8fd] text-slate-800">
+      {/* Ouverture façon Aurascan (2026-10-07) : une fois par visite. Le script
+          marque la visite AVANT le premier affichage (pas de flash du voile). */}
+      <script dangerouslySetInnerHTML={{ __html: INTRO_SEEN_SCRIPT }} />
+      <IntroSplash />
       {/* Ambient background: a soft blue glow behind the hero (echoes the
           dashboard's own corner glow, in the site's accent instead of its
           warm amber, so the marketing site and the product read as one

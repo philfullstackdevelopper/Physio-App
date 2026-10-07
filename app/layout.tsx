@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Sans, Fraunces } from "next/font/google";
+import { Instrument_Sans, Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { frFR } from "@clerk/localizations";
 import CookieBanner from "@/components/CookieBanner";
@@ -19,6 +19,14 @@ const fraunces = Fraunces({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+// Police du logo « EasyPhysio » (maquette d'identité visuelle, 2026-10-07) :
+// le mot est écrit en vraie police, pas en image, pour rester net partout.
+const brandFont = Plus_Jakarta_Sans({
+  variable: "--font-brand",
+  subsets: ["latin"],
+  weight: ["500", "800"],
 });
 
 export const metadata: Metadata = {
@@ -60,7 +68,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${instrumentSans.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${instrumentSans.variable} ${fraunces.variable} ${brandFont.variable} h-full antialiased`}
       // Browser extensions (e.g. LanguageTool) add attributes to <html> before React loads.
       suppressHydrationWarning
     >
