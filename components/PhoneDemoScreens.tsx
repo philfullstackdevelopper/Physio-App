@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Activity, ArrowDown, ArrowUp, CalendarDays, Check, Home, MessageCircle, Settings, TrendingUp, Play } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, Home, MessageCircle, Settings, TrendingUp, Play, CheckCircle2 } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import MountainScene from "@/components/MountainScene";
@@ -153,71 +153,68 @@ export function HomeScreen({ tap }: { tap: boolean }) {
     <>
       <AppTopBar />
       <div className="px-3.5">
-        <p className="mt-2.5 flex items-center gap-1 text-[15px] font-semibold text-slate-900">
-          Bonjour Léa <WavingHand className="h-4 w-4" />
+        {/* Même Accueil que l'appli téléphone (PatientHomeView) : salutation
+            sur une ligne, carte « Mon programme » (montagne à gauche), puis la
+            frise « Mon programme, semaine par semaine ». */}
+        <p className="mt-2.5 flex items-baseline gap-1.5 text-[14px] font-semibold text-slate-900">
+          <span className="flex items-center gap-1">
+            Bonjour Léa <WavingHand className="h-4 w-4" />
+          </span>
+          <span className="text-[8px] font-normal text-slate-500">Mercredi 7 octobre</span>
         </p>
 
-        <div className="relative mt-2.5 overflow-hidden rounded-2xl bg-gradient-to-br from-[#155dfc] to-[#1447c9] px-3 pb-3 pt-2.5 shadow-lg shadow-blue-600/25">
-          <p className="text-[7.5px] font-semibold uppercase tracking-wide text-white/75">Semaine 5</p>
-          <p className="mt-0.5 text-[11px] font-semibold leading-tight text-white">Renforcement lombaire — niveau 2</p>
-          <p className="mt-0.5 text-[8.5px] text-white/85">2 séances à réaliser · 20 minutes environ</p>
-          <MountainScene variant="goal" progress={1 / 3} className="mx-auto mt-1 h-16 w-36 text-white/90" />
-          <div className="mt-1 flex items-center gap-1.5">
-            <div className="flex flex-1 gap-1">
-              <span className="h-1 flex-1 rounded-full bg-white" />
-              <span className="h-1 flex-1 rounded-full bg-white/25" />
-              <span className="h-1 flex-1 rounded-full bg-white/25" />
+        <div className="relative mt-2 overflow-hidden rounded-[18px] bg-gradient-to-r from-[#155dfc] to-[#1447c9] px-3 pb-3 pt-2.5 shadow-lg shadow-blue-600/25">
+          <MountainScene variant="goal" progress={1 / 3} className="pointer-events-none absolute -bottom-0.5 left-0 h-12 w-[4.5rem] text-white/90" />
+          <div className="relative pl-14">
+            <p className="text-[7.5px] font-semibold uppercase tracking-wide text-white/75">Semaine 5</p>
+            <p className="mt-0.5 text-[10.5px] font-semibold leading-tight text-white">Renforcement lombaire — niveau 2</p>
+            <p className="mt-0.5 text-[8px] text-white/85">2 séances à réaliser · 20 minutes environ</p>
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <div className="flex flex-1 gap-1">
+                <span className="h-1 flex-1 rounded-full bg-white" />
+                <span className="h-1 flex-1 rounded-full bg-white/25" />
+                <span className="h-1 flex-1 rounded-full bg-white/25" />
+              </div>
+              <span className="text-[7.5px] font-semibold text-white">1/3 séances</span>
             </div>
-            <span className="text-[8px] font-semibold text-white">1/3 séances</span>
+            <span
+              className="relative mt-2 flex items-center justify-center gap-1 overflow-hidden rounded-full bg-white py-1.5 text-[10px] font-semibold text-blue-600 transition-transform duration-150"
+              style={{ transform: tap ? "scale(0.95)" : "scale(1)" }}
+            >
+              Voir mon programme <ArrowRight className="h-3 w-3" strokeWidth={2.2} />
+              <Tap on={tap} />
+            </span>
           </div>
-          <span
-            className="relative mt-2 flex items-center justify-center gap-1 overflow-hidden rounded-full bg-white py-2 text-[10px] font-semibold text-blue-600 transition-transform duration-150"
-            style={{ transform: tap ? "scale(0.95)" : "scale(1)" }}
+        </div>
+
+        {/* La frise, sans titre au-dessus (Philippe, 2026-10-07 : « la frise
+            parle d'elle-même ») : semaine en cours en vert, « Vous êtes ici ». */}
+        <div className="relative mt-8 flex">
+          <span className="absolute -top-4 left-[30%] -translate-x-1/2 rounded-full bg-blue-600 px-1.5 py-px text-[7px] font-semibold text-white">Vous êtes ici</span>
+          <div
+            className="flex h-[150px] w-[64%] shrink-0 flex-col items-center justify-center gap-1 bg-emerald-50 text-emerald-600 shadow-sm"
+            style={{ clipPath: "polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)", borderRadius: 14 }}
           >
-            Voir mon programme <ArrowRight className="h-3 w-3" strokeWidth={2.2} />
-            <Tap on={tap} />
-          </span>
-        </div>
-
-        <div className="mt-2.5 grid grid-cols-2 gap-2">
-          <div className={`${CARD} p-2.5`}>
-            <p className="text-[8px] text-slate-500">Adhérence</p>
-            <p className="text-[15px] font-semibold text-slate-900">83%</p>
-            <p className="flex items-center gap-0.5 text-[7.5px] text-emerald-600">
-              <ArrowUp className="h-2 w-2" strokeWidth={2.5} />
-              +12% vs période préc.
-            </p>
+            <span className="flex items-center gap-1 text-[14px] font-semibold">
+              Semaine 5 <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
+            </span>
+            <span className="text-[8px] opacity-90">(5 oct. – 11 oct.)</span>
+            <span className="mt-1 text-[8px] font-medium">Séances réalisées</span>
+            <span className="mt-1.5 flex gap-0.5">
+              {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
+                <span key={i} className={`flex h-3.5 w-3.5 items-center justify-center rounded-full text-[6px] font-semibold ${i === 0 ? "bg-emerald-500 text-white" : "border border-emerald-300 bg-white/60"}`}>
+                  {d}
+                </span>
+              ))}
+            </span>
           </div>
-          <div className={`${CARD} p-2.5`}>
-            <p className="flex items-center gap-1 text-[8px] text-slate-500">
-              <Activity className="h-2.5 w-2.5 text-blue-600" strokeWidth={2} /> Douleur
-            </p>
-            <p className="text-[15px] font-semibold text-slate-900">
-              3.0<span className="text-[9px] font-medium text-slate-400">/10</span>
-            </p>
-            <p className="flex items-center gap-0.5 text-[7.5px] text-emerald-600">
-              <ArrowDown className="h-2 w-2" strokeWidth={2.5} />
-              -2.0 vs 30 j avant
-            </p>
+          <div
+            className="-ml-2.5 flex h-[150px] flex-1 flex-col items-center justify-center gap-1 bg-white pl-3 text-slate-400 shadow-sm"
+            style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%, 12px 50%)", borderRadius: 14 }}
+          >
+            <span className="text-[14px] font-semibold">Sem</span>
+            <span className="text-[8px]">(12 oct</span>
           </div>
-        </div>
-
-        {/* Comme l'Accueil patient (PatientHomeView) : le graphe d'évolution
-            de la douleur a remplacé le « Conseil du jour » (Philippe, 2026-10-07). */}
-        <div className={`${CARD} mt-2 p-2.5`}>
-          <span className="flex items-center justify-between">
-            <span className="text-[8.5px] font-semibold text-slate-900">Évolution de la douleur</span>
-            <span className="text-[7.5px] font-medium text-blue-600">Voir le détail</span>
-          </span>
-          <svg viewBox="0 0 160 44" className="mt-1.5 h-11 w-full" aria-hidden>
-            {[6, 22, 38].map((y) => (
-              <line key={y} x1="10" x2="156" y1={y} y2={y} stroke="#e2e8f0" strokeWidth="0.8" />
-            ))}
-            <polyline points="14,22 36,22 58,30 80,26 102,34 124,29 146,29" fill="none" stroke="#dc2626" strokeWidth="1.4" />
-            {[[14, 22], [36, 22], [58, 30], [80, 26], [102, 34], [124, 29], [146, 29]].map(([x, y]) => (
-              <circle key={x} cx={x} cy={y} r="1.8" fill="#dc2626" />
-            ))}
-          </svg>
         </div>
       </div>
     </>

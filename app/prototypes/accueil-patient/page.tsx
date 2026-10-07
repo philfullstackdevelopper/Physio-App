@@ -5,6 +5,7 @@
 // tel quel. Aucune donnée réelle, aucune requête. Pas lié depuis l'appli.
 
 import PatientNav from "@/components/PatientNav";
+import PatientAppOpening from "@/components/PatientAppOpening";
 import PatientHomeView from "@/components/PatientHomeView";
 import type { SessionDetail } from "@/components/WeekProgramme";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
@@ -43,6 +44,7 @@ export default function AccueilPatientPrototype() {
 
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
+      <PatientAppOpening />
       <PatientNav patientName="Léa Martin" unreadCount={1} pathnameOverride="/patient" />
       <div className="relative min-w-0 flex-1 pb-20 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0">
         <PatientHomeView

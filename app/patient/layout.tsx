@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Info } from "lucide-react";
 import { headers } from "next/headers";
 import PatientNav from "@/components/PatientNav";
+import PatientAppOpening from "@/components/PatientAppOpening";
 import PatientWelcomeGate from "@/components/PatientWelcomeGate";
 import PatientNoRecordGate from "@/components/PatientNoRecordGate";
 import { createClient } from "@/lib/supabase/server";
@@ -110,6 +111,8 @@ export default async function PatientLayout({ children }: { children: React.Reac
 
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
+      {/* Téléphone : ouverture douce de l'appli, une fois par visite. */}
+      <PatientAppOpening />
       <PatientNav patientName={(patient.full_name as string | null) ?? null} unreadCount={unreadCount ?? 0} />
       {/* Téléphone : la marge du bas suit la vraie hauteur de la barre d'onglets,
           zone de la « home bar » des iPhone comprise (env(safe-area-inset-bottom)). */}

@@ -213,8 +213,10 @@ export default function WeekProgramme({
               </>
             ) : (
               <>
-                <h2 className="text-base font-semibold text-ink sm:text-lg">Mon programme, semaine par semaine</h2>
-                <p className="mt-1 text-xs text-muted sm:text-sm">
+                {/* Téléphone : pas de titre, la frise parle d'elle-même (Philippe,
+                    2026-10-07). Ordinateur : inchangé. */}
+                <h2 className="text-base font-semibold text-ink max-sm:hidden sm:text-lg">Mon programme, semaine par semaine</h2>
+                <p className="mt-1 text-xs text-muted max-sm:hidden sm:text-sm">
                   <span className="sm:hidden">Touchez une semaine pour voir chaque jour.</span>
                   <span className="hidden sm:inline">Cliquez sur une semaine pour voir le détail jour par jour.</span>
                 </p>
