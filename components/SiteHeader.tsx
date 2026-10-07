@@ -7,11 +7,13 @@ import { useUser, SignOutButton } from "@clerk/nextjs";
 import { LogOut } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 
-// 4 liens, plus « Comparaison » (Philippe, 2026-10-07 : « too much information
-// on the top bar ») — la section reste atteignable en faisant défiler.
+// Un en-tête plein mais aéré (Philippe, 2026-10-07 : d'abord « too much
+// information », puis « fill out the header a bit more ») : les 5 sections,
+// sans le texte « Connecté·e en tant que … ».
 const NAV_LINKS = [
   { href: "/#comment-ca-marche", label: "Comment ça marche" },
   { href: "/#cote-kine", label: "Praticiens" },
+  { href: "/#comparaison", label: "Comparaison" },
   { href: "/#tarifs", label: "Tarifs" },
   { href: "/#faq", label: "FAQ" },
 ];
@@ -66,9 +68,9 @@ export default function SiteHeader() {
         style={{
           pointerEvents: showHeader ? "auto" : "none",
           // Largeur en style direct (la classe arbitraire min()/calc() n'était
-          // pas générée) : pleine largeur en haut de page, pastille de 900 px
+          // pas générée) : pleine largeur en haut de page, pastille de 1000 px
           // ensuite, avec une transition de largeur fluide (2026-10-07).
-          width: scrolled ? "min(900px, calc(100vw - 24px))" : "100%",
+          width: scrolled ? "min(1000px, calc(100vw - 24px))" : "100%",
         }}
         className={`fixed left-1/2 z-50 -translate-x-1/2 transition-[top,width,border-radius,background-color,box-shadow,padding] duration-700 ease-[cubic-bezier(.22,1,.36,1)] ${
           scrolled
@@ -76,7 +78,7 @@ export default function SiteHeader() {
             : "top-0 rounded-none border-b border-transparent bg-[#f6f8fd] px-6 py-4"
         }`}
       >
-        {/* Pastille de 900 px une fois défilé (au lieu de 1080 : trop de vide,
+        {/* Pastille de 1000 px une fois défilé (au lieu de 1080 : trop de vide,
             Philippe 2026-10-07) — une largeur FIXE, pas « à la taille du
             contenu », pour que le passage pleine largeur → pastille reste un
             glissement fluide et non un saut brutal. */}
@@ -85,10 +87,10 @@ export default function SiteHeader() {
             {/* Logo et mot « EasyPhysio » sur une ligne, à l'échelle du menu
                 (Philippe, 2026-10-07 : le nom était trop grand par rapport
                 au reste, comme sur aurascan.app). */}
-            <LogoLockup height={26} />
+            <LogoLockup height={30} />
           </Link>
 
-          <nav className="hidden items-center gap-5 text-sm font-medium text-slate-600 lg:flex">
+          <nav className="hidden items-center gap-7 text-[15px] font-medium text-slate-600 lg:flex">
             {NAV_LINKS.map((l) => (
               <a key={l.href} href={l.href} className="whitespace-nowrap transition hover:text-blue-700">
                 {l.label}
