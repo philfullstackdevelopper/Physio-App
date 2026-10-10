@@ -13,6 +13,15 @@
 // Any missing key, network failure, RPPS mismatch, or name mismatch falls
 // back to "unverified" — everything that calls this function already treats
 // that as a valid, expected outcome (manual admin verification takes over).
+// Validation automatique d'un kiné dont le RPPS correspond à son nom :
+// DÉSACTIVÉE (décision du 2026-10-10, suite à l'audit du 2026-10-08). Un nom
+// et un numéro RPPS sont publics : le premier inscrit avec l'identité d'un
+// vrai kiné était validé sans contrôle humain. Désormais chaque nouveau
+// compte attend la validation de Philippe dans /admin ; la vérification
+// automatique ne sert plus que d'indice (« ✓ vérifié ») pour l'aider à
+// décider. Repasser à true pour revenir à la validation automatique.
+export const AUTO_APPROVE_VERIFIED_RPPS = false;
+
 export type RppsVerification = { status: "verified"; verifiedAt: string } | { status: "unverified" };
 
 type FhirPractitionerBundle = {

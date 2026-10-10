@@ -30,7 +30,12 @@ export default function MentionsLegalesPage() {
 
           <section>
             <h2 className="font-display font-semibold text-slate-900">Hébergement</h2>
-            <p className="mt-1">[Hébergeur à confirmer une fois le compte créé].</p>
+            {/* Coordonnées reprises des mentions légales de Scalingo
+                (scalingo.com/legal-notice), vérifiées le 2026-10-10. */}
+            <p className="mt-1">
+              Scalingo SAS, société par actions simplifiée. Siège social : 13 rue Jacques Peirotes, 67000 Strasbourg,
+              France. SIRET : 808 665 483 00034. Contact : support@scalingo.com.
+            </p>
           </section>
 
           <section>

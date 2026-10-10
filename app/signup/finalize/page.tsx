@@ -4,7 +4,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { resolveAppUserId } from "@/lib/auth/user-map";
 import { createClient } from "@/lib/supabase/server";
 import { rppsInUse, setInstructorStatus, setInstructorRppsVerified } from "@/lib/db/admin";
-import { verifyRpps } from "@/lib/instructor/rppsVerification";
+import { verifyRpps, AUTO_APPROVE_VERIFIED_RPPS } from "@/lib/instructor/rppsVerification";
 
 const PENDING_CABINET_COOKIE = "pending_cabinet";
 
@@ -98,7 +98,10 @@ export default async function SignupFinalizePage() {
     // la demande passe en revue manuelle dans /admin (Philippe, 2026-10-07 —
     // un RPPS et un nom sont publics, on ne valide pas deux comptes dessus).
     const autoApproved =
-      verification?.status === "verified" && !!pendingCabinet && !(await rppsInUse(pendingCabinet.rppsNumber, appId));
+      AUTO_APPROVE_VERIFIED_RPPS &&
+      verification?.status === "verified" &&
+      !!pendingCabinet &&
+      !(await rppsInUse(pendingCabinet.rppsNumber, appId));
 
     const { error } = await supabase.from("instructors").insert({
       id: appId,

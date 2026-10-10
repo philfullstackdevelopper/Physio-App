@@ -141,7 +141,7 @@ export default async function AdminPage({
           still have overview on the kiné and be able to kick some out »). */}
       <h2 className="mt-12 font-display text-xl font-semibold text-slate-900">Tous les praticiens</h2>
       <p className="mt-1 text-sm text-slate-500">
-        {all.length} compte{all.length > 1 ? "s" : ""}. « Auto » = validé automatiquement par l&apos;Annuaire Santé.
+        {all.length} compte{all.length > 1 ? "s" : ""}. « RPPS vérifié » = numéro et nom retrouvés dans l&apos;Annuaire Santé (la validation du compte reste manuelle).
       </p>
       <ul className="mt-4 space-y-3">
         {all.map((k) => {
@@ -154,7 +154,7 @@ export default async function AdminPage({
                     {k.full_name || "—"}
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${st.tone}`}>{st.label}</span>
                     {k.rpps_verified_at && (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Auto</span>
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">RPPS vérifié</span>
                     )}
                   </p>
                   <p className="text-sm text-slate-500">{k.email}</p>
