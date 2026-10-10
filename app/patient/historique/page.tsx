@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { ChevronRight, Lock } from "lucide-react";
+import HistoriqueView from "./HistoriqueView";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getTierBilling } from "@/lib/billing/context";
@@ -45,71 +44,10 @@ export default async function HistoriquePage() {
   const visibleGroups = historyDaysVisible === null ? groups : groups.slice(0, historyDaysVisible);
   const lockedGroups = historyDaysVisible === null ? [] : groups.slice(historyDaysVisible);
 
-  return (
-    <main className="p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] sm:min-h-screen sm:p-8">
-      <div className="mx-auto max-w-2xl">
-        <h1 className="font-display text-3xl font-semibold text-slate-900">Historique</h1>
-        <p className="mt-1 text-sm text-slate-500">Toutes vos séances terminées.</p>
+  const toView = (g: { day: string; logs: LogRow[] }) => ({
+    day: g.day,
+    logs: g.logs.map((log) => ({ id: log.id, name: log.workouts?.name ?? "Séance", time: formatTime(log.completed_at) })),
+  });
 
-        {logs.length === 0 ? (
-          <div className="mt-8 rounded-xl border border-slate-100 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
-            Aucune séance terminée pour le moment.
-          </div>
-        ) : (
-          <div className="mt-6 space-y-6">
-            {visibleGroups.map((g) => (
-              <div key={g.day}>
-                <h2 className="text-sm font-medium capitalize text-slate-500">{g.day}</h2>
-                <div className="mt-2 space-y-2">
-                  {g.logs.map((log) => (
-                    <Link
-                      key={log.id}
-                      href={`/patient/historique/${log.id}`}
-                      className="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3.5 shadow-sm transition hover:shadow-md"
-                    >
-                      <div>
-                        <p className="font-medium text-slate-900">{log.workouts?.name ?? "Séance"}</p>
-                        <p className="text-xs text-slate-400">{formatTime(log.completed_at)}</p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" strokeWidth={2} />
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-
-            {lockedGroups.length > 0 && (
-              <div>
-                <h2 className="text-sm font-medium capitalize text-slate-400">
-                  {lockedGroups.length} jour{lockedGroups.length > 1 ? "s" : ""} plus ancien
-                  {lockedGroups.length > 1 ? "s" : ""}
-                </h2>
-                <div className="mt-2 space-y-2">
-                  {lockedGroups.map((g) => (
-                    <div
-                      key={g.day}
-                      className="flex items-center justify-between rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3.5"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200/70 text-slate-400">
-                          <Lock className="h-3.5 w-3.5" strokeWidth={2} />
-                        </span>
-                        <p className="text-sm font-medium capitalize text-slate-400">{g.day}</p>
-                      </div>
-                      <Link
-                        href="/patient/compte"
-                        className="shrink-0 text-xs font-semibold text-brand hover:underline"
-                      >
-                        Passez à Standard pour avoir accès à cette partie !
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </main>
-  );
+  return <HistoriqueView groups={visibleGroups.map(toView)} lockedDays={lockedGroups.map((g) => g.day)} />;
 }

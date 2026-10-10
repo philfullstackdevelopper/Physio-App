@@ -69,8 +69,10 @@ export default async function HistoriqueDetailPage({
   const hasFeedback = !!sessionFeedback;
 
   return (
-    <main className="p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] sm:min-h-screen sm:p-8">
-      <div className="mx-auto max-w-2xl">
+    // Une page = un écran (audit des formats, 2026-10-10) : le titre reste en
+    // place, seule la liste des exercices défile si elle dépasse.
+    <main className="flex flex-col p-6 max-sm:h-[calc(100dvh-var(--phone-chrome))] max-sm:p-4 sm:h-dvh sm:p-8 short:sm:py-4">
+      <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col">
         <Link
           href="/patient/historique"
           className="flex items-center gap-1 text-sm text-slate-500 hover:underline"
@@ -92,8 +94,9 @@ export default async function HistoriqueDetailPage({
           })}
         </p>
 
+        <div className="-mx-1 mt-5 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 pb-1 short:mt-3">
         {sessionFeedback && (
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 pl-3.5 border-l-2 border-l-blue-600">
+          <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 pl-3.5 border-l-2 border-l-blue-600">
             <p className="text-sm font-medium text-slate-900">
               Douleur ressentie : {sessionFeedback.pain_score}/10
             </p>
@@ -103,7 +106,7 @@ export default async function HistoriqueDetailPage({
           </div>
         )}
 
-        <h2 className="mt-6 text-sm font-medium text-slate-700">Exercices réalisés</h2>
+        <h2 className="text-sm font-medium text-slate-700">Exercices réalisés</h2>
         <ol className="mt-3 space-y-2">
           {exercises.map((we, i) => {
             const name = we.exercises?.name ?? "Exercice";
@@ -124,6 +127,7 @@ export default async function HistoriqueDetailPage({
             Aucun ressenti enregistré pour cette séance.
           </p>
         )}
+        </div>
       </div>
     </main>
   );
