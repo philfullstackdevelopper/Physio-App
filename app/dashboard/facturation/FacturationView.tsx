@@ -9,6 +9,9 @@ const EUR = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" 
 
 export type ConnectStatus = "active" | "onboarding" | "not_started";
 
+// Carte façon appli téléphone (patient et kiné) : blanche, sans bordure, ombre douce.
+const PHONE_CARD = "max-sm:border-0 max-sm:shadow-soft";
+
 // Affichage seul de la page Tarif & paiements (les données sont chargées
 // par page.tsx). Règle de Philippe : tout doit tenir sur un écran, sans
 // défiler, quel que soit l'appareil — PC (y compris un portable zoomé à
@@ -88,30 +91,68 @@ export default function FacturationView({
   // Pas de min-h-dvh sur téléphone : la barre de navigation du haut
   // s'ajoute déjà à la hauteur de la page.
   return (
+    // Téléphone (Philippe, 2026-10-10 : « que tout figure de manière clean »
+    // sur la page Revenus) : titre « Revenus », la roue en premier, puis les
+    // patients (deux grands chiffres + une ligne par offre), puis les
+    // paiements — cartes blanches sans bordure à ombre douce, comme le reste
+    // de l'appli téléphone, le tout sur un écran. La colonne de gauche est
+    // « dissoute » (max-sm:contents) pour pouvoir réordonner. Dès sm : inchangé.
     <main>
-      <div className="mx-auto grid max-w-6xl content-center gap-3 p-3 sm:min-h-dvh sm:gap-4 sm:p-6 lg:grid-cols-2">
-        <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
-          <div>
-            <h1 className="text-xl font-semibold text-ink">Tarifs et paiements</h1>
-            <p className="mt-0.5 text-sm text-muted">
-              Vos abonnés par offre, ce que vous touchez, et l&apos;activation de vos paiements.
+      <div className="mx-auto grid max-w-6xl content-center gap-3 p-3 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:content-start max-sm:p-4 max-sm:pt-2 sm:min-h-dvh sm:gap-4 sm:p-6 lg:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-3 max-sm:contents sm:gap-4">
+          <div className="max-sm:order-1">
+            <h1 className="text-xl font-semibold text-ink max-sm:text-2xl">
+              <span className="sm:hidden">Revenus</span>
+              <span className="max-sm:hidden">Tarifs et paiements</span>
+            </h1>
+            <p className="mt-0.5 text-sm text-muted max-sm:hidden">
+              <span>
+                Vos abonnés par offre, ce que vous touchez, et l&apos;activation de vos paiements.
+              </span>
             </p>
           </div>
 
-          {error && <p className="rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger">{error}</p>}
+          {error && <p className="rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger max-sm:order-1">{error}</p>}
           {saved === "1" && (
-            <p className="flex items-center gap-1.5 rounded-xl bg-ok-soft px-4 py-2 text-sm text-ok">
+            <p className="flex items-center gap-1.5 rounded-xl bg-ok-soft px-4 py-2 text-sm text-ok max-sm:order-1">
               <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
               Tarif enregistré.
             </p>
           )}
 
-          <section className="rounded-2xl border border-line bg-surface p-4">
-            <h2 className="flex items-center gap-2 text-sm font-medium text-muted">
-              <Users className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          <section className={`rounded-2xl border border-line bg-surface p-4 max-sm:order-3 ${PHONE_CARD}`}>
+            <h2 className="flex items-center gap-2 text-sm font-medium text-muted max-sm:font-semibold max-sm:text-ink">
+              <span className="flex items-center justify-center max-sm:h-8 max-sm:w-8 max-sm:rounded-full max-sm:bg-brand-soft max-sm:text-brand">
+                <Users className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+              </span>
               Vos patients
             </h2>
-            <div className="mt-3 grid grid-cols-5 gap-2 sm:gap-4">
+            {/* Téléphone : deux grands chiffres, puis une ligne lisible par
+                offre — cinq colonnes ne tiennent pas dans 375 px. */}
+            <div className="mt-3 sm:hidden">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-app-bg px-3 py-1.5">
+                  <p className="text-xl font-semibold tabular-nums text-ink">{counts.total}</p>
+                  <p className="text-xs text-muted">Patients au total</p>
+                </div>
+                <div className="rounded-xl bg-app-bg px-3 py-1.5">
+                  <p className="text-xl font-semibold tabular-nums text-ink">{counts.active}</p>
+                  <p className="text-xs text-muted">Abonnés</p>
+                </div>
+              </div>
+              <ul className="mt-2 divide-y divide-line">
+                {TIER_KEYS.map((key) => (
+                  <li key={key} className="flex items-center justify-between gap-3 py-1.5 text-sm">
+                    <span className="font-medium text-ink">{TIERS[key].label}</span>
+                    <span className="flex items-center gap-3">
+                      <span className="text-xs text-muted">{EUR.format(prices[key] / 100)} / mois</span>
+                      <span className="w-6 text-right font-semibold tabular-nums text-ink">{counts.byTier[key]}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="mt-3 grid grid-cols-5 gap-2 max-sm:hidden sm:gap-4">
               {stats.map((s) => (
                 <div key={s.label} className="min-w-0">
                   <p className="text-xl font-semibold text-ink">{s.value}</p>
@@ -121,10 +162,13 @@ export default function FacturationView({
             </div>
           </section>
 
-          <section className="flex min-w-0 flex-1 flex-col rounded-2xl border border-line bg-surface p-4">
-            <h2 className="text-base font-semibold text-ink">Encaisser vos patients</h2>
+          <section className={`flex min-w-0 flex-1 flex-col rounded-2xl border border-line bg-surface p-4 max-sm:order-4 max-sm:flex-none ${PHONE_CARD}`}>
+            <h2 className={`text-base font-semibold text-ink max-sm:text-sm ${connectStatus === "active" ? "max-sm:hidden" : ""}`}>Encaisser vos patients</h2>
 
-            <ul className="mt-2 space-y-1.5">
+            {/* Téléphone : les trois lignes rassurantes ne s'affichent que tant
+                que les paiements ne sont pas activés — après, elles n'apprennent
+                plus rien et prennent la place. */}
+            <ul className={`mt-2 space-y-1.5 ${connectStatus === "active" ? "max-sm:hidden" : ""}`}>
               {reassurance.map((item) => (
                 <li key={item.text} className="flex items-center gap-2 text-sm text-muted">
                   <item.icon className="h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
@@ -133,11 +177,11 @@ export default function FacturationView({
               ))}
             </ul>
 
-            <div className={`mt-3 flex items-start gap-3 rounded-xl border px-3 py-2 ${status.box}`}>
+            <div className={`mt-3 flex items-start gap-3 rounded-xl border px-3 py-2 ${connectStatus === "active" ? "max-sm:mt-0 max-sm:items-center" : ""} ${status.box}`}>
               {status.icon}
               <div>
                 <p className={`text-sm font-medium ${status.titleClass}`}>{status.title}</p>
-                <p className="text-sm text-muted">{status.text}</p>
+                <p className={`text-sm text-muted ${connectStatus === "active" ? "max-sm:hidden" : ""}`}>{status.text}</p>
               </div>
             </div>
 
@@ -168,8 +212,8 @@ export default function FacturationView({
 
         {/* Roue de répartition : qui touche quoi sur ce que paient vos
             patients actuels, un mois plein, sans prorata d'entrée/sortie. */}
-        <section className="flex min-w-0 flex-col justify-center rounded-2xl border border-line bg-surface p-4 sm:p-5">
-          <h2 className="flex items-center gap-1.5 text-base font-semibold text-ink">
+        <section className={`flex min-w-0 flex-col justify-center rounded-2xl border border-line bg-surface p-4 max-sm:order-2 sm:p-5 ${PHONE_CARD}`}>
+          <h2 className="flex items-center gap-1.5 text-base font-semibold text-ink max-sm:text-sm">
             Répartition de vos revenus
             <span title="Estimation sur un mois complet, à partir de vos patients abonnés aujourd'hui. Les frais regroupent la commission EasyPhysio et les frais Stripe (≈1,5 % + 0,25 € par paiement).">
               <Info
@@ -179,11 +223,11 @@ export default function FacturationView({
               />
             </span>
           </h2>
-          <p className="mt-0.5 text-sm text-muted">
+          <p className="mt-0.5 text-sm text-muted max-sm:text-xs">
             {`Pour ${counts.active} patient${counts.active > 1 ? "s" : ""} abonné${counts.active > 1 ? "s" : ""} aujourd'hui, sur un mois complet.`}
           </p>
 
-          <div className="mt-4 flex items-center justify-center gap-4 sm:gap-6">
+          <div className="mt-4 flex items-center justify-center gap-4 max-sm:mt-3 sm:gap-6">
             <div className="relative h-28 w-28 shrink-0 sm:h-36 sm:w-36">
               <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
                 <circle cx="50" cy="50" r={r} fill="none" stroke="var(--color-line)" strokeWidth="10" />

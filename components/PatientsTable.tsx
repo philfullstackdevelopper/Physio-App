@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight, Info, MessageCircle, RotateCcw, Search, SlidersHorizontal, UserPlus } from "lucide-react";
@@ -21,10 +21,17 @@ const ONBOARDING_LABEL: Record<NonNullable<PatientRow["onboardingStage"]>, strin
   profile: "Profil santé à terminer",
 };
 
-function SignalCell({ row }: { row: PatientRow }) {
+/** Patient qui n'a encore rien démarré : inscription non terminée, ou aucune
+ *  séance prévue ni faite — séparé des patients suivis dans la liste mobile. */
+function notStarted(row: PatientRow) {
+  return row.onboardingStage !== null || (row.adherence.expected === 0 && !row.lastSessionAt);
+}
+
+function SignalCell({ row, compact = false }: { row: PatientRow; compact?: boolean }) {
+  const size = compact ? "text-xs" : "text-sm";
   if (row.onboardingStage) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-muted">
+      <span className={`inline-flex items-center gap-1.5 ${size} font-medium text-muted`}>
         <span className="h-1.5 w-1.5 rounded-full bg-warn" />
         {ONBOARDING_LABEL[row.onboardingStage]}
       </span>
@@ -33,7 +40,7 @@ function SignalCell({ row }: { row: PatientRow }) {
   const s = row.signal;
   return (
     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-      <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${SIGNAL_TEXT[s.kind]}`}>
+      <span className={`inline-flex items-center gap-1.5 ${size} font-medium ${SIGNAL_TEXT[s.kind]}`}>
         {s.kind === "ok" && <span className="h-1.5 w-1.5 rounded-full bg-ok" />}
         {s.kind === "pain" && s.severe && <span className="h-1.5 w-1.5 rounded-full bg-danger animate-[gentlePulse_2.4s_ease-in-out_infinite]" />}
         {s.label}
@@ -134,6 +141,11 @@ export default function PatientsTable({
       return true;
     });
   }, [rows, q, segment, conditionId, stage]);
+
+  // Liste mobile : les patients suivis d'abord, puis ceux qui n'ont rien
+  // démarré — l'ordre d'origine est conservé à l'intérieur de chaque groupe.
+  const mobileOrdered = useMemo(() => [...visible.filter((r) => !notStarted(r)), ...visible.filter(notStarted)], [visible]);
+  const followedCount = mobileOrdered.filter((r) => !notStarted(r)).length;
 
   if (rows.length === 0) {
     return (
@@ -330,28 +342,40 @@ export default function PatientsTable({
               </tbody>
             </table>
 
-            {/* Mobile : liste */}
+            {/* Mobile : liste. Refaite le 2026-10-10 (Philippe) : le nom en
+                entier sur sa propre ligne (le signal le coupait : « Thomas… »),
+                et un « saut » net entre les patients suivis et ceux qui n'ont
+                encore rien démarré (invitation, profil, aucune séance prévue). */}
             <ul className="divide-y divide-line md:hidden">
-              {visible.map((r) => (
-                <li key={r.id} className={`flex items-center gap-2 px-4 py-3 transition-colors max-sm:active:bg-app-bg ${r.onboardingStage ? "bg-app-bg/60" : ""}`}>
+              {mobileOrdered.map((r, i) => (
+                <Fragment key={r.id}>
+                {i === followedCount && followedCount < mobileOrdered.length && (
+                  <li className="bg-app-bg px-4 pb-2 pt-5 text-xs font-semibold uppercase tracking-wide text-muted max-sm:bg-phone-bg">
+                    Pas encore démarré · {mobileOrdered.length - followedCount}
+                  </li>
+                )}
+                <li className={`flex items-center gap-1 px-4 py-3 transition-colors max-sm:active:bg-app-bg ${notStarted(r) ? "bg-app-bg/60" : ""}`}>
                   <Link href={`/dashboard/patients/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand">{r.initials}</span>
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                        notStarted(r) ? "bg-line text-muted" : "bg-brand-soft text-brand"
+                      }`}
+                    >
+                      {r.initials}
+                    </span>
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-semibold text-ink">{r.name}</span>
-                        <SignalCell row={r} />
-                      </span>
+                      <span className="block truncate text-[15px] font-semibold leading-tight text-ink">{r.name}</span>
                       <span className="mt-0.5 block truncate text-xs text-muted">
                         {r.onboardingStage ? "Inscription en cours" : r.conditionName ?? "Condition non assignée"}
+                        {r.lastSessionAt && ` · ${r.lastSessionLabel}`}
                       </span>
-                      <span className="mt-1 flex items-center gap-3 text-sm tabular-nums">
-                        <span className={r.lastSessionAt ? "font-semibold text-ink" : "text-muted"}>{r.lastSessionLabel}</span>
+                      <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                        <SignalCell row={r} compact />
                         {r.adherence.pct !== null && (
-                          <span className={`font-semibold ${TONE_TEXT[r.adherenceTone]}`}>{r.adherence.pct} %</span>
+                          <span className={`text-xs font-semibold tabular-nums ${TONE_TEXT[r.adherenceTone]}`}>{r.adherence.pct} %</span>
                         )}
                       </span>
                     </span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
                   </Link>
                   {r.onboardingStage === "invite" ? (
                     <button
@@ -394,6 +418,7 @@ export default function PatientsTable({
                     deletePatient={deletePatient}
                   />
                 </li>
+                </Fragment>
               ))}
             </ul>
           </>
