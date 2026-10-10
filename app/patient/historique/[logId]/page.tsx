@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, CheckCircle2 } from "lucide-react";
+import HistoriqueDetailView from "./HistoriqueDetailView";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getTierBilling } from "@/lib/billing/context";
@@ -66,69 +65,23 @@ export default async function HistoriqueDetailPage({
     .maybeSingle();
 
   const exercises = [...(log.workouts?.workout_exercises ?? [])].sort((a, b) => a.position - b.position);
-  const hasFeedback = !!sessionFeedback;
 
   return (
-    // Une page = un écran (audit des formats, 2026-10-10) : le titre reste en
-    // place, seule la liste des exercices défile si elle dépasse.
-    <main className="flex flex-col p-6 max-sm:h-[calc(100dvh-var(--phone-chrome))] max-sm:p-4 sm:h-dvh sm:p-8 short:sm:py-4">
-      <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col">
-        <Link
-          href="/patient/historique"
-          className="flex items-center gap-1 text-sm text-slate-500 hover:underline"
-        >
-          <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-          Historique
-        </Link>
-
-        <h1 className="font-display mt-3 text-2xl font-semibold text-slate-900">
-          {log.workouts?.name ?? "Séance"}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {new Date(log.completed_at).toLocaleString("fr-FR", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </p>
-
-        <div className="-mx-1 mt-5 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 pb-1 short:mt-3">
-        {sessionFeedback && (
-          <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 pl-3.5 border-l-2 border-l-blue-600">
-            <p className="text-sm font-medium text-slate-900">
-              Douleur ressentie : {sessionFeedback.pain_score}/10
-            </p>
-            {sessionFeedback.notes && (
-              <p className="mt-1 text-sm text-slate-600">« {sessionFeedback.notes} »</p>
-            )}
-          </div>
-        )}
-
-        <h2 className="text-sm font-medium text-slate-700">Exercices réalisés</h2>
-        <ol className="mt-3 space-y-2">
-          {exercises.map((we, i) => {
-            const name = we.exercises?.name ?? "Exercice";
-            return (
-              <li
-                key={i}
-                className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
-              >
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} />
-                <p className="flex-1 font-medium text-slate-900">{name}</p>
-              </li>
-            );
-          })}
-        </ol>
-
-        {!hasFeedback && (
-          <p className="mt-6 text-center text-xs text-slate-400">
-            Aucun ressenti enregistré pour cette séance.
-          </p>
-        )}
-        </div>
-      </div>
-    </main>
+    <HistoriqueDetailView
+      name={log.workouts?.name ?? "Séance"}
+      dateLabel={new Date(log.completed_at).toLocaleString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+      })}
+      feedback={
+        sessionFeedback
+          ? { pain_score: sessionFeedback.pain_score as number, notes: (sessionFeedback.notes as string | null) ?? null }
+          : null
+      }
+      exercises={exercises.map((we) => we.exercises?.name ?? "Exercice")}
+    />
   );
 }
