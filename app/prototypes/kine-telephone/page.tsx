@@ -88,8 +88,12 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
     );
   } else if (ecran === "seances") {
     const names = ["Pont fessier (coxarthrose)", "Mini Wall Sit (Shallow)", "Controlled Mini-Squat (Knee Arthritis)", "Light Closed-Chain Quad Strengthening"];
+    const zones = [
+      ["genou", "Genou / jambe"], ["dos", "Dos / lombaires"], ["epaule", "Épaule"],
+    ].map(([slug, label], i) => ({ id: `bp-${slug}`, slug, label, position: i }));
     const item = (id: string, name: string, cond: string, stage: InjuryStage, lead: number) => ({
       id,
+      bodyPartIds: [/Genou/.test(name) ? "bp-genou" : /Lomb/.test(name) ? "bp-dos" : "bp-epaule"],
       name,
       conditionName: cond,
       stage,
@@ -100,11 +104,11 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
       exerciseCount: 4,
     });
     screen = (
-      <main className="min-h-screen max-sm:min-h-0">
-        <div className="mx-auto max-w-7xl px-4 pb-4 pt-2 sm:p-8">
+      <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
+        <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:p-8 short:sm:py-4">
           <SeancesTabs
             exercises={[]}
-            bodyParts={[]}
+            bodyParts={zones}
             mine={[
               item("s1", "Genou — renforcement doux", "Prothèse de genou", "acute", 0),
               item("s2", "Lombaires — mobilité du matin", "Lombalgie chronique", "subacute", 1),

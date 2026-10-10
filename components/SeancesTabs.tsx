@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, Dumbbell, Trash2, MoreVertical, Pencil, EyeOff, Eye, Plus } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
+import BodyPartIllustration from "@/components/BodyPartIllustration";
 import NewSeanceModal from "@/components/NewSeanceModal";
 import { type PickerExercise } from "@/components/ExerciseLibraryPicker";
 import { type BodyPart } from "@/lib/exercise/category";
@@ -19,6 +20,9 @@ type ListItem = {
   leadExerciseName?: string;
   exerciseNames?: string[];
   exerciseCount?: number;
+  /** Zones du corps que la séance travaille surtout (déduites de ses
+   *  exercices côté serveur) — pour le filtre par zone. */
+  bodyPartIds?: string[];
   /** Set (to a human-readable reason) when this séance can't be deleted —
    *  it's recommended to a patient or has logged sessions. Undefined means
    *  deletable. */
@@ -186,7 +190,9 @@ const REVEAL_STEP = 12;
 // Téléphone (Philippe, 2026-10-07 : mêmes règles que l'appli patient) : les
 // cartes deviennent des lignes compactes — vignette à gauche, nom au milieu,
 // menu à droite — pour voir plusieurs séances sans faire défiler longtemps.
-const CARD_GRID = "grid grid-cols-1 gap-4 max-sm:gap-2 sm:grid-cols-3";
+// Ordinateur / tablette (Philippe, 2026-10-10) : exactement la grille de
+// « Mes exercices » — mêmes cartes, 2 / 3 / 4 par ligne selon la largeur.
+const CARD_GRID = "grid grid-cols-1 gap-3 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 
 // The workout's own lead exercise (position 0) supplies a real illustration
 // via the same matching already solved for the exercise library — no
@@ -208,7 +214,7 @@ function SeanceThumb({
    *  card. */
   size?: "cover" | "inset";
 }) {
-  const boxClass = `${size === "inset" ? "h-28 w-full rounded-lg" : "aspect-[4/3] rounded-t-xl"} max-sm:aspect-auto max-sm:h-14 max-sm:w-14 max-sm:shrink-0 max-sm:rounded-xl max-sm:bg-app-bg max-sm:p-1`;
+  const boxClass = `${size === "inset" ? "h-24 w-full rounded-lg" : "aspect-[4/3] rounded-t-xl"} max-sm:aspect-auto max-sm:h-14 max-sm:w-14 max-sm:shrink-0 max-sm:rounded-xl max-sm:bg-app-bg max-sm:p-1`;
   return (
     <div className={`relative ${boxClass} bg-surface`}>
       {leadExerciseName ? (
@@ -322,17 +328,30 @@ export default function SeancesTabs({
   const [showHiddenTemplates, setShowHiddenTemplates] = useState(false);
   const [newSeanceOpen, setNewSeanceOpen] = useState(openNewSeance);
   const closeNewSeance = useCallback(() => setNewSeanceOpen(false), []);
+  // Filtre par zone du corps, commun aux deux onglets (Philippe, 2026-10-10 :
+  // comme sur « Mes exercices »). null = toutes les zones.
+  const [zoneId, setZoneId] = useState<string | null>(null);
+  const inZone = useCallback((s: ListItem) => !zoneId || (s.bodyPartIds ?? []).includes(zoneId), [zoneId]);
+  // Seules les zones qui ont au moins une séance dans l'onglet ouvert.
+  const zoneCounts = useMemo(() => {
+    const list = tab === "mine" ? mine : templates.filter((t) => showHiddenTemplates || !t.hidden);
+    const counts = new Map<string, number>();
+    for (const s of list) for (const id of s.bodyPartIds ?? []) counts.set(id, (counts.get(id) ?? 0) + 1);
+    return { counts, total: list.length };
+  }, [tab, mine, templates, showHiddenTemplates]);
+  const zones = bodyParts.filter((bp) => (zoneCounts.counts.get(bp.id) ?? 0) > 0);
 
   const filteredMine = useMemo(() => {
     const q = mineQuery.trim().toLowerCase();
-    if (!q) return mine;
-    return mine.filter(
+    const zoned = mine.filter(inZone);
+    if (!q) return zoned;
+    return zoned.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
         s.conditionName?.toLowerCase().includes(q) ||
         s.exerciseNames?.some((n) => n.toLowerCase().includes(q)),
     );
-  }, [mine, mineQuery]);
+  }, [mine, mineQuery, inZone]);
 
   const hiddenTemplateCount = useMemo(() => templates.filter((t) => t.hidden).length, [templates]);
 
@@ -340,6 +359,7 @@ export default function SeancesTabs({
     const q = templateQuery.trim().toLowerCase();
     return templates.filter((t) => {
       if (!showHiddenTemplates && t.hidden) return false;
+      if (!inZone(t)) return false;
       if (!q) return true;
       return (
         t.name.toLowerCase().includes(q) ||
@@ -347,12 +367,14 @@ export default function SeancesTabs({
         t.exerciseNames?.some((n) => n.toLowerCase().includes(q))
       );
     });
-  }, [templates, templateQuery, showHiddenTemplates]);
+  }, [templates, templateQuery, showHiddenTemplates, inZone]);
 
   const visibleTemplates = filteredTemplates.slice(0, templatesShown);
 
+  const zoneLabel = zoneId ? bodyParts.find((bp) => bp.id === zoneId)?.label : undefined;
+
   return (
-    <div>
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4 max-sm:flex-nowrap max-sm:items-center max-sm:gap-2">
         <div>
           <h1 className="text-2xl font-semibold text-ink">Mes séances</h1>
@@ -384,8 +406,8 @@ export default function SeancesTabs({
         </p>
       )}
 
-      <div className="mt-8 max-sm:mt-4">
-      <div className="inline-flex items-center gap-1 rounded-full border border-line bg-app-bg p-1 max-sm:flex max-sm:w-full max-sm:border-0 max-sm:bg-line/60">
+      <div className="mt-8 flex min-h-0 flex-1 flex-col max-sm:mt-4 short:sm:mt-4">
+      <div className="inline-flex items-center gap-1 self-start rounded-full border border-line bg-app-bg p-1 max-sm:flex max-sm:w-full max-sm:self-auto max-sm:border-0 max-sm:bg-line/60">
         <button
           type="button"
           onClick={() => setTab("mine")}
@@ -412,8 +434,50 @@ export default function SeancesTabs({
         </button>
       </div>
 
+      {/* Zones du corps — mêmes pastilles que « Mes exercices ». Téléphone :
+          une seule ligne qui glisse au doigt. */}
+      {zones.length > 0 && (
+        <div className="mt-3 flex shrink-0 flex-wrap gap-1.5 max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none]">
+          <button
+            type="button"
+            onClick={() => {
+              setZoneId(null);
+              setTemplatesShown(REVEAL_INITIAL);
+            }}
+            aria-pressed={zoneId === null}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:shrink-0 max-sm:whitespace-nowrap ${
+              zoneId === null ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg max-sm:border-transparent max-sm:shadow-soft"
+            }`}
+          >
+            Toutes
+            <span className={zoneId === null ? "text-brand/70" : "text-muted"}>{zoneCounts.total}</span>
+          </button>
+          {zones.map((bp) => {
+            const active = bp.id === zoneId;
+            return (
+              <button
+                key={bp.id}
+                type="button"
+                onClick={() => {
+                  setZoneId(active ? null : bp.id);
+                  setTemplatesShown(REVEAL_INITIAL);
+                }}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:shrink-0 max-sm:whitespace-nowrap ${
+                  active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg max-sm:border-transparent max-sm:shadow-soft"
+                }`}
+              >
+                <BodyPartIllustration slug={bp.slug} className="h-5 w-5" active={active} />
+                {bp.label}
+                <span className={active ? "text-brand/70" : "text-muted"}>{zoneCounts.counts.get(bp.id)}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {tab === "mine" && (
-        <div className="mt-3">
+        <div className="mt-3 flex min-h-0 flex-1 flex-col">
           {newSeanceOpen && (
             <NewSeanceModal
               onClose={closeNewSeance}
@@ -427,7 +491,7 @@ export default function SeancesTabs({
           )}
 
           {mine.length > 0 && (
-            <div className="relative mb-3">
+            <div className="relative mb-3 shrink-0">
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
                 strokeWidth={1.5}
@@ -441,6 +505,7 @@ export default function SeancesTabs({
               />
             </div>
           )}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain max-sm:-mx-1 max-sm:px-1 max-sm:pb-1 sm:-mr-2 sm:pr-2">
           {mine.length === 0 ? (
             <div className="rounded-xl border border-line bg-surface p-2">
               <p className="p-6 text-center text-sm text-muted">
@@ -451,7 +516,9 @@ export default function SeancesTabs({
           ) : filteredMine.length === 0 ? (
             <div className="rounded-xl border border-line bg-surface p-2">
               <p className="p-6 text-center text-sm text-muted">
-                Aucune séance ne correspond à &laquo; {mineQuery.trim()} &raquo;.
+                {mineQuery.trim()
+                  ? `Aucune séance ne correspond à « ${mineQuery.trim()} ».`
+                  : `Aucune séance personnalisée pour la zone « ${zoneLabel ?? ""} ».`}
               </p>
             </div>
           ) : (
@@ -479,8 +546,8 @@ export default function SeancesTabs({
                       />
                     </span>
                   </div>
-                  <Link href={`/dashboard/seances/${s.id}`} className="block min-h-28 max-sm:min-h-0 max-sm:min-w-0">
-                    <p className="mt-3 font-medium text-ink max-sm:mt-0 max-sm:truncate">{s.name}</p>
+                  <Link href={`/dashboard/seances/${s.id}`} className="block max-sm:min-w-0">
+                    <p className="mt-2 font-medium text-ink max-sm:mt-0 max-sm:truncate">{s.name}</p>
                     {s.exerciseCount === 0 && (
                       <span className="mt-1 inline-flex items-center rounded-full bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">
                         Aucun exercice
@@ -492,12 +559,13 @@ export default function SeancesTabs({
               ))}
             </div>
           )}
+          </div>
         </div>
       )}
 
       {tab === "templates" && (
-        <div className="mt-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-3 flex min-h-0 flex-1 flex-col">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 short:hidden">
             <p className="text-sm text-muted max-sm:text-xs">
               Déjà disponibles pour tous les kinés. Ouvrez le menu ⋮ d&apos;un modèle pour le
               modifier (une copie modifiable vous est ouverte) ou le retirer de votre liste.
@@ -513,7 +581,7 @@ export default function SeancesTabs({
             )}
           </div>
           {templates.length > 0 && (
-            <div className="relative mt-3 mb-3">
+            <div className="relative mb-3 mt-3 shrink-0 short:mt-0">
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
                 strokeWidth={1.75}
@@ -530,6 +598,7 @@ export default function SeancesTabs({
               />
             </div>
           )}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain max-sm:-mx-1 max-sm:px-1 max-sm:pb-1 sm:-mr-2 sm:pr-2">
           {templates.length === 0 ? (
             <div className="mt-3 rounded-xl border border-line bg-surface p-2">
               <p className="p-6 text-center text-sm text-muted">Aucun modèle disponible.</p>
@@ -537,19 +606,21 @@ export default function SeancesTabs({
           ) : filteredTemplates.length === 0 ? (
             <div className="rounded-xl border border-line bg-surface p-2">
               <p className="p-6 text-center text-sm text-muted">
-                Aucun modèle ne correspond à &laquo; {templateQuery.trim()} &raquo;.
+                {templateQuery.trim()
+                  ? `Aucun modèle ne correspond à « ${templateQuery.trim()} ».`
+                  : `Aucun modèle pour la zone « ${zoneLabel ?? ""} ».`}
               </p>
             </div>
           ) : (
             <>
-              <div className={`mt-3 ${CARD_GRID}`}>
+              <div className={CARD_GRID}>
                 {visibleTemplates.map((t) => (
                   <div
                     key={t.id}
-                    className={`overflow-hidden rounded-xl border border-line bg-surface max-sm:flex max-sm:items-center max-sm:gap-3 max-sm:overflow-visible max-sm:rounded-2xl max-sm:border-0 max-sm:p-3 max-sm:shadow-soft ${t.hidden ? "opacity-60" : ""}`}
+                    className={`rounded-xl border border-line bg-surface p-4 max-sm:flex max-sm:items-center max-sm:gap-3 max-sm:rounded-2xl max-sm:border-0 max-sm:p-3 max-sm:shadow-soft ${t.hidden ? "opacity-60" : ""}`}
                   >
-                    <SeanceThumb badge="template" stage={t.stage} leadExerciseName={t.leadExerciseName} />
-                    <div className="flex flex-col gap-3 p-4 max-sm:min-w-0 max-sm:flex-1 max-sm:gap-0 max-sm:p-0">
+                    <SeanceThumb badge="template" stage={t.stage} leadExerciseName={t.leadExerciseName} size="inset" />
+                    <div className="mt-2 flex flex-col gap-1 max-sm:mt-0 max-sm:min-w-0 max-sm:flex-1 max-sm:gap-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-medium text-ink">{t.conditionName ?? t.name}</p>
@@ -573,6 +644,7 @@ export default function SeancesTabs({
               )}
             </>
           )}
+          </div>
         </div>
       )}
 

@@ -9,7 +9,7 @@ const STAGES = Object.entries(STAGE_LABELS) as [InjuryStage, string][];
 
 type WorkoutExerciseRow = {
   position: number;
-  exercise: { name: string } | null;
+  exercise: { id: string; name: string } | null;
 };
 
 type OwnSeance = {
@@ -71,10 +71,35 @@ export default async function SeancesPage({
     }));
   const conditionName = (cid: string | null) => conditions?.find((c) => c.id === cid)?.name;
 
+  // Zones du corps d'une séance (Philippe, 2026-10-10 : filtrer « Mes séances »
+  // par zone, comme « Mes exercices »). Une séance n'a pas de zone à elle : on
+  // la déduit des exercices qu'elle contient — la ou les zones que travaillent
+  // au moins la moitié de ses exercices, sinon la plus représentée. Une séance
+  // « genou » qui contient un seul exercice de hanche ne s'affiche donc pas
+  // sous « Hanche ».
+  const bodyPartsByExercise = new Map<string, string[]>(
+    (exerciseRows ?? []).map((ex) => [
+      ex.id as string,
+      ((ex.exercise_body_parts as { body_part_id: string }[] | null) ?? []).map((t) => t.body_part_id),
+    ]),
+  );
+  function seanceBodyPartIds(rows: WorkoutExerciseRow[] | null | undefined): string[] {
+    const counts = new Map<string, number>();
+    let total = 0;
+    for (const r of rows ?? []) {
+      if (!r.exercise) continue;
+      total += 1;
+      for (const bp of bodyPartsByExercise.get(r.exercise.id) ?? []) counts.set(bp, (counts.get(bp) ?? 0) + 1);
+    }
+    if (counts.size === 0) return [];
+    const max = Math.max(...counts.values());
+    return [...counts].filter(([, n]) => n * 2 >= total || n === max).map(([id]) => id);
+  }
+
   // Séances created by this instructor.
   const { data: mine } = await supabase
     .from("workouts")
-    .select("id, name, stage, condition_id, workout_exercises(position, exercise:exercises(name))")
+    .select("id, name, stage, condition_id, workout_exercises(position, exercise:exercises(id, name))")
     .eq("created_by", user.id)
     .is("patient_id", null)
     .order("created_at", { ascending: false });
@@ -113,7 +138,7 @@ export default async function SeancesPage({
   // Platform séances the instructor can duplicate as a starting point.
   const { data: templatesData } = await supabase
     .from("workouts")
-    .select("id, name, stage, condition_id, workout_exercises(position, exercise:exercises(name))")
+    .select("id, name, stage, condition_id, workout_exercises(position, exercise:exercises(id, name))")
     .is("created_by", null)
     .order("name");
   const rawTemplates = (templatesData ?? []) as unknown as OwnSeance[];
@@ -142,9 +167,10 @@ export default async function SeancesPage({
   });
 
   return (
-    <main className="min-h-screen max-sm:min-h-0">
-      <div className="mx-auto max-w-7xl px-4 pb-4 pt-2 sm:p-8">
-        <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms]">
+    // Une page = un écran : seule la liste des séances défile (2026-10-10).
+    <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
+      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:p-8 short:sm:py-4">
+        <div className="flex min-h-0 flex-1 flex-col animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms]">
           <SeancesTabs
             openNewSeance={nouvelle === "1"}
             exercises={pickerExercises}
@@ -161,6 +187,7 @@ export default async function SeancesPage({
               leadExerciseName: leadExerciseName(s.workout_exercises),
               exerciseNames: exerciseNames(s.workout_exercises),
               exerciseCount: s.workout_exercises?.length ?? 0,
+              bodyPartIds: seanceBodyPartIds(s.workout_exercises),
               blockedReason: inUseReason(s.id),
             }))}
             templates={templates.map((t) => ({
@@ -171,6 +198,7 @@ export default async function SeancesPage({
               stageLabel: t.stage ? STAGE_LABELS[t.stage as InjuryStage] : undefined,
               leadExerciseName: leadExerciseName(t.workout_exercises),
               exerciseNames: exerciseNames(t.workout_exercises),
+              bodyPartIds: seanceBodyPartIds(t.workout_exercises),
               hidden: hiddenIds.has(t.id),
             }))}
             duplicateSeance={duplicateSeance}
