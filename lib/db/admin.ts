@@ -129,3 +129,65 @@ export async function rppsInUse(rppsNumber: string, excludeInstructorId: string 
   ]);
   return !!rows[0]?.used;
 }
+
+// ---------------------------------------------------------------------------
+// Comptes de test créés depuis /admin (migration 0064). L'appelant doit avoir
+// vérifié isAdminEmail() côté serveur (app/admin/testAccountActions.ts).
+// ---------------------------------------------------------------------------
+
+export type TestAccountRow = {
+  app_id: string;
+  kind: "kine" | "patient";
+  email: string;
+  full_name: string;
+  instructor_id: string | null;
+  instructor_name: string | null;
+  created_at: string;
+};
+
+export async function listTestAccounts(): Promise<TestAccountRow[]> {
+  const { rows } = await getPool().query<TestAccountRow>("select * from internal.admin_list_test_accounts()");
+  return rows;
+}
+
+export async function createTestInstructor(email: string, fullName: string): Promise<string> {
+  const { rows } = await getPool().query<{ id: string }>(
+    "select internal.admin_create_test_instructor($1, $2) as id",
+    [email, fullName],
+  );
+  return String(rows[0].id);
+}
+
+export async function createTestPatient(params: {
+  email: string;
+  fullName: string;
+  instructorId: string;
+  freeAccess: boolean;
+}): Promise<string> {
+  const { rows } = await getPool().query<{ id: string }>(
+    "select internal.admin_create_test_patient($1, $2, $3, $4) as id",
+    [params.email, params.fullName, params.instructorId, params.freeAccess],
+  );
+  return String(rows[0].id);
+}
+
+export type TestAccountMember = {
+  app_id: string;
+  email: string;
+  clerk_id: string | null;
+  has_subscription: boolean;
+  other_patients: number;
+};
+
+/** Le compte de test et, pour un kiné, ses patients de test. Lève une erreur si ce n'est pas un compte de test. */
+export async function testAccountMembers(appId: string): Promise<TestAccountMember[]> {
+  const { rows } = await getPool().query<TestAccountMember>(
+    "select * from internal.admin_test_account_members($1)",
+    [appId],
+  );
+  return rows;
+}
+
+export async function deleteTestAccount(appId: string): Promise<void> {
+  await getPool().query("select internal.admin_delete_test_account($1)", [appId]);
+}

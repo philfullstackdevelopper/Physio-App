@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { isAdminEmail } from "@/lib/admin";
 import { getPool } from "@/lib/db/pool";
-import { listAllInstructors } from "@/lib/db/admin";
+import { listAllInstructors, listTestAccounts, type TestAccountRow } from "@/lib/db/admin";
+import TestAccounts from "./TestAccounts";
 import { approveInstructor, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
 
 const STATUS_LABEL: Record<string, { label: string; tone: string }> = {
@@ -36,6 +37,16 @@ export default async function AdminPage({
   ]);
 
   const pending = rows;
+
+  // Comptes de test (migration 0064). Tant qu'elle n'est pas appliquée, la
+  // fonction n'existe pas en base : la section l'indique au lieu de faire
+  // tomber toute la page /admin.
+  let testAccounts: TestAccountRow[] | null = null;
+  try {
+    testAccounts = await listTestAccounts();
+  } catch (e) {
+    console.error("[admin] comptes de test : liste indisponible", e);
+  }
 
   return (
     <div>
@@ -212,6 +223,14 @@ export default async function AdminPage({
           );
         })}
       </ul>
+
+      {testAccounts ? (
+        <TestAccounts accounts={testAccounts} />
+      ) : (
+        <p className="mt-12 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+          Comptes de test : la base n&apos;est pas encore prête (migration 0064 non appliquée).
+        </p>
+      )}
     </div>
   );
 }
