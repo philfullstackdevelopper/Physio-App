@@ -378,7 +378,6 @@ export default function SeancesTabs({
       <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4 max-sm:flex-nowrap max-sm:items-center max-sm:gap-2">
         <div>
           <h1 className="text-2xl font-semibold text-ink">Mes séances</h1>
-          <p className="mt-1 text-sm text-muted max-sm:hidden">Composez vos propres séances ; elles seront proposées aux patients de la phase choisie.</p>
         </div>
         <div className="flex items-center gap-4 max-sm:gap-2">
           <Link href="/dashboard/exercises" className="text-sm font-medium text-brand hover:underline max-sm:rounded-full max-sm:bg-surface max-sm:px-3 max-sm:py-2 max-sm:shadow-soft max-sm:hover:no-underline">
@@ -406,8 +405,12 @@ export default function SeancesTabs({
         </p>
       )}
 
-      <div className="mt-8 flex min-h-0 flex-1 flex-col max-sm:mt-4 short:sm:mt-4">
-      <div className="inline-flex items-center gap-1 self-start rounded-full border border-line bg-app-bg p-1 max-sm:flex max-sm:w-full max-sm:self-auto max-sm:border-0 max-sm:bg-line/60">
+      {/* Même hauteur d'en-tête que « Mes exercices » (Philippe, 2026-10-10) :
+          titre, puis UNE ligne onglets + recherche, puis les zones, puis les
+          cartes — plus de sous-titre ni de texte d'aide au-dessus de la liste. */}
+      <div className="mt-4 flex min-h-0 flex-1 flex-col max-sm:mt-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-3 max-sm:gap-2">
+      <div className="inline-flex items-center gap-1 rounded-full border border-line bg-app-bg p-1 max-sm:flex max-sm:w-full max-sm:border-0 max-sm:bg-line/60">
         <button
           type="button"
           onClick={() => setTab("mine")}
@@ -432,6 +435,35 @@ export default function SeancesTabs({
           <span className="max-sm:hidden">Séances prévues</span>
           <span className="hidden max-sm:inline">Modèles</span> ({templates.length})
         </button>
+      </div>
+        <div className="relative min-w-[14rem] flex-1 max-sm:min-w-0">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+            strokeWidth={1.5}
+          />
+          <input
+            type="text"
+            value={tab === "mine" ? mineQuery : templateQuery}
+            onChange={(e) => {
+              if (tab === "mine") setMineQuery(e.target.value);
+              else {
+                setTemplateQuery(e.target.value);
+                setTemplatesShown(REVEAL_INITIAL);
+              }
+            }}
+            placeholder={tab === "mine" ? "Rechercher parmi mes séances…" : "Rechercher un modèle…"}
+            className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft max-sm:h-10 max-sm:rounded-xl max-sm:border-0 max-sm:shadow-soft"
+          />
+        </div>
+        {tab === "templates" && hiddenTemplateCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowHiddenTemplates((v) => !v)}
+            className="shrink-0 text-sm font-medium text-brand hover:underline"
+          >
+            {showHiddenTemplates ? "Masquer les retirés" : `Voir les retirés (${hiddenTemplateCount})`}
+          </button>
+        )}
       </div>
 
       {/* Zones du corps — mêmes pastilles que « Mes exercices ». Téléphone :
@@ -490,26 +522,11 @@ export default function SeancesTabs({
             />
           )}
 
-          {mine.length > 0 && (
-            <div className="relative mb-3 shrink-0">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
-                strokeWidth={1.5}
-              />
-              <input
-                type="text"
-                value={mineQuery}
-                onChange={(e) => setMineQuery(e.target.value)}
-                placeholder="Rechercher parmi mes séances…"
-                className="w-full rounded-lg border border-line py-2 pl-9 pr-3 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-              />
-            </div>
-          )}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain max-sm:-mx-1 max-sm:px-1 max-sm:pb-1 sm:-mr-2 sm:pr-2">
           {mine.length === 0 ? (
             <div className="rounded-xl border border-line bg-surface p-2">
               <p className="p-6 text-center text-sm text-muted">
-                Aucune séance personnalisée pour le moment. Créez-en une ci-dessus, ou
+                Aucune séance personnalisée pour le moment. Créez-en une avec « Nouvelle séance », ou
                 dupliquez un modèle dans l&apos;onglet &laquo; Séances prévues &raquo;.
               </p>
             </div>
@@ -565,42 +582,9 @@ export default function SeancesTabs({
 
       {tab === "templates" && (
         <div className="mt-3 flex min-h-0 flex-1 flex-col">
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 short:hidden">
-            <p className="text-sm text-muted max-sm:text-xs">
-              Déjà disponibles pour tous les kinés. Ouvrez le menu ⋮ d&apos;un modèle pour le
-              modifier (une copie modifiable vous est ouverte) ou le retirer de votre liste.
-            </p>
-            {hiddenTemplateCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowHiddenTemplates((v) => !v)}
-                className="shrink-0 text-sm font-medium text-brand hover:underline"
-              >
-                {showHiddenTemplates ? "Masquer les retirés" : `Voir les retirés (${hiddenTemplateCount})`}
-              </button>
-            )}
-          </div>
-          {templates.length > 0 && (
-            <div className="relative mb-3 mt-3 shrink-0 short:mt-0">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
-                strokeWidth={1.75}
-              />
-              <input
-                type="search"
-                value={templateQuery}
-                onChange={(e) => {
-                  setTemplateQuery(e.target.value);
-                  setTemplatesShown(REVEAL_INITIAL);
-                }}
-                placeholder="Rechercher un modèle…"
-                className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-              />
-            </div>
-          )}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain max-sm:-mx-1 max-sm:px-1 max-sm:pb-1 sm:-mr-2 sm:pr-2">
           {templates.length === 0 ? (
-            <div className="mt-3 rounded-xl border border-line bg-surface p-2">
+            <div className="rounded-xl border border-line bg-surface p-2">
               <p className="p-6 text-center text-sm text-muted">Aucun modèle disponible.</p>
             </div>
           ) : filteredTemplates.length === 0 ? (

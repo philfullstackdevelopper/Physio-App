@@ -169,7 +169,7 @@ export default async function SeancesPage({
   return (
     // Une page = un écran : seule la liste des séances défile (2026-10-10).
     <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
-      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:p-8 short:sm:py-4">
+      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
         <div className="flex min-h-0 flex-1 flex-col animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms]">
           <SeancesTabs
             openNewSeance={nouvelle === "1"}
