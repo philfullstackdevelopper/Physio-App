@@ -2,7 +2,7 @@ import {
   Activity,
   Check,
   Minus,
-  UserRound,
+  FileText,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -20,11 +20,13 @@ type Status = "yes" | "partial" | "no";
 const COLUMNS: { name: string; sub: string; icon?: LucideIcon; highlight?: boolean }[] = [
   { name: "EasyPhysio", sub: "avec votre kiné", highlight: true },
   { name: "Appli fitness généraliste", sub: "sans suivi clinique", icon: Activity },
-  { name: "Rien", sub: "mémoire seule", icon: UserRound },
+  // « Feuille papier » (2026-10-10) : c'est la vraie alternative d'un cabinet,
+  // et celle dont parle le titre de la section — plus parlant que « Rien ».
+  { name: "Feuille papier", sub: "photocopiée", icon: FileText },
 ];
 
 const ROWS: { label: string; values: [Status, Status, Status] }[] = [
-  { label: "Démonstrations et consignes claires", values: ["yes", "partial", "no"] },
+  { label: "Démonstrations et consignes claires", values: ["yes", "partial", "partial"] },
   { label: "Suivi de l'évolution par le kiné", values: ["yes", "no", "no"] },
   { label: "Signalement de douleur en temps réel", values: ["yes", "no", "no"] },
   { label: "Ajustement du programme à distance", values: ["yes", "no", "no"] },

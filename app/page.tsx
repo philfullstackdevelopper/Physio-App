@@ -1,9 +1,9 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  BadgeCheck,
+  ListChecks,
   ShieldCheck,
-  Sparkles,
-  Video,
 } from "lucide-react";
 import FaqSection from "@/components/FaqSection";
 import SiteHeader from "@/components/SiteHeader";
@@ -14,15 +14,20 @@ import FitToViewport from "@/components/FitToViewport";
 import KineJourneyDemo from "@/components/KineJourneyDemo";
 import ComparisonTable from "@/components/ComparisonTable";
 import PricingSection from "@/components/PricingSection";
+import ExerciseShowcase from "@/components/ExerciseShowcase";
 import Testimonials from "@/components/Testimonials";
+import { HandNote, Underlined } from "@/components/HandDrawn";
 import Reveal from "@/components/Reveal";
 import IntroSplash, { INTRO_SEEN_SCRIPT } from "@/components/IntroSplash";
-import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 
+// Textes de la landing réécrits le 2026-10-10 (Philippe : le site faisait
+// trop « IA ») : des phrases qu'un kiné dirait, des faits vérifiables, plus de
+// formules lisses. « Gratuit pour les patients » a été retiré : c'était faux
+// (le patient paie une offre mensuelle à son kiné, voir #tarifs).
 const HERO_CHIPS = [
-  { icon: Sparkles, label: "Gratuit pour les patients" },
-  { icon: Video, label: "Vidéos, sans caméra ni capteur" },
-  { icon: ShieldCheck, label: "Piloté par votre kiné, jamais par un algorithme seul" },
+  { icon: BadgeCheck, label: "Kinés vérifiés dans l'Annuaire Santé (RPPS)" },
+  { icon: ListChecks, label: "Guidé pas à pas, sans caméra ni capteur" },
+  { icon: ShieldCheck, label: "Vous décidez du programme, jamais un algorithme" },
 ];
 
 function PrimaryCta({
@@ -82,14 +87,20 @@ export default function Home() {
         {/* phone-land: téléphone à l'horizontale (globals.css) — texte à gauche,
             téléphone à droite comme sur PC, le tout dans la hauteur de l'écran
             (Philippe, 2026-10-04 : « quand on tourne le téléphone, tout bugge »). */}
-        <section className="flex flex-col gap-4 pb-4 pt-20 sm:min-h-dvh lg:grid lg:grid-cols-[minmax(0,36rem)_18rem] lg:items-center lg:justify-center lg:gap-24 lg:pb-6 lg:pt-24 lg:short:pt-20 phone-land:grid phone-land:h-dvh phone-land:min-h-0 phone-land:grid-cols-[minmax(0,1fr)_10rem] phone-land:items-center phone-land:gap-6 phone-land:pb-2 phone-land:pt-16">
-          <div>
-            <h1 className="font-display animate-[fadeInUp_0.6s_ease-out_both] max-w-xl text-3xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem] lg:short:text-[2.6rem] phone-land:text-[1.7rem]">
-              La rééducation ne s&apos;arrête pas en sortant du cabinet.
+        <section className="flex flex-col gap-4 pb-4 pt-20 sm:min-h-dvh lg:grid lg:grid-cols-[minmax(0,41rem)_18rem] lg:items-center lg:justify-center lg:gap-16 lg:pb-6 lg:pt-24 lg:short:pt-20 phone-land:grid phone-land:h-dvh phone-land:min-h-0 phone-land:grid-cols-[minmax(0,1fr)_10rem] phone-land:items-center phone-land:gap-6 phone-land:pb-2 phone-land:pt-16">
+          <div className="relative">
+            {/* Note manuscrite vers le téléphone de démo — grand écran seulement. */}
+            <HandNote className="absolute -right-6 bottom-0 -rotate-3 animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:900ms] max-lg:hidden">
+              ce que voit votre patient
+            </HandNote>
+            <h1 className="font-display animate-[fadeInUp_0.6s_ease-out_both] text-3xl font-semibold leading-[1.1] tracking-tight text-slate-900 sm:text-[2.6rem] lg:text-[2.75rem] lg:short:text-[2.3rem] phone-land:text-[1.6rem]">
+              {/* La réponse que tout kiné a entendue, puis ce que l'appli change. */}
+              «&nbsp;Oui oui, j&apos;ai fait mes exercices.&nbsp;»
+              <br className="hidden sm:block" /> Maintenant, <Underlined>vous le voyez.</Underlined>
             </h1>
             <p className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:160ms] mt-3 max-w-lg text-base leading-relaxed text-slate-600 sm:mt-5 sm:text-lg lg:short:mt-3 lg:short:text-base phone-land:mt-2 phone-land:text-sm">
-              Chaque exercice choisi par votre kiné. Chaque séance guidée en vidéo. Chaque progrès
-              visible pour lui, entre deux rendez-vous.
+              Vos patients suivent chez eux le programme que vous avez choisi, guidés pas à pas.
+              Vous voyez qui l&apos;a fait, et qui a eu mal, avant le prochain rendez-vous.
             </p>
 
             <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:220ms] mt-5 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center lg:short:mt-5 phone-land:mt-3">
@@ -98,7 +109,7 @@ export default function Home() {
                 href="/login"
                 className="inline-flex items-center justify-center font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
               >
-                J&apos;ai déjà un programme
+                Je suis patient, j&apos;ai un programme
               </Link>
             </div>
 
@@ -128,10 +139,10 @@ export default function Home() {
         <section id="cote-kine" className="mt-16 scroll-mt-24 sm:mt-24">
           <div className="mx-auto max-w-2xl text-center sm:short:max-w-5xl">
             <h2 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-              Côté kiné : de son tableau de bord à la fiche de chaque patient.
+              Lundi matin, 8 h : vous savez déjà qui a travaillé.
             </h2>
             <p className="mt-3 text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg sm:short:mt-1 sm:short:text-sm">
-              Tout ce qui se passe entre deux séances, en un coup d&apos;œil. Comprendre, décider, ajuster : 2 clics suffisent.
+              Qui a fait ses séances, qui a signalé une douleur, qui n&apos;a pas ouvert l&apos;appli. Et deux clics pour ajuster un programme.
             </p>
           </div>
 
@@ -156,17 +167,34 @@ export default function Home() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-                Ce qui change vraiment pour le patient
+                La feuille d&apos;exercices finit dans un tiroir. Pas le téléphone.
               </h2>
               <p className="mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 phone-land:hidden">
-                La plupart des programmes s&apos;arrêtent à la porte du cabinet.{" "}
+                Une fiche photocopiée ne montre pas le mouvement, et ne vous dit pas si ça fait mal.{" "}
                 <br className="hidden sm:block lg:hidden" />
-                EasyPhysio assure un suivi continu, personnalisé et efficace.
+                EasyPhysio, si.
               </p>
             </div>
           </div>
           <FitToViewport className="mt-8 sm:short:mt-4 lg:mt-0 phone-land:mt-2">
             <ComparisonTable />
+          </FitToViewport>
+        </section>
+        </Reveal>
+
+        {/* ── Témoignages ──────────────────────────────────────── */}
+        <Reveal>
+        <section className="mt-24 sm:mt-32 phone-land:mt-12 phone-land:grid phone-land:grid-cols-[1fr_3fr] phone-land:items-center phone-land:gap-5">
+          <div>
+            <h2 className="font-display max-w-2xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
+              Des exercices que vos patients comprennent du premier coup.
+            </h2>
+            <p className="mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 phone-land:hidden">
+              302 mouvements dessinés et animés, du pont fessier au gainage. Les vidéos d&apos;exécution arrivent ici.
+            </p>
+          </div>
+          <FitToViewport className="mt-8 sm:short:mt-4 phone-land:mt-0">
+            <ExerciseShowcase />
           </FitToViewport>
         </section>
         </Reveal>
@@ -209,7 +237,7 @@ export default function Home() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Encore un doute&nbsp;?</p>
             <h2 className="font-display mt-2 text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-              Les réponses à toutes vos questions
+              Les réponses, sans détour
             </h2>
           </div>
           <div className="mt-8 sm:short:mt-4 phone-land:mt-0">
@@ -223,11 +251,11 @@ export default function Home() {
         <section className="my-24 sm:my-32 phone-land:my-12">
           <div className="rounded-[2rem] bg-slate-900 px-8 py-14 text-center shadow-xl sm:px-14 phone-land:py-6">
             <h2 className="font-display mx-auto max-w-xl text-3xl font-semibold leading-tight text-white sm:text-4xl phone-land:text-2xl">
-              Prêt à suivre vos patients entre les séances ?
+              Essayez avec un seul patient.
             </h2>
             <p className="mx-auto mt-4 max-w-md leading-relaxed text-slate-300">
-              Créez votre compte, composez un premier programme et invitez un patient en quelques
-              minutes.
+              Créez votre compte, composez un premier programme, invitez un patient. Vous verrez
+              dès la première semaine si ça change vos consultations.
             </p>
             <p className="mt-6 text-sm font-medium text-blue-300 phone-land:mt-3">
               Le programme reste conçu et piloté par vous. L&apos;app ne décide rien à votre place.

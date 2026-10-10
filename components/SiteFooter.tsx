@@ -41,7 +41,14 @@ export default function SiteFooter() {
           </p>
           <p className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Conforme RGPD · données jamais revendues
+            Données hébergées en France · jamais revendues
+          </p>
+          {/* Une ligne datée, tirée de l'historique réel du projet : montre un
+              produit vivant, tenu par des gens (2026-10-10). À mettre à jour
+              à chaque évolution visible. */}
+          <p className="mt-3 max-w-xs text-xs leading-relaxed text-slate-400">
+            <span className="font-semibold text-slate-500">Octobre 2026</span> · messagerie repensée, kinés vérifiés
+            automatiquement par leur numéro RPPS.
           </p>
         </div>
 
@@ -69,7 +76,7 @@ export default function SiteFooter() {
       <div className="border-t border-slate-100 py-5">
         <div className="mx-auto flex max-w-6xl flex-col gap-1 px-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-center text-xs text-slate-400 sm:text-left">
-            © 2026 EasyPhysio, conçu avec des cabinets de kinésithérapie libéraux
+            © 2026 EasyPhysio · fait en France, entre deux séances de kiné
           </p>
           <p className="text-center text-[11px] italic text-slate-300 sm:text-right">
             Certaines illustrations :{" "}

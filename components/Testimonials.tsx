@@ -64,7 +64,8 @@ const TESTIMONIALS: {
   },
 ];
 
-const TRUST = ["Données hébergées en France", "Conforme RGPD", "Soutien kiné 7j/7"];
+// « Soutien kiné 7j/7 » retiré le 2026-10-10 : ce service n'existe pas.
+const TRUST = ["Données hébergées en France", "Kinés vérifiés par leur numéro RPPS", "Données jamais revendues"];
 
 function Avatar({ src, name, size = "sm" }: { src: string; name: string; size?: "sm" | "lg" }) {
   return (
@@ -149,7 +150,16 @@ export default function Testimonials() {
   return (
     <div className="mt-8 sm:short:mt-3">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <Toggle value={voice} onChange={selectVoice} />
+        <div className="flex flex-wrap items-center gap-3">
+          <Toggle value={voice} onChange={selectVoice} />
+          {/* Ces trois témoignages sont des exemples rédigés (portraits
+              générés), EasyPhysio n'ayant pas encore d'utilisateurs : on le
+              dit. À retirer dès qu'ils sont remplacés par de vrais retours,
+              avec l'accord écrit des personnes (2026-10-10). */}
+          <span className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-500">
+            Témoignages illustratifs
+          </span>
+        </div>
         <div className="flex items-center gap-3">
           <button
             type="button"
