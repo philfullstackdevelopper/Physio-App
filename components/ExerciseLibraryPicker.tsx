@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Plus, Search } from "lucide-react";
+import { Check, Info, Plus, Search } from "lucide-react";
 import { type BodyPart } from "@/lib/exercise/category";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
+import ExerciseInfoModal from "@/components/ExerciseInfoModal";
 
 export type PickerExercise = { id: string; name: string; bodyPartIds: string[]; searchKeywords?: string[] | null };
 
@@ -41,6 +42,8 @@ export default function ExerciseLibraryPicker({
     () => bodyParts.find((bp) => (countByBodyPart.get(bp.id) ?? 0) > 0)?.id ?? bodyParts[0]?.id ?? null,
   );
   const query = q.trim().toLowerCase();
+  // Exercice dont la démonstration est ouverte (petit bouton (i) de chaque ligne).
+  const [info, setInfo] = useState<{ id: string; name: string } | null>(null);
 
   const filtered = useMemo(() => {
     if (query) {
@@ -106,23 +109,41 @@ export default function ExerciseLibraryPicker({
           {filtered.map((ex) => {
             const marked = selectedIds.has(ex.id);
             return (
-              <button
+              // Deux boutons côte à côte dans la même ligne (un bouton ne peut
+              // pas en contenir un autre) : la ligne ajoute/retire l'exercice,
+              // le petit (i) ouvre sa démonstration (Philippe, 2026-10-10).
+              <div
                 key={ex.id}
-                type="button"
-                onClick={() => onToggle(ex.id)}
-                title={ex.name}
-                className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-left text-sm transition-colors ${
+                className={`flex w-full min-w-0 items-center rounded-lg border text-sm transition-colors ${
                   marked ? "border-ok/30 bg-ok-soft text-ok" : "border-line bg-surface text-ink hover:border-brand/40 hover:bg-app-bg"
                 }`}
               >
-                <ExerciseIllustration name={ex.name} animate={false} className={`h-7 w-7 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
-                <span className="flex-1 truncate">{ex.name}</span>
-                {marked ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Plus className="h-4 w-4 shrink-0 text-brand" strokeWidth={2} />}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onToggle(ex.id)}
+                  title={ex.name}
+                  aria-pressed={marked}
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded-l-lg py-1 pl-2 pr-1 text-left"
+                >
+                  <ExerciseIllustration name={ex.name} animate={false} className={`h-7 w-7 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
+                  <span className="flex-1 truncate">{ex.name}</span>
+                  {marked ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Plus className="h-4 w-4 shrink-0 text-brand" strokeWidth={2} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInfo({ id: ex.id, name: ex.name })}
+                  aria-label={`Voir la démonstration : ${ex.name}`}
+                  title="Voir la démonstration"
+                  className="mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                >
+                  <Info className="h-4 w-4" strokeWidth={1.75} />
+                </button>
+              </div>
             );
           })}
         </div>
       </div>
+      {info && <ExerciseInfoModal exercise={info} onClose={() => setInfo(null)} />}
     </section>
   );
 }

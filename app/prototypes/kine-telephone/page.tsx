@@ -40,8 +40,8 @@ const PATHS: Record<string, string> = {
   exercices: "/dashboard/exercises",
 };
 
-export default async function KineTelephonePrototype({ searchParams }: { searchParams: Promise<{ ecran?: string }> }) {
-  const { ecran = "accueil" } = await searchParams;
+export default async function KineTelephonePrototype({ searchParams }: { searchParams: Promise<{ ecran?: string; nouvelle?: string }> }) {
+  const { ecran = "accueil", nouvelle } = await searchParams;
   const d = mockData();
 
   let screen: React.ReactNode;
@@ -107,7 +107,10 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
       <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
         <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:p-8 short:sm:py-4">
           <SeancesTabs
-            exercises={[]}
+            // ?ecran=seances&nouvelle=1 : ouvre « Nouvelle séance » avec quelques
+            // exercices fictifs, pour juger la liste et le bouton (i) de démonstration.
+            openNewSeance={nouvelle === "1"}
+            exercises={names.map((name, i) => ({ id: `demo-ex-${i}`, name, bodyPartIds: ["bp-genou"] }))}
             bodyParts={zones}
             mine={[
               item("s1", "Genou — renforcement doux", "Prothèse de genou", "acute", 0),
