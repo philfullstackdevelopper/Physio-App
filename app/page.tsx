@@ -164,7 +164,9 @@ export default function Home() {
             de hauteur au-dessus du tableau (tenir sur un écran, Philippe
             2026-09-29). */}
         <section id="comparaison" className="mt-24 scroll-mt-24 sm:mt-32 lg:grid lg:grid-cols-[1fr_3fr] lg:items-center lg:gap-10 phone-land:mt-12">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          {/* Téléphone : le tableau seul, sans titre ni texte (Philippe,
+              2026-10-10). Dès sm : inchangé. */}
+          <div className="flex flex-col gap-6 max-sm:hidden lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
                 La feuille d&apos;exercices finit dans un tiroir. Pas le téléphone.
@@ -176,7 +178,7 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <FitToViewport className="mt-8 sm:short:mt-4 lg:mt-0 phone-land:mt-2">
+          <FitToViewport className="sm:mt-8 sm:short:mt-4 lg:mt-0 phone-land:mt-2">
             <ComparisonTable />
           </FitToViewport>
         </section>
