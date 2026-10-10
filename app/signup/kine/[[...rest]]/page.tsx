@@ -29,7 +29,7 @@ export default function SignupPage() {
 
       <div className="relative mx-auto flex min-h-dvh max-w-6xl flex-col lg:flex-row lg:items-center">
         {/* Left: signup form */}
-        <div className="flex flex-1 items-center justify-center p-4 py-16 short:pb-3 short:pt-14 lg:p-16 short:lg:py-4">
+        <div className="flex flex-1 items-center justify-center p-4 py-16 max-sm:pb-6 max-sm:pt-14 short:pb-3 short:pt-14 lg:px-16 lg:py-6 short:lg:py-0">
           <div className="w-full max-w-sm">
             {/* Cabinet details first, Clerk account creation last — the
                 order a professional signup on a real B2B site follows
@@ -38,14 +38,10 @@ export default function SignupPage() {
                 away, instead of Clerk's generic "Créez votre compte" card.
                 See components/KineSignupFlow.tsx for how the cabinet fields
                 survive into the account that gets created after them. */}
+            {/* « Déjà un compte ? » est dans KineSignupFlow (1re étape) : à la
+                2e, la carte Clerk a déjà son propre lien — deux fois le même
+                faisait défiler la page (audit 2026-10-10). */}
             <KineSignupFlow />
-
-            <p className="mt-6 text-center text-sm text-slate-500 short:mt-3">
-              Déjà un compte ?{" "}
-              <Link href="/login" className="font-medium text-blue-700 hover:underline">
-                Se connecter
-              </Link>
-            </p>
           </div>
         </div>
 

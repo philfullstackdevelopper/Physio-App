@@ -73,7 +73,7 @@ function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string;
           v.currentTime = startSeconds;
           v.play();
         }}
-        className="aspect-video w-full rounded-xl bg-black object-cover"
+        className="aspect-video w-full rounded-xl bg-black object-cover short:aspect-auto short:h-36 short:object-contain"
         src={url}
       />
       <button
@@ -96,8 +96,8 @@ function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string;
  *  so the screen keeps its shape whether or not a clip exists yet. */
 function IllustrationDemo({ name }: { name: string }) {
   return (
-    <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
-      <ExerciseIllustration name={name} className="h-40 w-56 text-blue-600" />
+    <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 short:aspect-auto short:h-36">
+      <ExerciseIllustration name={name} className="h-40 w-56 text-blue-600 short:h-32" />
     </div>
   );
 }
@@ -112,7 +112,7 @@ function Demo({ url, name, startSeconds = 0 }: { url: string | null; name: strin
     if (ytId) {
       return (
         <iframe
-          className="aspect-video w-full rounded-xl"
+          className="aspect-video w-full rounded-xl short:aspect-auto short:h-36"
           src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&start=${startSeconds}`}
           title="Démonstration"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -140,12 +140,12 @@ function Demo({ url, name, startSeconds = 0 }: { url: string | null; name: strin
 function HowTo({ instructions, goalText }: { instructions: string | null; goalText: string }) {
   const steps = parseSteps(instructions);
   return (
-    <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+    <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 short:mt-2 short:p-3">
       <p className="text-sm text-slate-700">
         Objectif : <span className="font-semibold">{goalText}</span>
       </p>
       {steps.length > 0 ? (
-        <ol className="mt-3 space-y-2">
+        <ol className="mt-3 space-y-2 short:mt-2 short:space-y-1">
           {steps.map((s, i) => (
             <li key={i} className="flex gap-2 text-sm text-slate-700">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
@@ -158,7 +158,7 @@ function HowTo({ instructions, goalText }: { instructions: string | null; goalTe
       ) : (
         <p className="mt-2 text-sm text-slate-500">Allez-y doucement, sans forcer.</p>
       )}
-      <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
+      <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500 short:mt-2 short:pt-2">
         Une douleur vive ? Arrêtez-vous et parlez-en à votre praticien.
       </p>
     </div>
@@ -415,7 +415,10 @@ export default function WorkoutSession({
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
+    // Écran peu haut (petit téléphone, PC de 549 px de haut) : démonstration
+    // moins haute et marges resserrées pour que l'exercice et son bouton
+    // tiennent sans défiler (audit 2026-10-10).
+    <div className="mx-auto flex max-w-xl flex-col gap-4 short:gap-2">
       {/* Progress header */}
       <div className="flex items-center gap-3">
         <Link href="/patient" className="text-sm text-slate-400 hover:underline">
@@ -458,15 +461,15 @@ export default function WorkoutSession({
           </button>
         </div>
       ) : (
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm max-sm:p-4 short:p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
             Exercice {idx + 1}
           </p>
-          <h2 className="font-display mt-1 text-2xl font-semibold text-slate-900">
+          <h2 className="font-display mt-1 text-2xl font-semibold text-slate-900 short:mt-0 short:text-xl">
             {current.name}
           </h2>
 
-          <div className="mt-4">
+          <div className="mt-4 short:mt-2">
             <Demo url={current.mediaUrl} name={current.name} startSeconds={current.mediaStartSeconds ?? 0} />
           </div>
 
@@ -475,7 +478,7 @@ export default function WorkoutSession({
           <button
             onClick={onExerciseDone}
             disabled={completing}
-            className={`mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl py-4 text-lg font-semibold text-white transition-transform duration-150 ease-out motion-reduce:transition-none ${
+            className={`mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl py-4 text-lg font-semibold text-white short:mt-3 short:py-3 short:text-base transition-transform duration-150 ease-out motion-reduce:transition-none ${
               completing ? "scale-95 bg-blue-700" : "scale-100 bg-blue-600 hover:bg-blue-700"
             }`}
           >

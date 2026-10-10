@@ -80,11 +80,30 @@ export default function WeekProgramme({
     if (!box || !isPhone) return;
     // La frise ajoute py-14 (112 px) autour des cartes ; les marges
     // négatives de la boîte (-mt-3 -mb-12) sont déjà comptées dans sa hauteur.
-    const update = () => setPhoneCardHeight(Math.max(84, Math.min(420, box.clientHeight - 112)));
+    // La boîte grandit avec son contenu : si l'écran rétrécit après coup
+    // (téléphone tourné, fenêtre réduite), sa hauteur seule ne redescend
+    // jamais. On la borne donc par la place réellement disponible : du haut
+    // de la boîte jusqu'au bas voulu de la page (hauteur minimale du <main>,
+    // moins sa marge du bas ; + 48 px, la boîte déborde de -mb-12).
+    const update = () => {
+      let available = box.clientHeight;
+      const main = box.closest("main");
+      if (main) {
+        const cs = getComputedStyle(main);
+        const pageBottom = main.getBoundingClientRect().top + parseFloat(cs.minHeight || "0") - parseFloat(cs.paddingBottom || "0");
+        const room = pageBottom + 48 - box.getBoundingClientRect().top;
+        if (Number.isFinite(room) && room > 0) available = Math.min(available, room);
+      }
+      setPhoneCardHeight(Math.max(84, Math.min(420, available - 112)));
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(box);
-    return () => ro.disconnect();
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
   }, [isPhone, view]);
   const currentCardRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {

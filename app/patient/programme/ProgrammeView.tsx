@@ -50,7 +50,7 @@ export default function ProgrammeView({
   const totalDone = workouts.reduce((sum, w) => sum + Math.min(w.doneThisWeek, w.timesPerWeek ?? Infinity), 0);
 
   return (
-    <main className="flex min-h-[calc(100dvh-var(--phone-chrome))] flex-col p-4 sm:min-h-dvh sm:p-6 short:sm:py-4">
+    <main className="flex min-h-[calc(100dvh-var(--phone-chrome))] flex-col p-4 max-sm:short:py-2 sm:min-h-dvh sm:p-6 short:sm:py-4">
       <div className="flex flex-1 flex-col">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -68,7 +68,7 @@ export default function ProgrammeView({
             Votre praticien n&apos;a pas encore configuré votre programme. Revenez bientôt !
           </p>
         ) : (
-          <div className="mt-4 grid flex-1 gap-4 lg:grid-cols-[1fr_300px]">
+          <div className="mt-4 grid flex-1 gap-4 max-sm:short:mt-2 lg:grid-cols-[1fr_300px]">
             <div className="flex flex-col gap-4">
               {workouts.map((workout) => {
                 const target = workout.timesPerWeek ?? 0;
@@ -84,7 +84,7 @@ export default function ProgrammeView({
                   "items-center justify-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark";
 
                 return (
-                  <section key={workout.id} className="flex flex-1 flex-col rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+                  <section key={workout.id} className="flex flex-1 flex-col rounded-2xl border border-line bg-surface p-4 shadow-sm max-sm:short:p-3 sm:p-5">
                     <div className="flex items-center gap-4">
                       <ProgressRing value={done} max={target || 1} size={56} className={`shrink-0 ${complete ? "text-ok" : "text-brand"}`} />
                       <div className="min-w-0 flex-1">
@@ -109,15 +109,17 @@ export default function ProgrammeView({
                       </Link>
                     </div>
 
-                    <h3 className="mt-4 text-sm font-semibold text-ink">
+                    {/* Petit téléphone (audit 2026-10-10) : marges réduites, nom sur une
+                        ligne et zone masquée — la séance tient entière sans défiler. */}
+                    <h3 className="mt-4 text-sm font-semibold text-ink max-sm:short:mt-2">
                       Vos exercices <span className="font-normal text-muted">· {workout.exercises.length}</span>
                     </h3>
-                    <div className="mt-2 grid flex-1 auto-rows-fr grid-cols-2 gap-2 lg:grid-cols-3">
+                    <div className="mt-2 grid flex-1 auto-rows-fr grid-cols-2 gap-2 max-sm:short:mt-1.5 max-sm:short:gap-1.5 lg:grid-cols-3">
                       {workout.exercises.map((ex) => (
                         <div
                           key={ex.id}
                           title={ex.instructions ?? undefined}
-                          className="flex flex-col gap-2 rounded-xl bg-app-bg p-2 sm:p-3"
+                          className="flex flex-col gap-2 rounded-xl bg-app-bg p-2 max-sm:short:gap-1 max-sm:short:p-1.5 sm:p-3"
                         >
                           <ExerciseIllustration
                             name={ex.name}
@@ -125,8 +127,8 @@ export default function ProgrammeView({
                             className="min-h-12 w-full flex-1 rounded-lg bg-surface text-brand"
                           />
                           <div className="min-w-0 text-center">
-                            <p className="line-clamp-2 text-sm font-medium leading-snug text-ink">{ex.name}</p>
-                            {ex.categoryLabel && <p className="mt-0.5 truncate text-xs text-muted">{ex.categoryLabel}</p>}
+                            <p className="line-clamp-2 text-sm font-medium leading-snug text-ink max-sm:short:line-clamp-1">{ex.name}</p>
+                            {ex.categoryLabel && <p className="mt-0.5 truncate text-xs text-muted max-sm:short:hidden">{ex.categoryLabel}</p>}
                           </div>
                         </div>
                       ))}
@@ -135,7 +137,7 @@ export default function ProgrammeView({
                       )}
                     </div>
 
-                    <Link href={`/patient/${workout.id}/seance`} className={`mt-4 flex sm:hidden ${ctaClass}`}>
+                    <Link href={`/patient/${workout.id}/seance`} className={`mt-4 flex max-sm:short:mt-2 sm:hidden ${ctaClass}`}>
                       {cta}
                     </Link>
                   </section>

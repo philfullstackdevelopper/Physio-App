@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { SignUp } from "@clerk/nextjs";
 import { brandedHeaderTitle } from "@/lib/clerk/brandedTitle";
+import { compactClerkElements } from "@/lib/clerk/compact";
 
 // Cabinet details FIRST, account creation LAST — the order a professional
 // signup on a real B2B site follows (Philippe, 2026-09-10), reversed from
@@ -60,12 +62,13 @@ export default function KineSignupFlow() {
   if (step === "account") {
     return (
       <div>
-        <p className="text-sm leading-relaxed text-slate-600 short:hidden">
+        <p className="text-sm leading-relaxed text-slate-600 max-sm:hidden short:hidden">
           Vos patients n&apos;ont pas besoin de créer de compte ici — c&apos;est vous qui les
           invitez depuis votre tableau de bord, une fois inscrit·e.
         </p>
-        <p className="mt-3 rounded-xl bg-blue-50 px-3.5 py-2.5 text-xs short:mt-0 leading-relaxed text-blue-800">
-          Indiquez votre prénom et nom exactement comme ils apparaissent sur{" "}
+        <p className="mt-3 rounded-xl bg-blue-50 px-3.5 py-2.5 text-xs short:mt-0 short:py-1.5 leading-relaxed text-blue-800">
+          <span className="short:hidden">Indiquez votre prénom et nom exactement comme ils apparaissent sur</span>
+          <span className="hidden short:inline">Prénom et nom comme sur</span>{" "}
           <a
             href="https://annuaire.sante.fr"
             target="_blank"
@@ -74,15 +77,16 @@ export default function KineSignupFlow() {
           >
             l&apos;Annuaire Santé
           </a>{" "}
-          — cela permet une activation immédiate de votre compte.
+          <span className="short:hidden">— cela permet une activation immédiate de votre compte.</span>
+          <span className="hidden short:inline">: activation immédiate.</span>
         </p>
-        <div className="mt-5 short:mt-3">
+        <div className="mt-5 short:mt-2">
           <SignUp
             fallbackRedirectUrl="/signup/finalize"
             signInUrl="/login"
-            appearance={{ elements: { rootBox: "w-full", cardBox: "w-full", headerTitle: brandedHeaderTitle } }}
+            appearance={{ elements: { ...compactClerkElements, rootBox: "w-full", cardBox: "w-full", headerTitle: brandedHeaderTitle } }}
           />
-          <p className="mt-4 text-center text-xs leading-relaxed text-slate-400">
+          <p className="mt-4 text-center text-xs leading-relaxed text-slate-400 short:hidden">
             Votre demande sera vérifiée avant activation de votre compte praticien.
           </p>
         </div>
@@ -170,6 +174,13 @@ export default function KineSignupFlow() {
           Continuer
         </button>
       </form>
+
+      <p className="mt-6 text-center text-sm text-slate-500 short:mt-3">
+        Déjà un compte ?{" "}
+        <Link href="/login" className="font-medium text-blue-700 hover:underline">
+          Se connecter
+        </Link>
+      </p>
     </div>
   );
 }

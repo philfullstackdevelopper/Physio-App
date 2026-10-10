@@ -96,7 +96,7 @@ export default async function SeancePage({
   const prescription = recommendPrescription(profileToContext(profile!));
 
   return (
-    <main className="min-h-screen p-6 sm:p-8">
+    <main className="p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:p-4 max-sm:short:py-2 sm:min-h-dvh sm:p-8 short:sm:py-3">
       <div className="mx-auto max-w-xl">
         <WorkoutSession
           workoutId={workout.id}

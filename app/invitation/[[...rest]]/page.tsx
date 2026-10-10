@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { SignIn, SignUp } from "@clerk/nextjs";
 import { brandedHeaderTitle } from "@/lib/clerk/brandedTitle";
+import { compactClerkElements } from "@/lib/clerk/compact";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import InvitationSignedInGate from "@/components/InvitationSignedInGate";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
@@ -57,9 +58,9 @@ export default async function PatientInvitationPage({
 
       <div className="relative mx-auto flex min-h-dvh max-w-6xl flex-col lg:flex-row lg:items-stretch">
         {/* Left: invitation acceptance form */}
-        <div className="flex flex-1 items-center justify-center p-4 py-16 short:pb-3 short:pt-14 lg:p-16 short:lg:py-3">
+        <div className="flex flex-1 items-center justify-center p-4 py-16 short:pb-1 short:pt-14 lg:p-16 short:lg:py-3">
           <div className="w-full max-w-sm">
-            <p className="mb-6 text-center text-sm leading-relaxed text-slate-500 short:mb-3 lg:hidden">
+            <p className="mb-6 text-center text-sm leading-relaxed text-slate-500 short:mb-2 lg:hidden">
               {kine ? <span className="font-medium text-slate-700">{kine}</span> : "Votre kinésithérapeute"} vous
               invite à rejoindre EasyPhysio.{" "}
               {accountExists
@@ -78,6 +79,7 @@ export default async function PatientInvitationPage({
                 signUpUrl="/invitation"
                 appearance={{
                   elements: {
+                    ...compactClerkElements,
                     rootBox: "w-full",
                     cardBox: "w-full",
                     // Même réglage que /login : masque « pour continuer vers
@@ -92,7 +94,7 @@ export default async function PatientInvitationPage({
                 fallbackRedirectUrl="/apres-connexion"
                 signInUrl="/login"
                 appearance={{
-                  elements: { rootBox: "w-full", cardBox: "w-full", headerTitle: brandedHeaderTitle },
+                  elements: { ...compactClerkElements, rootBox: "w-full", cardBox: "w-full", headerTitle: brandedHeaderTitle },
                 }}
               />
             )}
