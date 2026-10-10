@@ -26,7 +26,9 @@ export default function ConditionSelect({
           setValue(e.target.value);
           if (!currentConditionId) e.target.form?.requestSubmit();
         }}
-        className="rounded-lg border border-line bg-surface px-2 py-1 text-sm text-ink"
+        // w-full + min-w-0 : sans ça le <select> prend la largeur de son option la
+        // plus longue et déborde de la bulle « Condition à renseigner ».
+        className="w-full min-w-0 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm text-ink"
       >
         <option value="" disabled={!currentConditionId}>Choisir une condition…</option>
         {conditions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
