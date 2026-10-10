@@ -80,7 +80,7 @@ export default function KineMessagesView({
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger max-sm:m-3 max-sm:mb-0">{error}</p>}
 
-        <div className={`mt-6 grid flex-1 gap-6 max-sm:min-h-0 max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[360px_1fr] ${phoneThread ? "max-sm:mt-0" : "max-sm:mt-3"}`}>
+        <div className={`mt-6 grid flex-1 gap-6 max-sm:min-h-0 max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[320px_1fr] lg:gap-4 ${phoneThread ? "max-sm:mt-0" : "max-sm:mt-3"}`}>
           <section
             // Téléphone : plus de grande carte blanche autour — chaque
             // conversation est sa propre carte (ConversationList).

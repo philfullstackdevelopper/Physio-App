@@ -48,14 +48,19 @@ export default function ConversationList({
           // Une carte par patient, séparée des autres (Philippe, 2026-10-10 :
           // « mieux si les noms étaient séparés ») — plus un seul bloc où les
           // lignes se touchent.
-          className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition ${
+          // Ordinateur (Philippe, 2026-10-10 : colonne trop lourde) : lignes
+          // compactes, blanches à filet fin ; la conversation ouverte est
+          // simplement teintée de bleu clair, sans contour épais.
+          className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition sm:rounded-xl sm:border sm:py-2 ${
             waiting
-              ? "bg-brand-soft hover:bg-brand/15"
-              : "bg-app-bg/70 hover:bg-app-bg max-sm:bg-surface max-sm:shadow-soft max-sm:active:bg-app-bg"
-          } ${active ? "sm:ring-2 sm:ring-brand/50" : ""}`}
+              ? `bg-brand-soft hover:bg-brand/15 ${active ? "sm:border-brand/50" : "sm:border-transparent"}`
+              : active
+                ? "bg-surface max-sm:shadow-soft sm:border-brand/30 sm:bg-brand-soft/60"
+                : "bg-surface max-sm:shadow-soft max-sm:active:bg-app-bg sm:border-line/70 sm:hover:bg-app-bg"
+          }`}
         >
           <span
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-brand ${
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-brand sm:h-8 sm:w-8 sm:text-[11px] ${
               waiting ? "bg-surface" : "bg-brand-soft"
             }`}
           >
@@ -63,15 +68,15 @@ export default function ConversationList({
           </span>
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5">
-              <span className={`truncate text-[15px] leading-tight text-ink ${waiting ? "font-semibold" : "font-medium"}`}>{c.name}</span>
+              <span className={`truncate text-[15px] leading-tight text-ink sm:text-sm ${waiting ? "font-semibold" : "font-medium"}`}>{c.name}</span>
               {c.followUp && <Bookmark className="h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2} aria-label="Avec suivi" />}
             </span>
-            <span className={`mt-0.5 block truncate text-sm ${waiting ? "text-ink" : "text-muted"}`}>
+            <span className={`mt-0.5 block truncate text-sm sm:text-[13px] ${waiting ? "text-ink" : "text-muted"}`}>
               {c.lastSender === "instructor" ? `Vous : ${c.lastBody}` : c.lastBody}
             </span>
           </span>
           <span className="flex shrink-0 flex-col items-end gap-1">
-            <span className={`text-xs ${waiting ? "font-medium text-brand" : "text-muted"}`}>{c.lastAt ? relativeDay(c.lastAt) : ""}</span>
+            <span className={`text-xs sm:text-[11px] ${waiting ? "font-medium text-brand" : "text-muted"}`}>{c.lastAt ? relativeDay(c.lastAt) : ""}</span>
             {c.unread > 0 && (
               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">
                 {c.unread}
@@ -94,7 +99,7 @@ export default function ConversationList({
           onClick={() => setShowNew((v) => !v)}
           aria-label="Nouveau message"
           aria-expanded={showNew}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-brand hover:bg-brand/15"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-brand hover:bg-brand/15 sm:h-8 sm:w-8"
         >
           <SquarePen className="h-4 w-4" strokeWidth={1.75} />
         </button>
@@ -128,7 +133,7 @@ export default function ConversationList({
         )}
       </div>
 
-      <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3 max-sm:px-0.5 max-sm:pt-0.5">
+      <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3 max-sm:px-0.5 max-sm:pt-0.5 sm:gap-1.5">
         {toReply.map((c) => row(c, true))}
         {toReply.length > 0 && others.length > 0 && (
           <li className="px-1 pb-0.5 pt-3 text-xs font-semibold uppercase tracking-wide text-muted">Conversations</li>
