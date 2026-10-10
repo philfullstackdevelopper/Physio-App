@@ -1,139 +1,143 @@
 "use client";
 
 // =============================================================================
-// ConversationList — colonne gauche de /dashboard/messages : onglets
-// (Tous / Non lus / Avec suivi), recherche par nom, bouton « nouveau message »
-// (patients sans échange) et la liste. Tout le filtrage est côté client sur
-// les lignes déjà calculées par le serveur (buildConversations).
+// ConversationList — la liste des conversations du kiné (/dashboard/messages),
+// identique sur ordinateur et téléphone (Philippe, 2026-10-10, option 2) :
+//  - « À répondre » d'abord : les patients dont un message attend, sur fond
+//    bleu clair ;
+//  - puis « Conversations » : les autres échanges, du plus récent au plus ancien.
+// Plus d'onglets Tous / Non lus / Avec suivi : le premier groupe EST le filtre
+// utile ; le suivi reste visible par son signet sur la ligne.
+// Les patients sans aucun échange n'encombrent plus la liste : on leur écrit
+// par le crayon « Nouveau message ».
+// Le filtrage (recherche par nom) se fait côté client sur les lignes déjà
+// calculées par le serveur (buildConversations).
 // =============================================================================
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Bookmark, SquarePen } from "lucide-react";
-import { filterConversations, type ConversationRow, type ConversationTab } from "@/lib/dashboard/conversations";
+import { filterConversations, type ConversationRow } from "@/lib/dashboard/conversations";
 import { relativeDay } from "@/lib/format/relativeDay";
-
-const TABS: { key: ConversationTab; label: string }[] = [
-  { key: "all", label: "Tous" },
-  { key: "unread", label: "Non lus" },
-  { key: "follow_up", label: "Avec suivi" },
-];
 
 export default function ConversationList({
   rows,
   selectedId,
-  initialTab,
   query,
 }: {
   rows: ConversationRow[];
   selectedId: string | null;
-  initialTab: ConversationTab;
   query: string;
 }) {
-  const [tab, setTab] = useState<ConversationTab>(initialTab);
   const [showNew, setShowNew] = useState(false);
 
-  const visible = useMemo(() => filterConversations(rows, tab, query), [rows, tab, query]);
+  const withMessages = useMemo(() => filterConversations(rows, "all", query).filter((c) => c.lastBody !== null), [rows, query]);
+  const toReply = withMessages.filter((c) => c.unread > 0);
+  const others = withMessages.filter((c) => c.unread === 0);
   const allPatients = useMemo(() => [...rows].sort((a, b) => a.name.localeCompare(b.name, "fr")), [rows]);
 
-  const href = (patientId: string) => `/dashboard/messages?patient=${patientId}&tab=${tab}`;
+  const href = (patientId: string) => `/dashboard/messages?patient=${patientId}${query ? `&q=${encodeURIComponent(query)}` : ""}`;
+
+  const row = (c: ConversationRow, waiting: boolean) => {
+    const active = c.patientId === selectedId;
+    return (
+      <li key={c.patientId}>
+        <Link
+          href={href(c.patientId)}
+          aria-current={active ? "true" : undefined}
+          className={`flex items-center gap-3 px-4 py-2.5 transition ${
+            waiting ? "bg-brand-soft/70 hover:bg-brand-soft" : "hover:bg-app-bg max-sm:active:bg-app-bg"
+          } ${active ? "sm:shadow-[inset_3px_0_0_var(--color-brand)]" : ""} ${active && !waiting ? "sm:bg-app-bg" : ""}`}
+        >
+          <span
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-brand ${
+              waiting ? "bg-surface" : "bg-brand-soft"
+            }`}
+          >
+            {c.initials}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5">
+              <span className={`truncate text-[15px] leading-tight text-ink ${waiting ? "font-semibold" : "font-medium"}`}>{c.name}</span>
+              {c.followUp && <Bookmark className="h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2} aria-label="Avec suivi" />}
+            </span>
+            <span className={`mt-0.5 block truncate text-sm ${waiting ? "text-ink" : "text-muted"}`}>
+              {c.lastSender === "instructor" ? `Vous : ${c.lastBody}` : c.lastBody}
+            </span>
+          </span>
+          <span className="flex shrink-0 flex-col items-end gap-1">
+            <span className={`text-xs ${waiting ? "font-medium text-brand" : "text-muted"}`}>{c.lastAt ? relativeDay(c.lastAt) : ""}</span>
+            {c.unread > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">
+                {c.unread}
+              </span>
+            )}
+          </span>
+        </Link>
+      </li>
+    );
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-1 border-b border-line p-3">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            aria-pressed={tab === t.key}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-              tab === t.key ? "bg-brand-soft text-brand" : "text-muted hover:text-ink"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-        <div className="relative ml-auto">
-          <button
-            type="button"
-            onClick={() => setShowNew((v) => !v)}
-            aria-label="Nouveau message"
-            aria-expanded={showNew}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-brand hover:bg-brand-soft"
-          >
-            <SquarePen className="h-4 w-4" strokeWidth={1.75} />
-          </button>
-          {showNew && (
-            <div className="absolute right-0 z-10 mt-1 w-64 rounded-xl border border-line bg-surface p-1 shadow-lg">
-              <p className="px-3 py-2 text-xs font-medium text-muted">Écrire à un patient</p>
-              {allPatients.length === 0 ? (
-                <p className="px-3 pb-2 text-sm text-muted">Aucun patient pour l&apos;instant.</p>
-              ) : (
-                <ul className="max-h-64 overflow-y-auto">
-                  {allPatients.map((r) => (
-                    <li key={r.patientId}>
-                      <Link
-                        href={href(r.patientId)}
-                        onClick={() => setShowNew(false)}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-app-bg"
-                      >
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
-                          {r.initials}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm text-ink">{r.name}</span>
-                          {r.conditionLabel && <span className="block truncate text-xs text-muted">{r.conditionLabel}</span>}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
+      <div className="relative flex items-center justify-between px-4 pb-1 pt-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+          {toReply.length > 0 ? `À répondre · ${toReply.length}` : "Conversations"}
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowNew((v) => !v)}
+          aria-label="Nouveau message"
+          aria-expanded={showNew}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-brand hover:bg-brand/15"
+        >
+          <SquarePen className="h-4 w-4" strokeWidth={1.75} />
+        </button>
+        {showNew && (
+          <div className="absolute right-3 top-12 z-10 w-64 rounded-xl bg-surface p-1 shadow-lg ring-1 ring-line">
+            <p className="px-3 py-2 text-xs font-medium text-muted">Écrire à un patient</p>
+            {allPatients.length === 0 ? (
+              <p className="px-3 pb-2 text-sm text-muted">Aucun patient pour l&apos;instant.</p>
+            ) : (
+              <ul className="max-h-64 overflow-y-auto">
+                {allPatients.map((r) => (
+                  <li key={r.patientId}>
+                    <Link
+                      href={href(r.patientId)}
+                      onClick={() => setShowNew(false)}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-app-bg"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
+                        {r.initials}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm text-ink">{r.name}</span>
+                        {r.conditionLabel && <span className="block truncate text-xs text-muted">{r.conditionLabel}</span>}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
 
-      <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto">
-        {visible.length === 0 && (
-          <li className="p-6 text-center text-sm text-muted">
-            {rows.length === 0 ? "Aucun patient pour l'instant." : "Aucune conversation ne correspond."}
+      <ul className="min-h-0 flex-1 overflow-y-auto pb-2">
+        {toReply.map((c) => row(c, true))}
+        {toReply.length > 0 && others.length > 0 && (
+          <li className="px-4 pb-1 pt-4 text-xs font-semibold uppercase tracking-wide text-muted">Conversations</li>
+        )}
+        {others.map((c) => row(c, false))}
+        {toReply.length === 0 && others.length === 0 && (
+          <li className="px-6 py-10 text-center text-sm text-muted">
+            {query
+              ? "Aucune conversation ne correspond."
+              : rows.length === 0
+                ? "Aucun patient pour l'instant."
+                : "Pas encore de conversation. Utilisez le crayon pour écrire à un patient."}
           </li>
         )}
-        {visible.map((c) => {
-          const active = c.patientId === selectedId;
-          const preview =
-            c.lastBody === null ? "Aucun message" : c.lastSender === "instructor" ? `Vous : ${c.lastBody}` : c.lastBody;
-          return (
-            <li key={c.patientId}>
-              <Link
-                href={href(c.patientId)}
-                aria-current={active ? "true" : undefined}
-                className={`flex items-center gap-3 px-4 py-3 transition max-sm:active:bg-app-bg ${active ? "bg-app-bg max-sm:bg-transparent" : "hover:bg-app-bg"}`}
-              >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand">
-                  {c.initials}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5">
-                    <span className="truncate text-sm font-semibold text-ink">{c.name}</span>
-                    {c.followUp && <Bookmark className="h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2} aria-label="Avec suivi" />}
-                  </span>
-                  <span className={`block truncate text-sm ${c.unread > 0 ? "font-medium text-ink" : "text-muted"}`}>{preview}</span>
-                </span>
-                <span className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="text-xs text-muted">{c.lastAt ? relativeDay(c.lastAt) : ""}</span>
-                  {c.unread > 0 && (
-                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">
-                      {c.unread}
-                    </span>
-                  )}
-                </span>
-              </Link>
-            </li>
-          );
-        })}
       </ul>
     </div>
   );

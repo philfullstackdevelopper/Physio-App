@@ -1,6 +1,9 @@
 // Boîte de réception du kiné — l'affichage seul (app/dashboard/messages/page.tsx
 // charge les données ; /prototypes/kine-telephone le rend avec des données
-// fictives). Ordinateur : liste à gauche, fil à droite, inchangé.
+// fictives). Ordinateur : liste à gauche, fil à droite. Depuis le 2026-10-10
+// (Philippe) la messagerie a le même rendu partout : liste « À répondre »
+// d'abord (ConversationList), bulles façon messagerie (MessageThread), saisie
+// sur une ligne (MessageComposer).
 // Téléphone (Philippe, 2026-10-07 : mêmes règles que l'appli patient) : UN
 // écran à la fois, comme une messagerie — la liste des conversations, ou,
 // dès qu'un patient est choisi (?patient=…), sa conversation en plein écran
@@ -46,7 +49,14 @@ export default function KineMessagesView({
   const backHref = `/dashboard/messages${tab !== "all" ? `?tab=${tab}` : ""}`;
 
   return (
-    <main className="flex h-screen flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
+    // Téléphone, conversation ouverte : plein écran façon messagerie — la
+    // barre EasyPhysio et les onglets du bas s'effacent (app/globals.css,
+    // data-hide-phone-*), la flèche de retour ramène à la liste.
+    <main
+      data-hide-phone-topbar={phoneThread ? "" : undefined}
+      data-hide-phone-tabbar={phoneThread ? "" : undefined}
+      className={`flex h-screen flex-col ${phoneThread ? "max-sm:h-dvh" : "max-sm:h-[calc(100dvh-var(--phone-chrome))]"}`}
+    >
       <div className={`mx-auto flex w-full max-w-7xl flex-1 flex-col p-6 max-sm:min-h-0 sm:p-8 lg:min-h-0 ${phoneThread ? "max-sm:p-0" : "max-sm:px-4 max-sm:pb-3 max-sm:pt-2"}`}>
         <div className={`flex flex-wrap items-start justify-between gap-4 max-sm:gap-3 ${onlyWhenList}`}>
           <div>
@@ -75,7 +85,7 @@ export default function KineMessagesView({
             className={`min-h-[24rem] rounded-2xl border border-line bg-surface max-sm:min-h-0 max-sm:overflow-hidden max-sm:border-0 max-sm:shadow-soft lg:min-h-0 ${onlyWhenList}`}
             aria-label="Conversations"
           >
-            <ConversationList rows={conversations} selectedId={selectedId} initialTab={tab} query={q} />
+            <ConversationList rows={conversations} selectedId={selectedId} query={q} />
           </section>
 
           <section
@@ -94,7 +104,7 @@ export default function KineMessagesView({
                   <input type="hidden" name="tab" value={tab} />
                   <input type="hidden" name="q" value={q} />
                 </form>
-                <header className="flex items-center gap-3 border-b border-line px-5 py-4 max-sm:gap-2 max-sm:bg-surface max-sm:px-2 max-sm:py-2.5">
+                <header className="flex items-center gap-3 border-b border-line px-5 py-3 max-sm:gap-2 max-sm:bg-surface max-sm:px-2 max-sm:pb-2.5 max-sm:pt-[calc(0.625rem+env(safe-area-inset-top))]">
                   <Link
                     href={backHref}
                     aria-label="Retour aux conversations"
@@ -114,7 +124,8 @@ export default function KineMessagesView({
                     form="follow-up-form"
                     aria-label={selected.followUp ? "Retirer le suivi" : "Ajouter un suivi"}
                     aria-pressed={selected.followUp}
-                    className={`hidden h-10 w-10 shrink-0 items-center justify-center rounded-full max-sm:flex ${selected.followUp ? "bg-brand-soft text-brand" : "text-muted"}`}
+                    title={selected.followUp ? "Retirer le suivi" : "Ajouter un suivi"}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${selected.followUp ? "bg-brand-soft text-brand" : "text-muted hover:bg-app-bg hover:text-ink"}`}
                   >
                     {selected.followUp ? <BookmarkCheck className="h-5 w-5" strokeWidth={1.75} /> : <Bookmark className="h-5 w-5" strokeWidth={1.75} />}
                   </button>
@@ -129,33 +140,16 @@ export default function KineMessagesView({
                 </header>
 
                 {/* Téléphone : colonne inversée = le fil s'ouvre sur le dernier message, comme une messagerie. */}
-                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 max-sm:flex max-sm:flex-col-reverse max-sm:px-4">
-                  <MessageThread messages={thread} mineSender="instructor" otherInitials={selected.initials} />
+                <div className="flex min-h-0 flex-1 flex-col-reverse overflow-y-auto px-5 py-4 max-sm:px-3 sm:bg-app-bg/50">
+                  <MessageThread messages={thread} mineSender="instructor" />
                 </div>
 
-                <div className="px-5 pb-5 max-sm:border-t max-sm:border-line max-sm:bg-surface max-sm:px-3 max-sm:py-2.5">
+                <div className="border-t border-line px-4 py-3 max-sm:bg-surface max-sm:px-3 max-sm:pb-[calc(0.625rem+env(safe-area-inset-bottom))] max-sm:pt-2.5 sm:rounded-b-2xl">
                   <MessageComposer patientId={selected.patientId} action={sendInboxMessage} chat>
                     {/* Onglet et recherche gardés après l'envoi (inboxUrl). */}
                     <input type="hidden" name="tab" value={tab} />
                     <input type="hidden" name="q" value={q} />
-                    {/* Téléphone : le suivi est dans l'en-tête du fil (icône signet). */}
-                    <button
-                      type="submit"
-                      form="follow-up-form"
-                      className={`inline-flex items-center gap-1.5 text-sm hover:text-ink max-sm:hidden ${selected.followUp ? "text-brand" : "text-muted"}`}
-                    >
-                      {selected.followUp ? (
-                        <>
-                          <BookmarkCheck className="h-4 w-4" strokeWidth={1.75} />
-                          Retirer le suivi
-                        </>
-                      ) : (
-                        <>
-                          <Bookmark className="h-4 w-4" strokeWidth={1.75} />
-                          Ajouter un suivi
-                        </>
-                      )}
-                    </button>
+                    {/* Le suivi se règle par le signet de l'en-tête, partout. */}
                   </MessageComposer>
                 </div>
               </>

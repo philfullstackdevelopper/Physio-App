@@ -83,7 +83,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           horizontal de la page. Chaque page gère son propre overflow-x-auto
           localement si besoin ; la sidebar, elle, ne doit jamais bouger.
           Téléphone : marge du bas = barre d'onglets fixe (comme app/patient/layout.tsx). */}
-      <div className="relative min-w-0 flex-1 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))]">{children}</div>
+      <div data-phone-pad="" className="relative min-w-0 flex-1 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))]">{children}</div>
     </div>
   );
 }

@@ -69,6 +69,7 @@ export default function PatientNav({
           maquette fournie). Même identité que le haut de la barre latérale
           ordinateur, rien de nouveau. Hauteur comptée dans --phone-chrome. */}
       <header
+        data-phone-topbar=""
         className="sticky top-0 z-30 flex h-[calc(3.25rem+env(safe-area-inset-top))] items-center justify-between bg-phone-bg/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur sm:hidden"
       >
         <Link href="/patient" className="flex items-center gap-2">

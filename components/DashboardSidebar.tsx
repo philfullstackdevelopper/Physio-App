@@ -211,7 +211,7 @@ export default function DashboardSidebar({
           d'onglets blanche en bas, onglet actif en bleu (Philippe,
           2026-10-07 : mêmes règles que la version patient). Hauteur des deux
           barres comptée dans --phone-chrome (app/globals.css). */}
-      <header className="sticky top-0 z-30 flex h-[calc(3.25rem+env(safe-area-inset-top))] items-center justify-between bg-phone-bg/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur sm:hidden">
+      <header data-phone-topbar="" className="sticky top-0 z-30 flex h-[calc(3.25rem+env(safe-area-inset-top))] items-center justify-between bg-phone-bg/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur sm:hidden">
         <div className="flex min-w-0 items-center gap-1">
           {/* Sous-écran (Séances, Exercices, Revenus, éditeur de séance,
               nouveau patient) : une flèche de retour, toujours au même
@@ -234,6 +234,7 @@ export default function DashboardSidebar({
       </header>
 
       <nav
+        data-phone-tabbar=""
         aria-label="Navigation principale"
         className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line/70 bg-surface/95 shadow-[0_-4px_16px_rgba(15,23,42,0.04)] backdrop-blur sm:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}

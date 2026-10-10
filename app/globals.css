@@ -268,3 +268,20 @@ body {
     display: none;
   }
 }
+
+/* Messagerie sur téléphone (Philippe, 2026-10-10, façon WhatsApp) : une page
+   peut demander à masquer la barre du haut (data-hide-phone-topbar) ou les
+   onglets du bas (data-hide-phone-tabbar) — conversation du kiné en plein
+   écran, page Messages du patient sans double en-tête. Sans effet dès 640 px. */
+@media (max-width: 639px) {
+  body:has([data-hide-phone-topbar]) [data-phone-topbar] {
+    display: none;
+  }
+  body:has([data-hide-phone-tabbar]) [data-phone-tabbar] {
+    display: none;
+  }
+  body:has([data-hide-phone-tabbar]) [data-phone-pad] {
+    padding-bottom: 0;
+  }
+}
+

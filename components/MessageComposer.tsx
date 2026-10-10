@@ -7,7 +7,7 @@
 
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { SendHorizontal } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 
 /** Une action serveur qui appelle redirect() fait rejeter sa promesse côté
  *  client avec une erreur « NEXT_REDIRECT;type;url;… » (gérée ensuite par
@@ -25,7 +25,7 @@ function SendButton({ canSend, className }: { canSend: boolean; className: strin
   const { pending } = useFormStatus();
   return (
     <button type="submit" disabled={!canSend || pending} aria-label={pending ? "Envoi en cours" : "Envoyer"} className={className}>
-      <SendHorizontal className="h-4 w-4" strokeWidth={2} />
+      <ArrowUp className="h-5 w-5" strokeWidth={2.25} />
     </button>
   );
 }
@@ -41,14 +41,13 @@ export default function MessageComposer({
   patientId: string;
   action: (formData: FormData) => void | Promise<void>;
   placeholder?: string;
-  /** Actions secondaires affichées à côté du bouton d'envoi (ex. suivi). */
+  /** Champs cachés supplémentaires envoyés avec le message (onglet, recherche…). */
   children?: React.ReactNode;
-  /** Téléphone, page Messages du patient (maquette de Philippe, 2026-10-06) :
-   *  une ligne — champ arrondi + bouton rond d'envoi à côté. Sans effet dès sm. */
+  /** Conservé pour les appelants existants ; la mise en page « une ligne »
+   *  est désormais la seule (2026-10-10). */
   chat?: boolean;
 }) {
-  // Classes réservées au téléphone quand `chat` est activé.
-  const c = (classes: string) => (chat ? classes : "");
+  void chat;
   const formRef = useRef<HTMLFormElement>(null);
   const [body, setBody] = useState("");
 
@@ -77,40 +76,35 @@ export default function MessageComposer({
     }
   };
 
+  // Une ligne, partout (Philippe, 2026-10-10 : même messagerie sur ordinateur
+  // et téléphone) : champ arrondi + bouton rond d'envoi. Avec une souris,
+  // Entrée envoie et Maj+Entrée va à la ligne, comme dans une messagerie ;
+  // au doigt, Entrée garde son rôle de retour à la ligne.
   return (
-    <form
-      ref={formRef}
-      action={send}
-      className={`rounded-xl border border-line bg-surface focus-within:border-brand focus-within:ring-2 focus-within:ring-brand-soft ${c(
-        "max-sm:flex max-sm:items-end max-sm:gap-2 max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:focus-within:ring-0"
-      )}`}
-    >
+    <form ref={formRef} action={send} className="flex items-end gap-2">
       <input type="hidden" name="patient_id" value={patientId} />
-
+      {children}
       <textarea
         name="body"
-        rows={3}
+        rows={1}
         value={body}
         onChange={(e) => setBody(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && canSend) formRef.current?.requestSubmit();
+          if (e.key !== "Enter" || !canSend) return;
+          const withMouse = window.matchMedia("(pointer: fine)").matches;
+          if (e.metaKey || e.ctrlKey || (withMouse && !e.shiftKey)) {
+            e.preventDefault();
+            formRef.current?.requestSubmit();
+          }
         }}
         placeholder={placeholder}
         aria-label={placeholder}
-        className={`w-full resize-none bg-transparent px-4 pt-3 text-sm text-ink placeholder:text-muted focus:outline-none ${c(
-          "max-sm:h-11 max-sm:min-w-0 max-sm:flex-1 max-sm:rounded-3xl max-sm:border max-sm:border-line max-sm:bg-surface max-sm:py-2.5 max-sm:text-base max-sm:[scrollbar-width:none] max-sm:leading-6 max-sm:focus:border-brand"
-        )}`}
+        className="h-11 min-w-0 flex-1 resize-none rounded-3xl border border-line bg-surface px-4 py-2.5 text-base leading-6 text-ink placeholder:text-muted [scrollbar-width:none] focus:border-brand focus:outline-none sm:text-sm"
       />
-
-      <div className={`flex items-center gap-4 px-4 pb-3 pt-2 ${c("max-sm:p-0")}`}>
-        {children}
-        <SendButton
-          canSend={canSend}
-          className={`ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-brand text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-40 ${c(
-            "max-sm:h-11 max-sm:w-11 max-sm:shadow-md max-sm:shadow-brand/30"
-          )}`}
-        />
-      </div>
+      <SendButton
+        canSend={canSend}
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-white shadow-md shadow-brand/30 transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+      />
     </form>
   );
 }

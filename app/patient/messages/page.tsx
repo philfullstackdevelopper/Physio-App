@@ -59,7 +59,10 @@ export default async function MessagesPage({
     // — en-tête du kiné, fil, saisie en bas — sans titre au-dessus ; pas de
     // liste de conversations (un patient n'a qu'un kiné) ni de pièces jointes
     // (retirées du produit, migration 0056).
-    <main className="min-h-screen p-6 max-sm:min-h-0 max-sm:p-0 sm:p-8">
+    // Téléphone : un seul en-tête (celui du kiné) — la barre EasyPhysio du
+    // haut s'efface sur cette page (app/globals.css, data-hide-phone-topbar) ;
+    // les onglets du bas restent, Messages étant l'un d'eux (2026-10-10).
+    <main data-hide-phone-topbar="" className="min-h-screen p-6 max-sm:min-h-0 max-sm:p-0 sm:p-8">
       <div className="mx-auto max-w-4xl">
         <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink max-sm:hidden">
           <MessageCircle className="h-5 w-5 text-brand max-sm:hidden" strokeWidth={1.75} />
@@ -69,8 +72,8 @@ export default async function MessagesPage({
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger max-sm:m-3">{error}</p>}
 
-        <section className="mt-6 flex h-[32rem] max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm max-sm:mt-0 max-sm:h-[calc(100dvh-var(--phone-chrome))] max-sm:max-h-none max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:shadow-none">
-          <header className="flex items-center gap-3 border-b border-line px-5 py-4 max-sm:bg-surface max-sm:px-4 max-sm:py-3">
+        <section className="mt-6 flex h-[32rem] max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm max-sm:mt-0 max-sm:h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] max-sm:max-h-none max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:shadow-none">
+          <header className="flex items-center gap-3 border-b border-line px-5 py-3 max-sm:bg-surface max-sm:px-4 max-sm:pb-3 max-sm:pt-[calc(0.75rem+env(safe-area-inset-top))]">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand max-sm:h-11 max-sm:w-11">
               {initials(instructorFullName)}
             </span>
@@ -97,17 +100,16 @@ export default async function MessagesPage({
             </form>
           )}
 
-          {/* Téléphone : colonne inversée = le fil s'ouvre sur le dernier message, comme une messagerie. */}
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 max-sm:flex max-sm:flex-col-reverse max-sm:px-4">
+          {/* Colonne inversée = le fil s'ouvre sur le dernier message, comme une messagerie. */}
+          <div className="flex min-h-0 flex-1 flex-col-reverse overflow-y-auto px-5 py-4 max-sm:px-3 sm:bg-app-bg/50">
             <MessageThread
               messages={thread}
               mineSender="patient"
               emptyText={`Vous n'avez pas encore échangé de messages avec ${instructorName}. Écrivez-lui pour poser une question sur votre programme.`}
-              otherInitials={initials(instructorFullName)}
             />
           </div>
 
-          <div className="border-t border-line px-5 py-4 max-sm:bg-surface max-sm:px-3 max-sm:py-2.5">
+          <div className="border-t border-line px-4 py-3 max-sm:bg-surface max-sm:px-3 max-sm:py-2.5">
             {kineSuspended ? (
               <p className="text-center text-sm text-muted">Votre kiné n&apos;exerce plus sur EasyPhysio : la messagerie est fermée.</p>
             ) : (

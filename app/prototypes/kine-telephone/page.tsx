@@ -210,7 +210,7 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
       <DashboardSidebar instructorName="Philippe Maupain" unreadCount={d.unreadCount} pathnameOverride={PATHS[ecran] ?? "/dashboard"} />
-      <div className="relative min-w-0 flex-1 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))]">{screen}</div>
+      <div data-phone-pad="" className="relative min-w-0 flex-1 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))]">{screen}</div>
     </div>
   );
 }
