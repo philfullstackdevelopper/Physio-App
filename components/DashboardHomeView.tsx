@@ -190,7 +190,9 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
           {nothingToFollow ? (
             <p className="mt-3 text-sm text-muted">Aucun patient ne nécessite d&apos;attention pour l&apos;instant.</p>
           ) : (
-            <div className="mt-3 grid gap-5 lg:grid-cols-2">
+            // minmax(0,1fr) : sans lui, une ligne longue élargissait la colonne
+            // au-delà de l'écran sur iPad en portrait (audit 2026-10-10).
+            <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               {h.toTreat.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between">

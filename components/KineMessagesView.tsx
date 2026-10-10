@@ -44,8 +44,12 @@ export default function KineMessagesView({
   const selectedId = selected?.patientId ?? null;
   // Téléphone : quel écran montrer.
   const phoneThread = explicitlyOpened && !!selected;
-  const onlyWhenList = phoneThread ? "max-sm:hidden" : "";
-  const onlyWhenThread = phoneThread ? "" : "max-sm:hidden";
+  // En dessous de lg (téléphone, mais aussi iPad en portrait une fois la
+  // barre latérale déduite) : UN panneau à la fois — la liste, ou le fil avec
+  // sa flèche de retour. Empilés, ils débordaient et faisaient défiler la
+  // page (audit des formats d'écran, 2026-10-10).
+  const onlyWhenList = phoneThread ? "max-lg:hidden" : "";
+  const onlyWhenThread = phoneThread ? "" : "max-lg:hidden";
   const backHref = `/dashboard/messages${tab !== "all" ? `?tab=${tab}` : ""}`;
 
   return (
@@ -55,9 +59,9 @@ export default function KineMessagesView({
     <main
       data-hide-phone-topbar={phoneThread ? "" : undefined}
       data-hide-phone-tabbar={phoneThread ? "" : undefined}
-      className={`flex h-screen flex-col ${phoneThread ? "max-sm:h-dvh" : "max-sm:h-[calc(100dvh-var(--phone-chrome))]"}`}
+      className={`flex h-dvh flex-col ${phoneThread ? "max-sm:h-dvh" : "max-sm:h-[calc(100dvh-var(--phone-chrome))]"}`}
     >
-      <div className={`mx-auto flex w-full max-w-7xl flex-1 flex-col p-6 max-sm:min-h-0 sm:p-8 lg:min-h-0 ${phoneThread ? "max-sm:p-0" : "max-sm:px-4 max-sm:pb-3 max-sm:pt-2"}`}>
+      <div className={`mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col p-6 sm:p-8 short:sm:py-5 ${phoneThread ? "max-sm:p-0" : "max-sm:px-4 max-sm:pb-3 max-sm:pt-2"}`}>
         <div className={`flex flex-wrap items-start justify-between gap-4 max-sm:gap-3 ${onlyWhenList}`}>
           <div>
             <h1 className="text-2xl font-semibold text-ink">Messages</h1>
@@ -86,18 +90,18 @@ export default function KineMessagesView({
           // pour que la liste ne paraisse ni énorme ni étriquée, quel que soit
           // le PC (Philippe, 2026-10-10).
           style={{ "--conv-col": "clamp(300px, 26vw, 380px)" } as React.CSSProperties}
-          className={`mt-6 grid flex-1 gap-6 max-sm:min-h-0 max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[var(--conv-col)_1fr] lg:gap-4 ${phoneThread ? "max-sm:mt-0" : "max-sm:mt-3"}`}>
+          className={`mt-6 grid min-h-0 flex-1 gap-6 max-lg:grid-cols-[minmax(0,1fr)] max-lg:grid-rows-[minmax(0,1fr)] lg:grid-cols-[var(--conv-col)_minmax(0,1fr)] lg:gap-4 short:sm:mt-4 ${phoneThread ? "max-sm:mt-0" : "max-sm:mt-3"}`}>
           <section
             // Téléphone : plus de grande carte blanche autour — chaque
             // conversation est sa propre carte (ConversationList).
-            className={`min-h-[24rem] rounded-2xl border border-line bg-surface max-sm:min-h-0 max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent lg:min-h-0 ${onlyWhenList}`}
+            className={`min-h-0 rounded-2xl border border-line bg-surface max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent ${onlyWhenList}`}
             aria-label="Conversations"
           >
             <ConversationList rows={conversations} selectedId={selectedId} query={q} />
           </section>
 
           <section
-            className={`flex min-h-[32rem] flex-col rounded-2xl border border-line bg-surface max-sm:min-h-0 max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent lg:min-h-0 ${onlyWhenThread}`}
+            className={`flex min-h-0 flex-col rounded-2xl border border-line bg-surface max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent ${onlyWhenThread}`}
             aria-label="Fil de discussion"
           >
             {!selected ? (
@@ -116,7 +120,7 @@ export default function KineMessagesView({
                   <Link
                     href={backHref}
                     aria-label="Retour aux conversations"
-                    className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink max-sm:flex"
+                    className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink max-lg:flex"
                   >
                     <ArrowLeft className="h-5 w-5" strokeWidth={2} />
                   </Link>

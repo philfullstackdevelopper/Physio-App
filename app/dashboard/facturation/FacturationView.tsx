@@ -98,7 +98,7 @@ export default function FacturationView({
     // de l'appli téléphone, le tout sur un écran. La colonne de gauche est
     // « dissoute » (max-sm:contents) pour pouvoir réordonner. Dès sm : inchangé.
     <main>
-      <div className="mx-auto grid max-w-6xl content-center gap-3 p-3 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:content-start max-sm:p-4 max-sm:pt-2 sm:min-h-dvh sm:gap-4 sm:p-6 lg:grid-cols-2">
+      <div className="mx-auto grid max-w-6xl content-center gap-3 p-3 max-sm:short:gap-1.5 max-sm:short:[&_section]:p-3 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:content-start max-sm:p-4 max-sm:pt-2 sm:min-h-dvh sm:gap-4 sm:p-6 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-3 max-sm:contents sm:gap-4">
           <div className="max-sm:order-1">
             <h1 className="text-xl font-semibold text-ink max-sm:text-2xl">
@@ -122,27 +122,27 @@ export default function FacturationView({
 
           <section className={`rounded-2xl border border-line bg-surface p-4 max-sm:order-3 ${PHONE_CARD}`}>
             <h2 className="flex items-center gap-2 text-sm font-medium text-muted max-sm:font-semibold max-sm:text-ink">
-              <span className="flex items-center justify-center max-sm:h-8 max-sm:w-8 max-sm:rounded-full max-sm:bg-brand-soft max-sm:text-brand">
+              <span className="flex items-center justify-center max-sm:h-8 max-sm:w-8 max-sm:short:h-6 max-sm:short:w-6 max-sm:rounded-full max-sm:bg-brand-soft max-sm:text-brand">
                 <Users className="h-4 w-4 shrink-0" strokeWidth={1.75} />
               </span>
               Vos patients
             </h2>
             {/* Téléphone : deux grands chiffres, puis une ligne lisible par
                 offre — cinq colonnes ne tiennent pas dans 375 px. */}
-            <div className="mt-3 sm:hidden">
+            <div className="mt-3 max-sm:short:mt-2 sm:hidden">
               <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-xl bg-app-bg px-3 py-1.5">
-                  <p className="text-xl font-semibold tabular-nums text-ink">{counts.total}</p>
+                <div className="rounded-xl bg-app-bg px-3 py-1.5 max-sm:short:py-1">
+                  <p className="text-xl font-semibold tabular-nums text-ink max-sm:short:text-lg max-sm:short:leading-6">{counts.total}</p>
                   <p className="text-xs text-muted">Patients au total</p>
                 </div>
-                <div className="rounded-xl bg-app-bg px-3 py-1.5">
-                  <p className="text-xl font-semibold tabular-nums text-ink">{counts.active}</p>
+                <div className="rounded-xl bg-app-bg px-3 py-1.5 max-sm:short:py-1">
+                  <p className="text-xl font-semibold tabular-nums text-ink max-sm:short:text-lg max-sm:short:leading-6">{counts.active}</p>
                   <p className="text-xs text-muted">Abonnés</p>
                 </div>
               </div>
               <ul className="mt-2 divide-y divide-line">
                 {TIER_KEYS.map((key) => (
-                  <li key={key} className="flex items-center justify-between gap-3 py-1.5 text-sm">
+                  <li key={key} className="flex items-center justify-between gap-3 py-1.5 text-sm max-sm:short:py-0.5">
                     <span className="font-medium text-ink">{TIERS[key].label}</span>
                     <span className="flex items-center gap-3">
                       <span className="text-xs text-muted">{EUR.format(prices[key] / 100)} / mois</span>
@@ -163,12 +163,12 @@ export default function FacturationView({
           </section>
 
           <section className={`flex min-w-0 flex-1 flex-col rounded-2xl border border-line bg-surface p-4 max-sm:order-4 max-sm:flex-none ${PHONE_CARD}`}>
-            <h2 className={`text-base font-semibold text-ink max-sm:text-sm ${connectStatus === "active" ? "max-sm:hidden" : ""}`}>Encaisser vos patients</h2>
+            <h2 className={`text-base font-semibold text-ink max-sm:text-sm max-sm:short:hidden ${connectStatus === "active" ? "max-sm:hidden" : ""}`}>Encaisser vos patients</h2>
 
             {/* Téléphone : les trois lignes rassurantes ne s'affichent que tant
                 que les paiements ne sont pas activés — après, elles n'apprennent
                 plus rien et prennent la place. */}
-            <ul className={`mt-2 space-y-1.5 ${connectStatus === "active" ? "max-sm:hidden" : ""}`}>
+            <ul className={`mt-2 space-y-1.5 max-sm:short:hidden ${connectStatus === "active" ? "max-sm:hidden" : ""}`}>
               {reassurance.map((item) => (
                 <li key={item.text} className="flex items-center gap-2 text-sm text-muted">
                   <item.icon className="h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
@@ -177,11 +177,11 @@ export default function FacturationView({
               ))}
             </ul>
 
-            <div className={`mt-3 flex items-start gap-3 rounded-xl border px-3 py-2 ${connectStatus === "active" ? "max-sm:mt-0 max-sm:items-center" : ""} ${status.box}`}>
+            <div className={`mt-3 flex items-start gap-3 rounded-xl border px-3 py-2 max-sm:short:mt-0 max-sm:short:items-center ${connectStatus === "active" ? "max-sm:mt-0 max-sm:items-center" : ""} ${status.box}`}>
               {status.icon}
               <div>
                 <p className={`text-sm font-medium ${status.titleClass}`}>{status.title}</p>
-                <p className={`text-sm text-muted ${connectStatus === "active" ? "max-sm:hidden" : ""}`}>{status.text}</p>
+                <p className={`text-sm text-muted max-sm:short:hidden ${connectStatus === "active" ? "max-sm:hidden" : ""}`}>{status.text}</p>
               </div>
             </div>
 
@@ -223,12 +223,12 @@ export default function FacturationView({
               />
             </span>
           </h2>
-          <p className="mt-0.5 text-sm text-muted max-sm:text-xs">
+          <p className="mt-0.5 text-sm text-muted max-sm:text-xs max-sm:short:hidden">
             {`Pour ${counts.active} patient${counts.active > 1 ? "s" : ""} abonné${counts.active > 1 ? "s" : ""} aujourd'hui, sur un mois complet.`}
           </p>
 
-          <div className="mt-4 flex items-center justify-center gap-4 max-sm:mt-3 sm:gap-6">
-            <div className="relative h-28 w-28 shrink-0 sm:h-36 sm:w-36">
+          <div className="mt-4 flex items-center justify-center gap-4 max-sm:mt-3 max-sm:short:mt-2 sm:gap-6">
+            <div className="relative h-28 w-28 shrink-0 max-sm:short:h-20 max-sm:short:w-20 sm:h-36 sm:w-36">
               <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
                 <circle cx="50" cy="50" r={r} fill="none" stroke="var(--color-line)" strokeWidth="10" />
                 {hasRevenue && (
@@ -258,14 +258,14 @@ export default function FacturationView({
                 )}
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-base font-semibold text-ink sm:text-lg">
+                <span className="text-base font-semibold text-ink max-sm:short:text-sm sm:text-lg">
                   {hasRevenue ? EUR.format(split.netCents / 100) : "—"}
                 </span>
-                <span className="text-[11px] text-muted">vous recevez</span>
+                <span className="text-[11px] text-muted max-sm:short:text-[10px]">vous recevez</span>
               </div>
             </div>
 
-            <dl className="w-full max-w-[220px] space-y-2 text-sm">
+            <dl className="w-full max-w-[220px] space-y-2 text-sm max-sm:short:space-y-0.5">
               <div className="flex items-center justify-between gap-3">
                 <dt className="flex items-center gap-1.5 text-muted">
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-ok" />
@@ -288,7 +288,7 @@ export default function FacturationView({
           </div>
 
           {!hasRevenue && (
-            <p className="mt-3 text-center text-xs text-muted">Aucun patient abonné pour l&apos;instant.</p>
+            <p className="mt-3 text-center text-xs text-muted max-sm:short:hidden">Aucun patient abonné pour l&apos;instant.</p>
           )}
           {/* Caché sur téléphone pour tenir sur un écran — la même
               explication reste dans l'infobulle du titre. */}

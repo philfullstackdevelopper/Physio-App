@@ -79,7 +79,7 @@ export default function WeekProgramme({
     if (!box || !isPhone) return;
     // La frise ajoute py-14 (112 px) autour des cartes ; les marges
     // négatives de la boîte (-mt-3 -mb-12) sont déjà comptées dans sa hauteur.
-    const update = () => setPhoneCardHeight(Math.max(150, Math.min(420, box.clientHeight - 112)));
+    const update = () => setPhoneCardHeight(Math.max(84, Math.min(420, box.clientHeight - 112)));
     update();
     const ro = new ResizeObserver(update);
     ro.observe(box);
@@ -246,7 +246,7 @@ export default function WeekProgramme({
 
         {/* Téléphone : cartes moins hautes et marge du bas rognée (la frise
             garde py-14 pour la pastille « Vous êtes ici » au-dessus). */}
-        <div ref={stripBoxRef} className="-mb-12 -mt-3 max-sm:min-h-0 max-sm:flex-1 sm:m-0">
+        <div ref={stripBoxRef} className="-mb-12 -mt-3 max-sm:min-h-0 max-sm:flex-1 sm:m-0 short:sm:-mb-10 short:sm:-mt-4">
           <SegmentRow items={weekItems} height={isPhone ? phoneCardHeight : 208} scrollable scrollerRef={scrollerRef} />
         </div>
       </div>

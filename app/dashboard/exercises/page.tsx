@@ -48,8 +48,9 @@ export default async function ExercisesPage({
   }));
 
   return (
-    <main className="min-h-screen max-sm:min-h-0">
-      <div className="mx-auto max-w-7xl px-4 pb-4 pt-2 sm:px-8 sm:py-6">
+    // Une page = un écran : seule la grille d'exercices défile (audit 2026-10-10).
+    <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
+      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
           <Link href="/dashboard/seances" className="text-sm font-medium text-brand hover:underline max-sm:hidden">← Mes séances</Link>
@@ -59,7 +60,7 @@ export default async function ExercisesPage({
           <p className="mt-4 rounded-lg bg-danger-soft p-3 text-sm text-danger">{error}</p>
         )}
 
-        <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms]">
+        <div className="flex min-h-0 flex-1 flex-col animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms]">
           <ExerciseLibraryGrid
             bodyParts={bodyParts ?? []}
             exercises={libraryExercises}

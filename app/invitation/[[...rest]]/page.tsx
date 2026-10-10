@@ -44,7 +44,7 @@ export default async function PatientInvitationPage({
   const accountExists = params.__clerk_status === "sign_in";
 
   return (
-    <main className="relative min-h-screen bg-[#f6f8fd]">
+    <main className="relative min-h-dvh bg-[#f6f8fd]">
       <div className="absolute left-4 top-4 z-10 flex items-center gap-4 lg:left-6 lg:top-6">
         <Link
           href="/"
@@ -55,11 +55,11 @@ export default async function PatientInvitationPage({
         </Link>
       </div>
 
-      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col lg:flex-row lg:items-stretch">
+      <div className="relative mx-auto flex min-h-dvh max-w-6xl flex-col lg:flex-row lg:items-stretch">
         {/* Left: invitation acceptance form */}
-        <div className="flex flex-1 items-center justify-center p-4 py-16 lg:p-16">
+        <div className="flex flex-1 items-center justify-center p-4 py-16 short:pb-3 short:pt-14 lg:p-16 short:lg:py-3">
           <div className="w-full max-w-sm">
-            <p className="mb-6 text-center text-sm leading-relaxed text-slate-500 lg:hidden">
+            <p className="mb-6 text-center text-sm leading-relaxed text-slate-500 short:mb-3 lg:hidden">
               {kine ? <span className="font-medium text-slate-700">{kine}</span> : "Votre kinésithérapeute"} vous
               invite à rejoindre EasyPhysio.{" "}
               {accountExists
@@ -101,7 +101,7 @@ export default async function PatientInvitationPage({
 
         {/* Right: same sticky exercise showcase as /login, with the welcome
             message as the panel's headline instead of a boxed callout. */}
-        <div className="hidden flex-1 flex-col px-16 py-6 lg:sticky lg:top-0 lg:flex lg:h-screen">
+        <div className="hidden flex-1 flex-col px-16 py-6 lg:sticky lg:top-0 lg:flex lg:h-dvh">
           <h1 className="font-display max-w-sm text-3xl font-semibold leading-[1.15] tracking-tight text-slate-900">
             {kine ? (
               <>

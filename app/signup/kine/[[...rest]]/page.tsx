@@ -14,7 +14,7 @@ const ENCOURAGEMENTS = [
 
 export default function SignupPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f6f8fd]">
+    <main className="relative min-h-dvh overflow-hidden bg-[#f6f8fd]">
       <DotCanvas />
 
       <div className="absolute left-4 top-4 z-10 flex items-center gap-4 lg:left-6 lg:top-6">
@@ -27,9 +27,9 @@ export default function SignupPage() {
         </Link>
       </div>
 
-      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col lg:flex-row lg:items-center">
+      <div className="relative mx-auto flex min-h-dvh max-w-6xl flex-col lg:flex-row lg:items-center">
         {/* Left: signup form */}
-        <div className="flex flex-1 items-center justify-center p-4 py-16 lg:p-16">
+        <div className="flex flex-1 items-center justify-center p-4 py-16 short:pb-3 short:pt-14 lg:p-16 short:lg:py-4">
           <div className="w-full max-w-sm">
             {/* Cabinet details first, Clerk account creation last — the
                 order a professional signup on a real B2B site follows
@@ -40,7 +40,7 @@ export default function SignupPage() {
                 survive into the account that gets created after them. */}
             <KineSignupFlow />
 
-            <p className="mt-6 text-center text-sm text-slate-500">
+            <p className="mt-6 text-center text-sm text-slate-500 short:mt-3">
               Déjà un compte ?{" "}
               <Link href="/login" className="font-medium text-blue-700 hover:underline">
                 Se connecter
@@ -53,7 +53,7 @@ export default function SignupPage() {
             pages (components/LoginExerciseShowcase.tsx) — Philippe,
             2026-09-10: keep the moving exercise filmstrip here too, instead
             of a static feature list. */}
-        <div className="hidden flex-1 flex-col px-16 py-6 lg:sticky lg:top-0 lg:flex lg:h-screen">
+        <div className="hidden flex-1 flex-col px-16 py-6 lg:sticky lg:top-0 lg:flex lg:h-dvh">
           <p className="mb-6 max-w-sm text-base leading-relaxed text-slate-600">
             <RandomLine options={ENCOURAGEMENTS} />
           </p>

@@ -37,13 +37,13 @@ export default function PatientReferralMessage() {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center gap-1.5 border-b border-slate-100 bg-slate-50 px-4 py-2.5">
+      <div className="flex items-center gap-1.5 border-b border-slate-100 bg-slate-50 px-4 py-2.5 short:hidden">
         <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
         <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
         <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
       </div>
 
-      <div className="space-y-2 border-b border-slate-100 px-5 py-3 text-sm">
+      <div className="space-y-2 border-b border-slate-100 px-5 py-3 text-sm short:space-y-1 short:py-2">
         <p className="flex gap-2">
           <span className="w-10 shrink-0 text-slate-400">Objet</span>
           <span className="font-medium text-slate-800">{SUBJECT}</span>
@@ -56,7 +56,7 @@ export default function PatientReferralMessage() {
         </p>
       </div>
 
-      <div className="px-5 py-4 text-sm leading-relaxed text-slate-700">
+      <div className="px-5 py-4 text-sm leading-relaxed text-slate-700 short:py-2 short:leading-snug">
         {BODY.split("\n").map((line, i) =>
           line ? (
             <p key={i}>
@@ -70,15 +70,15 @@ export default function PatientReferralMessage() {
               )}
             </p>
           ) : (
-            <p key={i} className="h-3" />
+            <p key={i} className="h-3 short:h-1.5" />
           ),
         )}
       </div>
 
-      <div className="space-y-2 p-5 pt-1">
+      <div className="space-y-2 p-5 pt-1 short:grid short:grid-cols-2 short:gap-2 short:space-y-0 short:px-4 short:pb-3">
         <a
           href={MAILTO_HREF}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 short:gap-1.5 short:text-[13px]"
         >
           <Mail className="h-4 w-4" strokeWidth={1.75} />
           Ouvrir mon e-mail
@@ -86,16 +86,16 @@ export default function PatientReferralMessage() {
         <button
           type="button"
           onClick={copy}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 short:gap-1.5 short:text-[13px]"
         >
           {copied ? <Check className="h-4 w-4 text-emerald-600" strokeWidth={2} /> : <Copy className="h-4 w-4" strokeWidth={1.75} />}
-          {copied ? "Message copié" : "Copier le message"}
+          {copied ? "Message copié" : <>Copier<span className="max-sm:short:hidden"> le message</span></>}
         </button>
         {/* "Ouvrir mon e-mail" only works if the device has a default mail
             app configured — a bare click gives no feedback otherwise, which
             reads as broken rather than "nothing to open" (Philippe,
             2026-09-10). This is the fallback, always right below it. */}
-        <p className="pt-0.5 text-center text-xs text-slate-400">
+        <p className="pt-0.5 text-center text-xs text-slate-400 short:col-span-2">
           Rien ne s&apos;ouvre ? Copiez le message et collez-le dans votre e-mail habituel.
         </p>
       </div>

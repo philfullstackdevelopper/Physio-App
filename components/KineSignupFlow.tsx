@@ -21,7 +21,7 @@ const COOKIE_NAME = "pending_cabinet";
 const COOKIE_MAX_AGE = 60 * 15; // 15 min — plenty for filling out Clerk's form, short enough to not linger
 
 const fieldClass =
-  "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
+  "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 shadow-sm short:mt-1 short:py-2 transition-colors placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
 
 export default function KineSignupFlow() {
   const [step, setStep] = useState<"cabinet" | "account">("cabinet");
@@ -60,11 +60,11 @@ export default function KineSignupFlow() {
   if (step === "account") {
     return (
       <div>
-        <p className="text-sm leading-relaxed text-slate-600">
+        <p className="text-sm leading-relaxed text-slate-600 short:hidden">
           Vos patients n&apos;ont pas besoin de créer de compte ici — c&apos;est vous qui les
           invitez depuis votre tableau de bord, une fois inscrit·e.
         </p>
-        <p className="mt-3 rounded-xl bg-blue-50 px-3.5 py-2.5 text-xs leading-relaxed text-blue-800">
+        <p className="mt-3 rounded-xl bg-blue-50 px-3.5 py-2.5 text-xs short:mt-0 leading-relaxed text-blue-800">
           Indiquez votre prénom et nom exactement comme ils apparaissent sur{" "}
           <a
             href="https://annuaire.sante.fr"
@@ -76,7 +76,7 @@ export default function KineSignupFlow() {
           </a>{" "}
           — cela permet une activation immédiate de votre compte.
         </p>
-        <div className="mt-5">
+        <div className="mt-5 short:mt-3">
           <SignUp
             fallbackRedirectUrl="/signup/finalize"
             signInUrl="/login"
@@ -93,14 +93,16 @@ export default function KineSignupFlow() {
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold text-slate-900"><span className="text-blue-700">EasyPhysio ·</span>{" "}Votre cabinet</h1>
-      <p className="mt-2 text-sm leading-relaxed text-slate-600">
+      {/* Écran peu haut (petit téléphone, portable 13") : le formulaire se
+          resserre pour tenir sans défiler (audit 2026-10-10). */}
+      <p className="mt-2 text-sm leading-relaxed text-slate-600 short:hidden">
         Quelques informations professionnelles avant de créer votre compte — elles nous
         permettent de vérifier votre inscription.
       </p>
 
       {error && <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4 short:mt-3 short:gap-2.5">
         <label>
           <span className="text-sm font-medium text-slate-700">Nom du cabinet</span>
           <input
@@ -128,6 +130,7 @@ export default function KineSignupFlow() {
           <input type="tel" name="phone" required placeholder="06 12 34 56 78" className={fieldClass} />
         </label>
 
+        <div className="flex flex-col gap-4 short:grid short:grid-cols-2 short:gap-3">
         <label>
           <span className="text-sm font-medium text-slate-700">Numéro RPPS ou ADELI</span>
           <input
@@ -139,16 +142,16 @@ export default function KineSignupFlow() {
             className={fieldClass}
           />
           <span className="mt-1 block text-xs text-slate-400">
-            Votre identifiant professionnel — voir{" "}
+            <span className="short:hidden">Votre identifiant professionnel — voir{" "}</span>
             <a
               href="https://www.ordremk.fr/je-suis-kinesitherapeute/exercice/minscrire-a-lordre/mon-identifiant-rpps/"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-slate-600"
+              className="inline-block underline first-letter:normal-case hover:text-slate-600 short:first-letter:uppercase"
             >
               où le trouver
             </a>
-            .
+            <span className="short:hidden">.</span>
           </span>
         </label>
 
@@ -158,10 +161,11 @@ export default function KineSignupFlow() {
           </span>
           <input type="text" name="siret" inputMode="numeric" placeholder="14 chiffres" className={fieldClass} />
         </label>
+        </div>
 
         <button
           type="submit"
-          className="mt-2 rounded-xl bg-blue-600 py-2.5 font-medium text-white transition hover:bg-blue-700"
+          className="mt-2 rounded-xl bg-blue-600 py-2.5 font-medium text-white transition hover:bg-blue-700 short:mt-1"
         >
           Continuer
         </button>

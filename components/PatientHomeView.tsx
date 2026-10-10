@@ -53,7 +53,7 @@ export default function PatientHomeView({
     /* Téléphone : la page occupe exactement l'écran au-dessus de la barre
        d'onglets, et la frise prend toute la place restante (Philippe,
        2026-10-04 : « que TOUT l'espace soit utilisé »). */
-    <main className="p-4 pt-5 max-sm:flex max-sm:pt-2 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:flex-col sm:min-h-screen sm:p-8">
+    <main className="p-4 pt-5 max-sm:flex max-sm:pt-2 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:flex-col max-sm:short:pb-2 sm:min-h-dvh sm:p-8 short:sm:py-4">
       {/* This cluster (greeting, onboarding notice, clinical banner) is one
           status group — "here's where you stand today" — so its internal
           gap (space-y-4) stays tight and uniform. The jump to the programme
@@ -64,7 +64,7 @@ export default function PatientHomeView({
         {/* Deux cartes symétriques, même largeur et même hauteur (grille,
             étirées) : salutation à gauche, « Mon programme » à droite
             (Philippe, 2026-10-01). */}
-        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+        <div className="grid gap-3 max-sm:short:gap-2 sm:grid-cols-2 sm:gap-4">
           {/* Téléphone (Philippe, 2026-10-04) : salutation sur une ligne, sans
               carte, et grand bouton « Voir mon programme » pleine largeur — la
               frise doit apparaître dès l'arrivée, sans défiler. Rien ne change
@@ -87,7 +87,7 @@ export default function PatientHomeView({
               barre dit la même chose en clair. Téléphone : coins plus ronds et
               ombre teintée, plus douce qu'une ombre grise. */}
           <section
-            className={`group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r px-5 py-4 shadow-md transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl max-sm:rounded-3xl max-sm:shadow-lg ${
+            className={`group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r px-5 py-4 shadow-md transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl max-sm:rounded-3xl max-sm:shadow-lg max-sm:short:py-3 ${
               programmeCard.done ? "from-ok to-green-700 max-sm:shadow-ok/25" : "from-brand to-brand-dark max-sm:shadow-brand/30"
             }`}
           >
@@ -106,7 +106,7 @@ export default function PatientHomeView({
               )}
               <p className="mt-0.5 text-base font-semibold text-white">{programmeCard.title}</p>
               <p className="mt-0.5 text-sm text-white/85">{programmeCard.subtitle}</p>
-              <div className="mt-3 flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-stretch">
+              <div className="mt-3 flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-stretch max-sm:short:mt-2 max-sm:short:gap-2">
                 {/* Ordinateur : la fine barre, inchangée. */}
                 <div
                   className={`h-1.5 w-full max-w-[8rem] overflow-hidden rounded-full bg-white/20 ${
@@ -132,7 +132,7 @@ export default function PatientHomeView({
                 )}
                 <Link
                   href="/patient/programme"
-                  className={`flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-sm font-semibold max-sm:justify-center max-sm:whitespace-nowrap max-sm:py-3 max-sm:text-base shadow-sm transition hover:bg-white/90 motion-safe:animate-[ctaPulse_2.4s_ease-out_infinite] motion-safe:group-hover:animate-none ${
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-sm font-semibold max-sm:justify-center max-sm:whitespace-nowrap max-sm:py-3 max-sm:text-base max-sm:short:py-2.5 shadow-sm transition hover:bg-white/90 motion-safe:animate-[ctaPulse_2.4s_ease-out_infinite] motion-safe:group-hover:animate-none ${
                     programmeCard.done ? "text-ok" : "text-brand"
                   }`}
                 >
@@ -174,7 +174,9 @@ export default function PatientHomeView({
       {/* Outside the max-w-5xl column on purpose — the timeline uses the whole
           content width (up to the sidebar), not the reading-width column
           everything else on this page uses (Philippe, 2026-09-08). */}
-      <div className="mt-5 w-full min-w-0 max-sm:flex max-sm:flex-1 max-sm:flex-col sm:mt-8">
+      {/* Écran peu haut (petit téléphone, PC de 549 px de haut) : marges
+          resserrées pour que la frise tienne sans défiler (audit 2026-10-10). */}
+      <div className="mt-5 w-full min-w-0 max-sm:flex max-sm:flex-1 max-sm:flex-col max-sm:short:mt-2 sm:mt-8 short:sm:mt-4">
         {/* Pas encore de programme : c'est le titre de cette section qui
             l'annonce (pending), plus de bloc séparé au-dessus. */}
         <WeekProgramme

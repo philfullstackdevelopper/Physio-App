@@ -170,7 +170,7 @@ export default function ExerciseLibraryGrid({
   }, [exercises, selectedId, query]);
 
   return (
-    <div className="mt-4">
+    <div className="mt-4 flex min-h-0 flex-1 flex-col max-sm:mt-3">
       {/* Recherche + création sur une seule ligne, puis les catégories en
           pastilles compactes : les exercices apparaissent dès l'arrivée sur
           la page (Philippe, 2026-10-02). */}
@@ -225,11 +225,14 @@ export default function ExerciseLibraryGrid({
         </div>
       )}
 
+      {/* Seule cette zone défile : recherche et catégories restent en place,
+          la page ne dépasse jamais l'écran (audit 2026-10-10). */}
+      <div className="mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain max-sm:-mx-1 max-sm:px-1 max-sm:pb-1 sm:-mr-2 sm:pr-2">
       {selectedId && showCreateForm && (
         <form
           key={selectedId}
           action={createExercise}
-          className="mt-3 rounded-xl border border-line bg-surface p-5"
+          className="mb-4 rounded-xl border border-line bg-surface p-5"
         >
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-ink">
@@ -288,7 +291,7 @@ export default function ExerciseLibraryGrid({
 
       {/* Téléphone : une ligne compacte par exercice (dessin à gauche, nom
           et consignes au milieu, menu à droite), comme Mes séances. */}
-      <div className="mt-4 grid grid-cols-1 gap-3 max-sm:mt-3 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.length === 0 ? (
           <p className="col-span-full rounded-xl border border-line bg-surface p-6 text-center text-sm text-muted">
             {query.trim()
@@ -375,6 +378,7 @@ export default function ExerciseLibraryGrid({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

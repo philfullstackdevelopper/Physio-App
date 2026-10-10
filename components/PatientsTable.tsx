@@ -179,7 +179,7 @@ export default function PatientsTable({
   return (
     // Téléphone : recherche + Filtres sur une ligne, segments dessous, puis la
     // liste qui remplit le reste de l'écran et défile seule (PatientsPageView).
-    <div className="max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-col gap-3 max-sm:grid max-sm:grid-cols-[1fr_auto] max-sm:gap-2 sm:flex-row sm:items-center">
         <label className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.75} />
@@ -228,14 +228,16 @@ export default function PatientsTable({
         </div>
       )}
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-line bg-surface max-sm:mt-3 max-sm:min-h-0 max-sm:flex-1 max-sm:overflow-y-auto max-sm:overscroll-contain max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-soft">
+      <div className="mt-4 min-h-0 flex-1 overflow-auto overscroll-contain rounded-xl border border-line bg-surface max-sm:mt-3 max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-soft">
         {visible.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted">Aucun patient ne correspond à ces critères.</p>
         ) : (
           <>
-            {/* Desktop : tableau */}
-            <table className="hidden w-full md:table">
-              <thead>
+            {/* Grand écran : tableau, à partir de lg seulement — entre 768 et
+                1023 px (iPad en portrait, barre latérale déduite) ses six
+                colonnes débordaient ; la liste en cartes prend le relais. */}
+            <table className="hidden w-full lg:table">
+              <thead className="sticky top-0 z-10 bg-surface">
                 <tr className="border-b border-line text-left text-xs font-medium uppercase tracking-wide text-muted">
                   <th scope="col" className="px-4 py-3 font-medium">Patient</th>
                   <th scope="col" className="px-4 py-3 font-medium">Phase</th>
@@ -346,7 +348,7 @@ export default function PatientsTable({
                 entier sur sa propre ligne (le signal le coupait : « Thomas… »),
                 et un « saut » net entre les patients suivis et ceux qui n'ont
                 encore rien démarré (invitation, profil, aucune séance prévue). */}
-            <ul className="divide-y divide-line md:hidden">
+            <ul className="divide-y divide-line lg:hidden">
               {mobileOrdered.map((r, i) => (
                 <Fragment key={r.id}>
                 {i === followedCount && followedCount < mobileOrdered.length && (

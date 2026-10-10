@@ -147,8 +147,10 @@ export default function Home() {
             </p>
           </div>
 
-          {/* La démo déborde de la colonne de texte : pleine largeur jusqu'à 1 200 px. */}
-          <FitToViewport stable className="mx-auto mt-4 max-w-7xl sm:mt-12 sm:short:mt-4 lg:-mx-16 phone-land:mt-2 phone-land:max-w-[calc((100dvh-10.5rem)*1.65)]">
+          {/* La démo déborde de la colonne de texte : pleine largeur jusqu'à 1 200 px.
+              Entre 1024 et 1240 px (iPad paysage) elle ne sort que de la marge
+              de la page, sinon elle dépassait de l'écran (audit 2026-10-10). */}
+          <FitToViewport stable className="mx-auto mt-4 max-w-7xl sm:mt-12 sm:short:mt-4 lg:-mx-6 min-[1240px]:-mx-16 phone-land:mt-2 phone-land:max-w-[calc((100dvh-10.5rem)*1.65)]">
             <KineJourneyDemo />
           </FitToViewport>
 

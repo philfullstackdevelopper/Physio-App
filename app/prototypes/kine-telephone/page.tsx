@@ -136,8 +136,8 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
       "Assisted Partial Squat", "Isometric Wall Sit (60 Degrees)", "Protected Squat (Quadriceps)",
     ];
     screen = (
-      <main className="min-h-screen max-sm:min-h-0">
-        <div className="mx-auto max-w-7xl px-4 pb-4 pt-2 sm:px-8 sm:py-6">
+      <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
+        <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
           </div>
