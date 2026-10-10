@@ -58,3 +58,6 @@ graphify-out/
 
 # subagent-driven-development scratch workspace — not source
 .superpowers/
+
+# Identifiants des comptes de test (jamais dans git)
+*.local.txt
