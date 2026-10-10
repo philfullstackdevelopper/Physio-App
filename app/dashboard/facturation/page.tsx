@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/supabase/require-user";
 import { TIER_KEYS, resolveTierPrices, type InstructorTierPriceRow } from "@/lib/billing/plans";
 import { loadPatientCounts } from "@/lib/billing/patientCounts";
 import { estimateMonthlySplit } from "@/lib/billing/platformFee";
 import { refreshConnectStatus } from "@/lib/billing/connectStatus";
 import FacturationView, { type ConnectStatus } from "./FacturationView";
+import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
 // Tarifs et paiements : pour l'instant en lecture seule côté kiné — les prix
 // des trois offres restent ceux d'EasyPhysio par défaut (lib/billing/plans.ts).
@@ -21,7 +21,9 @@ export default async function FacturationPage({
 }) {
   const { error, saved } = await searchParams;
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  // Validation du compte vérifiée ICI aussi (audit du 2026-10-08) : le
+  // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
+  const { user } = await requireApprovedInstructor(supabase);
 
   const [{ data: kine }, { data: connect }, counts] = await Promise.all([
     supabase

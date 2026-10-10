@@ -70,19 +70,31 @@ export function computeAdherence({ completedAt, assignments, now = new Date() }:
     now.getMonth(),
     now.getDate() - elapsedDays - (WEEKS - 1) * 7,
   ).getTime();
-  const done = completedAt.filter((iso) => {
-    const t = new Date(iso).getTime();
-    return !Number.isNaN(t) && t >= windowStart && t <= now.getTime();
-  }).length;
+  // Séances faites, rangées par semaine (clé = lundi).
+  const doneByWeek = new Map<string, number>();
+  for (const iso of completedAt) {
+    const d = new Date(iso);
+    const t = d.getTime();
+    if (Number.isNaN(t) || t < windowStart || t > now.getTime()) continue;
+    const key = mondayKey(d);
+    doneByWeek.set(key, (doneByWeek.get(key) ?? 0) + 1);
+  }
 
+  // Audit du 2026-10-08 : chaque semaine ne compte que ses propres séances,
+  // plafonnées à son rythme — 6 séances une semaine ne rattrapent plus deux
+  // semaines vides — et seulement les semaines où une séance était attribuée
+  // (avant, toute séance de la fenêtre comptait, même sans programme).
   let expected = 0;
+  let done = 0;
   for (let k = 0; k < WEEKS; k++) {
     const bucketKey = mondayKey(new Date(now.getTime() - k * 7 * 86_400_000));
     const effective = resolveAssignmentForWeek(assignments, bucketKey);
     if (!effective) continue;
     const perWeek = effective.timesPerWeek ?? 1;
-    // k = 0 : semaine en cours, pas finie → part proratisée (voir en-tête).
+    // k = 0 : semaine en cours, pas finie → part proratisée (voir en-tête) ;
+    // ses séances comptent quand même jusqu'au rythme complet.
     expected += k === 0 ? Math.floor((perWeek * elapsedDays) / 7) : perWeek;
+    done += Math.min(doneByWeek.get(bucketKey) ?? 0, perWeek);
   }
 
   const pct = expected === 0 ? null : Math.min(100, Math.round((done / expected) * 100));

@@ -1,5 +1,6 @@
 "use server";
 
+import { signedSubscriptionMetadata } from "@/lib/billing/subscriptionSignature";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
@@ -45,7 +46,7 @@ export async function changeTier(formData: FormData) {
   const [{ data: kine }, { data: connect }] = await Promise.all([
     supabase
       .from("instructors")
-      .select("full_name, tier_essentiel_cents, tier_standard_cents, tier_premium_cents")
+      .select("full_name, status, tier_essentiel_cents, tier_standard_cents, tier_premium_cents")
       .eq("id", instructorId)
       .maybeSingle(),
     supabase
@@ -54,6 +55,9 @@ export async function changeTier(formData: FormData) {
       .eq("instructor_id", instructorId)
       .maybeSingle(),
   ]);
+  // Kiné suspendu ou non validé : plus aucun changement d'offre facturé
+  // sur son compte (audit du 2026-10-08).
+  if (((kine?.status as string | null) ?? "approved") !== "approved") fail("Votre kinésithérapeute n'accepte pas de changement d'offre pour le moment.");
   const prices = resolveTierPrices(kine as InstructorTierPriceRow | null);
   const destination =
     connect?.status === "active" ? ((connect.stripe_connect_account_id as string | null) ?? null) : null;
@@ -94,7 +98,7 @@ export async function changeTier(formData: FormData) {
     await stripe.subscriptions.update(
       subscriptionId,
       {
-        metadata: { user_id: user.id, plan: tier.key },
+        metadata: signedSubscriptionMetadata(user.id, tier.key, destination),
         proration_behavior: "create_prorations",
         items: [
           {

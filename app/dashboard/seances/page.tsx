@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import SeancesTabs from "@/components/SeancesTabs";
 import { type BodyPart } from "@/lib/exercise/category";
 import { createSeance, duplicateSeance, deleteSeance, hideTemplateWorkout, unhideTemplateWorkout } from "./actions";
+import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
 const STAGES = Object.entries(STAGE_LABELS) as [InjuryStage, string][];
 
@@ -47,7 +47,9 @@ export default async function SeancesPage({
   const returnTo = retour && /^\/dashboard\/patients\/[0-9a-f-]{36}$/.test(retour) ? retour : undefined;
 
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  // Validation du compte vérifiée ICI aussi (audit du 2026-10-08) : le
+  // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
+  const { user } = await requireApprovedInstructor(supabase);
 
   const { data: conditions } = await supabase.from("conditions").select("id, name").order("name");
 
@@ -140,8 +142,8 @@ export default async function SeancesPage({
   });
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-7xl p-6 sm:p-8">
+    <main className="min-h-screen max-sm:min-h-0">
+      <div className="mx-auto max-w-7xl px-4 pb-4 pt-2 sm:p-8">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms]">
           <SeancesTabs
             openNewSeance={nouvelle === "1"}

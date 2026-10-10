@@ -13,6 +13,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { isAdminEmail } from "@/lib/admin";
 import { activeStorageProvider } from "./provider";
 import { s3UploadUrl, s3PublicUrl } from "./s3";
 
@@ -49,11 +50,19 @@ async function assertCanUploadTo(bucket: string, path: string): Promise<void> {
   const user = await requireUser(supabase); // throws/redirects if not signed in
 
   if (bucket === "exercise-media") {
-    // Any authenticated instructor may attach a demo video to any exercise,
-    // including shared platform ones — same rule as set_exercise_media()
-    // (migration 0022), which this upload always pairs with.
-    const { data } = await supabase.from("instructors").select("id").eq("id", user.id).maybeSingle();
-    if (!data) throw new Error("Réservé aux comptes kiné.");
+    // Audit du 2026-10-08 : avant, tout compte kiné (même en attente) pouvait
+    // obtenir une adresse d'envoi vers N'IMPORTE QUEL chemin du dossier.
+    // Désormais, même règle que set_exercise_media() (migration 0061) : un
+    // kiné validé, pour SES exercices ; l'administrateur pour ceux de la
+    // plateforme. Le chemin doit être « <id de l'exercice>/<fichier> »
+    // (components/ExerciseVideoUpload.tsx).
+    const match = /^([0-9a-f-]{36})\/[A-Za-z0-9._-]+$/i.exec(path);
+    if (!match) throw new Error("Chemin d'envoi invalide.");
+    const { data: me } = await supabase.from("instructors").select("id, status").eq("id", user.id).maybeSingle();
+    if (!me || ((me.status as string | null) ?? "approved") !== "approved") throw new Error("Réservé aux comptes kiné validés.");
+    const { data: exercise } = await supabase.from("exercises").select("created_by").eq("id", match[1]).maybeSingle();
+    const allowed = !!exercise && (exercise.created_by === user.id || (exercise.created_by === null && isAdminEmail(user.email)));
+    if (!allowed) throw new Error("Vous ne pouvez envoyer une vidéo que pour vos propres exercices.");
     return;
   }
 

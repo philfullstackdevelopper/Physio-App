@@ -3,8 +3,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { rppsInUse, setInstructorStatus } from "@/lib/db/admin";
+import { rppsInUse, setInstructorStatus, setInstructorRppsVerified } from "@/lib/db/admin";
 import { verifyRpps } from "@/lib/instructor/rppsVerification";
+import { friendlyDbError } from "@/lib/format/dbError";
 
 // Saves the cabinet/practice details collected right after Clerk signup (see
 // app/signup/onboarding/page.tsx).
@@ -32,7 +33,9 @@ export async function saveInstructorOnboarding(formData: FormData) {
   // formulaire (audit du 2026-10-07) ; un compte déjà validé n'a rien à y faire.
   if (!instructor) redirect("/signup");
   if (instructor.status === "approved") redirect("/dashboard");
-  if (instructor.status !== "pending") redirect("/signup/pending");
+  // Refusé ou suspendu : /dashboard affiche le bon message (« Compte non
+  // validé » / « suspendu »), pas « Demande envoyée » (audit du 2026-10-08).
+  if (instructor.status !== "pending") redirect("/dashboard");
 
   const cabinetName = String(formData.get("cabinet_name") ?? "").trim();
   const cabinetAddress = String(formData.get("cabinet_address") ?? "").trim();
@@ -73,14 +76,15 @@ export async function saveInstructorOnboarding(formData: FormData) {
       phone,
       rpps_number: rppsNumber,
       siret,
-      rpps_verified_at: verification.status === "verified" ? verification.verifiedAt : null,
     })
     .eq("id", user.id);
 
   if (error) {
-    redirect(`/signup/onboarding?error=${encodeURIComponent(error.message)}`);
+    redirect(`/signup/onboarding?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
+  // Badge « RPPS vérifié » : écrit par le serveur (migration 0063).
+  if (verification.status === "verified") await setInstructorRppsVerified(user.id, verification.verifiedAt);
   if (autoApproved) {
     await setInstructorStatus(user.id, "approved");
   }

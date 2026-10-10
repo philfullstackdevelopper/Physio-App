@@ -1,10 +1,12 @@
 import { MailCheck, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { markMessageRead, sendPatientMessage } from "../actions";
+import { markMessageRead, markMessagesSeenOnOpen, sendPatientMessage } from "../actions";
+import MarkThreadRead from "@/components/MarkThreadRead";
 import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
 import MessageComposer from "@/components/MessageComposer";
 import { initials } from "@/lib/format/initials";
+import { requirePatientAccess } from "@/lib/patient/requirePatientAccess";
 
 // Full-page version of the thread that used to live inline on the home page
 // (moved here, 2026-09-05, as its own nav destination — same data, same
@@ -23,6 +25,7 @@ export default async function MessagesPage({
   const { error } = await searchParams;
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  await requirePatientAccess(supabase, user.id);
 
   const { data: patient } = await supabase.from("patients").select("instructors ( full_name, status )").eq("id", user.id).maybeSingle();
   // Jointure plusieurs-vers-un (patients → instructors) : PostgREST renvoie un
@@ -77,6 +80,8 @@ export default async function MessagesPage({
             </div>
           </header>
 
+          {/* Ouvrir la page = lire les messages (audit du 2026-10-08). */}
+          {unreadFromKine > 0 && <MarkThreadRead patientId={user.id} action={markMessagesSeenOnOpen} />}
           {unreadFromKine > 0 && (
             <form
               action={markMessageRead}

@@ -26,6 +26,7 @@ export function Cursor({
   // settles (Philippe, 2026-09-09: "you don't click exactly on the button").
   useEffect(() => {
     if (!stageEl || !targetEl) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- remise à zéro du curseur quand la cible disparaît, avant de la remesurer.
       setPos(null);
       return;
     }

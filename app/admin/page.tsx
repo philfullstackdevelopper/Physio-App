@@ -1,4 +1,8 @@
+import { redirect } from "next/navigation";
 import { UserCheck } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
+import { isAdminEmail } from "@/lib/admin";
 import { getPool } from "@/lib/db/pool";
 import { listAllInstructors } from "@/lib/db/admin";
 import { approveInstructor, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
@@ -18,6 +22,13 @@ export default async function AdminPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  // Vérification ICI aussi, pas seulement dans app/admin/layout.tsx (audit du
+  // 2026-10-08) : un layout ne se ré-exécute pas à chaque navigation, et
+  // cette page lit les coordonnées de tous les kinés via la connexion
+  // serveur directe, qui contourne la RLS.
+  const user = await requireUser(await createClient());
+  if (!isAdminEmail(user.email)) redirect("/");
+
   const sp = await searchParams;
   const [{ rows }, all] = await Promise.all([
     getPool().query("select * from internal.admin_list_pending_instructors()"),
@@ -104,15 +115,22 @@ export default async function AdminPage({
                     Approuver
                   </button>
                 </form>
-                <form action={rejectInstructor}>
-                  <input type="hidden" name="id" value={p.id as string} />
-                  <button
-                    type="submit"
-                    className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                  >
+                {/* Confirmation en deux temps (audit du 2026-10-08) : un clic de
+                    travers refusait le compte sans retour possible. */}
+                <details className="group relative">
+                  <summary className="cursor-pointer list-none rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
                     Refuser
-                  </button>
-                </form>
+                  </summary>
+                  <div className="absolute right-0 z-10 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-3 text-left text-xs text-slate-600 shadow-lg">
+                    <p>Le praticien ne pourra pas utiliser EasyPhysio. Vous pourrez revenir sur ce refus depuis la liste ci-dessous.</p>
+                    <form action={rejectInstructor} className="mt-2">
+                      <input type="hidden" name="id" value={p.id as string} />
+                      <button type="submit" className="w-full rounded-lg bg-slate-700 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                        Confirmer le refus
+                      </button>
+                    </form>
+                  </div>
+                </details>
               </div>
             </li>
           ))}
@@ -170,6 +188,16 @@ export default async function AdminPage({
                       </form>
                     </div>
                   </details>
+                )}
+                {/* Refusé : on peut revenir sur sa décision (audit du 2026-10-08 —
+                    un refus ne se défaisait qu'en SQL). */}
+                {k.status === "rejected" && (
+                  <form action={approveInstructor} className="shrink-0">
+                    <input type="hidden" name="id" value={k.id} />
+                    <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                      Approuver finalement
+                    </button>
+                  </form>
                 )}
                 {k.status === "suspended" && (
                   <form action={reactivateInstructor} className="shrink-0">

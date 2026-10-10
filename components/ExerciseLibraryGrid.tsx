@@ -64,7 +64,7 @@ function ExerciseCardMenu({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-line bg-surface py-1 shadow-sm">
+          <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-line bg-surface py-1 shadow-sm max-sm:z-[45]">
             {hidden ? (
               <button
                 type="button"
@@ -174,8 +174,8 @@ export default function ExerciseLibraryGrid({
       {/* Recherche + création sur une seule ligne, puis les catégories en
           pastilles compactes : les exercices apparaissent dès l'arrivée sur
           la page (Philippe, 2026-10-02). */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-[14rem] flex-1">
+      <div className="flex flex-wrap items-center gap-3 max-sm:flex-nowrap max-sm:gap-2">
+        <div className="relative min-w-[14rem] flex-1 max-sm:min-w-0">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
             strokeWidth={1.5}
@@ -185,22 +185,25 @@ export default function ExerciseLibraryGrid({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Rechercher parmi ${exercises.length - hiddenCount} exercices…`}
-            className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
+            className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft max-sm:h-10 max-sm:rounded-xl max-sm:border-0 max-sm:shadow-soft"
           />
         </div>
         {selectedId && (
           <button
             type="button"
             onClick={() => setShowCreateForm((v) => !v)}
-            className="shrink-0 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95"
+            aria-label="Ajouter un exercice"
+            className="shrink-0 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95 max-sm:h-10 max-sm:rounded-xl max-sm:px-3.5"
           >
-            + Ajouter un exercice
+            +<span className="max-sm:hidden"> Ajouter un exercice</span>
           </button>
         )}
       </div>
 
       {!query.trim() && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        // Téléphone : les catégories sur une seule ligne qui glisse au doigt,
+        // au lieu de 3-4 lignes de pastilles avant le premier exercice.
+        <div className="mt-3 flex flex-wrap gap-1.5 max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none]">
           {bodyParts.map((bp) => {
             const active = bp.id === selectedId;
             const count = countByBodyPart.get(bp.id) ?? 0;
@@ -209,8 +212,8 @@ export default function ExerciseLibraryGrid({
                 key={bp.id}
                 type="button"
                 onClick={() => selectBodyPart(bp.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
-                  active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:shrink-0 max-sm:whitespace-nowrap ${
+                  active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg max-sm:border-transparent max-sm:shadow-soft"
                 }`}
               >
                 <BodyPartIllustration slug={bp.slug} className="h-5 w-5" active={active} />
@@ -283,7 +286,9 @@ export default function ExerciseLibraryGrid({
         </form>
       )}
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {/* Téléphone : une ligne compacte par exercice (dessin à gauche, nom
+          et consignes au milieu, menu à droite), comme Mes séances. */}
+      <div className="mt-4 grid grid-cols-1 gap-3 max-sm:mt-3 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.length === 0 ? (
           <p className="col-span-full rounded-xl border border-line bg-surface p-6 text-center text-sm text-muted">
             {query.trim()
@@ -292,34 +297,46 @@ export default function ExerciseLibraryGrid({
           </p>
         ) : (
           filtered.map((ex) => (
-            <div key={ex.id} className="rounded-xl border border-line bg-surface p-4">
-              <div className="flex items-start justify-between gap-2">
-                <ExerciseIllustration name={ex.name} className="h-24 w-full text-brand" />
-                <ExerciseCardMenu
-                  hidden={ex.hidden}
-                  onHide={() => runAction(hideExercise, ex.id)}
-                  onUnhide={() => runAction(unhideExercise, ex.id)}
+            <div
+              key={ex.id}
+              className="rounded-xl border border-line bg-surface p-4 max-sm:grid max-sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] max-sm:items-center max-sm:gap-x-3 max-sm:rounded-2xl max-sm:border-0 max-sm:p-3 max-sm:shadow-soft"
+            >
+              <div className="flex items-start justify-between gap-2 max-sm:contents">
+                <ExerciseIllustration
+                  name={ex.name}
+                  className="h-24 w-full text-brand max-sm:col-start-1 max-sm:row-start-1 max-sm:h-14 max-sm:w-14 max-sm:rounded-xl max-sm:bg-app-bg max-sm:p-1"
                 />
+                <span className="max-sm:col-start-3 max-sm:row-start-1 sm:contents">
+                  <ExerciseCardMenu
+                    hidden={ex.hidden}
+                    onHide={() => runAction(hideExercise, ex.id)}
+                    onUnhide={() => runAction(unhideExercise, ex.id)}
+                  />
+                </span>
               </div>
-              <p className="mt-2 font-medium text-ink">{ex.name}</p>
-              {ex.created_by === currentUserId && (
-                <span className="mt-1 inline-block text-xs text-brand">Votre exercice</span>
-              )}
-              {ex.instructions && (
-                <p className="mt-1 line-clamp-2 text-sm text-muted">{ex.instructions}</p>
-              )}
+              <div className="max-sm:col-start-2 max-sm:row-start-1 max-sm:min-w-0 sm:contents">
+                <p className="mt-2 font-medium text-ink max-sm:mt-0 max-sm:truncate">{ex.name}</p>
+                {ex.created_by === currentUserId && (
+                  <span className="mt-1 inline-block text-xs text-brand max-sm:mt-0">Votre exercice</span>
+                )}
+                {ex.instructions && (
+                  <p className="mt-1 line-clamp-2 text-sm text-muted max-sm:mt-0.5 max-sm:line-clamp-1 max-sm:text-xs">{ex.instructions}</p>
+                )}
+              </div>
               {/* (Philippe, 2026-10-07 : l'envoi de vidéo n'apparaît plus que
                   sur les exercices du kiné connecté — les exercices plateforme
                   et ceux des autres kinés sont en lecture seule, CLAUDE.md §3.
                   Exception : l'administrateur gère les vidéos des exercices
                   plateforme, via une Server Action vérifiée côté serveur.) */}
               {(ex.created_by === currentUserId || (isAdmin && ex.created_by === null)) && (
-                <ExerciseVideoUpload
-                  exerciseId={ex.id}
-                  initialUrl={ex.media_url}
-                  initialStartSeconds={ex.media_start_seconds}
-                  viaAdmin={ex.created_by === null}
-                />
+                <div className="max-sm:col-span-3 sm:contents">
+                  <ExerciseVideoUpload
+                    exerciseId={ex.id}
+                    initialUrl={ex.media_url}
+                    initialStartSeconds={ex.media_start_seconds}
+                    viaAdmin={ex.created_by === null}
+                  />
+                </div>
               )}
             </div>
           ))

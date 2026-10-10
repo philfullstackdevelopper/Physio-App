@@ -11,7 +11,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { activeStorageProvider } from "./provider";
 import { s3SignedReadUrl, s3Remove, s3List, s3PublicUrl } from "./s3";
 
-/** A time-limited URL to read a private file (message attachments, patient documents). */
+/** A time-limited URL to read a private file (none today: attachments and patient documents were removed, migration 0056). */
 export async function signedReadUrl(bucket: string, path: string, expiresSeconds: number): Promise<string | null> {
   if (activeStorageProvider() === "s3") return s3SignedReadUrl(bucket, path, expiresSeconds);
   const { data } = await createAdminClient().storage.from(bucket).createSignedUrl(path, expiresSeconds);

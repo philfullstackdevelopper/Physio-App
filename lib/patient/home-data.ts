@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isProfileComplete } from "@/lib/exercise/patientProfile";
 import { hasActiveTier } from "@/lib/billing/access";
+import { isPatientKineSuspended } from "@/lib/billing/context";
 import { type InjuryStage } from "@/lib/exercise/prescription";
 import { computeStreak } from "@/lib/exercise/streak";
 import { stageWithFeedback, careWeek, type Rating } from "@/lib/exercise/stageProgress";
@@ -15,11 +16,11 @@ export type Workout = {
   description: string | null;
   duration_minutes: number | null;
   times_per_week: number | null;
-  workout_exercises: { exercises: { name: string } | null }[];
+  workout_exercises: { position?: number | null; exercises: { name: string } | null }[];
 };
 
 const WORKOUT_FIELDS =
-  "id, name, description, duration_minutes, times_per_week, workout_exercises ( exercises ( name ) )";
+  "id, name, description, duration_minutes, times_per_week, workout_exercises ( position, exercises ( name ) )";
 
 export interface PatientHome {
   fullName: string | null;
@@ -73,13 +74,16 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
   // Then the offer (Philippe, 2026-09-10: onboarding → offre → app). Same
   // pure rule as app/patient/abonnement/page.tsx and the séance page, so the
   // three surfaces can never disagree on who is let in.
+  // Exception : kiné suspendu → accès gratuit (lib/billing/context.ts,
+  // hasPatientAppAccess) ; la requête de plus n'a lieu que sans offre active.
   if (
     !hasActiveTier({
       trialEndsAt: (patient?.trial_ends_at as string | null) ?? null,
       subPlan: (sub?.plan as string | null) ?? null,
       subStatus: (sub?.status as string | null) ?? null,
       subCurrentPeriodEnd: (sub?.current_period_end as string | null) ?? null,
-    })
+    }) &&
+    !(await isPatientKineSuspended(supabase, userId))
   ) {
     redirect("/patient/abonnement");
   }
@@ -133,7 +137,12 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
     recommended.map((r) => ({ workoutId: r.workout.id, weekStartDate: r.weekStartDate, weekCount: r.weekCount })),
     thisWeekStartDateKey(),
   );
-  const activeWorkout = recommended.find((r) => r.workout.id === activeId)?.workout ?? null;
+  const activeFound = recommended.find((r) => r.workout.id === activeId)?.workout ?? null;
+  // Exercices dans l'ordre de la séance (position), comme la séance guidée
+  // (audit du 2026-10-08 : l'ordre affiché pouvait différer).
+  const activeWorkout = activeFound
+    ? { ...activeFound, workout_exercises: [...activeFound.workout_exercises].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) }
+    : null;
 
   const streak = computeStreak((logs ?? []).map((l) => l.completed_at as string));
   const todayISO = startOfTodayISO();

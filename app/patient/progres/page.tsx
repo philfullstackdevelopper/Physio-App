@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { computeAdherence, adherenceLabel, adherenceTone, ADHERENCE_WINDOW_DAYS } from "@/lib/exercise/adherence";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import FillPainChart from "@/components/FillPainChart";
+import { requirePatientAccess } from "@/lib/patient/requirePatientAccess";
 
 const TONE_BG = { ok: "bg-ok-soft text-ok", warn: "bg-warn-soft text-warn", danger: "bg-danger-soft text-danger", muted: "bg-app-bg text-muted" } as const;
 
@@ -37,6 +38,7 @@ const PHONE_TILE = "max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-soft";
 export default async function ProgresPage() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  await requirePatientAccess(supabase, user.id);
 
   const now = new Date();
   const since30 = new Date(now.getTime() - 30 * 86_400_000).toISOString();

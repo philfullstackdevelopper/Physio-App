@@ -3,6 +3,8 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { loadPatientHome } from "@/lib/patient/home-data";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
 import type { SessionDetail } from "@/components/WeekProgramme";
+import { getTierBilling } from "@/lib/billing/context";
+import { historyDaysVisibleFor } from "@/lib/patient/historyWindow";
 import PatientHomeView, { type ProgrammeCard } from "@/components/PatientHomeView";
 
 // Philippe, 2026-09-08: Accueil is now the week-by-week programme browser
@@ -17,7 +19,12 @@ export default async function PatientDashboard() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const home = await loadPatientHome(supabase, user.id);
+  // En parallèle (audit du 2026-10-08) : ces trois lectures sont indépendantes.
+  const [home, { data: patientRow }, billing] = await Promise.all([
+    loadPatientHome(supabase, user.id),
+    supabase.from("patients").select("created_at").eq("id", user.id).maybeSingle(),
+    getTierBilling(supabase, user.id),
+  ]);
   // Date du jour sous la salutation, heure de Paris (le serveur peut tourner en UTC).
   const today = new Intl.DateTimeFormat("fr-FR", {
     weekday: "long",
@@ -26,7 +33,6 @@ export default async function PatientDashboard() {
     timeZone: "Europe/Paris",
   }).format(new Date());
 
-  const { data: patientRow } = await supabase.from("patients").select("created_at").eq("id", user.id).maybeSingle();
   const weeks = buildWeeks((patientRow?.created_at as string | undefined) ?? new Date().toISOString());
   const rangeStartISO = weeks[0].startISO;
   const rangeEndISO = weeks[weeks.length - 1].endISO;
@@ -60,6 +66,18 @@ export default async function PatientDashboard() {
       notes: (f?.notes as string | null) ?? null,
     };
     (dayDetails[key] ??= []).push(entry);
+  }
+
+  // Offre Essentiel : historique limité (lib/patient/historyWindow.ts). La
+  // frise de l'Accueil le contournait (audit du 2026-10-08) — les jours plus
+  // anciens que la fenêtre restent marqués « séance faite », mais sans le
+  // ressenti (douleur, difficulté, notes), comme sur la page Historique.
+  const historyDaysVisible = historyDaysVisibleFor(billing.subPlan);
+  if (historyDaysVisible !== null) {
+    const daysWithSessions = Object.keys(dayDetails).sort().reverse();
+    for (const key of daysWithSessions.slice(historyDaysVisible)) {
+      dayDetails[key] = dayDetails[key].map((s) => ({ ...s, painScore: null, difficulty: null, notes: null }));
+    }
   }
 
   // "Mon programme" summary card, top right of Accueil since 2026-10-01

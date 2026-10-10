@@ -107,7 +107,7 @@ export default function PatientsTable({
     fd.set("patient_id", r.id);
     const res = await reactivatePatient(fd);
     setReactivating((m) => ({ ...m, [r.id]: "error" in res ? res.error : "done" }));
-    setTimeout(() => setReactivating((m) => { const { [r.id]: _drop, ...rest } = m; return rest; }), 4000);
+    setTimeout(() => setReactivating((m) => Object.fromEntries(Object.entries(m).filter(([id]) => id !== r.id))), 4000);
   }
 
   const counts = useMemo(
@@ -154,17 +154,21 @@ export default function PatientsTable({
     <button
       type="button"
       onClick={() => setSegment(key)}
-      className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-        segment === key ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
+      className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors max-sm:shrink-0 max-sm:whitespace-nowrap ${
+        segment === key
+          ? "bg-surface text-ink shadow-sm max-sm:bg-brand max-sm:text-white max-sm:shadow-none"
+          : "text-muted hover:text-ink max-sm:bg-surface max-sm:shadow-soft"
       }`}
     >
-      {label} <span className="tabular-nums text-muted">({counts[key]})</span>
+      {label} <span className={`tabular-nums text-muted ${segment === key ? "max-sm:text-white/80" : ""}`}>({counts[key]})</span>
     </button>
   );
 
   return (
-    <div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    // Téléphone : recherche + Filtres sur une ligne, segments dessous, puis la
+    // liste qui remplit le reste de l'écran et défile seule (PatientsPageView).
+    <div className="max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col">
+      <div className="flex flex-col gap-3 max-sm:grid max-sm:grid-cols-[1fr_auto] max-sm:gap-2 sm:flex-row sm:items-center">
         <label className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.75} />
           <input
@@ -172,10 +176,10 @@ export default function PatientsTable({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Rechercher un patient…"
-            className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
+            className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft max-sm:h-10 max-sm:rounded-xl max-sm:border-0 max-sm:text-base max-sm:shadow-soft"
           />
         </label>
-        <div className="flex items-center gap-1 rounded-full border border-line bg-app-bg p-1">
+        <div className="flex items-center gap-1 rounded-full border border-line bg-app-bg p-1 max-sm:order-last max-sm:col-span-2 max-sm:-mx-4 max-sm:overflow-x-auto max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none]">
           {segBtn("tous", "Tous")}
           {segBtn("surveiller", "À surveiller")}
           {segBtn("jour", "À jour")}
@@ -185,7 +189,7 @@ export default function PatientsTable({
           type="button"
           onClick={() => setFiltersOpen((o) => !o)}
           aria-expanded={filtersOpen}
-          className={`inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-sm font-medium ${
+          className={`inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-sm font-medium max-sm:h-10 max-sm:rounded-xl max-sm:border-0 max-sm:shadow-soft ${
             filtersOpen || conditionId || stage ? "text-brand" : "text-muted"
           }`}
         >
@@ -212,7 +216,7 @@ export default function PatientsTable({
         </div>
       )}
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-line bg-surface">
+      <div className="mt-4 overflow-x-auto rounded-xl border border-line bg-surface max-sm:mt-3 max-sm:min-h-0 max-sm:flex-1 max-sm:overflow-y-auto max-sm:overscroll-contain max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-soft">
         {visible.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted">Aucun patient ne correspond à ces critères.</p>
         ) : (
@@ -329,7 +333,7 @@ export default function PatientsTable({
             {/* Mobile : liste */}
             <ul className="divide-y divide-line md:hidden">
               {visible.map((r) => (
-                <li key={r.id} className={`flex items-center gap-2 px-4 py-3 ${r.onboardingStage ? "bg-app-bg/60" : ""}`}>
+                <li key={r.id} className={`flex items-center gap-2 px-4 py-3 transition-colors max-sm:active:bg-app-bg ${r.onboardingStage ? "bg-app-bg/60" : ""}`}>
                   <Link href={`/dashboard/patients/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand">{r.initials}</span>
                     <span className="min-w-0 flex-1">

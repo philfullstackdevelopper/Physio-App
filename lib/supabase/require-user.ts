@@ -120,5 +120,6 @@ const loadUser = cache(async (): Promise<AppUser> => {
 });
 
 export async function requireUser(_supabase?: unknown): Promise<AppUser> {
+  void _supabase; // gardé pour la compatibilité des appels existants (voir loadUser ci-dessus)
   return loadUser();
 }

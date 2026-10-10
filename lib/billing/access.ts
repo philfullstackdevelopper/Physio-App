@@ -4,17 +4,12 @@
 // server (page gating) and to inform the UI. All feature gating should go
 // through this so the rules live in ONE place.
 //
-// Business model (see CLAUDE.md / the build brief):
-//   PATIENT:  free floor  ->  2-month trial (full)  ->  premium €10/mo (full)
-//   KINÉ:     free  ->  "pro" once he has set his own patient price and pays
-//             EasyPhysio a prorated 16% platform fee per active patient
-//             (lib/billing/platformFee.ts) — there is no separate flat
-//             instructor subscription anymore (the old "kine_pro" €30/mo
-//             plan was removed). Fees ARE now proportional to how many
-//             patients a kiné brings — that was a deliberate, carefully
-//             reasoned choice (see the project's plan docs): the money only
-//             ever flows kiné -> EasyPhysio, never the reverse, which is
-//             what avoids the compérage risk a reversed flow would create.
+// Modèle actuel (CLAUDE.md §4) : le patient choisit une des trois offres de
+// son kiné (Essentiel / Standard / Premium, lib/billing/plans.ts), 7 jours
+// d'essai puis prélèvement mensuel directement sur le compte Stripe Connect
+// du kiné ; la commission de 16 % (lib/billing/platformFee.ts) est prélevée
+// par Stripe sur chaque facture. (Ce commentaire décrivait avant un ancien
+// modèle — essai de 2 mois, 10 €/mois — corrigé à l'audit du 2026-10-08.)
 // =============================================================================
 
 // Extension explicite : ce module tourne aussi sous `node --test` (sans
@@ -28,6 +23,9 @@ export type InstructorLevel = "free" | "pro";
 // Stripe subscription statuses that grant access.
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 
+/** Jours d'accès gardés après un prélèvement échoué (statut past_due). */
+export const PAST_DUE_GRACE_DAYS = 7;
+
 /** True when a Stripe-backed subscription is currently granting access. */
 export function isSubscriptionActive(
   status: string | null | undefined,
@@ -35,11 +33,18 @@ export function isSubscriptionActive(
   now: Date = new Date(),
 ): boolean {
   // (Philippe, 2026-10-07) past_due = un prélèvement a échoué mais Stripe
-  // réessaie encore : on ne coupe pas le patient tout de suite, il garde
-  // l'accès jusqu'à la fin de la période connue (jamais sans date). Stripe
-  // passe ensuite l'abonnement en unpaid/canceled s'il abandonne.
+  // réessaie encore : on ne coupe pas le patient tout de suite. Délai de
+  // grâce de PAST_DUE_GRACE_DAYS (7) jours après l'échec (audit du 2026-10-08) — avant, l'accès
+  // courait jusqu'à la fin de la période, déjà avancée d'un mois au moment de
+  // l'échec : selon les réglages de relance du compte Stripe du kiné, cela
+  // pouvait faire un mois offert. Le prélèvement mensuel échoue au début de
+  // la période : la date d'échec ≈ fin de période − 1 mois.
   if (status === "past_due") {
-    return !!currentPeriodEnd && new Date(currentPeriodEnd).getTime() >= now.getTime();
+    if (!currentPeriodEnd) return false;
+    const failedAt = new Date(currentPeriodEnd);
+    failedAt.setUTCMonth(failedAt.getUTCMonth() - 1);
+    const graceEnd = Math.min(failedAt.getTime() + PAST_DUE_GRACE_DAYS * 86_400_000, new Date(currentPeriodEnd).getTime());
+    return graceEnd >= now.getTime();
   }
   if (!status || !ACTIVE_STATUSES.has(status)) return false;
   // Honour the paid period end if Stripe gave us one (grace until then).

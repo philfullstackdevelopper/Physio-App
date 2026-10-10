@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { resolveAppUserId } from "@/lib/auth/user-map";
 import { createClient } from "@/lib/supabase/server";
-import { rppsInUse, setInstructorStatus } from "@/lib/db/admin";
+import { rppsInUse, setInstructorStatus, setInstructorRppsVerified } from "@/lib/db/admin";
 import { verifyRpps } from "@/lib/instructor/rppsVerification";
 
 const PENDING_CABINET_COOKIE = "pending_cabinet";
@@ -111,7 +111,6 @@ export default async function SignupFinalizePage() {
         phone: pendingCabinet.phone,
         rpps_number: pendingCabinet.rppsNumber,
         siret: pendingCabinet.siret,
-        rpps_verified_at: verification?.status === "verified" ? verification.verifiedAt : null,
       }),
     });
 
@@ -119,6 +118,8 @@ export default async function SignupFinalizePage() {
       redirect(`/connection-error?next=${encodeURIComponent("/dashboard")}`);
     }
 
+    // Badge « RPPS vérifié » : écrit par le serveur (migration 0063).
+    if (verification?.status === "verified") await setInstructorRppsVerified(appId, verification.verifiedAt);
     if (autoApproved) {
       await setInstructorStatus(appId, "approved");
     }
@@ -129,6 +130,7 @@ export default async function SignupFinalizePage() {
   }
 
   // Already had a profile (re-run, or previously approved account re-signing up).
-  if (existing.status === "approved") redirect("/dashboard");
+  // Validé, refusé ou suspendu : /dashboard affiche l'espace ou le bon message.
+  if ((existing.status ?? "approved") !== "pending") redirect("/dashboard");
   redirect(existing.cabinet_name ? "/signup/pending" : "/signup/onboarding");
 }

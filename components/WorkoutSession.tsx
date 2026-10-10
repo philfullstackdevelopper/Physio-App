@@ -196,6 +196,7 @@ export default function WorkoutSession({
   // boutons à l'écran.
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
+  const savedLogIdRef = useRef<string | null>(null);
   // End-of-session feeling capture — the only feedback this app collects.
   const [pain, setPain] = useState<number | null>(null);
   const [note, setNote] = useState("");
@@ -217,14 +218,25 @@ export default function WorkoutSession({
     setSaveError(false);
     try {
       const supabase = createClient();
-      const { data: log, error } = await supabase
-        .from("workout_logs")
-        .insert({ patient_id: patientId, workout_id: workoutId })
-        .select("id")
-        .single();
-      if (error || !log) throw error ?? new Error("insert failed");
-      setLogId(log.id as string);
-      setStreak(await fetchStreak(supabase, patientId));
+      // Déjà enregistrée lors d'un essai précédent (réseau coupé juste après) :
+      // « Réessayer » ne doit pas créer une deuxième séance (audit du 2026-10-08).
+      if (!savedLogIdRef.current) {
+        const { data: log, error } = await supabase
+          .from("workout_logs")
+          .insert({ patient_id: patientId, workout_id: workoutId })
+          .select("id")
+          .single();
+        if (error || !log) throw error ?? new Error("insert failed");
+        savedLogIdRef.current = log.id as string;
+        setLogId(log.id as string);
+      }
+      // La série de jours n'est qu'un bonus d'affichage : son échec ne doit
+      // pas faire croire que la séance n'est pas enregistrée.
+      try {
+        setStreak(await fetchStreak(supabase, patientId));
+      } catch {
+        /* série non affichée cette fois-ci */
+      }
     } catch {
       setSaveError(true);
     } finally {
@@ -344,11 +356,16 @@ export default function WorkoutSession({
         {!fbSent ? (
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-left">
             <p className="text-sm font-medium text-slate-800">Comment vous sentez-vous ?</p>
-            <p className="text-xs text-slate-500">Votre douleur du moment (1 = aucune, 10 = très forte)</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            <p id="pain-scale-hint" className="text-xs text-slate-500">Votre douleur du moment (1 = aucune, 10 = très forte)</p>
+            {/* Lecteurs d'écran : un groupe nommé, et la note choisie annoncée
+                comme « enfoncée » (audit du 2026-10-08). */}
+            <div role="group" aria-labelledby="pain-scale-hint" className="mt-2 flex flex-wrap gap-1.5">
               {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                 <button
                   key={n}
+                  type="button"
+                  aria-pressed={pain === n}
+                  aria-label={`Douleur ${n} sur 10`}
                   onClick={() => setPain(n)}
                   className={`h-9 w-9 rounded-full text-sm font-medium ${
                     pain === n

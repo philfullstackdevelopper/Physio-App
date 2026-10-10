@@ -17,6 +17,19 @@ export async function setInstructorStatus(instructorId: string, status: string):
   await getPool().query("select internal.admin_set_instructor_status($1, $2)", [instructorId, status]);
 }
 
+// « RPPS vérifié » : seul le serveur peut le poser, après verifyRpps()
+// (migration 0063 — le kiné ne peut plus l'écrire lui-même).
+// Indicatif seulement (l'approbation, elle, passe par setInstructorStatus) :
+// un échec — par exemple la migration 0063 pas encore appliquée — est
+// journalisé sans bloquer l'inscription.
+export async function setInstructorRppsVerified(instructorId: string, verifiedAt: string | null): Promise<void> {
+  try {
+    await getPool().query("select internal.admin_set_rpps_verified($1, $2)", [instructorId, verifiedAt]);
+  } catch (e) {
+    console.error("setInstructorRppsVerified : badge RPPS non enregistré", e);
+  }
+}
+
 export async function upsertSubscription(params: {
   userId: string;
   plan: string;

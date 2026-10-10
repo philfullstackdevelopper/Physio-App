@@ -1,3 +1,4 @@
+import { safeInternalPath } from "@/lib/format/safePath";
 import Link from "next/link";
 import DotCanvas from "@/components/DotCanvas";
 
@@ -9,7 +10,7 @@ export default async function ConnectionErrorPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  const retryHref = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+  const retryHref = safeInternalPath(next, "/dashboard");
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f6f8fd] p-4">

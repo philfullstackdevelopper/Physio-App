@@ -31,7 +31,7 @@ export interface SessionDetail {
 // Téléphone (< 640 px) : frise plus basse et semaine affichée en frise
 // VERTICALE (Philippe, 2026-10-04 : « on ne voit même pas le nom entier de
 // chaque jour, aucun effet frise »). Ordinateur et tablette : inchangés.
-function useIsPhone() {
+export function useIsPhone() {
   const [phone, setPhone] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 639px)");
@@ -202,7 +202,7 @@ export default function WeekProgramme({
               <>
                 <h2 className="text-base font-semibold text-ink sm:text-lg">Votre programme arrive bientôt</h2>
                 <p className="mt-1 text-xs text-muted sm:text-sm">
-                  Votre kiné prépare vos exercices personnalisés. Vous serez prévenu·e dès qu&apos;ils seront prêts.{" "}
+                  Votre kiné prépare vos exercices personnalisés. Ils apparaîtront ici dès qu&apos;ils seront prêts.{" "}
                   {/* « Modifier », pas « Compléter » : on n'arrive sur l'accueil
                       qu'après l'onboarding (app/patient/layout.tsx), donc la
                       situation est toujours déjà renseignée. */}

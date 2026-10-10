@@ -19,7 +19,12 @@ export default async function PatientInvitationPage({
   searchParams: Promise<{ kine?: string; __clerk_status?: string; __clerk_ticket?: string }>;
 }) {
   const params = await searchParams;
-  const { kine } = params;
+  // Le nom du kiné vient de l'adresse du lien, que n'importe qui peut écrire
+  // (audit du 2026-10-08) : on ne l'affiche que s'il ressemble à un nom —
+  // lettres, espaces, tirets, apostrophes, 60 caractères au plus, aucun
+  // chiffre (pas de numéro de téléphone ni d'adresse glissés dans le texte).
+  const rawKine = (params.kine ?? "").trim();
+  const kine = /^[\p{L}][\p{L} .'’-]{0,59}$/u.test(rawKine) ? rawKine : undefined;
 
   // Déjà une session ouverte dans ce navigateur : ne PAS laisser le widget
   // consommer le ticket par-dessus (deux sessions -> boucle de

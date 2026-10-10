@@ -7,6 +7,7 @@ import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstru
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
 import { adminSetExerciseMedia as dbAdminSetExerciseMedia } from "@/lib/db/admin";
+import { friendlyDbError } from "@/lib/format/dbError";
 
 // (Philippe, 2026-10-07 : délègue à la garde commune, qui vérifie aussi que
 // le compte kiné a été validé — avant, un kiné « pending » passait ici.)
@@ -32,7 +33,7 @@ export async function createExercise(formData: FormData) {
     .select("id")
     .single();
   if (error) {
-    redirect(`/dashboard/exercises?error=${encodeURIComponent(error.message)}`);
+    redirect(`/dashboard/exercises?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
   if (exercise && bodyPartIds.length > 0) {
@@ -62,7 +63,7 @@ export async function hideExercise(formData: FormData) {
     .from("instructor_hidden_exercises")
     .insert({ instructor_id: userId, exercise_id: exerciseId });
   if (error) {
-    redirect(`/dashboard/exercises?error=${encodeURIComponent(error.message)}`);
+    redirect(`/dashboard/exercises?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
   revalidatePath("/dashboard/exercises");
@@ -81,7 +82,7 @@ export async function unhideExercise(formData: FormData) {
     .eq("instructor_id", userId)
     .eq("exercise_id", exerciseId);
   if (error) {
-    redirect(`/dashboard/exercises?error=${encodeURIComponent(error.message)}`);
+    redirect(`/dashboard/exercises?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
   revalidatePath("/dashboard/exercises");

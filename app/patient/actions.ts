@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { friendlyDbError } from "@/lib/format/dbError";
 
 // First step of patient onboarding, gated in app/patient/layout.tsx.
 // patients_update_by_instructor is the only ordinary UPDATE policy on
@@ -46,6 +47,24 @@ export async function markMessageRead() {
   redirect("/patient/messages");
 }
 
+// Ouvrir la page Messages suffit à lire les messages du kiné (audit du
+// 2026-10-08) : avant, le badge et l'accusé de lecture côté kiné restaient
+// tant que le patient n'avait pas appuyé sur « Marquer comme lu ». Appelée
+// par MarkThreadRead à l'ouverture, sans redirection (le paramètre est
+// ignoré : un patient ne lit que SES messages).
+export async function markMessagesSeenOnOpen(_patientId: string) {
+  void _patientId;
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+  await supabase
+    .from("patient_messages")
+    .update({ read_at: new Date().toISOString() })
+    .eq("patient_id", user.id)
+    .eq("sender", "instructor")
+    .is("read_at", null);
+  revalidatePath("/patient", "layout");
+}
+
 // Patient sends a message to their own instructor. No rate limiting: patients
 // are known to their kiné, this is not an open public inbox.
 export async function sendPatientMessage(formData: FormData) {
@@ -77,7 +96,7 @@ export async function sendPatientMessage(formData: FormData) {
     sender: "patient",
     body,
   });
-  if (error) redirect(`/patient/messages?error=${encodeURIComponent(error.message)}`);
+  if (error) redirect(`/patient/messages?error=${encodeURIComponent(friendlyDbError(error))}`);
 
   revalidatePath("/patient");
   revalidatePath("/patient/messages");

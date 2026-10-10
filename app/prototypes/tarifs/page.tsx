@@ -297,6 +297,7 @@ export default function TarifsPrototypePage() {
   // Restore selection from ?v= on mount.
   useEffect(() => {
     const v = parseInt(new URLSearchParams(window.location.search).get("v") ?? "", 10);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- page d'aperçu : variante lue dans l'adresse après l'affichage.
     if (v >= 1 && v <= VARIANTS.length) setCurrent(v - 1);
   }, []);
 

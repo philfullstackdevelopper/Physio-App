@@ -5,6 +5,8 @@
 import type Stripe from "stripe";
 import { upsertSubscription } from "@/lib/db/admin";
 import { getStripe } from "./stripe";
+import { PLATFORM_FEE_RATE } from "./platformFee";
+import { hasValidSubscriptionSignature, SIGNATURE_REQUIRED_FROM } from "./subscriptionSignature";
 
 /** Stripe moved current_period_end onto items in recent API versions — read it
  *  from either place. Returns an ISO string or null. */
@@ -77,11 +79,31 @@ export async function syncSubscription(
   fallback?: { user_id?: string | null; plan?: string | null },
   options?: { stripeAccount?: string | null },
 ) {
-  const userId = sub.metadata?.user_id ?? fallback?.user_id;
-  const plan = sub.metadata?.plan ?? fallback?.plan;
+  const stripeAccount = options?.stripeAccount ?? null;
+
+  // Abonnement sur le compte Stripe d'un kiné (audit du 2026-10-08) : il doit
+  // avoir été créé par EasyPhysio — signature valide pour CE compte — et
+  // porter la commission de la plateforme. Sinon c'est un abonnement fait à
+  // la main dans le tableau de bord Stripe du kiné : on l'ignore, et on ne
+  // se fie pas non plus aux metadata qu'il porte.
+  if (stripeAccount && sub.created >= SIGNATURE_REQUIRED_FROM) {
+    if (!hasValidSubscriptionSignature(sub.metadata, stripeAccount)) {
+      console.warn(`[billing/sync] abonnement ${sub.id} ignoré : pas créé par EasyPhysio (signature absente ou invalide).`);
+      return;
+    }
+    const fee = (sub as unknown as { application_fee_percent?: number | null }).application_fee_percent ?? null;
+    if (LIVE_STATUSES.has(sub.status) && fee !== PLATFORM_FEE_RATE * 100) {
+      console.warn(`[billing/sync] abonnement ${sub.id} ignoré : commission ${fee ?? "absente"} au lieu de ${PLATFORM_FEE_RATE * 100} %.`);
+      return;
+    }
+  }
+
+  const signed = !!stripeAccount && sub.created >= SIGNATURE_REQUIRED_FROM;
+  const userId = sub.metadata?.user_id ?? (signed ? undefined : fallback?.user_id);
+  const plan = sub.metadata?.plan ?? (signed ? undefined : fallback?.plan);
   if (!userId || !plan) return;
 
-  if (await supersededByAnotherLiveSubscription(sub, userId, options?.stripeAccount)) {
+  if (await supersededByAnotherLiveSubscription(sub, userId, stripeAccount)) {
     console.warn(`[billing/sync] événement ignoré : ${sub.id} (${sub.status}) remplacé par un autre abonnement actif.`);
     return;
   }

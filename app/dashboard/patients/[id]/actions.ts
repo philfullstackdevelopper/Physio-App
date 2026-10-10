@@ -8,7 +8,11 @@ import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstru
 import { applyAdjustment, adjustmentMessage } from "@/lib/exercise/adjustPlan";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { cancelPatientSubscription } from "@/lib/billing/cancelSubscription";
-import { deleteAppUserByEmail } from "@/lib/db/admin";
+import { deleteAppUserById } from "@/lib/db/admin";
+import { resolveAppUserId, precreateAppUserId } from "@/lib/auth/user-map";
+import { friendlyDbError } from "@/lib/format/dbError";
+import { weeklyCapViolation } from "@/lib/billing/weeklyCap";
+import { isSubscriptionActive } from "@/lib/billing/access";
 
 // PatientActionsMenu is used both on the patient detail page and inline in
 // the "Mes patients" table, so its forms carry where to land afterwards.
@@ -34,7 +38,7 @@ export async function markPaymentLapsed(formData: FormData) {
     .update({ payment_lapsed_at: new Date().toISOString() })
     .eq("id", patientId)
     .eq("instructor_id", user.id);
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
 
   revalidatePath(`/dashboard/patients/${patientId}`);
   revalidatePath("/dashboard/patients");
@@ -53,7 +57,7 @@ export async function clearPaymentLapsed(formData: FormData) {
     .update({ payment_lapsed_at: null })
     .eq("id", patientId)
     .eq("instructor_id", user.id);
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
 
   revalidatePath(`/dashboard/patients/${patientId}`);
   revalidatePath("/dashboard/patients");
@@ -123,23 +127,39 @@ export async function deletePatient(formData: FormData) {
   }
 
   const { error } = await supabase.from("patients").delete().eq("id", patientId).eq("instructor_id", user.id);
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
 
+  // Sécurité (audit du 2026-10-08) : l'e-mail de la fiche patient est une
+  // donnée modifiable — on ne supprime JAMAIS un compte de connexion sur la
+  // seule foi de cet e-mail, sinon un kiné qui y mettrait l'adresse de
+  // quelqu'un d'autre ferait supprimer le compte de cette personne. Chaque
+  // compte Clerk trouvé n'est supprimé que si son identifiant interne est
+  // exactement celui du patient supprimé.
   try {
     const client = await clerkClient();
     const existingUsers = await client.users.getUserList({ emailAddress: [patient!.email] });
     if (existingUsers.data.length > 0) {
-      await Promise.all(existingUsers.data.map((u) => client.users.deleteUser(u.id)));
+      for (const u of existingUsers.data) {
+        const email = u.primaryEmailAddress?.emailAddress ?? patient!.email;
+        if ((await resolveAppUserId(u.id, email)) === patientId) await client.users.deleteUser(u.id);
+      }
     } else {
-      const pending = await client.invitations.getInvitationList({ query: patient!.email, status: "pending" });
-      await Promise.all(pending.data.map((inv) => client.invitations.revokeInvitation(inv.id)));
+      // Invitation jamais acceptée : on ne la révoque que si l'e-mail est bien
+      // réservé à CE patient (identifiant réservé à l'invitation, addPatient).
+      const { appId, isNew } = await precreateAppUserId(patient!.email);
+      if (isNew) {
+        await deleteAppUserById(appId); // l'e-mail n'appartenait à personne : on n'a rien créé
+      } else if (appId === patientId) {
+        const pending = await client.invitations.getInvitationList({ query: patient!.email, status: "pending" });
+        await Promise.all(pending.data.map((inv) => client.invitations.revokeInvitation(inv.id)));
+      }
     }
   } catch (e) {
     console.error("deletePatient: Clerk cleanup failed", e);
   }
 
   try {
-    await deleteAppUserByEmail(patient!.email);
+    await deleteAppUserById(patientId);
   } catch (e) {
     // Le patient est déjà supprimé : on ne bloque pas le kiné pour ça, mais
     // la trace reste côté serveur pour un nettoyage manuel éventuel.
@@ -168,7 +188,7 @@ export async function assignCondition(formData: FormData) {
 
   const { error } = await supabase.from("patients").update({ condition_id: conditionId }).eq("id", patientId);
   if (error) {
-    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
+    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
   // Only when REPLACING a condition (ConditionSelect confirms that first).
   // A first condition must keep the séances already assigned: the kiné can
@@ -178,32 +198,6 @@ export async function assignCondition(formData: FormData) {
   if (previousConditionId && previousConditionId !== conditionId) {
     await supabase.from("patient_recommended_workouts").delete().eq("patient_id", patientId);
   }
-
-  revalidatePath(`/dashboard/patients/${patientId}`);
-  redirect(`/dashboard/patients/${patientId}`);
-}
-
-// Sends a short message from the instructor to one of their patients (e.g.
-// reacting to a recent session). RLS re-checks the patient is really theirs.
-export async function sendMessage(formData: FormData) {
-  const supabase = await createClient();
-  const { user } = await requireApprovedInstructor(supabase);
-
-  const patientId = String(formData.get("patient_id") ?? "");
-  const body = String(formData.get("body") ?? "").trim();
-
-  const fail = (msg: string) =>
-    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(msg)}`);
-
-  if (!patientId) fail("Patient introuvable.");
-  if (!body) fail("Le message ne peut pas être vide.");
-
-  const { error } = await supabase.from("patient_messages").insert({
-    patient_id: patientId,
-    instructor_id: user.id,
-    body,
-  });
-  if (error) fail(error.message);
 
   revalidatePath(`/dashboard/patients/${patientId}`);
   redirect(`/dashboard/patients/${patientId}`);
@@ -228,7 +222,32 @@ export async function addRecommendedWorkout(formData: FormData) {
   // Only accept a well-formed "YYYY-MM-DD" — anything else (empty, tampered)
   // falls back to this week rather than sending garbage to the `date` column.
   const rawWeek = String(formData.get("week_start_date") ?? "");
-  const weekStartDate = /^\d{4}-\d{2}-\d{2}$/.test(rawWeek) ? rawWeek : thisWeekStartDateKey();
+  // …et un LUNDI (audit du 2026-10-08) : une autre date décalait la semaine.
+  const isMonday = (key: string) => {
+    const [y, m, d] = key.split("-").map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDay() === 1;
+  };
+  const weekStartDate = /^\d{4}-\d{2}-\d{2}$/.test(rawWeek) && isMonday(rawWeek) ? rawWeek : thisWeekStartDateKey();
+
+  // La séance doit être visible par ce kiné (sa bibliothèque ou celle de la
+  // plateforme) et ne pas être la copie personnelle d'un AUTRE patient
+  // (audit du 2026-10-08 : un formulaire modifié pouvait l'attribuer).
+  const [{ data: workout }, { data: sub }] = await Promise.all([
+    supabase.from("workouts").select("id, patient_id, times_per_week").eq("id", workoutId).maybeSingle(),
+    supabase.from("subscriptions").select("plan, status, current_period_end").eq("user_id", patientId).maybeSingle(),
+  ]);
+  if (!workout || (workout.patient_id !== null && workout.patient_id !== patientId)) {
+    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Cette séance ne peut pas être attribuée à ce patient.")}`);
+  }
+
+  // Plafond de séances/semaine de l'offre du patient (lib/billing/weeklyCap.ts).
+  const capMessage = weeklyCapViolation(
+    (sub?.plan as string | null) ?? null,
+    isSubscriptionActive((sub?.status as string | null) ?? null, (sub?.current_period_end as string | null) ?? null),
+    (workout.times_per_week as number | null) ?? null,
+  );
+  if (capMessage) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(capMessage)}`);
 
   // Pendant combien de semaines (migration 0059). Absent, vide ou hors 1-52
   // → null = jusqu'à la prochaine séance attribuée, comme avant.
@@ -241,7 +260,7 @@ export async function addRecommendedWorkout(formData: FormData) {
       { patient_id: patientId, workout_id: workoutId, week_start_date: weekStartDate, week_count: weekCount },
       { onConflict: "patient_id,week_start_date" },
     );
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
 
   revalidatePath(`/dashboard/patients/${patientId}`);
   redirect(`/dashboard/patients/${patientId}`);
@@ -256,7 +275,7 @@ export async function removeRecommendedWorkout(formData: FormData) {
   const recId = String(formData.get("rec_id") ?? "");
 
   const { error } = await supabase.from("patient_recommended_workouts").delete().eq("id", recId);
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(error.message)}`);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
 
   revalidatePath(`/dashboard/patients/${patientId}`);
   redirect(`/dashboard/patients/${patientId}`);

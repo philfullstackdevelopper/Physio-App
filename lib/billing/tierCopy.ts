@@ -33,7 +33,9 @@ export function featuresFor(key: TierKey): string[] {
   return [
     cap,
     history,
-    ...(t.videoLibrary ? ["Bibliothèque vidéo complète"] : []),
+    // « à venir » : aucune vidéo n'est encore en ligne (audit du 2026-10-08,
+    // ne pas vendre une fonction absente). À retirer quand elles le seront.
+    ...(t.videoLibrary ? ["Bibliothèque vidéo complète (à venir)"] : []),
     "Programme personnalisé par votre kiné",
     "Suivi de vos séances et de vos douleurs",
     "Messagerie directe avec votre kiné",

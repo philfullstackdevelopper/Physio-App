@@ -110,7 +110,7 @@ export default function ConversationList({
               <Link
                 href={href(c.patientId)}
                 aria-current={active ? "true" : undefined}
-                className={`flex items-center gap-3 px-4 py-3 transition ${active ? "bg-app-bg" : "hover:bg-app-bg"}`}
+                className={`flex items-center gap-3 px-4 py-3 transition max-sm:active:bg-app-bg ${active ? "bg-app-bg max-sm:bg-transparent" : "hover:bg-app-bg"}`}
               >
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand">
                   {c.initials}

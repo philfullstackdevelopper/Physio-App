@@ -3,8 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { recommendPrescription } from "@/lib/exercise/prescription";
 import { isProfileComplete, profileToContext } from "@/lib/exercise/patientProfile";
-import { hasActiveTier } from "@/lib/billing/access";
-import { getTierBilling } from "@/lib/billing/context";
+import { hasPatientAppAccess } from "@/lib/billing/context";
 import WorkoutSession, { type SessionExercise } from "@/components/WorkoutSession";
 
 type WorkoutExerciseRow = {
@@ -33,7 +32,7 @@ export default async function SeancePage({
     .eq("id", user.id)
     .maybeSingle();
   if (!isProfileComplete(profile)) redirect("/patient/onboarding");
-  if (!hasActiveTier(await getTierBilling(supabase, user.id))) redirect("/patient/abonnement");
+  if (!(await hasPatientAppAccess(supabase, user.id))) redirect("/patient/abonnement");
 
   // media_start_seconds needs migration 0022. Until it's run by hand in
   // Supabase (this project's convention — see CLAUDE.md), fall back to the
@@ -58,6 +57,27 @@ export default async function SeancePage({
       .maybeSingle());
   }
   if (!workoutData) redirect("/patient");
+
+  // Seulement une séance de CE patient (audit du 2026-10-08) : avant,
+  // n'importe quelle séance de la bibliothèque s'ouvrait et s'enregistrait.
+  // Autorisée si elle lui a été attribuée, si c'est sa copie personnelle
+  // (« Ajuster la séance »), ou si elle fait partie de la condition que son
+  // kiné lui a donnée (les séances alternatives, CLAUDE.md §4).
+  const [{ data: meta }, { data: patientRow }, { count: assignedCount }] = await Promise.all([
+    supabase.from("workouts").select("patient_id, condition_id").eq("id", workoutId).maybeSingle(),
+    supabase.from("patients").select("condition_id").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("patient_recommended_workouts")
+      .select("id", { count: "exact", head: true })
+      .eq("patient_id", user.id)
+      .eq("workout_id", workoutId),
+  ]);
+  const isMine =
+    meta?.patient_id === user.id ||
+    (assignedCount ?? 0) > 0 ||
+    (meta?.patient_id == null && !!meta?.condition_id && meta.condition_id === patientRow?.condition_id);
+  if (!isMine) redirect("/patient");
+
   const workout = workoutData as unknown as {
     id: string;
     name: string;

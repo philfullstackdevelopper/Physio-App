@@ -153,7 +153,7 @@ export default function PatientActionsMenu({
       style={layout.sheet ? undefined : { top: layout.top, left: layout.left, width: MENU_WIDTH }}
       className={
         layout.sheet
-          ? "fixed inset-x-0 bottom-0 z-40 rounded-t-2xl border-t border-line bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-xl"
+          ? "fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-line bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-xl"
           : "fixed z-40 rounded-2xl border border-line bg-surface p-2 shadow-xl"
       }
     >
@@ -326,7 +326,7 @@ export default function PatientActionsMenu({
         open &&
         createPortal(
           <>
-            {layout.sheet && <div className="fixed inset-0 z-30 bg-ink/30" onClick={() => setOpen(false)} />}
+            {layout.sheet && <div className="fixed inset-0 z-[45] bg-ink/30" onClick={() => setOpen(false)} />}
             {panel}
           </>,
           document.body,

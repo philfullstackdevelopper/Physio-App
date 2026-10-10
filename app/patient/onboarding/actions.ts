@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { EQUIPMENT_OPTIONS, type EquipmentId } from "@/lib/exercise/equipment";
 import { hasActiveTier } from "@/lib/billing/access";
 import { getTierBilling } from "@/lib/billing/context";
+import { friendlyDbError } from "@/lib/format/dbError";
 
 // Saves the patient's onboarding profile into `patient_profiles`.
 // RLS ensures a patient can only write their own row (id = auth.uid()).
@@ -59,6 +60,18 @@ export async function saveOnboarding(formData: FormData) {
   if (!validActivity) missing.push("le niveau d'activité");
   if (missing.length > 0) {
     redirect(`/patient/onboarding?error=${encodeURIComponent(`Champ(s) manquant(s) : ${missing.join(", ")}.`)}`);
+  }
+
+  // Valeurs plausibles, vérifiées ICI aussi (audit du 2026-10-08) : les
+  // bornes n'existaient que dans le formulaire du navigateur, contournables.
+  const invalid: string[] = [];
+  const dob = new Date(dateOfBirth);
+  const age = (Date.now() - dob.getTime()) / (365.25 * 86_400_000);
+  if (Number.isNaN(dob.getTime()) || age < 0 || age > 120) invalid.push("la date de naissance");
+  if (!Number.isFinite(heightCm) || heightCm < 50 || heightCm > 250) invalid.push("la taille (entre 50 et 250 cm)");
+  if (!Number.isFinite(weightKg) || weightKg < 20 || weightKg > 350) invalid.push("le poids (entre 20 et 350 kg)");
+  if (invalid.length > 0) {
+    redirect(`/patient/onboarding?error=${encodeURIComponent(`Vérifiez ${invalid.join(", ")}.`)}`);
   }
 
   // RGPD article 9: health data needs explicit, specific consent. Asked once —
@@ -114,7 +127,7 @@ export async function saveOnboarding(formData: FormData) {
     { onConflict: "id" },
   );
   if (error) {
-    redirect(`/patient/onboarding?error=${encodeURIComponent(error.message)}`);
+    redirect(`/patient/onboarding?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
   revalidatePath("/patient");

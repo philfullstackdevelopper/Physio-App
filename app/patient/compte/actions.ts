@@ -16,7 +16,14 @@ export async function deleteMyAccount(formData: FormData) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const confirmation = String(formData.get("confirmation") ?? "");
+  // Réservé aux patients (audit du 2026-10-08) : appelée par un kiné, cette
+  // action supprimerait son compte praticien — et, par cascade, toutes les
+  // données de ses patients. La RLS ne renvoie la ligne patients qu'à son
+  // propre titulaire.
+  const { data: ownPatientRow } = await supabase.from("patients").select("id").eq("id", user.id).maybeSingle();
+  if (!ownPatientRow) redirect("/dashboard");
+
+  const confirmation = String(formData.get("confirmation") ?? "").trim().toUpperCase();
   if (confirmation !== "SUPPRIMER") {
     redirect(
       `/patient/compte?error=${encodeURIComponent(

@@ -1,8 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle, ArrowLeft, ArrowDown, ArrowUp, CheckCircle2, Minus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/supabase/require-user";
 import { resolveWorkoutForWeek } from "@/lib/exercise/activeRecommendation";
 import { buildWeeks, currentWeekNumber, localDateKey, thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { computeAdherence, adherenceLabel, adherenceTone } from "@/lib/exercise/adherence";
@@ -18,6 +15,7 @@ import { type AddableWorkout } from "@/components/AdjustWorkoutModal";
 import KineWeekProgramme, { type KineWorkoutSummary } from "@/components/KineWeekProgramme";
 import PatientActionsMenu from "@/components/PatientActionsMenu";
 import ConditionSelect from "@/components/ConditionSelect";
+import PatientDetailView from "@/components/PatientDetailView";
 import type { SessionDetail } from "@/components/WeekProgramme";
 import {
   assignCondition,
@@ -29,6 +27,7 @@ import {
   deletePatient,
 } from "./actions";
 import { getPatientThread, sendPatientMessage } from "../actions";
+import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
 type WorkoutExercise = {
   position: number;
@@ -41,26 +40,13 @@ type Workout = {
 };
 
 const ACTIVITY_LABELS: Record<string, string> = { sedentary: "Sédentaire", moderate: "Modérée", active: "Active" };
-const TONE_TEXT = { ok: "text-ok", warn: "text-warn", danger: "text-danger", muted: "text-muted" } as const;
-const TONE_BG = { ok: "bg-ok-soft text-ok", warn: "bg-warn-soft text-warn", danger: "bg-danger-soft text-danger", muted: "bg-app-bg text-muted" } as const;
-
-function PainDelta({ latest, previous }: { latest: number | null; previous: number | null }) {
-  if (latest === null || previous === null) return <span className="text-xs text-muted">—</span>;
-  const d = latest - previous;
-  if (d === 0) return <span className="flex items-center gap-1 text-xs text-muted"><Minus className="h-3 w-3" strokeWidth={2} />= séance précédente</span>;
-  return (
-    <span className={`flex items-center gap-1 text-xs ${d > 0 ? "text-danger" : "text-ok"}`}>
-      {d > 0 ? <ArrowUp className="h-3 w-3" strokeWidth={2} /> : <ArrowDown className="h-3 w-3" strokeWidth={2} />}
-      {Math.abs(d)} depuis la séance précédente
-    </span>
-  );
-}
-
 export default async function PatientDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; adjusted?: string }> }) {
   const { id } = await params;
   const { error, adjusted } = await searchParams;
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  // Validation du compte vérifiée ICI aussi (audit du 2026-10-08) : le
+  // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
+  const { user } = await requireApprovedInstructor(supabase);
   const now = new Date();
 
   const { data: patient } = await supabase.from("patients").select("id, full_name, email, condition_id, created_at, payment_lapsed_at").eq("id", id).maybeSingle();
@@ -232,149 +218,111 @@ export default async function PatientDetailPage({ params, searchParams }: { para
 
   const profileUpdated = profile?.updated_at ? new Date(profile.updated_at as string).toLocaleDateString("fr-FR") : null;
 
+  const lastWorkoutExercises = lastWorkout?.workout_exercises.length ?? 0;
+
   return (
-    <main className="min-h-screen">
-      {/* max-w-7xl comme la liste patients (Philippe, 2026-09-09 : « prendre
-          toute la place ») — la frise a besoin de largeur. */}
-      <div className="mx-auto max-w-7xl px-6 py-5 sm:px-8 sm:py-6">
-        <Link href="/dashboard/patients" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"><ArrowLeft className="h-4 w-4" strokeWidth={1.75} />Retour à la liste</Link>
-        {/* En-tête épuré (Philippe, 2026-10-01 : « trop d'information ») :
-            le nom, les alertes et « Gérer ». Condition, profil déclaré et
-            messages sont dans le menu « Gérer » ; phase et jours d'affilée
-            ont été retirés de l'en-tête. */}
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold text-ink">{patient.full_name}</h1>
-            {/* Alerte programme à côté du nom (Philippe, 2026-09-29) — le
-                texte complet reste au survol. */}
-            {warning && (
-              <span title={warning.detail} className="inline-flex items-center gap-1.5 rounded-full bg-warn-soft px-3 py-1 text-xs font-medium text-warn">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-                {warning.label}
+    <PatientDetailView
+      name={(patient.full_name as string | null) ?? "Patient"}
+      warning={warning}
+      paymentLapsed={!!patient.payment_lapsed_at}
+      error={error}
+      adjusted={adjusted === "1"}
+      stats={{
+        painLatest: pain.latest,
+        painPrevious: pain.previous,
+        adherencePct: adherence.pct,
+        adherenceTone: tone,
+        adherenceLabel: adherenceLabel(adherence.pct),
+        lastSessionLabel: relativeDay(lastLog?.completed_at ?? null, now),
+        lastSessionDetail: lastWorkout
+          ? `${lastWorkout.duration_minutes ?? "—"} min · ${lastWorkoutExercises} exercice${lastWorkoutExercises > 1 ? "s" : ""}`
+          : null,
+      }}
+      actionsMenu={
+      <PatientActionsMenu
+        patientId={patient.id}
+        patientName={firstName}
+        paymentLapsedAt={patient.payment_lapsed_at as string | null}
+        paymentEligibleForDeletion={paymentEligibleForDeletion(patient.payment_lapsed_at as string | null, now)}
+        redirectTo={`/dashboard/patients/${patient.id}`}
+        markPaymentLapsed={markPaymentLapsed}
+        clearPaymentLapsed={clearPaymentLapsed}
+        deletePatient={deletePatient}
+        messages={{
+          patient: { id: patient.id, name: (patient.full_name as string | null) ?? "Patient", initials: initials(patient.full_name as string | null) },
+          unreadCount: unreadCount ?? 0,
+          getThread: getPatientThread,
+          sendMessage: sendPatientMessage,
+        }}
+        conditionMissing={!patient.condition_id}
+        conditionSlot={
+          <form action={assignCondition} className="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="patient_id" value={patient.id} />
+            <ConditionSelect currentConditionId={(patient.condition_id as string | null) ?? null} conditions={conditions ?? []} />
+          </form>
+        }
+        profileSlot={
+      profile ? (
+        <div className="mt-2 space-y-1">
+          <p className="text-sm text-ink">
+            {[
+              ageFromDob(profile.date_of_birth as string | null) != null ? `${ageFromDob(profile.date_of_birth as string | null)} ans` : null,
+              profile.height_cm != null ? `${profile.height_cm} cm` : null,
+              profile.weight_kg != null ? `${profile.weight_kg} kg` : null,
+              profile.activity_level ? `activité ${ACTIVITY_LABELS[profile.activity_level as string] ?? profile.activity_level}` : null,
+              stage ? STAGE_LABELS[stage] : null,
+            ].filter(Boolean).join(" · ")}
+          </p>
+          {((profile.declared_body_part_ids as string[] | null) ?? []).length > 0 && (
+            <div className="mt-1.5">
+              <span className="text-sm text-muted">Le patient signale vouloir travailler : </span>
+              <span className="inline-flex flex-wrap gap-1 align-middle">
+                {(profile.declared_body_part_ids as string[]).map((bpId) => (
+                  <span key={bpId} className="rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-ink">
+                    {bodyParts?.find((bp) => bp.id === bpId)?.label ?? bpId}
+                  </span>
+                ))}
               </span>
-            )}
-            {patient.payment_lapsed_at && (
-              <span className="rounded-full bg-warn-soft px-3 py-1 text-xs font-medium text-warn">Ne paie plus</span>
-            )}
-          </div>
-          <PatientActionsMenu
-            patientId={patient.id}
-            patientName={firstName}
-            paymentLapsedAt={patient.payment_lapsed_at as string | null}
-            paymentEligibleForDeletion={paymentEligibleForDeletion(patient.payment_lapsed_at as string | null, now)}
-            redirectTo={`/dashboard/patients/${patient.id}`}
-            markPaymentLapsed={markPaymentLapsed}
-            clearPaymentLapsed={clearPaymentLapsed}
-            deletePatient={deletePatient}
-            messages={{
-              patient: { id: patient.id, name: (patient.full_name as string | null) ?? "Patient", initials: initials(patient.full_name as string | null) },
-              unreadCount: unreadCount ?? 0,
-              getThread: getPatientThread,
-              sendMessage: sendPatientMessage,
-            }}
-            conditionMissing={!patient.condition_id}
-            conditionSlot={
-              <form action={assignCondition} className="flex flex-wrap items-center gap-2">
-                <input type="hidden" name="patient_id" value={patient.id} />
-                <ConditionSelect currentConditionId={(patient.condition_id as string | null) ?? null} conditions={conditions ?? []} />
-              </form>
-            }
-            profileSlot={
-          profile ? (
-            <div className="mt-2 space-y-1">
-              <p className="text-sm text-ink">
-                {[
-                  ageFromDob(profile.date_of_birth as string | null) != null ? `${ageFromDob(profile.date_of_birth as string | null)} ans` : null,
-                  profile.height_cm != null ? `${profile.height_cm} cm` : null,
-                  profile.weight_kg != null ? `${profile.weight_kg} kg` : null,
-                  profile.activity_level ? `activité ${ACTIVITY_LABELS[profile.activity_level as string] ?? profile.activity_level}` : null,
-                  stage ? STAGE_LABELS[stage] : null,
-                ].filter(Boolean).join(" · ")}
-              </p>
-              {((profile.declared_body_part_ids as string[] | null) ?? []).length > 0 && (
-                <div className="mt-1.5">
-                  <span className="text-sm text-muted">Le patient signale vouloir travailler : </span>
-                  <span className="inline-flex flex-wrap gap-1 align-middle">
-                    {(profile.declared_body_part_ids as string[]).map((bpId) => (
-                      <span key={bpId} className="rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-ink">
-                        {bodyParts?.find((bp) => bp.id === bpId)?.label ?? bpId}
-                      </span>
-                    ))}
-                  </span>
-                </div>
-              )}
-              {profile.rehab_progress && <p className="text-sm text-muted"><span>Avancement{profileUpdated ? ` (mis à jour le ${profileUpdated})` : ""} :</span> {profile.rehab_progress as string}</p>}
-              {profile.history && <p className="text-sm text-muted"><span>Historique :</span> {profile.history as string}</p>}
-              {((profile.equipment as EquipmentId[] | null) ?? []).length > 0 && (
-                <div className="mt-1.5">
-                  <span className="text-sm text-muted">Équipement disponible : </span>
-                  <span className="inline-flex flex-wrap gap-1 align-middle">
-                    {(profile.equipment as EquipmentId[]).map((eq) => (
-                      <span key={eq} className="rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-ink">
-                        {EQUIPMENT_LABELS[eq] ?? eq}
-                      </span>
-                    ))}
-                  </span>
-                </div>
-              )}
             </div>
-          ) : (
-            <p className="mt-2 text-sm text-muted">Le patient n&apos;a pas encore complété son admission.</p>
-          )
-            }
-          />
+          )}
+          {profile.rehab_progress && <p className="text-sm text-muted"><span>Avancement{profileUpdated ? ` (mis à jour le ${profileUpdated})` : ""} :</span> {profile.rehab_progress as string}</p>}
+          {profile.history && <p className="text-sm text-muted"><span>Historique :</span> {profile.history as string}</p>}
+          {((profile.equipment as EquipmentId[] | null) ?? []).length > 0 && (
+            <div className="mt-1.5">
+              <span className="text-sm text-muted">Équipement disponible : </span>
+              <span className="inline-flex flex-wrap gap-1 align-middle">
+                {(profile.equipment as EquipmentId[]).map((eq) => (
+                  <span key={eq} className="rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-ink">
+                    {EQUIPMENT_LABELS[eq] ?? eq}
+                  </span>
+                ))}
+              </span>
+            </div>
+          )}
         </div>
-
-        {error && <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
-        {adjusted === "1" && <p className="mt-4 flex items-center gap-2 rounded-xl bg-ok-soft px-4 py-3 text-sm text-ok"><CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />Séance ajustée — le patient a été prévenu.</p>}
-
-        {/* Trois stats — une barre fine (valeur + détail sur la même ligne)
-            plutôt que trois grandes cases, pour que la frise tienne à l'écran
-            sans scroller (Philippe, 2026-09-29). */}
-        <div className="mt-4 grid divide-y divide-line rounded-xl border border-line bg-surface sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2.5">
-            <p className="text-xs font-medium text-muted">Douleur</p>
-            <p className={`text-lg font-semibold tabular-nums ${pain.latest !== null && pain.latest >= 6 ? "text-danger" : "text-ink"}`}>{pain.latest !== null ? `${pain.latest}/10` : "—"}</p>
-            {pain.latest !== null && <PainDelta latest={pain.latest} previous={pain.previous} />}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2.5">
-            <p className="text-xs font-medium text-muted">Adhérence</p>
-            <p className={`text-lg font-semibold tabular-nums ${TONE_TEXT[tone]}`}>{adherence.pct !== null ? `${adherence.pct} %` : "—"}</p>
-            {adherenceLabel(adherence.pct) && <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TONE_BG[tone]}`}>{adherenceLabel(adherence.pct)}</span>}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2.5">
-            <p className="text-xs font-medium text-muted">Dernière séance</p>
-            <p className="text-lg font-semibold text-ink">{relativeDay(lastLog?.completed_at ?? null, now)}</p>
-            {lastWorkout && <p className="text-xs text-muted">{lastWorkout.duration_minutes ?? "—"} min · {lastWorkout.workout_exercises.length} exercice{lastWorkout.workout_exercises.length > 1 ? "s" : ""}</p>}
-          </div>
-        </div>
-
-        {/* Frise semaine par semaine — remplace le calendrier mensuel et le
-            graphique « Historique douleur » (audit Philippe, 2026-09-09) : une
-            semaine avec douleur élevée ressort en rouge directement ici, et
-            c'est depuis chaque semaine que le kiné assigne/ajuste la séance.
-            Les illustrations de la séance en cours s'affichent directement
-            DANS la carte « Cette semaine » de la frise (Philippe, 2026-09-09,
-            deuxième retour : « mets-les sur la frise, qu'elle grossisse ») —
-            plus de section séparée à faire défiler pour les voir. */}
-        <div className="mt-5 w-full min-w-0">
-          <KineWeekProgramme
-            weeks={weeks}
-            currentWeekNumber={currentWeekNumber(weeks, now)}
-            dayDetails={dayDetails}
-            assignments={assignments}
-            workoutsById={workoutSummaries}
-            patientId={patient.id}
-            patientFirstName={firstName}
-            addableExercises={addableExercises}
-            bodyParts={bodyParts ?? []}
-            addableWorkouts={addableWorkouts}
-            adjustAction={adjustPatientWorkout}
-            assignAction={addRecommendedWorkout}
-            removeAction={removeRecommendedWorkout}
-          />
-        </div>
-      </div>
-    </main>
+      ) : (
+        <p className="mt-2 text-sm text-muted">Le patient n&apos;a pas encore complété son admission.</p>
+      )
+        }
+      />
+      }
+      programme={
+      <KineWeekProgramme
+        weeks={weeks}
+        currentWeekNumber={currentWeekNumber(weeks, now)}
+        dayDetails={dayDetails}
+        assignments={assignments}
+        workoutsById={workoutSummaries}
+        patientId={patient.id}
+        patientFirstName={firstName}
+        addableExercises={addableExercises}
+        bodyParts={bodyParts ?? []}
+        addableWorkouts={addableWorkouts}
+        adjustAction={adjustPatientWorkout}
+        assignAction={addRecommendedWorkout}
+        removeAction={removeRecommendedWorkout}
+      />
+      }
+    />
   );
 }

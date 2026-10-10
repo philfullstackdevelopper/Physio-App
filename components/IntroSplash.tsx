@@ -27,6 +27,7 @@ export default function IntroSplash() {
 
   useEffect(() => {
     if (document.documentElement.dataset.introSeen === "1") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- l'état « déjà vu » ne se lit qu'après l'affichage (sessionStorage) ; le lire plus tôt ferait différer le rendu serveur et navigateur.
       setGone(true);
       return;
     }

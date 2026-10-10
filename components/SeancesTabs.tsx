@@ -69,7 +69,7 @@ function TemplateCardMenu({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-line bg-surface py-1 shadow-sm">
+          <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-line bg-surface py-1 shadow-sm max-sm:z-[45]">
             <button
               type="button"
               onClick={() => {
@@ -183,7 +183,10 @@ type Tab = "mine" | "templates";
 const REVEAL_INITIAL = 12;
 const REVEAL_STEP = 12;
 
-const CARD_GRID = "grid grid-cols-1 gap-4 sm:grid-cols-3";
+// Téléphone (Philippe, 2026-10-07 : mêmes règles que l'appli patient) : les
+// cartes deviennent des lignes compactes — vignette à gauche, nom au milieu,
+// menu à droite — pour voir plusieurs séances sans faire défiler longtemps.
+const CARD_GRID = "grid grid-cols-1 gap-4 max-sm:gap-2 sm:grid-cols-3";
 
 // The workout's own lead exercise (position 0) supplies a real illustration
 // via the same matching already solved for the exercise library — no
@@ -205,13 +208,13 @@ function SeanceThumb({
    *  card. */
   size?: "cover" | "inset";
 }) {
-  const boxClass = size === "inset" ? "h-28 w-full rounded-lg" : "aspect-[4/3] rounded-t-xl";
+  const boxClass = `${size === "inset" ? "h-28 w-full rounded-lg" : "aspect-[4/3] rounded-t-xl"} max-sm:aspect-auto max-sm:h-14 max-sm:w-14 max-sm:shrink-0 max-sm:rounded-xl max-sm:bg-app-bg max-sm:p-1`;
   return (
     <div className={`relative ${boxClass} bg-surface`}>
       {leadExerciseName ? (
         <ExerciseIllustration
           name={leadExerciseName}
-          className={`h-full w-full text-brand ${size === "inset" ? "" : "p-4"}`}
+          className={`h-full w-full text-brand ${size === "inset" ? "" : "p-4 max-sm:p-0"}`}
           animate={false}
         />
       ) : (
@@ -220,19 +223,19 @@ function SeanceThumb({
         </div>
       )}
       {badge === "mine" && (
-        <span className="absolute left-2 top-2 rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-medium text-muted">
+        <span className="absolute left-2 top-2 rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-medium text-muted max-sm:hidden">
           Personnalisée
         </span>
       )}
       {badge === "template" && (
-        <span className="absolute left-2 top-2 rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-medium text-muted">
+        <span className="absolute left-2 top-2 rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-medium text-muted max-sm:hidden">
           Plateforme
         </span>
       )}
       {stage && (
         <span
           title={STAGE_LABELS[stage]}
-          className="absolute right-2 top-2 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-medium text-brand"
+          className="absolute right-2 top-2 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-medium text-brand max-sm:hidden"
         >
           {STAGE_SHORT[stage]}
         </span>
@@ -261,7 +264,7 @@ function CardMeta({ s }: { s: ListItem }) {
 // list is still one click away on the séance's own page.
 function ExerciseNamesList({ names }: { names?: string[] }) {
   if (!names || names.length === 0) return null;
-  return <p className="mt-1 line-clamp-2 text-xs text-muted">{names.join(" · ")}</p>;
+  return <p className="mt-1 line-clamp-2 text-xs text-muted max-sm:mt-0.5 max-sm:line-clamp-1">{names.join(" · ")}</p>;
 }
 
 function VoirPlusButton({ onClick }: { onClick: () => void }) {
@@ -350,23 +353,27 @@ export default function SeancesTabs({
 
   return (
     <div>
-      <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4">
+      <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4 max-sm:flex-nowrap max-sm:items-center max-sm:gap-2">
         <div>
           <h1 className="text-2xl font-semibold text-ink">Mes séances</h1>
-          <p className="mt-1 text-sm text-muted">Composez vos propres séances ; elles seront proposées aux patients de la phase choisie.</p>
+          <p className="mt-1 text-sm text-muted max-sm:hidden">Composez vos propres séances ; elles seront proposées aux patients de la phase choisie.</p>
         </div>
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/exercises" className="text-sm font-medium text-brand hover:underline">Gérer mes exercices →</Link>
+        <div className="flex items-center gap-4 max-sm:gap-2">
+          <Link href="/dashboard/exercises" className="text-sm font-medium text-brand hover:underline max-sm:rounded-full max-sm:bg-surface max-sm:px-3 max-sm:py-2 max-sm:shadow-soft max-sm:hover:no-underline">
+            <span className="max-sm:hidden">Gérer mes exercices →</span>
+            <span className="hidden max-sm:inline">Mes exercices</span>
+          </Link>
           <button
             type="button"
             onClick={() => {
               setTab("mine");
               setNewSeanceOpen((v) => !v);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
+            aria-label="Nouvelle séance"
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark max-sm:h-10 max-sm:w-10 max-sm:justify-center max-sm:p-0 max-sm:shadow-soft"
           >
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Nouvelle séance
+            <Plus className="h-4 w-4 max-sm:h-5 max-sm:w-5" strokeWidth={2} />
+            <span className="max-sm:hidden">Nouvelle séance</span>
           </button>
         </div>
       </div>
@@ -377,29 +384,31 @@ export default function SeancesTabs({
         </p>
       )}
 
-      <div className="mt-8">
-      <div className="inline-flex items-center gap-1 rounded-full border border-line bg-app-bg p-1">
+      <div className="mt-8 max-sm:mt-4">
+      <div className="inline-flex items-center gap-1 rounded-full border border-line bg-app-bg p-1 max-sm:flex max-sm:w-full max-sm:border-0 max-sm:bg-line/60">
         <button
           type="button"
           onClick={() => setTab("mine")}
           className={
             tab === "mine"
-              ? "rounded-full bg-surface px-3 py-1.5 text-sm font-medium text-ink shadow-sm"
-              : "rounded-full px-3 py-1.5 text-sm font-medium text-muted hover:text-ink"
+              ? "rounded-full bg-surface px-3 py-1.5 text-sm font-medium text-ink shadow-sm max-sm:flex-1"
+              : "rounded-full px-3 py-1.5 text-sm font-medium text-muted hover:text-ink max-sm:flex-1"
           }
         >
-          Mes séances personnalisées ({mine.length})
+          <span className="max-sm:hidden">Mes séances personnalisées</span>
+          <span className="hidden max-sm:inline">Personnalisées</span> ({mine.length})
         </button>
         <button
           type="button"
           onClick={() => setTab("templates")}
           className={
             tab === "templates"
-              ? "rounded-full bg-surface px-3 py-1.5 text-sm font-medium text-ink shadow-sm"
-              : "rounded-full px-3 py-1.5 text-sm font-medium text-muted hover:text-ink"
+              ? "rounded-full bg-surface px-3 py-1.5 text-sm font-medium text-ink shadow-sm max-sm:flex-1"
+              : "rounded-full px-3 py-1.5 text-sm font-medium text-muted hover:text-ink max-sm:flex-1"
           }
         >
-          Séances prévues ({templates.length})
+          <span className="max-sm:hidden">Séances prévues</span>
+          <span className="hidden max-sm:inline">Modèles</span> ({templates.length})
         </button>
       </div>
 
@@ -450,9 +459,9 @@ export default function SeancesTabs({
               {filteredMine.map((s) => (
                 <div
                   key={s.id}
-                  className="group rounded-xl border border-line bg-surface p-4 hover:border-brand"
+                  className="group rounded-xl border border-line bg-surface p-4 hover:border-brand max-sm:grid max-sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] max-sm:items-center max-sm:gap-3 max-sm:rounded-2xl max-sm:border-0 max-sm:p-3 max-sm:shadow-soft"
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-2 max-sm:contents">
                     <Link href={`/dashboard/seances/${s.id}`} className="min-w-0 flex-1">
                       <SeanceThumb
                         badge="mine"
@@ -461,15 +470,17 @@ export default function SeancesTabs({
                         size="inset"
                       />
                     </Link>
-                    <DeleteSeanceButton
-                      seanceId={s.id}
-                      seanceName={s.name}
-                      blockedReason={s.blockedReason}
-                      deleteSeance={deleteSeance}
-                    />
+                    <span className="max-sm:order-1 sm:contents">
+                      <DeleteSeanceButton
+                        seanceId={s.id}
+                        seanceName={s.name}
+                        blockedReason={s.blockedReason}
+                        deleteSeance={deleteSeance}
+                      />
+                    </span>
                   </div>
-                  <Link href={`/dashboard/seances/${s.id}`} className="block min-h-28">
-                    <p className="mt-3 font-medium text-ink">{s.name}</p>
+                  <Link href={`/dashboard/seances/${s.id}`} className="block min-h-28 max-sm:min-h-0 max-sm:min-w-0">
+                    <p className="mt-3 font-medium text-ink max-sm:mt-0 max-sm:truncate">{s.name}</p>
                     {s.exerciseCount === 0 && (
                       <span className="mt-1 inline-flex items-center rounded-full bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">
                         Aucun exercice
@@ -487,7 +498,7 @@ export default function SeancesTabs({
       {tab === "templates" && (
         <div className="mt-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted max-sm:text-xs">
               Déjà disponibles pour tous les kinés. Ouvrez le menu ⋮ d&apos;un modèle pour le
               modifier (une copie modifiable vous est ouverte) ou le retirer de votre liste.
             </p>
@@ -535,10 +546,10 @@ export default function SeancesTabs({
                 {visibleTemplates.map((t) => (
                   <div
                     key={t.id}
-                    className={`overflow-hidden rounded-xl border border-line bg-surface ${t.hidden ? "opacity-60" : ""}`}
+                    className={`overflow-hidden rounded-xl border border-line bg-surface max-sm:flex max-sm:items-center max-sm:gap-3 max-sm:overflow-visible max-sm:rounded-2xl max-sm:border-0 max-sm:p-3 max-sm:shadow-soft ${t.hidden ? "opacity-60" : ""}`}
                   >
                     <SeanceThumb badge="template" stage={t.stage} leadExerciseName={t.leadExerciseName} />
-                    <div className="flex flex-col gap-3 p-4">
+                    <div className="flex flex-col gap-3 p-4 max-sm:min-w-0 max-sm:flex-1 max-sm:gap-0 max-sm:p-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-medium text-ink">{t.conditionName ?? t.name}</p>

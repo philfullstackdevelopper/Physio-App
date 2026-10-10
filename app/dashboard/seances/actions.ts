@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { friendlyDbError } from "@/lib/format/dbError";
 
 // Ensure the caller is an approved instructor; returns their user id.
 // (Philippe, 2026-10-07 : délègue à la garde commune, qui vérifie aussi que
@@ -39,7 +40,7 @@ export async function createSeance(formData: FormData) {
     .select("id")
     .single();
   if (error) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent(error.message)}`);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
   // Exercices choisis dans la fenêtre « Nouvelle séance », dans l'ordre de clic.
@@ -157,7 +158,7 @@ export async function duplicateSeance(formData: FormData) {
     .select("id")
     .single();
   if (error) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent(error.message)}`);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
   const { data: exs } = await supabase
@@ -191,7 +192,7 @@ export async function hideTemplateWorkout(formData: FormData) {
     .from("instructor_hidden_workouts")
     .insert({ instructor_id: userId, workout_id: workoutId });
   if (error) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent(error.message)}`);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
   revalidatePath("/dashboard/seances");
@@ -210,7 +211,7 @@ export async function unhideTemplateWorkout(formData: FormData) {
     .eq("instructor_id", userId)
     .eq("workout_id", workoutId);
   if (error) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent(error.message)}`);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
   revalidatePath("/dashboard/seances");
@@ -255,7 +256,13 @@ export async function deleteSeance(formData: FormData) {
 
   const { error: deleteError } = await supabase.from("workouts").delete().eq("id", id);
   if (deleteError) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent("Impossible de supprimer la séance : " + deleteError.message)}`);
+    // 23503 : la base refuse (migration 0063) — la séance a servi à des
+    // patients, y compris ceux d'autres kinés (bibliothèque partagée).
+    const message =
+      deleteError.code === "23503"
+        ? `« ${wk.name} » a déjà servi à des patients (les vôtres ou ceux d'autres kinés) : elle ne peut pas être supprimée, pour ne pas effacer leur historique.`
+        : "Impossible de supprimer la séance : " + friendlyDbError(deleteError);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(message)}`);
   }
   revalidatePath("/dashboard/seances");
   redirect("/dashboard/seances");

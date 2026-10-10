@@ -9,21 +9,34 @@ import { upsertConnectAccount } from "@/lib/db/admin";
 // the signature, so this route reads req.text() and never parses JSON first.
 export const runtime = "nodejs";
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+// Stripe envoie les événements des comptes Connect des kinés et ceux du
+// compte plateforme par deux points d'envoi distincts, chacun avec SON secret
+// (audit du 2026-10-08). Les deux peuvent viser cette même adresse :
+// STRIPE_WEBHOOK_SECRET (plateforme) et STRIPE_CONNECT_WEBHOOK_SECRET
+// (Connect) — on accepte une signature valide pour l'un ou l'autre.
+const webhookSecrets = [process.env.STRIPE_WEBHOOK_SECRET, process.env.STRIPE_CONNECT_WEBHOOK_SECRET].filter(
+  (s): s is string => !!s,
+);
 
 export async function POST(req: Request) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
-  if (!sig || !webhookSecret) {
+  if (!sig || webhookSecrets.length === 0) {
     return NextResponse.json({ error: "Webhook non configuré." }, { status: 400 });
   }
 
   const stripe = getStripe();
 
-  let event: Stripe.Event;
-  try {
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
-  } catch {
+  let event: Stripe.Event | null = null;
+  for (const secret of webhookSecrets) {
+    try {
+      event = stripe.webhooks.constructEvent(body, sig, secret);
+      break;
+    } catch {
+      /* secret suivant */
+    }
+  }
+  if (!event) {
     return NextResponse.json({ error: "Signature invalide." }, { status: 400 });
   }
 
@@ -61,9 +74,22 @@ export async function POST(req: Request) {
       // event.account : le compte Connect du kiné d'où vient l'événement —
       // syncSubscription en a besoin pour vérifier qu'un événement tardif
       // d'un ancien abonnement n'écrase pas l'abonnement en cours.
-      await syncSubscription(event.data.object as Stripe.Subscription, undefined, {
-        stripeAccount: event.account,
-      });
+      // Stripe ne garantit pas l'ordre des événements (audit du 2026-10-08) :
+      // un « updated (active) » arrivé APRÈS le « deleted » rendait l'accès.
+      // On relit donc l'abonnement chez Stripe et on enregistre son état
+      // ACTUEL, pas celui figé dans l'événement.
+      const fromEvent = event.data.object as Stripe.Subscription;
+      let current = fromEvent;
+      try {
+        current = await stripe.subscriptions.retrieve(
+          fromEvent.id,
+          undefined,
+          event.account ? { stripeAccount: event.account } : undefined,
+        );
+      } catch (err) {
+        console.error(`[stripe/webhook] relecture de ${fromEvent.id} impossible, état de l'événement utilisé :`, err);
+      }
+      await syncSubscription(current, undefined, { stripeAccount: event.account });
       break;
     }
     case "account.updated": {

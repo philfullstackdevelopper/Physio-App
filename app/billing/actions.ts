@@ -1,9 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { requestOrigin } from "@/lib/requestOrigin";
 import { getStripe } from "@/lib/billing/stripe";
 
 // Opens the Stripe Customer Portal so the patient can cancel, change card, or
@@ -46,10 +46,9 @@ export async function openBillingPortal(formData?: FormData) {
     : { data: null };
   const stripeAccount = (connect?.stripe_connect_account_id as string | null) ?? undefined;
 
-  const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
-  const proto = host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https";
-  const base = `${proto}://${host}`;
+  // Adresse du site configurée (NEXT_PUBLIC_SITE_URL), pas l'en-tête Host
+  // de la requête, qui peut être falsifié (audit du 2026-10-08).
+  const base = await requestOrigin();
 
   const portal = await getStripe().billingPortal.sessions.create(
     {

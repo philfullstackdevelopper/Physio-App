@@ -64,13 +64,33 @@ export default async function PatientLayout({ children }: { children: React.Reac
 
   const pathname = (await headers()).get("x-pathname") ?? "";
   const onOnboardingPath = pathname.startsWith(ONBOARDING_PATH);
+  const onAccountPath = pathname.startsWith("/patient/compte");
+  const needsTierCheck = !onOnboardingPath && !pathname.startsWith(ABONNEMENT_PATH) && !onAccountPath && !kineSuspended;
+  const fullBleed = onOnboardingPath || pathname.startsWith(ABONNEMENT_PATH);
+
+  // Les trois lectures qui suivent ne dépendent pas l'une de l'autre : en
+  // parallèle plutôt qu'à la suite (audit du 2026-10-08 — chaque aller-retour
+  // vers PostgREST sur Scalingo se paie). Les décisions restent dans le même
+  // ordre qu'avant.
+  const [profileRes, billing, unreadRes] = await Promise.all([
+    onOnboardingPath
+      ? Promise.resolve(null)
+      : supabase.from("patient_profiles").select("health_data_consent_at").eq("id", user.id).maybeSingle(),
+    needsTierCheck ? getTierBilling(supabase, user.id) : Promise.resolve(null),
+    fullBleed
+      ? Promise.resolve(null)
+      : // Messages FROM the instructor this patient hasn't opened yet — mirrors
+        // lib/dashboard/unreadMessages.ts's loadUnreadCount, sender flipped.
+        supabase
+          .from("patient_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("patient_id", user.id)
+          .eq("sender", "instructor")
+          .is("read_at", null),
+  ]);
+
   if (!onOnboardingPath) {
-    const { data: profile } = await supabase
-      .from("patient_profiles")
-      .select("health_data_consent_at")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (!profile?.health_data_consent_at) {
+    if (!profileRes?.data?.health_data_consent_at) {
       redirect(ONBOARDING_PATH);
     }
   }
@@ -82,10 +102,12 @@ export default async function PatientLayout({ children }: { children: React.Reac
   // browser, so the sidebar flashes/sticks around the abonnement page even
   // though that page is meant to render full-bleed (Philippe, 2026-09-11 —
   // reported as "la barre latérale ne devrait pas être là").
-  if (!onOnboardingPath && !pathname.startsWith(ABONNEMENT_PATH) && !kineSuspended) {
-    if (!hasActiveTier(await getTierBilling(supabase, user.id))) {
-      redirect(ABONNEMENT_PATH);
-    }
+  // « Mon compte » reste ouvert SANS offre active (audit du 2026-10-08) :
+  // c'est là que le patient exporte ses données, supprime son compte (droits
+  // RGPD) et gère son abonnement — après une résiliation ou la fin de l'essai,
+  // il doit encore pouvoir s'en servir.
+  if (needsTierCheck && billing && !hasActiveTier(billing)) {
+    redirect(ABONNEMENT_PATH);
   }
 
   // Onboarding and the offer choice both render full-bleed, their own layout
@@ -93,16 +115,8 @@ export default async function PatientLayout({ children }: { children: React.Reac
   // makes sense once there's a real profile AND an active offer to navigate
   // around (Philippe, 2026-09-09: "sans les trucs sur la barre latérale pour
   // le début").
-  if (onOnboardingPath || pathname.startsWith(ABONNEMENT_PATH)) return <>{children}</>;
-
-  // Messages FROM the instructor this patient hasn't opened yet — mirrors
-  // lib/dashboard/unreadMessages.ts's loadUnreadCount, sender flipped.
-  const { count: unreadCount } = await supabase
-    .from("patient_messages")
-    .select("id", { count: "exact", head: true })
-    .eq("patient_id", user.id)
-    .eq("sender", "instructor")
-    .is("read_at", null);
+  if (fullBleed) return <>{children}</>;
+  const unreadCount = unreadRes?.count ?? 0;
 
   // Séance guidée (…/seance) : PatientNav n'affiche rien (pas de barre
   // d'onglets), donc pas de marge du bas non plus — sinon bande vide en bas

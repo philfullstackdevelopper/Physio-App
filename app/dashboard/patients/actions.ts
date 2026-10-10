@@ -1,6 +1,5 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
@@ -8,7 +7,10 @@ import { isClerkAPIResponseError } from "@clerk/shared/error";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { precreateAppUserId } from "@/lib/auth/user-map";
+import { requestOrigin } from "@/lib/requestOrigin";
 import type { ThreadMessage } from "@/components/MessageThread";
+import { friendlyDbError } from "@/lib/format/dbError";
+import { deleteAppUserById } from "@/lib/db/admin";
 
 // Instructor invites a new patient by email. Creates the patient's Clerk
 // account invitation (they choose their own password from the e-mail), and
@@ -28,20 +30,29 @@ export async function addPatient(formData: FormData) {
     redirect(`/dashboard/patients/new?error=${encodeURIComponent("Veuillez remplir tous les champs.")}`);
   }
 
-  const hdrs = await headers();
-  const origin = hdrs.get("origin") ?? `https://${hdrs.get("host")}`;
+  const origin = await requestOrigin();
 
   // Reserve the internal uuid BEFORE the invite goes out, so patients.id and
   // app_users.app_id agree from day one (resolveAppUserId will find this row
   // by email on the patient's first login and attach their Clerk id).
   let appId: string;
+  let appIdIsNew = false;
   try {
-    ({ appId } = await precreateAppUserId(email));
+    ({ appId, isNew: appIdIsNew } = await precreateAppUserId(email));
   } catch (e) {
-    redirect(
-      `/dashboard/patients/new?error=${encodeURIComponent(e instanceof Error ? e.message : "Erreur interne.")}`,
-    );
+    console.error("addPatient: precreateAppUserId failed", e);
+    redirect(`/dashboard/patients/new?error=${encodeURIComponent("Impossible de préparer le compte du patient. Réessayez dans un instant.")}`);
   }
+  // Un échec plus bas ne doit pas laisser derrière lui l'identifiant que l'on
+  // vient de réserver (audit du 2026-10-08) — seulement s'il est neuf.
+  const discardReservedId = async () => {
+    if (!appIdIsNew) return;
+    try {
+      await deleteAppUserById(appId);
+    } catch (err) {
+      console.error("addPatient: identifiant réservé non supprimé", err);
+    }
+  };
 
   // Send the Clerk invitation. The patient sets their password via Clerk's own
   // flow — no Supabase invite link, no token confirmation route needed anymore.
@@ -87,6 +98,7 @@ export async function addPatient(formData: FormData) {
       : isPending
         ? "Une invitation est déjà en attente pour cette adresse."
         : "Impossible d'inviter ce patient.";
+    await discardReservedId();
     redirect(`/dashboard/patients/new?error=${encodeURIComponent(message)}`);
   }
 
@@ -113,9 +125,12 @@ export async function addPatient(formData: FormData) {
     } catch (e) {
       console.error("addPatient: failed to revoke invitation after patients insert error", e);
     }
-    redirect(
-      `/dashboard/patients/new?error=${encodeURIComponent("Impossible d'enregistrer le patient : " + patientError.message)}`,
-    );
+    await discardReservedId();
+    const message =
+      patientError.code === "23505"
+        ? "Cette adresse e-mail est déjà utilisée par un autre compte EasyPhysio."
+        : "Impossible d'enregistrer le patient : " + friendlyDbError(patientError);
+    redirect(`/dashboard/patients/new?error=${encodeURIComponent(message)}`);
   }
 
   revalidatePath("/dashboard/patients");
@@ -146,8 +161,7 @@ export async function reactivatePatient(formData: FormData): Promise<{ ok: true 
   if (!patient.email) return { error: "Ce patient n'a pas d'adresse e-mail enregistrée." };
 
 
-  const hdrs = await headers();
-  const origin = hdrs.get("origin") ?? `https://${hdrs.get("host")}`;
+  const origin = await requestOrigin();
 
   try {
     const client = await clerkClient();
@@ -246,7 +260,7 @@ export async function sendPatientMessage(formData: FormData): Promise<{ ok: true
     sender: "instructor",
     body,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error) };
 
   revalidatePath("/dashboard/messages");
   revalidatePath("/dashboard");

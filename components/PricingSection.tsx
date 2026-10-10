@@ -136,7 +136,7 @@ function KineOffer() {
           <li>Vous fixez votre tarif mensuel par patient</li>
           <li>Paiement direct par vos patients, via Stripe Connect</li>
           <li>Patients illimités</li>
-          <li>Bibliothèque d&apos;exercices avec vidéos</li>
+          <li>Bibliothèque d&apos;exercices illustrés (vidéos à venir)</li>
           <li>Suivi d&apos;assiduité et signalements de douleur</li>
           <li>Ajustement de programme à distance</li>
         </ul>

@@ -2,10 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/supabase/require-user";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import ExercisePicker from "@/components/ExercisePicker";
 import { saveSeance, deleteSeance } from "../actions";
+import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
 const STAGES = Object.entries(STAGE_LABELS) as [InjuryStage, string][];
 
@@ -22,7 +22,9 @@ export default async function SeanceEditorPage({
   const { saved, error } = await searchParams;
 
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  // Validation du compte vérifiée ICI aussi (audit du 2026-10-08) : le
+  // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
+  const { user } = await requireApprovedInstructor(supabase);
 
   const { data: workout } = await supabase
     .from("workouts")
@@ -64,13 +66,13 @@ export default async function SeanceEditorPage({
     }));
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-2xl p-6 sm:p-8">
+    <main className="min-h-screen max-sm:min-h-0">
+      <div className="mx-auto max-w-2xl p-6 max-sm:px-4 max-sm:pt-2 sm:p-8">
         <div className="animate-[fadeInUp_0.6s_ease-out_both]">
-          <Link href="/dashboard/seances" className="text-sm text-muted hover:text-ink">
+          <Link href="/dashboard/seances" className="text-sm text-muted hover:text-ink max-sm:hidden">
             ← Mes séances
           </Link>
-          <h1 className="mt-3 text-2xl font-semibold text-ink">Composer la séance</h1>
+          <h1 className="mt-3 text-2xl font-semibold text-ink max-sm:mt-0">Composer la séance</h1>
         </div>
 
         {error && (

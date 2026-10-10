@@ -156,7 +156,7 @@ export default function PraticiensPage() {
               <Cta />
               <span className="flex items-center gap-1.5 text-sm text-slate-500">
                 <Video className="h-4 w-4 text-blue-600" strokeWidth={1.75} />
-                Bibliothèque d&apos;exercices vidéo incluse
+                Bibliothèque d&apos;exercices illustrés incluse (vidéos à venir)
               </span>
             </div>
           </div>

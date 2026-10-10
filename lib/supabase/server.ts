@@ -16,8 +16,8 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 // mirrors the same dedupe requireUser() relies on.
 //
 // The token fetch itself is ALSO cache()-deduped (getAccessToken below) so a
-// page issuing several sequential queries (onboarding does three: conditions,
-// patient_profiles, patient_documents) only calls Clerk's getToken() once per
+// page issuing several sequential queries (onboarding does several:
+// conditions, patient_profiles…) only calls Clerk's getToken() once per
 // request — a reasonable dedupe regardless, but NOT a fix for PGRST301 "No
 // suitable key or wrong key type": that error means Supabase can't verify the
 // Clerk JWT's signature at all, every time, not just under repeated calls.

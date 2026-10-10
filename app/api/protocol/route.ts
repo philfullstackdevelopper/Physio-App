@@ -4,13 +4,17 @@
 // The physio dashboard calls this with a condition + stage and receives a
 // structured `ProtocolResponse` (predefined exercises + dosages) to review.
 //
-// AUTHORIZATION NOTE: because a Prisma/app-layer data model bypasses Supabase
-// RLS, protected routes like this MUST verify the caller is an authenticated
-// PHYSIO or ADMIN in code. The check below is a placeholder — wire it to your
-// real session (Supabase auth.getUser() + role lookup) before shipping.
+// MAQUETTE (CLAUDE.md §7) : contenu clinique INVENTÉ, branché sur aucun
+// écran. Réservé à un kiné connecté et validé (audit du 2026-10-08 — la route
+// était ouverte à tous) ; tout autre appel reçoit une 404, comme si elle
+// n'existait pas.
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { auth } from "@clerk/nextjs/server";
+import { requireUser } from "@/lib/supabase/require-user";
+import { getInstructor } from "@/lib/dashboard/instructor";
 import {
   generateProtocol,
   type ProtocolRequest,
@@ -34,9 +38,14 @@ function parseBody(body: unknown): ProtocolRequest | null {
 }
 
 export async function POST(request: NextRequest) {
-  // TODO(auth): replace with real session check.
-  //   const { data: { user } } = await createClient().auth.getUser();
-  //   if (!user || (await roleOf(user.id)) !== "PHYSIO") return 403.
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Introuvable." }, { status: 404 });
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+  const instructor = await getInstructor(supabase, user.id);
+  if (!instructor || ((instructor.status as string | null) ?? "approved") !== "approved") {
+    return NextResponse.json({ error: "Introuvable." }, { status: 404 });
+  }
 
   let json: unknown;
   try {

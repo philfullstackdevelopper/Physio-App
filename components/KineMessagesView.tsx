@@ -1,0 +1,168 @@
+// Boîte de réception du kiné — l'affichage seul (app/dashboard/messages/page.tsx
+// charge les données ; /prototypes/kine-telephone le rend avec des données
+// fictives). Ordinateur : liste à gauche, fil à droite, inchangé.
+// Téléphone (Philippe, 2026-10-07 : mêmes règles que l'appli patient) : UN
+// écran à la fois, comme une messagerie — la liste des conversations, ou,
+// dès qu'un patient est choisi (?patient=…), sa conversation en plein écran
+// avec une flèche de retour. Rien ne défile hors de la liste ou du fil.
+
+import Link from "next/link";
+import { ArrowLeft, Bookmark, BookmarkCheck, ChevronRight, Search } from "lucide-react";
+import type { ConversationRow, ConversationTab } from "@/lib/dashboard/conversations";
+import ConversationList from "@/components/ConversationList";
+import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
+import MessageComposer from "@/components/MessageComposer";
+import MarkThreadRead from "@/components/MarkThreadRead";
+
+export default function KineMessagesView({
+  conversations,
+  selected,
+  explicitlyOpened,
+  thread,
+  tab,
+  q,
+  error,
+  markConversationRead,
+  sendInboxMessage,
+  toggleFollowUp,
+}: {
+  conversations: ConversationRow[];
+  selected: ConversationRow | null;
+  /** Le kiné a lui-même ouvert ce fil (?patient=…) : sur téléphone, on montre le fil plutôt que la liste. */
+  explicitlyOpened: boolean;
+  thread: ThreadMessage[];
+  tab: ConversationTab;
+  q: string;
+  error?: string;
+  markConversationRead: (patientId: string) => Promise<void>;
+  sendInboxMessage: (formData: FormData) => void | Promise<void>;
+  toggleFollowUp: (formData: FormData) => void | Promise<void>;
+}) {
+  const selectedId = selected?.patientId ?? null;
+  // Téléphone : quel écran montrer.
+  const phoneThread = explicitlyOpened && !!selected;
+  const onlyWhenList = phoneThread ? "max-sm:hidden" : "";
+  const onlyWhenThread = phoneThread ? "" : "max-sm:hidden";
+  const backHref = `/dashboard/messages${tab !== "all" ? `?tab=${tab}` : ""}`;
+
+  return (
+    <main className="flex h-screen flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
+      <div className={`mx-auto flex w-full max-w-7xl flex-1 flex-col p-6 max-sm:min-h-0 sm:p-8 lg:min-h-0 ${phoneThread ? "max-sm:p-0" : "max-sm:px-4 max-sm:pb-3 max-sm:pt-2"}`}>
+        <div className={`flex flex-wrap items-start justify-between gap-4 max-sm:gap-3 ${onlyWhenList}`}>
+          <div>
+            <h1 className="text-2xl font-semibold text-ink">Messages</h1>
+            <p className="mt-1 text-sm text-muted max-sm:hidden">Vos échanges avec chaque patient.</p>
+          </div>
+          <form method="get" action="/dashboard/messages" className="relative w-full sm:w-80">
+            {selectedId && <input type="hidden" name="patient" value={selectedId} />}
+            <input type="hidden" name="tab" value={tab} />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.75} />
+            <input
+              type="search"
+              name="q"
+              defaultValue={q}
+              placeholder="Rechercher un patient…"
+              aria-label="Rechercher un patient"
+              className="w-full rounded-xl border border-line bg-surface py-2.5 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft max-sm:h-10 max-sm:border-0 max-sm:py-2 max-sm:text-base max-sm:shadow-soft"
+            />
+          </form>
+        </div>
+
+        {error && <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger max-sm:m-3 max-sm:mb-0">{error}</p>}
+
+        <div className={`mt-6 grid flex-1 gap-6 max-sm:min-h-0 max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[360px_1fr] ${phoneThread ? "max-sm:mt-0" : "max-sm:mt-3"}`}>
+          <section
+            className={`min-h-[24rem] rounded-2xl border border-line bg-surface max-sm:min-h-0 max-sm:overflow-hidden max-sm:border-0 max-sm:shadow-soft lg:min-h-0 ${onlyWhenList}`}
+            aria-label="Conversations"
+          >
+            <ConversationList rows={conversations} selectedId={selectedId} initialTab={tab} query={q} />
+          </section>
+
+          <section
+            className={`flex min-h-[32rem] flex-col rounded-2xl border border-line bg-surface max-sm:min-h-0 max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent lg:min-h-0 ${onlyWhenThread}`}
+            aria-label="Fil de discussion"
+          >
+            {!selected ? (
+              <p className="m-auto p-6 text-center text-sm text-muted">Aucun patient pour l&apos;instant.</p>
+            ) : (
+              <>
+                {explicitlyOpened && <MarkThreadRead patientId={selected.patientId} action={markConversationRead} />}
+                {/* Formulaire frère (pas imbriqué) : les boutons de suivi le ciblent via form="…". */}
+                <form id="follow-up-form" action={toggleFollowUp}>
+                  <input type="hidden" name="patient_id" value={selected.patientId} />
+                  <input type="hidden" name="follow_up" value={selected.followUp ? "0" : "1"} />
+                  <input type="hidden" name="tab" value={tab} />
+                  <input type="hidden" name="q" value={q} />
+                </form>
+                <header className="flex items-center gap-3 border-b border-line px-5 py-4 max-sm:gap-2 max-sm:bg-surface max-sm:px-2 max-sm:py-2.5">
+                  <Link
+                    href={backHref}
+                    aria-label="Retour aux conversations"
+                    className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink max-sm:flex"
+                  >
+                    <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+                  </Link>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand max-sm:h-10 max-sm:w-10">
+                    {selected.initials}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-base font-semibold text-ink">{selected.name}</p>
+                    <p className="truncate text-sm text-muted max-sm:text-xs">{selected.conditionLabel ?? "Condition non assignée"}</p>
+                  </div>
+                  <button
+                    type="submit"
+                    form="follow-up-form"
+                    aria-label={selected.followUp ? "Retirer le suivi" : "Ajouter un suivi"}
+                    aria-pressed={selected.followUp}
+                    className={`hidden h-10 w-10 shrink-0 items-center justify-center rounded-full max-sm:flex ${selected.followUp ? "bg-brand-soft text-brand" : "text-muted"}`}
+                  >
+                    {selected.followUp ? <BookmarkCheck className="h-5 w-5" strokeWidth={1.75} /> : <Bookmark className="h-5 w-5" strokeWidth={1.75} />}
+                  </button>
+                  <Link
+                    href={`/dashboard/patients/${selected.patientId}`}
+                    className="shrink-0 text-sm font-medium text-brand hover:underline max-sm:flex max-sm:h-10 max-sm:items-center max-sm:gap-0.5 max-sm:pr-2"
+                  >
+                    <span className="max-sm:hidden">Voir la fiche</span>
+                    <span className="hidden max-sm:inline">Fiche</span>
+                    <ChevronRight className="hidden h-4 w-4 max-sm:block" strokeWidth={2} />
+                  </Link>
+                </header>
+
+                {/* Téléphone : colonne inversée = le fil s'ouvre sur le dernier message, comme une messagerie. */}
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 max-sm:flex max-sm:flex-col-reverse max-sm:px-4">
+                  <MessageThread messages={thread} mineSender="instructor" otherInitials={selected.initials} />
+                </div>
+
+                <div className="px-5 pb-5 max-sm:border-t max-sm:border-line max-sm:bg-surface max-sm:px-3 max-sm:py-2.5">
+                  <MessageComposer patientId={selected.patientId} action={sendInboxMessage} chat>
+                    {/* Onglet et recherche gardés après l'envoi (inboxUrl). */}
+                    <input type="hidden" name="tab" value={tab} />
+                    <input type="hidden" name="q" value={q} />
+                    {/* Téléphone : le suivi est dans l'en-tête du fil (icône signet). */}
+                    <button
+                      type="submit"
+                      form="follow-up-form"
+                      className={`inline-flex items-center gap-1.5 text-sm hover:text-ink max-sm:hidden ${selected.followUp ? "text-brand" : "text-muted"}`}
+                    >
+                      {selected.followUp ? (
+                        <>
+                          <BookmarkCheck className="h-4 w-4" strokeWidth={1.75} />
+                          Retirer le suivi
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="h-4 w-4" strokeWidth={1.75} />
+                          Ajouter un suivi
+                        </>
+                      )}
+                    </button>
+                  </MessageComposer>
+                </div>
+              </>
+            )}
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}

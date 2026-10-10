@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertCircle, Check, LogOut, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertCircle, Check, LogOut, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
@@ -114,6 +114,15 @@ export default async function AbonnementPage({
           Se déconnecter
         </button>
       </SignOutButton>
+      {/* Droits RGPD sans offre active (audit du 2026-10-08) : exporter ses
+          données ou supprimer son compte reste possible depuis cette page. */}
+      <Link
+        href="/patient/compte"
+        className="absolute bottom-4 right-4 z-10 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-slate-600 lg:bottom-6 lg:right-6"
+      >
+        <UserRound className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+        Mon compte et mes données
+      </Link>
 
       {/* Le scroll (si le contenu dépasse) vit sur ce wrapper plein-largeur ;
           le max-w-6xl/mx-auto qui centre le contenu vit sur le div interne.

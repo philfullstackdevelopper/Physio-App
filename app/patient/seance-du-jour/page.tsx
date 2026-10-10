@@ -31,10 +31,13 @@ function WorkoutCard({ w, isRec, done = false }: { w: Workout; isRec: boolean; d
       ) : null}
       <div className="mt-2 flex items-baseline justify-between gap-3">
         <h3 className="text-lg font-semibold text-ink">{w.name}</h3>
-        <span className="shrink-0 font-bold text-brand">
-          <span className="text-3xl tabular-nums">{w.duration_minutes}</span>
-          <span className="text-sm font-medium text-muted"> min</span>
-        </span>
+        {/* Durée non renseignée : rien plutôt qu'un « min » seul (audit du 2026-10-08). */}
+        {w.duration_minutes != null && (
+          <span className="shrink-0 font-bold text-brand">
+            <span className="text-3xl tabular-nums">{w.duration_minutes}</span>
+            <span className="text-sm font-medium text-muted"> min</span>
+          </span>
+        )}
       </div>
       {w.description && <p className="mt-1 text-sm text-muted">{w.description}</p>}
       {exNames.length > 0 && (
@@ -66,6 +69,18 @@ export default async function SeanceDuJourPage() {
         <h1 className="text-2xl font-semibold text-ink">Séance du jour</h1>
         <p className="mt-1 text-sm text-muted">La séance suggérée par votre praticien en ce moment.</p>
 
+        {/* Toutes les séances de la semaine faites (audit du 2026-10-08 : ce
+            message ne pouvait jamais s'afficher, la séance restant active). */}
+        {weekComplete && activeWorkout && !doneToday && (
+          <div className="mt-6 rounded-2xl border border-line bg-surface p-5 pl-4 border-l-[3px] border-l-ok">
+            <p className="flex items-center gap-1.5 text-xl font-semibold text-ink">
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-ok" strokeWidth={1.75} />
+              Bravo, vous avez fait toutes vos séances de la semaine !
+            </p>
+            <p className="mt-1 text-sm text-muted">Vous pouvez quand même refaire la séance si vous le souhaitez.</p>
+          </div>
+        )}
+
         {doneToday && activeWorkout && (
           <div className="mt-6 rounded-2xl border border-line bg-surface p-5 pl-4 border-l-[3px] border-l-brand">
             <p className="flex items-center gap-1.5 text-xl font-semibold text-ink">
@@ -84,9 +99,7 @@ export default async function SeanceDuJourPage() {
           </div>
         ) : (
           <div className="mt-8 rounded-xl border border-line bg-surface p-6 text-center text-sm text-muted shadow-sm">
-            {weekComplete
-              ? "Bravo, vous avez fait toutes vos séances de la semaine !"
-              : "Votre praticien n'a pas encore configuré votre programme. Revenez bientôt !"}
+            Votre praticien n&apos;a pas encore configuré votre programme. Revenez bientôt !
           </div>
         )}
       </div>

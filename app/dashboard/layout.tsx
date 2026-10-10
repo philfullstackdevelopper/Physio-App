@@ -76,13 +76,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const unreadCount = await loadUnreadCount(supabase, user.id);
 
   return (
-    <div className="flex min-h-screen flex-col bg-app-bg text-ink sm:flex-row">
+    <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
       <DashboardSidebar instructorName={instructor.full_name ?? null} unreadCount={unreadCount} />
       {/* min-w-0 : sans ça, un contenu large (tableau, etc.) forcerait tout le
           flex row à s'élargir et entraînerait la sidebar dans le défilement
           horizontal de la page. Chaque page gère son propre overflow-x-auto
-          localement si besoin ; la sidebar, elle, ne doit jamais bouger. */}
-      <div className="relative min-w-0 flex-1">{children}</div>
+          localement si besoin ; la sidebar, elle, ne doit jamais bouger.
+          Téléphone : marge du bas = barre d'onglets fixe (comme app/patient/layout.tsx). */}
+      <div className="relative min-w-0 flex-1 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))]">{children}</div>
     </div>
   );
 }

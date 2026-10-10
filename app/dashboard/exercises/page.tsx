@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/supabase/require-user";
 import { isAdminEmail } from "@/lib/admin";
 import ExerciseLibraryGrid, { type LibraryExercise } from "@/components/ExerciseLibraryGrid";
 import { createExercise, hideExercise, unhideExercise } from "./actions";
+import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
 export default async function ExercisesPage({
   searchParams,
@@ -13,7 +13,9 @@ export default async function ExercisesPage({
   const { error } = await searchParams;
 
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  // Validation du compte vérifiée ICI aussi (audit du 2026-10-08) : le
+  // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
+  const { user } = await requireApprovedInstructor(supabase);
 
   const { data: bodyParts } = await supabase
     .from("body_parts")
@@ -46,11 +48,11 @@ export default async function ExercisesPage({
   }));
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-6 py-5 sm:px-8 sm:py-6">
+    <main className="min-h-screen max-sm:min-h-0">
+      <div className="mx-auto max-w-7xl px-4 pb-4 pt-2 sm:px-8 sm:py-6">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
-          <Link href="/dashboard/seances" className="text-sm font-medium text-brand hover:underline">← Mes séances</Link>
+          <Link href="/dashboard/seances" className="text-sm font-medium text-brand hover:underline max-sm:hidden">← Mes séances</Link>
         </div>
 
         {error && (

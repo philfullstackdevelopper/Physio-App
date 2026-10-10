@@ -4,6 +4,23 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
+import { friendlyDbError } from "@/lib/format/dbError";
+
+const TABS = new Set(["all", "unread", "follow_up"]);
+
+// Adresse de retour vers la boîte de réception, en gardant l'onglet et la
+// recherche du kiné (audit du 2026-10-08 : ils se perdaient, et l'onglet
+// était recopié tel quel, sans contrôle, dans l'adresse).
+function inboxUrl(formData: FormData, patientId: string, extra?: Record<string, string>): string {
+  const params = new URLSearchParams();
+  if (patientId) params.set("patient", patientId);
+  const tab = String(formData.get("tab") ?? "");
+  if (TABS.has(tab) && tab !== "all") params.set("tab", tab);
+  const q = String(formData.get("q") ?? "").trim().slice(0, 100);
+  if (q) params.set("q", q);
+  for (const [k, v] of Object.entries(extra ?? {})) params.set(k, v);
+  return `/dashboard/messages?${params.toString()}`;
+}
 
 // Envoie un message depuis la boîte de réception du kiné (/dashboard/messages).
 export async function sendInboxMessage(formData: FormData) {
@@ -13,8 +30,7 @@ export async function sendInboxMessage(formData: FormData) {
   const patientId = String(formData.get("patient_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
 
-  const fail = (msg: string): never =>
-    redirect(`/dashboard/messages?patient=${patientId}&error=${encodeURIComponent(msg)}`);
+  const fail = (msg: string): never => redirect(inboxUrl(formData, patientId, { error: msg }));
 
   if (!patientId) fail("Patient introuvable.");
   if (!body) fail("Écrivez un message.");
@@ -25,11 +41,11 @@ export async function sendInboxMessage(formData: FormData) {
     sender: "instructor",
     body,
   });
-  if (error) fail(error.message);
+  if (error) fail(friendlyDbError(error));
 
   revalidatePath("/dashboard/messages");
   revalidatePath("/dashboard");
-  redirect(`/dashboard/messages?patient=${patientId}`);
+  redirect(inboxUrl(formData, patientId));
 }
 
 // Marque comme lus les messages du patient sélectionné, dès qu'on ouvre sa
@@ -63,7 +79,6 @@ export async function toggleFollowUp(formData: FormData) {
 
   const patientId = String(formData.get("patient_id") ?? "");
   const on = formData.get("follow_up") === "1";
-  const tab = String(formData.get("tab") ?? "all");
   if (!patientId) redirect("/dashboard/messages");
 
   const { error } = await supabase
@@ -71,9 +86,9 @@ export async function toggleFollowUp(formData: FormData) {
     .update({ follow_up_at: on ? new Date().toISOString() : null })
     .eq("id", patientId);
   if (error) {
-    redirect(`/dashboard/messages?patient=${patientId}&error=${encodeURIComponent(error.message)}`);
+    redirect(inboxUrl(formData, patientId, { error: friendlyDbError(error) }));
   }
 
   revalidatePath("/dashboard/messages");
-  redirect(`/dashboard/messages?patient=${patientId}&tab=${tab}`);
+  redirect(inboxUrl(formData, patientId));
 }

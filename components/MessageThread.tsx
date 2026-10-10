@@ -28,8 +28,8 @@ export default function MessageThread({
   emptyText?: string;
   /** Style « messagerie » sur téléphone (page Messages du patient, maquette
    *  de Philippe, 2026-10-06) : pastille d'initiales à côté des bulles de
-   *  l'autre, date en pastille, heure sous la bulle. Sans effet dès sm, et
-   *  absent côté kiné — rien ne change pour lui. */
+   *  l'autre, date en pastille, heure sous la bulle. Sans effet dès sm. Repris
+   *  sur la boîte de réception du kiné au téléphone (2026-10-07). */
   otherInitials?: string;
 }) {
   const chat = otherInitials !== undefined;

@@ -1,3 +1,4 @@
+import { safeInternalPath } from "@/lib/format/safePath";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/billing/stripe";
@@ -88,6 +89,6 @@ export async function GET(req: Request) {
   // same-site path is honoured — never an absolute URL, so this can't be
   // turned into an open redirect.
   const next = url.searchParams.get("next");
-  const target = next && next.startsWith("/") && !next.startsWith("//") ? next : "/billing?subscribed=1";
+  const target = safeInternalPath(next, "/billing?subscribed=1");
   return NextResponse.redirect(new URL(target, url.origin));
 }

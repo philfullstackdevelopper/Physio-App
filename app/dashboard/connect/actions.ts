@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { upsertConnectAccount } from "@/lib/db/admin";
-import { requireUser } from "@/lib/supabase/require-user";
+import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { getStripe } from "@/lib/billing/stripe";
 import { requestOrigin } from "@/lib/requestOrigin";
 import { TIERS, TIER_KEYS, type TierKey } from "@/lib/billing/plans";
@@ -19,9 +19,15 @@ import { TIERS, TIER_KEYS, type TierKey } from "@/lib/billing/plans";
 // column. The real 16 % per actual tier is charged automatically by Stripe
 // on every invoice (app/patient/abonnement/actions.ts,
 // subscription_data.application_fee_percent) — no separate collection step.
+//
+// Le formulaire a été retiré exprès (Philippe, 2026-09-11 — CLAUDE.md §4) ;
+// l'action reste pour le jour où il reviendra. Gardes ajoutées à l'audit du
+// 2026-10-08 : kiné validé uniquement, et des tarifs que Stripe accepte.
+const MIN_TIER_CENTS = 100; // Stripe refuse moins de 0,50 € ; 1 € minimum ici
+const MAX_TIER_CENTS = 50_000; // 500 € par mois : au-delà, une faute de frappe
 export async function setTierPrices(formData: FormData) {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   const fail = (msg: string): never => redirect(`/dashboard/facturation?error=${encodeURIComponent(msg)}`);
 
@@ -30,6 +36,9 @@ export async function setTierPrices(formData: FormData) {
     const euros = Number(formData.get(`${key}_euros`));
     if (!Number.isFinite(euros) || euros <= 0) fail(`Merci d'indiquer un tarif valide pour l'offre ${TIERS[key].label}.`);
     cents[key] = Math.round(euros * 100);
+    if (cents[key] < MIN_TIER_CENTS || cents[key] > MAX_TIER_CENTS) {
+      fail(`Le tarif de l'offre ${TIERS[key].label} doit être compris entre 1 € et 500 € par mois.`);
+    }
   }
   if (!(cents.essentiel < cents.standard && cents.standard < cents.premium)) {
     fail("Les tarifs doivent être croissants : Essentiel < Standard < Premium.");
@@ -44,7 +53,10 @@ export async function setTierPrices(formData: FormData) {
       monthly_patient_price_cents: cents.standard,
     })
     .eq("id", user.id);
-  if (error) fail(error.message);
+  if (error) {
+    console.error("setTierPrices:", error);
+    fail("Enregistrement des tarifs impossible pour le moment. Réessayez dans un instant.");
+  }
 
   redirect("/dashboard/facturation?saved=1");
 }
@@ -57,7 +69,9 @@ export async function setTierPrices(formData: FormData) {
 // dashboard first (see the project's plan doc). The code itself is ready.
 export async function startConnectOnboarding() {
   const supabase = await createClient();
-  const user = await requireUser(supabase);
+  // Kiné validé uniquement (audit du 2026-10-08) : un compte en attente,
+  // refusé ou suspendu — ou un patient — ne crée pas de compte Stripe.
+  const { user } = await requireApprovedInstructor(supabase);
   const stripe = getStripe();
 
   const { data: existing } = await supabase
@@ -76,7 +90,11 @@ export async function startConnectOnboarding() {
     // deux séparément). Le kiné paie donc le frais Stripe sur sa part, comme
     // pour tout compte Standard — un seul montant net par paiement, pas de
     // ligne de frais séparée visible pour lui.
-    const account = await stripe.accounts.create({ type: "standard", email: user.email });
+    // Clé d'idempotence : un double clic ne crée pas deux comptes Stripe.
+    const account = await stripe.accounts.create(
+      { type: "standard", email: user.email },
+      { idempotencyKey: `connect-account-${user.id}` },
+    );
     accountId = account.id;
     await upsertConnectAccount({ instructorId: user.id, stripeConnectAccountId: accountId, status: "onboarding" });
   }

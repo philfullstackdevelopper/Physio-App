@@ -14,8 +14,10 @@ test("isSubscriptionActive : active/trialing oui, canceled non, période échue 
   assert.equal(isSubscriptionActive(null, null, now), false);
 });
 
-test("isSubscriptionActive : past_due garde l'accès jusqu'à la fin de période, pas au-delà", () => {
-  assert.equal(isSubscriptionActive("past_due", future, now), true);
+test("isSubscriptionActive : past_due garde l'accès 7 jours après l'échec, pas un mois", () => {
+  // Fin de période au 10 octobre → prélèvement échoué vers le 10 septembre.
+  assert.equal(isSubscriptionActive("past_due", "2026-10-10T12:00:00Z", new Date("2026-09-12T12:00:00Z")), true);
+  assert.equal(isSubscriptionActive("past_due", "2026-10-10T12:00:00Z", new Date("2026-09-18T12:00:00Z")), false);
   assert.equal(isSubscriptionActive("past_due", past, now), false);
   assert.equal(isSubscriptionActive("past_due", null, now), false);
   assert.equal(isSubscriptionActive("unpaid", future, now), false);

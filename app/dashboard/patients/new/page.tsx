@@ -9,16 +9,16 @@ export default async function NewPatientPage({
   const { error } = await searchParams;
 
   return (
-    <main className="min-h-screen p-8">
+    <main className="min-h-screen p-8 max-sm:min-h-0 max-sm:px-4 max-sm:pb-4 max-sm:pt-2">
       <div className="mx-auto max-w-sm">
         <Link
           href="/dashboard/patients"
-          className="animate-[fadeInUp_0.6s_ease-out_both] text-sm text-muted hover:underline"
+          className="animate-[fadeInUp_0.6s_ease-out_both] text-sm text-muted hover:underline max-sm:hidden"
         >
           ← Mes patients
         </Link>
 
-        <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-4 rounded-xl border border-line bg-surface p-8">
+        <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-4 rounded-xl border border-line bg-surface p-8 max-sm:mt-1 max-sm:rounded-2xl max-sm:border-0 max-sm:p-5 max-sm:shadow-soft">
           <h1 className="mb-1 text-2xl font-semibold text-ink">
             Ajouter un patient
           </h1>

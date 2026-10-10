@@ -1,1 +1,1 @@
-web: npm start
+web: TZ=Europe/Paris npm start

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, CalendarDays, Check, Home, MessageCircle, Settings, TrendingUp, Play, CheckCircle2 } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
@@ -44,16 +44,20 @@ export const STEPS: Step[] = [
 
 // Respect prefers-reduced-motion: freeze on the first frame instead of
 // looping an animation the visitor asked not to see.
+// useSyncExternalStore : la façon prévue par React de suivre une valeur du
+// navigateur (false côté serveur, pour un premier rendu identique).
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+function subscribeReducedMotion(onChange: () => void) {
+  const mq = window.matchMedia(REDUCED_MOTION_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
 export function useReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    const onChange = () => setReduced(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return reduced;
+  return useSyncExternalStore(
+    subscribeReducedMotion,
+    () => window.matchMedia(REDUCED_MOTION_QUERY).matches,
+    () => false,
+  );
 }
 
 // Drives the step index forward on a timer while `active`, looping forever.

@@ -6,12 +6,12 @@ import { computeAdherence, adherenceLabel, adherenceTone } from "./adherence.ts"
 const now = new Date(2026, 8, 3, 12);
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
 
-test("sans assignation → pct null", () => {
+test("sans assignation → pct null, et une séance faite hors programme ne compte pas", () => {
   const a = computeAdherence({ completedAt: [daysAgo(1)], assignments: [], now });
-  assert.deepEqual(a, { pct: null, done: 1, expected: 0 });
+  assert.deepEqual(a, { pct: null, done: 0, expected: 0 });
 });
 
-test("une séance assignée depuis plus de 4 semaines, 3×/semaine, 8 faites → 80 %", () => {
+test("une séance assignée depuis plus de 4 semaines, 3×/semaine, 8 faites → 70 % (plafond par semaine)", () => {
   const a = computeAdherence({
     completedAt: Array.from({ length: 8 }, (_, i) => daysAgo(i * 2)),
     assignments: [{ weekStartDate: "2026-07-06", workoutId: "w1", timesPerWeek: 3 }],
@@ -20,8 +20,10 @@ test("une séance assignée depuis plus de 4 semaines, 3×/semaine, 8 faites →
   // 3 semaines complètes × 3 + semaine en cours proratisée (jeudi : 3 jours
   // écoulés → floor(3 × 3/7) = 1).
   assert.equal(a.expected, 10);
-  assert.equal(a.done, 8);
-  assert.equal(a.pct, 80);
+  // Une séance tous les 2 jours : 2 cette semaine, 4 la précédente (comptées
+  // 3, le rythme de la semaine), 2 celle d'avant → 7 (audit du 2026-10-08).
+  assert.equal(a.done, 7);
+  assert.equal(a.pct, 70);
 });
 
 test("séance assignée seulement cette semaine : attendu proratisé, plafond 100 %", () => {
@@ -92,4 +94,17 @@ test("libellés et tons", () => {
   assert.equal(adherenceTone(79), "warn");
   assert.equal(adherenceTone(10), "danger");
   assert.equal(adherenceTone(null), "muted");
+});
+
+test("des séances en trop une semaine ne rattrapent pas une semaine vide", () => {
+  const a = computeAdherence({
+    // 6 séances la semaine dernière (lundi 24 → dimanche 30 août), rien d'autre.
+    completedAt: [4, 5, 6, 7, 8, 9].map(daysAgo),
+    assignments: [{ weekStartDate: "2026-08-17", workoutId: "w1", timesPerWeek: 3 }],
+    now,
+  });
+  // Attendu : semaine du 17 (3) + du 24 (3) + en cours (1) = 7 ; fait : 3 (plafond).
+  assert.equal(a.expected, 7);
+  assert.equal(a.done, 3);
+  assert.equal(a.pct, 43);
 });

@@ -7,6 +7,7 @@ import { TIERS, isTierKey, resolveTierPrices, type InstructorTierPriceRow } from
 import { hasActiveTier, isSubscriptionActive } from "@/lib/billing/access";
 import { getTierBilling } from "@/lib/billing/context";
 import { openBillingPortal } from "@/app/billing/actions";
+import { getStripe } from "@/lib/billing/stripe";
 import { deleteMyAccount } from "./actions";
 
 const frDate = (iso: string) =>
@@ -22,6 +23,31 @@ function statusBadge(status: string | null | undefined, active: boolean) {
   if (status === "canceled") return { label: "Résilié", tone: "warn" as const };
   if (active) return { label: "Actif", tone: "ok" as const };
   return { label: "Inactif", tone: "warn" as const };
+}
+
+/** Date de fin si une résiliation est programmée chez Stripe, sinon null. */
+async function scheduledCancellation(
+  subscriptionId: string | null,
+  instructorId: string | null,
+  status: string | null | undefined,
+): Promise<string | null> {
+  if (!subscriptionId || !instructorId || (status !== "active" && status !== "trialing")) return null;
+  try {
+    const supabase = await createClient();
+    const { data: connect } = await supabase
+      .from("instructor_connect_accounts")
+      .select("stripe_connect_account_id")
+      .eq("instructor_id", instructorId)
+      .maybeSingle();
+    const account = (connect?.stripe_connect_account_id as string | null) ?? null;
+    const stripeSub = await getStripe().subscriptions.retrieve(subscriptionId, undefined, account ? { stripeAccount: account } : undefined);
+    if (!stripeSub.cancel_at_period_end && !stripeSub.cancel_at) return null;
+    const end = stripeSub.cancel_at ?? stripeSub.items.data[0]?.current_period_end ?? null;
+    return end ? new Date(end * 1000).toISOString() : null;
+  } catch (e) {
+    console.error("[compte] lecture de l'abonnement Stripe impossible :", e);
+    return null;
+  }
 }
 
 // Refonte 2026-09-11 (Philippe, à partir d'une maquette fournie) : deux
@@ -42,7 +68,7 @@ export default async function CompteePage({
 
   const [billing, { data: sub }, { data: patient }] = await Promise.all([
     getTierBilling(supabase, user.id),
-    supabase.from("subscriptions").select("stripe_customer_id").eq("user_id", user.id).maybeSingle(),
+    supabase.from("subscriptions").select("stripe_customer_id, stripe_subscription_id").eq("user_id", user.id).maybeSingle(),
     supabase.from("patients").select("full_name, instructor_id").eq("id", user.id).maybeSingle(),
   ]);
   // (Philippe, 2026-10-07) Le prix affiché est celui de SON kiné (lisible par
@@ -72,8 +98,17 @@ export default async function CompteePage({
       : active
         ? "Essai gratuit (offre historique)"
         : "Aucune offre active";
-  const nextChargeLine =
-    billing.subStatus === "trialing" && billing.subCurrentPeriodEnd
+  // Résiliation demandée depuis le portail Stripe, effective en fin de période
+  // (audit du 2026-10-08) : le statut reste « actif » jusque-là, et la page
+  // annonçait encore un « prochain prélèvement ». On le demande à Stripe.
+  const cancelAt = await scheduledCancellation(
+    (sub?.stripe_subscription_id as string | null) ?? null,
+    instructorId,
+    billing.subStatus,
+  );
+  const nextChargeLine = cancelAt
+    ? `Résiliation demandée : accès jusqu'au ${frDate(cancelAt)}, plus aucun prélèvement`
+    : billing.subStatus === "trialing" && billing.subCurrentPeriodEnd
       ? `Premier prélèvement le ${frDate(billing.subCurrentPeriodEnd)}`
       : paid && billing.subCurrentPeriodEnd
         ? `Prochain prélèvement le ${frDate(billing.subCurrentPeriodEnd)}`

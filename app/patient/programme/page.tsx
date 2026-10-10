@@ -43,7 +43,7 @@ export default async function ProgrammePage() {
     .select(
       `week_start_date, week_count, workouts (
         id, name, description, duration_minutes, times_per_week,
-        workout_exercises ( exercises ( id, name, instructions, exercise_body_parts ( body_part_id ) ) )
+        workout_exercises ( position, exercises ( id, name, instructions, exercise_body_parts ( body_part_id ) ) )
       )`,
     )
     .eq("patient_id", user.id);
@@ -54,7 +54,7 @@ export default async function ProgrammePage() {
     .map((r) => {
       const w = r.workouts as unknown as
         | (Omit<Workout, "workout_exercises"> & {
-            workout_exercises: { exercises: (Omit<Exercise, "bodyPartIds"> & { exercise_body_parts: { body_part_id: string }[] }) | null }[];
+            workout_exercises: { position: number | null; exercises: (Omit<Exercise, "bodyPartIds"> & { exercise_body_parts: { body_part_id: string }[] }) | null }[];
           })
         | null;
       if (!w) return null;
@@ -63,7 +63,8 @@ export default async function ProgrammePage() {
         weekCount: (r.week_count as number | null) ?? null,
         workout: {
           ...w,
-          workout_exercises: w.workout_exercises.map((we) => ({
+          // Dans l'ordre de la séance (position), comme la séance guidée.
+          workout_exercises: [...w.workout_exercises].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)).map((we) => ({
             exercises: we.exercises
               ? { ...we.exercises, bodyPartIds: we.exercises.exercise_body_parts.map((t) => t.body_part_id) }
               : null,

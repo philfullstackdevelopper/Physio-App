@@ -31,7 +31,7 @@ import { type BodyPart } from "@/lib/exercise/category";
 import { SegmentRow, runViewTransition as runSharedViewTransition, type SegmentItem, type SegmentTone, type VTStyle } from "@/components/WeekStrip";
 import AdjustWorkoutModal, { type AddableExercise, type AddableWorkout, type ModalExercise } from "@/components/AdjustWorkoutModal";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
-import type { SessionDetail } from "@/components/WeekProgramme";
+import { useIsPhone, type SessionDetail } from "@/components/WeekProgramme";
 
 export interface KineAssignment {
   /** patient_recommended_workouts.id */
@@ -119,9 +119,36 @@ export default function KineWeekProgramme({
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
 
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const currentCardRef = useRef<HTMLButtonElement>(null);
+  // Téléphone (même principe que WeekProgramme côté patient) : une semaine
+  // par écran, carte aussi haute que la place restante jusqu'à la barre
+  // d'onglets — la boîte autour est en flex-1, on la mesure.
+  const isPhone = useIsPhone();
+  const stripBoxRef = useRef<HTMLDivElement>(null);
+  const [phoneCardHeight, setPhoneCardHeight] = useState(248);
   useEffect(() => {
-    if (view !== "strip") return;
+    const box = stripBoxRef.current;
+    if (!box || !isPhone) return;
+    // SegmentRow perView ajoute pt-10 pb-2 (48 px) autour des cartes.
+    const update = () => setPhoneCardHeight(Math.max(200, Math.min(460, box.clientHeight - 48)));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [isPhone, view]);
+  const currentCardRef = useRef<HTMLButtonElement>(null);
+  // Recentrer sur la semaine en cours à l'ouverture de la frise, et une seule
+  // fois de plus quand la hauteur des cartes est mesurée sur téléphone — pas
+  // à chaque redimensionnement (la barre d'adresse du téléphone qui se
+  // replie ramenait la frise sur la semaine en cours en pleine navigation).
+  const centeredFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (view !== "strip") {
+      centeredFor.current = null;
+      return;
+    }
+    const key = `${isPhone}|${isPhone && phoneCardHeight !== 248 ? "mesurée" : "initiale"}`;
+    if (centeredFor.current === key) return;
+    centeredFor.current = key;
     const el = currentCardRef.current;
     const scroller = scrollerRef.current;
     if (!el || !scroller) return;
@@ -135,8 +162,11 @@ export default function KineWeekProgramme({
     const scrollerRect = scroller.getBoundingClientRect();
     const elOffsetInScroller = elRect.left - scrollerRect.left + scroller.scrollLeft;
     const target = elOffsetInScroller - scroller.clientWidth / 2 + elRect.width / 2;
-    scroller.scrollTo({ left: Math.max(0, target) });
-  }, [view]);
+    // Téléphone : « instant » — la frise a scroll-smooth, et une animation
+    // encore en cours quand la hauteur des cartes change laissait la semaine
+    // en cours hors champ (même correctif que WeekProgramme). Ordinateur inchangé.
+    scroller.scrollTo({ left: Math.max(0, target), behavior: isPhone ? "instant" : undefined });
+  }, [view, isPhone, phoneCardHeight]);
 
   useEffect(() => {
     if (!selectedDayKey) return;
@@ -207,13 +237,30 @@ export default function KineWeekProgramme({
                 )}
               </span>
               <span className="text-xs font-medium opacity-90">({week.rangeLabel})</span>
+              {/* Téléphone : la carte est haute — le nom de la séance et les 7
+                  jours en pastilles (même couleur que la vue semaine : rouge
+                  douleur, jaune à surveiller, vert fait), comme côté patient. */}
+              {workout && <span className="mt-3 line-clamp-1 px-2 text-sm font-semibold sm:hidden">{workout.name}</span>}
+              <span className="mt-3 flex gap-1.5 sm:hidden" aria-hidden>
+                {daysOfWeek(week, loggedDateKeys).map((d) => {
+                  const sessions = dayDetails[localDateKey(d.date)] ?? [];
+                  const g = gradeDay(d.hasSession, sessions.map((s) => ({ painScore: s.painScore, difficulty: s.difficulty })));
+                  const cls =
+                    g === "red" ? "bg-danger text-white" : g === "yellow" ? "bg-warn text-white" : d.hasSession ? "bg-ok text-white" : "border border-current/25 bg-white/50";
+                  return (
+                    <span key={d.dayLabel} className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold ${cls}`}>
+                      {d.dayLabel.charAt(0)}
+                    </span>
+                  );
+                })}
+              </span>
             </div>
             {workout && workout.exercises.length > 0 ? (
-              <span className="flex w-full flex-wrap items-start justify-center gap-x-2 gap-y-2 px-1 pb-1">
+              <span className="flex w-full flex-wrap items-start justify-center gap-x-2 gap-y-2 px-1 pb-1 max-sm:gap-x-3 max-sm:gap-y-3">
                 {workout.exercises.map((e) => (
-                  <span key={e.id} className="flex w-[3.75rem] flex-col items-center gap-1">
-                    <ExerciseIllustration name={e.name} animate={false} className="h-14 w-14 shrink-0" />
-                    <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight">{e.name}</span>
+                  <span key={e.id} className="flex w-[3.75rem] flex-col items-center gap-1 max-sm:w-[5rem]">
+                    <ExerciseIllustration name={e.name} animate={false} className="h-14 w-14 shrink-0 max-sm:h-[4.5rem] max-sm:w-[4.5rem]" />
+                    <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight max-sm:text-xs">{e.name}</span>
                   </span>
                 ))}
               </span>
@@ -228,10 +275,10 @@ export default function KineWeekProgramme({
     });
 
     return (
-      <div className="flex w-full min-w-0 flex-col">
+      <div className="flex w-full min-w-0 flex-col max-sm:min-h-0 max-sm:flex-1">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink" title="Cliquez sur une semaine pour voir le détail jour par jour et changer la séance.">
-            Programme, semaine par semaine
+          <h2 className="text-lg font-semibold text-ink max-sm:text-base" title="Cliquez sur une semaine pour voir le détail jour par jour et changer la séance.">
+            Programme<span className="max-sm:hidden">, semaine par semaine</span>
           </h2>
           <div className="flex items-center gap-1">
             <button
@@ -257,7 +304,9 @@ export default function KineWeekProgramme({
             3 semaines visibles qui se partagent la largeur, la semaine en
             cours au centre ; hauteur réduite pour que toute la frise tienne
             à l'écran en arrivant sur la fiche. */}
-        <SegmentRow items={weekItems} height={248} scrollable perView compact scrollerRef={scrollerRef} />
+        <div ref={stripBoxRef} className="max-sm:-mt-6 max-sm:min-h-0 max-sm:flex-1 sm:contents">
+          <SegmentRow items={weekItems} height={isPhone ? phoneCardHeight : 248} scrollable perView compact scrollerRef={scrollerRef} />
+        </div>
       </div>
     );
   }
@@ -311,17 +360,17 @@ export default function KineWeekProgramme({
   const assignmentStartWeek = startedWeekNumber ?? selectedWeek.weekNumber;
 
   return (
-    <div className="w-full">
+    <div className="w-full max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col">
       <section
         style={{ viewTransitionName: `kine-week-${selectedWeek.weekNumber}` } as VTStyle}
-        className="rounded-2xl border border-line bg-surface p-5 shadow-sm"
+        className="rounded-2xl border border-line bg-surface p-5 shadow-sm max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col max-sm:border-0 max-sm:p-4 max-sm:shadow-soft"
       >
         <button type="button" onClick={closeWeek} className="flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink">
           <ArrowLeft className="h-4 w-4" strokeWidth={2} />
           Toutes les semaines
         </button>
 
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-4 max-sm:mt-2 max-sm:gap-2">
           <div>
             <div className="flex items-center gap-2">
               <button
@@ -351,8 +400,8 @@ export default function KineWeekProgramme({
               PARTIR de cette semaine. « Ajuster » / « Retirer » agissent sur
               l'assignation effective, même si elle a commencé plus tôt —
               retirer cette ligne fait revenir la précédente (voulu). */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="text-right">
+          <div className="flex flex-wrap items-center gap-3 max-sm:w-full max-sm:flex-nowrap max-sm:justify-between max-sm:rounded-xl max-sm:bg-app-bg max-sm:px-3 max-sm:py-2">
+            <div className="text-right max-sm:min-w-0 max-sm:text-left">
               <p className="text-xs font-medium text-muted">Séance cette semaine</p>
               <p className={`text-sm ${selectedMeta.workout ? "font-semibold text-ink" : "italic text-muted"}`}>
                 {selectedMeta.workout ? selectedMeta.workout.name : "Aucune séance"}
@@ -388,7 +437,78 @@ export default function KineWeekProgramme({
           </div>
         </div>
 
-        <SegmentRow items={dayItems} height={172} scrollable={false} />
+        <div className="max-sm:hidden sm:contents">
+          <SegmentRow items={dayItems} height={172} scrollable={false} />
+        </div>
+
+        {/* Téléphone : les 7 jours en frise verticale, comme côté patient
+            (WeekProgramme) — même couleur que la flèche du jour sur
+            ordinateur (pire ressenti : rouge douleur, jaune à surveiller,
+            vert fait). Les 7 lignes se partagent la hauteur restante. */}
+        <ol className="relative mt-3 flex min-h-0 flex-1 flex-col sm:hidden">
+          <span aria-hidden className="absolute bottom-5 left-[15px] top-5 w-0.5 bg-line" />
+          {days.map((d) => {
+            const key = localDateKey(d.date);
+            const sessions = dayDetails[key] ?? [];
+            const isToday = key === todayKey;
+            const grade = gradeDay(d.hasSession, sessions.map((s) => ({ painScore: s.painScore, difficulty: s.difficulty })));
+            const statusLabel = grade === "red" ? "Douleur élevée" : grade === "yellow" ? "À surveiller" : d.hasSession ? "Réalisée" : "Non fait";
+            const dot =
+              grade === "red"
+                ? "border-danger bg-danger text-white"
+                : grade === "yellow"
+                  ? "border-warn bg-warn text-white"
+                  : d.hasSession
+                    ? "border-ok bg-ok text-white"
+                    : isToday
+                      ? "border-brand bg-surface text-brand"
+                      : "border-line bg-surface text-muted";
+            const row =
+              grade === "red"
+                ? "border-danger-soft bg-danger-soft text-danger"
+                : grade === "yellow"
+                  ? "border-warn-soft bg-warn-soft text-warn"
+                  : d.hasSession
+                    ? "border-ok-soft bg-ok-soft text-ok"
+                    : isToday
+                      ? "border-brand bg-brand/10 text-brand"
+                      : "border-line bg-surface text-muted";
+            const worstPain = sessions.reduce<number | null>((m, s) => (s.painScore != null && (m === null || s.painScore > m) ? s.painScore : m), null);
+            return (
+              <li key={key} className="relative flex min-h-0 flex-1 items-center">
+                <button
+                  type="button"
+                  disabled={sessions.length === 0}
+                  onClick={() => setSelectedDayKey(selectedDayKey === key ? null : key)}
+                  aria-label={`${d.dayLabel} ${d.dateLabel}, ${statusLabel.toLowerCase()}${isToday ? " — aujourd'hui" : ""}`}
+                  className="flex w-full items-center gap-3 py-0.5 text-left"
+                >
+                  <span className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${dot}`}>
+                    {grade === "red" || grade === "yellow" ? (
+                      <AlertTriangle className="h-4 w-4" strokeWidth={2.25} />
+                    ) : d.hasSession ? (
+                      <CheckCircle2 className="h-4 w-4" strokeWidth={2.25} />
+                    ) : (
+                      <Circle className="h-2.5 w-2.5 fill-current" strokeWidth={0} />
+                    )}
+                  </span>
+                  <span className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 ${row}`}>
+                    <span className="flex min-w-0 items-baseline gap-2">
+                      <span className="text-base font-semibold capitalize">{d.dayLabel}</span>
+                      <span className="truncate text-sm opacity-80">{d.dateLabel}</span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium">
+                      {isToday && <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">Aujourd&apos;hui</span>}
+                      {statusLabel}
+                      {worstPain !== null && <span className="tabular-nums">· {worstPain}/10</span>}
+                      {sessions.length > 0 && <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
       </section>
 
       {/* Détail du jour cliqué : nom de la séance, heure, douleur, difficulté,

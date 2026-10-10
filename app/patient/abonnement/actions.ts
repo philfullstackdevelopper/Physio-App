@@ -1,7 +1,7 @@
 "use server";
 
+import { signedSubscriptionMetadata } from "@/lib/billing/subscriptionSignature";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
@@ -15,6 +15,7 @@ import {
 } from "@/lib/billing/plans";
 import { PLATFORM_FEE_RATE } from "@/lib/billing/platformFee";
 import { hasActiveTier } from "@/lib/billing/access";
+import { requestOrigin } from "@/lib/requestOrigin";
 import { getTierBilling } from "@/lib/billing/context";
 
 // Démarre un Stripe Checkout (page hébergée) pour l'offre choisie et y
@@ -74,10 +75,17 @@ export async function startTierCheckout(formData: FormData) {
   // Un patient peut lire la ligne de SON kiné (migration 0028) : nom + prix.
   const { data: kine } = await supabase
     .from("instructors")
-    .select("full_name, tier_essentiel_cents, tier_standard_cents, tier_premium_cents")
+    .select("full_name, status, tier_essentiel_cents, tier_standard_cents, tier_premium_cents")
     .eq("id", instructorId)
     .maybeSingle();
   const prices = resolveTierPrices(kine as InstructorTierPriceRow | null);
+
+  // Kiné suspendu ou pas (encore) validé : aucun paiement vers son compte
+  // (audit du 2026-10-08). Ses patients gardent l'accès gratuit s'il est
+  // suspendu (lib/billing/context.ts) — rien à payer.
+  if (((kine?.status as string | null) ?? "approved") !== "approved") {
+    fail("Votre kinésithérapeute n'accepte pas de nouvel abonnement pour le moment. Votre accès à votre programme reste ouvert.");
+  }
 
   // Un patient peut lire le compte Connect de SON PROPRE kiné (voir
   // connect_accounts_patient_read, migration 0057) — on ne garde l'id que si
@@ -93,10 +101,9 @@ export async function startTierCheckout(formData: FormData) {
     fail("Votre kinésithérapeute n'a pas encore activé les paiements en ligne. Prévenez-le, puis revenez ici.");
   }
 
-  const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
-  const proto = host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https";
-  const base = `${proto}://${host}`;
+  // Adresse du site configurée (NEXT_PUBLIC_SITE_URL), pas l'en-tête Host
+  // de la requête, qui peut être falsifié (audit du 2026-10-08).
+  const base = await requestOrigin();
   const kineName = (kine?.full_name as string | null) ?? "votre kiné";
   const stripe = getStripe();
 
@@ -138,7 +145,9 @@ export async function startTierCheckout(formData: FormData) {
         client_reference_id: user.id,
         metadata: { user_id: user.id, plan: tier.key },
         subscription_data: {
-          metadata: { user_id: user.id, plan: tier.key },
+          // Signé : seul un abonnement créé ici est reconnu par le webhook
+          // (lib/billing/subscriptionSignature.ts).
+          metadata: signedSubscriptionMetadata(user.id, tier.key, destination),
           ...(hadSubscription ? {} : { trial_period_days: TRIAL_DAYS }),
           application_fee_percent: PLATFORM_FEE_RATE * 100,
         },
