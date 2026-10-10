@@ -305,7 +305,20 @@ export default function KineWeekProgramme({
             cours au centre ; hauteur réduite pour que toute la frise tienne
             à l'écran en arrivant sur la fiche. */}
         <div ref={stripBoxRef} className="max-sm:-mt-6 max-sm:min-h-0 max-sm:flex-1 sm:contents">
-          <SegmentRow items={weekItems} height={isPhone ? phoneCardHeight : 248} scrollable perView compact scrollerRef={scrollerRef} />
+          {/* Téléphone (Philippe, 2026-10-10 : « plusieurs semaines à la fois,
+              comme la frise du client ») : la semaine en cours au centre, la
+              précédente et la suivante dépassent de chaque côté (1,5 carte
+              par écran). Dès md : 3 semaines, inchangé. */}
+          <SegmentRow
+            items={weekItems}
+            height={isPhone ? phoneCardHeight : 248}
+            scrollable
+            perView
+            perViewClass="[--per:1.5] md:[--per:3]"
+            snapCenter={isPhone}
+            compact
+            scrollerRef={scrollerRef}
+          />
         </div>
       </div>
     );

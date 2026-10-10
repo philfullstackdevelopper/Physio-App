@@ -57,6 +57,8 @@ export function SegmentRow({
   scrollerRef,
   compact = false,
   perView = false,
+  perViewClass = "[--per:1] md:[--per:3]",
+  snapCenter = false,
 }: {
   items: SegmentItem[];
   height: number;
@@ -68,6 +70,12 @@ export function SegmentRow({
    *  démo de la landing : 1 semaine visible sur mobile, 3 dès md (semaine
    *  précédente, en cours, suivante). Encoche fine (16 px) au lieu de 30. */
   perView?: boolean;
+  /** Combien de cartes par écran en mode perView (classes Tailwind qui fixent
+   *  --per). Une valeur non entière, ex. 1.5, laisse dépasser les voisines. */
+  perViewClass?: string;
+  /** Aimanter les cartes au centre plutôt qu'au bord gauche (utile quand les
+   *  voisines dépassent des deux côtés). */
+  snapCenter?: boolean;
 }) {
   const notch = scrollable && !perView ? 30 : 16; // px — depth of the arrow tip / matching notch
   const rightTip = `polygon(0 0, calc(100% - ${notch}px) 0, 100% 50%, calc(100% - ${notch}px) 100%, 0 100%, ${notch}px 50%)`;
@@ -79,7 +87,7 @@ export function SegmentRow({
       className={`flex w-full min-w-0 items-center ${
         scrollable
           ? `snap-x overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-              perView ? "pb-2 pt-10 [--per:1] md:[--per:3]" : "py-14"
+              perView ? `pb-2 pt-10 ${perViewClass}` : "py-14"
             }`
           : "pb-2 pt-10"
       }`}
@@ -87,7 +95,7 @@ export function SegmentRow({
       {items.map((item, i) => (
         <div
           key={item.key}
-          className={`relative ${scrollable ? `shrink-0 snap-start ${perView ? "" : "w-64"}` : "min-w-0 flex-1"}`}
+          className={`relative ${scrollable ? `shrink-0 ${snapCenter ? "snap-center" : "snap-start"} ${perView ? "" : "w-64"}` : "min-w-0 flex-1"}`}
           style={{
             zIndex: i,
             marginLeft: i === 0 ? 0 : -notch,

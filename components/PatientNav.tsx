@@ -6,6 +6,7 @@ import { SignOutButton } from "@clerk/nextjs";
 import { Home, CalendarDays, TrendingUp, MessageCircle, Settings, LogOut } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import { initials } from "@/lib/format/initials";
+import PhoneAccountMenu from "@/components/PhoneAccountMenu";
 
 const LINKS = [
   { href: "/patient", label: "Accueil", icon: Home, exact: true },
@@ -75,15 +76,11 @@ export default function PatientNav({
         <Link href="/patient" className="flex items-center gap-2">
           <LogoLockup height={32} />
         </Link>
-        {!onOnboarding && (
-          <Link
-            href="/patient/compte"
-            aria-label="Paramètres"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand"
-          >
-            {initials(patientName)}
-          </Link>
-        )}
+        {/* La bulle ouvre un petit menu : nom + « Se déconnecter », comme
+            côté kiné (Philippe, 2026-10-10). Les Paramètres restent dans
+            l'onglet du bas. Affichée aussi pendant l'onboarding : c'est le
+            moyen de se déconnecter sans chercher. */}
+        <PhoneAccountMenu name={patientName} role="Patient" />
       </header>
 
       {/* Desktop */}
