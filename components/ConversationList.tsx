@@ -45,9 +45,14 @@ export default function ConversationList({
         <Link
           href={href(c.patientId)}
           aria-current={active ? "true" : undefined}
-          className={`flex items-center gap-3 px-4 py-2.5 transition ${
-            waiting ? "bg-brand-soft/70 hover:bg-brand-soft" : "hover:bg-app-bg max-sm:active:bg-app-bg"
-          } ${active ? "sm:shadow-[inset_3px_0_0_var(--color-brand)]" : ""} ${active && !waiting ? "sm:bg-app-bg" : ""}`}
+          // Une carte par patient, séparée des autres (Philippe, 2026-10-10 :
+          // « mieux si les noms étaient séparés ») — plus un seul bloc où les
+          // lignes se touchent.
+          className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition ${
+            waiting
+              ? "bg-brand-soft hover:bg-brand/15"
+              : "bg-app-bg/70 hover:bg-app-bg max-sm:bg-surface max-sm:shadow-soft max-sm:active:bg-app-bg"
+          } ${active ? "sm:ring-2 sm:ring-brand/50" : ""}`}
         >
           <span
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-brand ${
@@ -80,7 +85,7 @@ export default function ConversationList({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="relative flex items-center justify-between px-4 pb-1 pt-3">
+      <div className="relative flex items-center justify-between px-4 pb-2 pt-3 max-sm:px-1 max-sm:pt-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
           {toReply.length > 0 ? `À répondre · ${toReply.length}` : "Conversations"}
         </p>
@@ -123,10 +128,10 @@ export default function ConversationList({
         )}
       </div>
 
-      <ul className="min-h-0 flex-1 overflow-y-auto pb-2">
+      <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3 max-sm:px-0.5 max-sm:pt-0.5">
         {toReply.map((c) => row(c, true))}
         {toReply.length > 0 && others.length > 0 && (
-          <li className="px-4 pb-1 pt-4 text-xs font-semibold uppercase tracking-wide text-muted">Conversations</li>
+          <li className="px-1 pb-0.5 pt-3 text-xs font-semibold uppercase tracking-wide text-muted">Conversations</li>
         )}
         {others.map((c) => row(c, false))}
         {toReply.length === 0 && others.length === 0 && (

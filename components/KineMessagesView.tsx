@@ -82,7 +82,9 @@ export default function KineMessagesView({
 
         <div className={`mt-6 grid flex-1 gap-6 max-sm:min-h-0 max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[360px_1fr] ${phoneThread ? "max-sm:mt-0" : "max-sm:mt-3"}`}>
           <section
-            className={`min-h-[24rem] rounded-2xl border border-line bg-surface max-sm:min-h-0 max-sm:overflow-hidden max-sm:border-0 max-sm:shadow-soft lg:min-h-0 ${onlyWhenList}`}
+            // Téléphone : plus de grande carte blanche autour — chaque
+            // conversation est sa propre carte (ConversationList).
+            className={`min-h-[24rem] rounded-2xl border border-line bg-surface max-sm:min-h-0 max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent lg:min-h-0 ${onlyWhenList}`}
             aria-label="Conversations"
           >
             <ConversationList rows={conversations} selectedId={selectedId} query={q} />
