@@ -33,13 +33,13 @@ const EXERCISES: ShowcaseExercise[] = [
 
 export default function ExerciseShowcase() {
   return (
-    // Téléphone : UNE ligne de 3 exercices (Philippe, 2026-10-10 : « moins sur
-    // le téléphone pour que tout rentre sur une ligne ») ; dès sm : 4 × 2.
+    // Téléphone : DEUX lignes de 3 exercices (Philippe, 2026-10-10 : d'abord
+    // une seule ligne, puis « we can put a second row ») ; dès sm : 4 × 2.
     <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-4">
       {EXERCISES.map((ex, i) => (
         <li
           key={ex.drawing}
-          className={`rounded-2xl border border-slate-200 bg-white p-2 sm:p-3 ${i >= 3 ? "max-sm:hidden" : ""}`}
+          className={`rounded-2xl border border-slate-200 bg-white p-2 sm:p-3 ${i >= 6 ? "max-sm:hidden" : ""}`}
         >
           {ex.video ? (
             <video

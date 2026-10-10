@@ -150,7 +150,11 @@ export default function Testimonials() {
   return (
     <div className="mt-8 sm:short:mt-3">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Téléphone (Philippe, 2026-10-10) : une seule commande, les flèches
+            « 1 / 3 » — la bascule Kinés / Patients et la pastille faisaient
+            doublon et « trop IA ». La mention « illustratifs » reste, en
+            simple ligne de texte sous la carte (voir plus bas). */}
+        <div className="flex flex-wrap items-center gap-3 max-sm:hidden">
           <Toggle value={voice} onChange={selectVoice} />
           {/* Ces trois témoignages sont des exemples rédigés (portraits
               générés), EasyPhysio n'ayant pas encore d'utilisateurs : on le
@@ -160,7 +164,7 @@ export default function Testimonials() {
             Témoignages illustratifs
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 max-sm:mx-auto">
           <button
             type="button"
             onClick={() => step(-1)}
@@ -227,6 +231,8 @@ export default function Testimonials() {
           ))}
         </div>
       </div>
+
+      <p className="mt-3 text-center text-xs text-slate-400 sm:hidden">Témoignages illustratifs</p>
 
       {/* Bandeau secondaire, masqué sur écran peu haut pour que la section tienne. */}
       <div className="mt-8 text-center sm:short:hidden">

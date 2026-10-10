@@ -83,11 +83,14 @@ export default function Home() {
             Exception sur téléphone (< 640 px) : le texte prend déjà presque
             tout l'écran, le téléphone y tombait au tiers de sa taille,
             illisible (Philippe, 2026-10-02) — il passe donc juste en dessous,
-            à la hauteur d'un écran. */}
+            à la hauteur d'un écran.
+            Téléphone, 2026-10-10 (Philippe) : plus que la phrase d'accroche
+            et le téléphone, ensemble sur le premier écran (max-sm:h-svh) —
+            boutons et puces masqués, « Se connecter » est dans l'en-tête. */}
         {/* phone-land: téléphone à l'horizontale (globals.css) — texte à gauche,
             téléphone à droite comme sur PC, le tout dans la hauteur de l'écran
             (Philippe, 2026-10-04 : « quand on tourne le téléphone, tout bugge »). */}
-        <section className="flex flex-col gap-4 pb-4 pt-20 sm:min-h-dvh lg:grid lg:grid-cols-[minmax(0,41rem)_18rem] lg:items-center lg:justify-center lg:gap-16 lg:pb-6 lg:pt-24 lg:short:pt-20 phone-land:grid phone-land:h-dvh phone-land:min-h-0 phone-land:grid-cols-[minmax(0,1fr)_10rem] phone-land:items-center phone-land:gap-6 phone-land:pb-2 phone-land:pt-16">
+        <section className="flex flex-col gap-4 pb-4 pt-20 max-sm:h-svh sm:min-h-dvh lg:grid lg:grid-cols-[minmax(0,41rem)_18rem] lg:items-center lg:justify-center lg:gap-16 lg:pb-6 lg:pt-24 lg:short:pt-20 phone-land:grid phone-land:h-dvh phone-land:min-h-0 phone-land:grid-cols-[minmax(0,1fr)_10rem] phone-land:items-center phone-land:gap-6 phone-land:pb-2 phone-land:pt-16">
           <div className="relative">
             {/* Note manuscrite vers le téléphone de démo — grand écran seulement. */}
             <HandNote className="absolute -right-6 bottom-0 -rotate-3 animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:900ms] max-lg:hidden">
@@ -98,12 +101,12 @@ export default function Home() {
               «&nbsp;Oui oui, j&apos;ai fait mes exercices.&nbsp;»
               <br className="hidden sm:block" /> Maintenant, <Underlined>vous le voyez.</Underlined>
             </h1>
-            <p className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:160ms] mt-3 max-w-lg text-base leading-relaxed text-slate-600 sm:mt-5 sm:text-lg lg:short:mt-3 lg:short:text-base phone-land:mt-2 phone-land:text-sm">
+            <p className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:160ms] mt-3 max-w-lg text-base leading-relaxed text-slate-600 max-sm:hidden sm:mt-5 sm:text-lg lg:short:mt-3 lg:short:text-base phone-land:mt-2 phone-land:text-sm">
               Vos patients suivent chez eux le programme que vous avez choisi, guidés pas à pas.
               Vous voyez qui l&apos;a fait, et qui a eu mal, avant le prochain rendez-vous.
             </p>
 
-            <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:220ms] mt-5 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center lg:short:mt-5 phone-land:mt-3">
+            <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:220ms] mt-5 flex flex-col gap-3 max-sm:hidden sm:mt-8 sm:flex-row sm:items-center lg:short:mt-5 phone-land:mt-3">
               <PrimaryCta href="/signup/kine">Créer un compte praticien</PrimaryCta>
               <Link
                 href="/login"
@@ -113,7 +116,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <ul className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:280ms] mt-5 flex flex-col gap-1.5 sm:mt-8 sm:gap-2.5 lg:short:mt-5 lg:short:gap-1.5 phone-land:mt-3 phone-land:gap-1">
+            <ul className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:280ms] mt-5 flex flex-col gap-1.5 max-sm:hidden sm:mt-8 sm:gap-2.5 lg:short:mt-5 lg:short:gap-1.5 phone-land:mt-3 phone-land:gap-1">
               {HERO_CHIPS.map((chip) => (
                 <li key={chip.label} className="flex items-center gap-2">
                   <chip.icon className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={1.75} />
@@ -128,7 +131,7 @@ export default function Home() {
           <FitToBox
             width={280}
             height={620}
-            className="h-[min(620px,calc(100svh-6rem))] min-h-0 sm:h-auto sm:flex-1 phone-land:h-full phone-land:self-stretch animate-[fadeInUp_0.7s_ease-out_both] [animation-delay:250ms] lg:h-full lg:self-stretch"
+            className="min-h-0 flex-1 phone-land:h-full phone-land:self-stretch animate-[fadeInUp_0.7s_ease-out_both] [animation-delay:250ms] lg:h-full lg:self-stretch"
           >
             <PhoneMockup />
           </FitToBox>

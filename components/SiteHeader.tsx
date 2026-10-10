@@ -104,13 +104,16 @@ export default function SiteHeader() {
                 « Mon espace » and goes straight to /dashboard (which itself
                 routes instructor vs. patient) — no login page flash on the
                 way (Philippe, 2026-10-02; proxy.ts does the same for every
-                other /login link). */}
+                other /login link).
+                Téléphone (Philippe, 2026-10-10) : c'est le seul bouton, en
+                bleu ; la création de compte se fait depuis le pied de la page
+                de connexion (lien d'inscription de Clerk). */}
             <Link
               href={isLoaded && isSignedIn ? "/dashboard" : "/login"}
               className={`shrink-0 items-center justify-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition active:scale-[0.97] ${
                 isLoaded && isSignedIn
                   ? "inline-flex bg-blue-600 text-white shadow-sm hover:bg-blue-700"
-                  : "hidden border border-slate-300 bg-white/60 text-slate-700 hover:border-blue-200 hover:bg-white sm:inline-flex"
+                  : "inline-flex max-sm:bg-blue-600 max-sm:text-white max-sm:shadow-sm sm:border sm:border-slate-300 sm:bg-white/60 sm:text-slate-700 sm:hover:border-blue-200 sm:hover:bg-white"
               }`}
             >
               {isLoaded && isSignedIn ? "Mon espace" : "Se connecter"}
@@ -119,7 +122,7 @@ export default function SiteHeader() {
             {isLoaded && !isSignedIn && (
               <Link
                 href="/signup"
-                className="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition active:scale-[0.97] hover:bg-blue-700"
+                className="hidden shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition active:scale-[0.97] hover:bg-blue-700 sm:inline-flex"
               >
                 Créer un compte
               </Link>

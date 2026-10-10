@@ -65,14 +65,17 @@ function StatusIcon({ value }: { value: Status }) {
 export default function ComparisonTable() {
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[640px] rounded-3xl border border-slate-200/80 bg-white p-2 shadow-sm sm:p-3">
+      {/* Téléphone : les 4 colonnes tiennent dans la largeur de l'écran, sans
+          défilement horizontal (Philippe, 2026-10-10) — textes et marges
+          resserrés sous sm ; dès sm, largeur minimale inchangée. */}
+      <div className="rounded-3xl border border-slate-200/80 bg-white p-2 shadow-sm max-sm:p-1.5 sm:min-w-[640px] sm:p-3">
         {/* Header row: label column + 3 product columns */}
-        <div className="grid grid-cols-[1.3fr_1fr_1fr_1fr] items-end gap-2 px-4 pb-6 pt-8 sm:gap-4 sm:px-6 sm:short:pb-3 sm:short:pt-7">
+        <div className="grid grid-cols-[1.3fr_1fr_1fr_1fr] items-end gap-2 px-4 pb-6 pt-8 max-sm:gap-1 max-sm:px-1 max-sm:pb-4 sm:gap-4 sm:px-6 sm:short:pb-3 sm:short:pt-7">
           <span />
           {COLUMNS.map((col) => (
             <div key={col.name} className="relative flex flex-col items-center text-center">
               {col.highlight && (
-                <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-semibold max-sm:px-1.5 max-sm:text-[8px] max-sm:tracking-normal uppercase tracking-wide text-white">
                   Le meilleur choix
                 </span>
               )}
@@ -87,25 +90,25 @@ export default function ComparisonTable() {
                 </span>
               )}
               {col.highlight ? (
-                <p className="mt-2 text-sm leading-tight tracking-[-0.02em] text-[#0f2a5c]" style={{ fontFamily: "var(--font-brand)" }}>
+                <p className="mt-2 text-sm leading-tight tracking-[-0.02em] max-sm:text-xs text-[#0f2a5c]" style={{ fontFamily: "var(--font-brand)" }}>
                   <span className="font-extrabold">Easy</span>
                   <span className="font-medium">Physio</span>
                 </p>
               ) : (
-                <p className="mt-2 text-sm font-semibold leading-tight text-slate-500">{col.name}</p>
+                <p className="mt-2 text-sm font-semibold leading-tight text-slate-500 max-sm:text-[11px]">{col.name}</p>
               )}
-              <p className="mt-0.5 text-xs text-slate-400">{col.sub}</p>
+              <p className="mt-0.5 text-xs text-slate-400 max-sm:text-[10px] max-sm:leading-tight">{col.sub}</p>
             </div>
           ))}
         </div>
 
-        <RevealGroup className="space-y-1 px-2 sm:px-3">
+        <RevealGroup className="space-y-1 px-2 max-sm:px-0 sm:px-3">
           {ROWS.map((row) => (
             <RevealItem
               key={row.label}
-              className="grid grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-xl px-2 py-3 odd:bg-slate-50/70 sm:short:py-2 sm:gap-4 sm:px-4"
+              className="grid grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-xl px-2 py-3 max-sm:gap-1 max-sm:py-2.5 odd:bg-slate-50/70 sm:short:py-2 sm:gap-4 sm:px-4"
             >
-              <p className="text-sm leading-snug text-slate-700">{row.label}</p>
+              <p className="text-sm leading-snug text-slate-700 max-sm:text-xs">{row.label}</p>
               {row.values.map((value, i) => (
                 <div key={i} className="flex justify-center">
                   <StatusIcon value={value} />
@@ -116,12 +119,12 @@ export default function ComparisonTable() {
         </RevealGroup>
 
         {/* Score total row */}
-        <div className="mt-1 grid grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-2xl bg-blue-50/70 px-4 py-4 sm:short:py-2.5 sm:gap-4 sm:px-6">
-          <p className="text-sm font-semibold text-slate-900">Score total</p>
+        <div className="mt-1 grid grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-2xl bg-blue-50/70 px-4 py-4 max-sm:gap-1 max-sm:px-2 max-sm:py-3 sm:short:py-2.5 sm:gap-4 sm:px-6">
+          <p className="text-sm font-semibold text-slate-900 max-sm:text-xs">Score total</p>
           {COLUMNS.map((col, i) => (
             <p
               key={col.name}
-              className={`text-center text-lg font-semibold ${
+              className={`text-center text-lg font-semibold max-sm:text-base ${
                 col.highlight ? "text-emerald-600" : "text-slate-400"
               }`}
             >
