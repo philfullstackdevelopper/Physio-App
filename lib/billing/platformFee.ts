@@ -1,9 +1,21 @@
 // =============================================================================
-// Platform fee — pure logic (no DB, no Stripe). What a kiné owes EasyPhysio
-// each month: 16% of his own declared patient price, per patient, prorated
-// for how many days of that month the patient was enrolled.
+// Platform fee — pure logic (no DB, no Stripe).
 //
-// Rate history (Philippe, 2026-09-10): 15% originally -> briefly 20% to
+// RÈGLE ACTUELLE (Philippe, 2026-10-10) : commission EasyPhysio + frais Stripe
+// = 15 % du tarif (TOTAL_FEE_RATE). Le kiné conserve donc 85 % de ce que paie
+// son patient. Les frais Stripe ayant une part fixe (≈ 1,5 % + 0,25 € par
+// paiement, carte européenne), la commission EasyPhysio n'est plus un taux
+// unique : elle vaut « 15 % moins les frais Stripe estimés » et dépend du
+// tarif — ≈ 12,26 % à 19,99 €, ≈ 12,67 % à 29,99 €, ≈ 12,88 % à 39,99 €. Tout
+// passe par platformFeeCentsFor() / platformFeePercentFor() ci-dessous :
+// l'affichage (landing, page Tarifs) et le prélèvement Stripe
+// (application_fee_percent) ne peuvent pas diverger.
+// Limite assumée : les frais Stripe RÉELS varient selon la carte (hors Europe
+// surtout) — les 85 % sont exacts pour une carte européenne standard, proches
+// sinon. L'affichage le dit (« estimés »).
+//
+// Historique des taux :
+// (Philippe, 2026-09-10) 15% originally -> briefly 20% to
 // cover a Stripe processing fee absorption that turned out unsupported on
 // Standard accounts (see startConnectOnboarding()) -> settled on 16% as
 // plain platform margin. Note this lands close to, but not exactly, a flat
@@ -12,7 +24,7 @@
 // of 2026-09-11 are 19,99€/29,99€/39,99€ (Tier.amount) — a temporary -50%
 // off the 39,99€/59,99€/79,99€ list prices (Tier.listAmount) shown struck
 // through on /patient/abonnement — giving ~3,20€ / ~4,80€ / ~6,40€ at
-// today's rate.
+// that 16 % rate. Remplacé le 2026-10-10 par la règle des 15 % tout compris.
 //
 // v1 simplification, stated plainly (not silently assumed): there is no
 // "active"/"deactivated" concept on patients yet, only a creation date. A
@@ -20,7 +32,43 @@
 // see the plan doc for why, and what a future iteration would add.
 // =============================================================================
 
-export const PLATFORM_FEE_RATE = 0.16;
+/** Part totale retenue sur le tarif : commission EasyPhysio + frais Stripe estimés. */
+export const TOTAL_FEE_RATE = 0.15;
+
+/** Ancien taux unique (avant le 2026-10-10) — encore porté par les abonnements créés à l'époque. */
+export const LEGACY_PLATFORM_FEE_PERCENT = 16;
+
+// Le taux Stripe n'est pas quelque chose que cette appli connaît précisément
+// à partir de ses seules données (il dépend de la banque émettrice de chaque
+// carte et des paliers Stripe). On prend le tarif standard Stripe pour les
+// cartes européennes (1,5 % + 0,25 €), présenté comme une estimation dans l'UI.
+export const STRIPE_FEE_RATE = 0.015;
+export const STRIPE_FEE_FIXED_CENTS = 25;
+
+/** Frais Stripe estimés pour UN paiement de ce montant, en centimes. */
+export function estimateStripeFeeCents(priceCents: number): number {
+  if (priceCents <= 0) return 0;
+  return Math.round(priceCents * STRIPE_FEE_RATE + STRIPE_FEE_FIXED_CENTS);
+}
+
+/**
+ * Commission EasyPhysio pour UN paiement de ce montant, en centimes : ce qui
+ * reste des 15 % une fois les frais Stripe estimés retirés (jamais négatif —
+ * sur un tout petit tarif, les frais Stripe dépassent à eux seuls 15 %).
+ */
+export function platformFeeCentsFor(priceCents: number): number {
+  if (priceCents <= 0) return 0;
+  return Math.max(0, Math.round(priceCents * TOTAL_FEE_RATE) - estimateStripeFeeCents(priceCents));
+}
+
+/**
+ * La même commission en pourcentage du tarif, à 2 décimales — le format
+ * qu'attend Stripe pour `application_fee_percent`.
+ */
+export function platformFeePercentFor(priceCents: number): number {
+  if (priceCents <= 0) return 0;
+  return Math.round((platformFeeCentsFor(priceCents) / priceCents) * 10000) / 100;
+}
 
 /** Whole days in a given calendar month (UTC, month is 0-indexed like Date). */
 export function daysInMonth(year: number, month: number): number {
@@ -47,7 +95,7 @@ export function proratedFeeCents(
   totalDaysInMonth: number,
 ): number {
   if (totalDaysInMonth <= 0) return 0;
-  const raw = (kinePriceCents * PLATFORM_FEE_RATE * activeDays) / totalDaysInMonth;
+  const raw = (platformFeeCentsFor(kinePriceCents) * activeDays) / totalDaysInMonth;
   return Math.round(raw);
 }
 
@@ -95,26 +143,17 @@ export interface MonthEstimate {
 
 /**
  * Simulateur de la page Tarif : ce que N patients abonnés un mois complet
- * rapportent au kiné, ce qu'EasyPhysio prélève (15 %) et ce qu'il garde.
+ * rapportent au kiné, ce qui est retenu en tout (15 % : commission
+ * EasyPhysio + frais Stripe estimés) et ce qu'il garde (85 %).
  * Pas de prorata ici — c'est une estimation « mois plein ».
  */
 export function estimateMonth(priceCents: number, patientCount: number): MonthEstimate {
   const n = Math.max(0, Math.floor(patientCount));
   const price = Math.max(0, priceCents);
   const totalCents = price * n;
-  const feeCents = Math.round(totalCents * PLATFORM_FEE_RATE);
-  return { totalCents, feeCents, netCents: totalCents - feeCents, feeShare: PLATFORM_FEE_RATE };
+  const feeCents = (platformFeeCentsFor(price) + estimateStripeFeeCents(price)) * n;
+  return { totalCents, feeCents, netCents: totalCents - feeCents, feeShare: TOTAL_FEE_RATE };
 }
-
-// Le taux Stripe n'est pas quelque chose que cette appli connaît précisément
-// à partir de ses seules données (il dépend de la banque émettrice de chaque
-// carte et des paliers Stripe) — le rapprochement avec les vrais relevés
-// Stripe est prévu pour plus tard (sous-projet 2, CLAUDE.md §4). En
-// attendant, on affiche une estimation avec le tarif standard Stripe pour
-// les cartes européennes (1,5 % + 0,25 €), clairement marquée « à peu près »
-// dans l'UI plutôt que présentée comme un chiffre exact.
-export const STRIPE_FEE_RATE = 0.015;
-export const STRIPE_FEE_FIXED_CENTS = 25;
 
 export interface TierRevenue {
   priceCents: number;
@@ -131,20 +170,21 @@ export interface MonthlySplit {
 /**
  * Répartition « roue » de la page Tarif : à partir du tarif et du nombre de
  * patients abonnés de CHAQUE offre (des données réelles, pas une simulation
- * manuelle), combien va au kiné, combien à EasyPhysio (16 %, PLATFORM_FEE_RATE)
- * et combien (environ) à Stripe. Un abonnement = une transaction : le taux
- * Stripe s'applique au tarif de CETTE offre, le forfait fixe une fois par
- * patient payant.
+ * manuelle), combien va au kiné (85 %), combien à EasyPhysio et combien
+ * (environ) à Stripe — les deux derniers faisant 15 % à eux deux
+ * (TOTAL_FEE_RATE). Un abonnement = une transaction : calcul par patient
+ * payant, au tarif de SON offre.
  */
 export function estimateMonthlySplit(tiers: TierRevenue[]): MonthlySplit {
   let totalCents = 0;
   let stripeFeeCents = 0;
+  let platformFeeCents = 0;
   for (const { priceCents, count } of tiers) {
     const n = Math.max(0, Math.floor(count));
     const price = Math.max(0, priceCents);
     totalCents += price * n;
-    stripeFeeCents += Math.round(price * STRIPE_FEE_RATE + STRIPE_FEE_FIXED_CENTS) * n;
+    stripeFeeCents += estimateStripeFeeCents(price) * n;
+    platformFeeCents += platformFeeCentsFor(price) * n;
   }
-  const platformFeeCents = Math.round(totalCents * PLATFORM_FEE_RATE);
   return { totalCents, platformFeeCents, stripeFeeCents, netCents: totalCents - platformFeeCents - stripeFeeCents };
 }

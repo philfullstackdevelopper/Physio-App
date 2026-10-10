@@ -13,7 +13,7 @@ import {
   resolveTierPrices,
   type InstructorTierPriceRow,
 } from "@/lib/billing/plans";
-import { PLATFORM_FEE_RATE } from "@/lib/billing/platformFee";
+import { platformFeePercentFor } from "@/lib/billing/platformFee";
 import { hasActiveTier } from "@/lib/billing/access";
 import { requestOrigin } from "@/lib/requestOrigin";
 import { getTierBilling } from "@/lib/billing/context";
@@ -149,7 +149,9 @@ export async function startTierCheckout(formData: FormData) {
           // (lib/billing/subscriptionSignature.ts).
           metadata: signedSubscriptionMetadata(user.id, tier.key, destination),
           ...(hadSubscription ? {} : { trial_period_days: TRIAL_DAYS }),
-          application_fee_percent: PLATFORM_FEE_RATE * 100,
+          // Commission EasyPhysio = 15 % du tarif moins les frais Stripe
+          // estimés (lib/billing/platformFee.ts) : le kiné conserve 85 %.
+          application_fee_percent: platformFeePercentFor(prices[tier.key]),
         },
         line_items: [
           {

@@ -5,7 +5,7 @@
 import type Stripe from "stripe";
 import { upsertSubscription } from "@/lib/db/admin";
 import { getStripe } from "./stripe";
-import { PLATFORM_FEE_RATE } from "./platformFee";
+import { LEGACY_PLATFORM_FEE_PERCENT, platformFeePercentFor } from "./platformFee";
 import { hasValidSubscriptionSignature, SIGNATURE_REQUIRED_FROM } from "./subscriptionSignature";
 
 /** Stripe moved current_period_end onto items in recent API versions — read it
@@ -92,8 +92,15 @@ export async function syncSubscription(
       return;
     }
     const fee = (sub as unknown as { application_fee_percent?: number | null }).application_fee_percent ?? null;
-    if (LIVE_STATUSES.has(sub.status) && fee !== PLATFORM_FEE_RATE * 100) {
-      console.warn(`[billing/sync] abonnement ${sub.id} ignoré : commission ${fee ?? "absente"} au lieu de ${PLATFORM_FEE_RATE * 100} %.`);
+    // Commission attendue : celle du tarif de CET abonnement (règle des
+    // 15 % tout compris, platformFee.ts). Les abonnements créés avant le
+    // 2026-10-10 portent encore l'ancien taux unique de 16 % : acceptés.
+    const unitAmount = sub.items?.data?.[0]?.price?.unit_amount ?? null;
+    const expected = unitAmount != null ? platformFeePercentFor(unitAmount) : null;
+    const feeOk =
+      fee != null && (fee === LEGACY_PLATFORM_FEE_PERCENT || (expected != null && Math.abs(fee - expected) < 0.005));
+    if (LIVE_STATUSES.has(sub.status) && !feeOk) {
+      console.warn(`[billing/sync] abonnement ${sub.id} ignoré : commission ${fee ?? "absente"} au lieu de ${expected ?? "?"} %.`);
       return;
     }
   }

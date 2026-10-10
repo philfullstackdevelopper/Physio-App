@@ -8,7 +8,7 @@ import { HandNote, Underlined } from "@/components/HandDrawn";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 import { TIERS, TIER_KEYS, type TierKey } from "@/lib/billing/plans";
 import { HIGHLIGHT, featuresFor } from "@/lib/billing/tierCopy";
-import { PLATFORM_FEE_RATE } from "@/lib/billing/platformFee";
+import { TOTAL_FEE_RATE, estimateStripeFeeCents, platformFeeCentsFor } from "@/lib/billing/platformFee";
 
 // Section "Tarifs" de la landing, avec un choix "Côté kiné" / "Côté patient" :
 // chacun ne se reconnaît que dans son propre prix (le kiné dans sa commission,
@@ -20,7 +20,7 @@ import { PLATFORM_FEE_RATE } from "@/lib/billing/platformFee";
 
 const euros = (cents: number) => (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 });
 const FEATURED: TierKey = "standard";
-const FEE_PERCENT = Math.round(PLATFORM_FEE_RATE * 100);
+const KEEP_PERCENT = Math.round((1 - TOTAL_FEE_RATE) * 100);
 
 // Un léger "pop" du montant final dès qu'il entre dans le viewport, une
 // seule fois — pas un décompte depuis 0 : faire défiler plein de valeurs
@@ -122,23 +122,44 @@ function PatientOffers() {
   );
 }
 
-// Côté kiné (Philippe, 2026-10-10, d'après sa maquette) : trois blocs lisibles
-// d'un coup d'œil au lieu d'un pavé bleu — la part qui revient au kiné, un
-// simulateur (curseur). Pas de 3e bloc d'atouts (Philippe : inutile) ; à la
-// place, des détails « faits main » : soulignement dessiné, note manuscrite,
-// exemple chiffré qui suit le curseur. Le taux vient de PLATFORM_FEE_RATE,
-// jamais écrit en dur : l'affichage ne peut pas diverger de ce qui est prélevé.
-const SIM_MIN = 10;
-const SIM_MAX = 100;
+// Côté kiné (Philippe, 2026-10-10, d'après sa maquette) : deux blocs lisibles
+// d'un coup d'œil — la part qui revient au kiné, et un simulateur.
+//
+// Revu le même jour (Philippe) :
+// - le cercle montre les TROIS parts : ce que le kiné conserve, la commission
+//   EasyPhysio et les frais Stripe. Commission + Stripe = 15 % du tarif, le
+//   kiné conserve 85 % (règle et calcul dans lib/billing/platformFee.ts —
+//   jamais de taux écrit en dur ici, l'affichage ne peut pas diverger de ce
+//   qui est prélevé) ;
+// - plus de tarif libre : un kiné ne fixe pas ses prix pour l'instant. Le
+//   simulateur part des trois offres présentées côté patient (mêmes prix,
+//   lib/billing/plans.ts) et d'un nombre de patients.
+const SIM_MIN = 1;
+const SIM_MAX = 50;
+
+const pct = (part: number, total: number) =>
+  ((part / total) * 100).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function KineOffer() {
-  const [price, setPrice] = useState(30);
-  const feeCents = Math.round(price * 100 * PLATFORM_FEE_RATE);
-  const keepCents = price * 100 - feeCents;
-  // Anneau : r = 42 -> périmètre ≈ 263,9 ; l'arc foncé = la commission.
+  const [tierKey, setTierKey] = useState<TierKey>(FEATURED);
+  const [patients, setPatients] = useState(10);
+  const price = TIERS[tierKey].amount;
+  const platformCents = platformFeeCentsFor(price);
+  const stripeCents = estimateStripeFeeCents(price);
+  const keepCents = price - platformCents - stripeCents;
+  // Anneau : r = 42 -> périmètre ≈ 263,9. Trois arcs à la suite : vous
+  // (clair), EasyPhysio (bleu), Stripe (gris-bleu).
   const c = 2 * Math.PI * 42;
-  const arc = c * PLATFORM_FEE_RATE;
-  const fill = ((price - SIM_MIN) / (SIM_MAX - SIM_MIN)) * 100;
+  const keepLen = (c * keepCents) / price;
+  const platformLen = (c * platformCents) / price;
+  const stripeLen = c - keepLen - platformLen;
+  const fill = ((patients - SIM_MIN) / (SIM_MAX - SIM_MIN)) * 100;
+
+  const legend = [
+    { dot: "bg-blue-200", label: "Vous conservez", value: `${KEEP_PERCENT} %`, strong: true },
+    { dot: "bg-blue-600", label: "Commission EasyPhysio", value: `${pct(platformCents, price)} %`, strong: false },
+    { dot: "bg-slate-400", label: "Frais Stripe (estimés)", value: `${pct(stripeCents, price)} %`, strong: false },
+  ];
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -146,45 +167,64 @@ function KineOffer() {
         {/* 1. Votre rémunération */}
         <div className="rounded-2xl bg-blue-50/60 p-5 max-sm:p-4 sm:short:p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Votre rémunération</p>
-          <div className="mt-4 flex items-center gap-4 max-sm:mt-2">
-            <div className="relative h-32 w-32 shrink-0 max-sm:h-20 max-sm:w-20 sm:short:h-28 sm:short:w-28">
+          <div className="mt-4 flex items-center gap-4 max-sm:mt-2 sm:short:mt-3">
+            <div className="relative h-32 w-32 shrink-0 max-sm:h-24 max-sm:w-24 sm:short:h-28 sm:short:w-28">
               <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
-                <circle cx="50" cy="50" r="42" fill="none" strokeWidth="10" className="stroke-blue-200" />
                 <circle
                   cx="50"
                   cy="50"
                   r="42"
                   fill="none"
                   strokeWidth="10"
-                  strokeLinecap="round"
-                  strokeDasharray={`${arc} ${c - arc}`}
+                  strokeDasharray={`${keepLen} ${c - keepLen}`}
+                  className="stroke-blue-200"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  strokeWidth="10"
+                  strokeDasharray={`${platformLen} ${c - platformLen}`}
+                  strokeDashoffset={-keepLen}
                   className="stroke-blue-600"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  strokeWidth="10"
+                  strokeDasharray={`${stripeLen} ${c - stripeLen}`}
+                  strokeDashoffset={-(keepLen + platformLen)}
+                  className="stroke-slate-400"
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-2xl font-semibold tracking-tight text-slate-900 max-sm:text-base">{FEE_PERCENT}&nbsp;%</span>
-                <span className="text-[10px] leading-tight text-slate-500 max-sm:hidden">
-                  de commission
-                  <br />
-                  EasyPhysio
+                <span className="text-2xl font-semibold tracking-tight text-slate-900 max-sm:text-lg">
+                  {KEEP_PERCENT}&nbsp;%
                 </span>
+                <span className="text-[10px] leading-tight text-slate-500">pour vous</span>
               </div>
             </div>
-            <ArrowRight className="h-5 w-5 shrink-0 text-blue-600 max-sm:hidden" strokeWidth={1.75} />
-            <div className="min-w-0">
-              <p className="text-4xl font-semibold leading-none tracking-tight text-slate-900 max-sm:text-3xl">
-                {100 - FEE_PERCENT}&nbsp;%
-              </p>
-              <p className="mt-1 text-xl font-semibold leading-tight text-slate-900 max-sm:text-base">
-                <Underlined>pour vous</Underlined>
-              </p>
-              <p className="mt-1 text-xs text-slate-500 sm:hidden">{FEE_PERCENT}&nbsp;% de commission EasyPhysio</p>
-            </div>
+            <dl className="min-w-0 flex-1 space-y-2 text-sm max-sm:space-y-1.5 max-sm:text-xs">
+              {legend.map((row) => (
+                <div key={row.label} className="flex items-center justify-between gap-2">
+                  <dt className="flex min-w-0 items-center gap-1.5 text-slate-600">
+                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${row.dot}`} />
+                    <span className={row.strong ? "font-semibold text-slate-900" : ""}>{row.label}</span>
+                  </dt>
+                  <dd className={`shrink-0 tabular-nums ${row.strong ? "text-base font-semibold text-slate-900 max-sm:text-sm" : "font-medium text-slate-700"}`}>
+                    {row.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
-          <p className="mt-4 text-sm leading-relaxed text-slate-600 max-sm:mt-3 sm:short:mt-3">
-            Avec 10 patients à {price}&nbsp;€, cela fait{" "}
-            <span className="font-semibold text-slate-900">{euros(keepCents * 10)}&nbsp;€ par mois</span> pour vous.
-            <span className="max-sm:hidden"> Vos patients vous paient directement&nbsp;; la commission est retenue au passage.</span>
+          <p className="mt-4 text-sm leading-relaxed text-slate-600 max-sm:hidden sm:short:mt-3">
+            Sur chaque abonnement, <span className="font-semibold text-slate-900">{Math.round(TOTAL_FEE_RATE * 100)}&nbsp;% en tout</span>{" "}
+            sont retenus, frais de paiement compris. <Underlined>Le reste est pour vous.</Underlined>
+            <span className="max-sm:hidden"> Vos patients vous paient directement&nbsp;; la retenue se fait au passage.</span>
           </p>
         </div>
 
@@ -192,52 +232,81 @@ function KineOffer() {
         <div className="relative rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm max-sm:p-4 sm:short:p-4">
           {/* Note manuscrite vers le curseur — grand écran seulement. */}
           <HandNote direction="down" className="absolute -right-3 -top-7 rotate-3 max-lg:hidden">
-            essayez avec votre tarif
+            essayez avec vos patients
           </HandNote>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Simulez votre revenu</p>
-          <div className="mt-3 flex items-baseline justify-between gap-3 sm:short:mt-1.5">
-            <label htmlFor="sim-price" className="text-sm text-slate-600">
-              Tarif mensuel par patient
+
+          {/* Les trois offres présentées côté patient — mêmes noms, mêmes prix. */}
+          <div className="mt-3 grid grid-cols-3 gap-1.5 sm:short:mt-2" role="group" aria-label="Offre choisie par vos patients">
+            {TIER_KEYS.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTierKey(key)}
+                aria-pressed={tierKey === key}
+                className={`rounded-xl border px-2 py-1.5 text-center transition ${
+                  tierKey === key
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-slate-200 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                <span className="block text-xs font-semibold">{TIERS[key].label}</span>
+                <span className="block text-[11px] tabular-nums">{euros(TIERS[key].amount)}&nbsp;€</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-baseline justify-between gap-3 sm:short:mt-2">
+            <label htmlFor="sim-patients" className="text-sm text-slate-600">
+              Patients abonnés
             </label>
-            <span className="text-2xl font-semibold tabular-nums text-blue-600">{price}&nbsp;€</span>
+            <span className="text-2xl font-semibold tabular-nums text-blue-600">{patients}</span>
           </div>
           <input
-            id="sim-price"
+            id="sim-patients"
             type="range"
             min={SIM_MIN}
             max={SIM_MAX}
             step={1}
-            value={price}
-            onChange={(e) => setPrice(Number(e.target.value))}
-            aria-valuetext={`${price} euros par mois`}
+            value={patients}
+            onChange={(e) => setPatients(Number(e.target.value))}
+            aria-valuetext={`${patients} patients abonnés`}
             style={{ background: `linear-gradient(to right, #155dfc ${fill}%, #e2e8f0 ${fill}%)` }}
-            className="mt-3 h-1.5 w-full cursor-pointer sm:short:mt-2 appearance-none rounded-full accent-blue-600 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow"
+            className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full accent-blue-600 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow"
           />
-          <div className="mt-1.5 flex justify-between text-xs text-slate-400">
-            <span>{SIM_MIN}&nbsp;€</span>
-            <span>{SIM_MAX}&nbsp;€</span>
+          <div className="mt-1 flex justify-between text-xs text-slate-400">
+            <span>{SIM_MIN}</span>
+            <span>{SIM_MAX}</span>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 divide-x divide-slate-200 rounded-xl bg-slate-50 py-3 sm:short:mt-2 sm:short:py-2">
-            <div className="px-4 max-sm:px-3">
-              <p className="text-xs text-slate-500">Commission ({FEE_PERCENT}&nbsp;%)</p>
-              <p className="mt-0.5 text-xl font-semibold tabular-nums text-blue-600">{euros(feeCents)}&nbsp;€</p>
+          <div className="mt-3 rounded-xl bg-slate-50 px-4 py-3 max-sm:px-3 sm:short:mt-2 sm:short:py-2">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-sm font-medium text-slate-900">Vous conservez</p>
+              <p className="text-2xl font-semibold tabular-nums text-slate-900">
+                {euros(keepCents * patients)}&nbsp;€
+                <span className="text-xs font-normal text-slate-500"> / mois</span>
+              </p>
             </div>
-            <div className="px-4 max-sm:px-3">
-              <p className="text-xs text-slate-500">Vous conservez</p>
-              <p className="mt-0.5 text-xl font-semibold tabular-nums text-slate-900">{euros(keepCents)}&nbsp;€</p>
+            <div className="mt-1.5 flex justify-between gap-3 border-t border-slate-200 pt-1.5 text-xs text-slate-500">
+              <span>
+                Commission EasyPhysio{" "}
+                <span className="font-medium tabular-nums text-blue-600">{euros(platformCents * patients)}&nbsp;€</span>
+              </span>
+              <span>
+                Frais Stripe (estimés){" "}
+                <span className="font-medium tabular-nums text-slate-700">≈&nbsp;{euros(stripeCents * patients)}&nbsp;€</span>
+              </span>
             </div>
           </div>
-          <p className="mt-1.5 text-center text-[11px] text-slate-400">
-            par patient et par mois, hors frais Stripe (≈&nbsp;1,5&nbsp;% + 0,25&nbsp;€)
+          <p className="mt-1.5 text-center text-[11px] text-slate-400 max-sm:hidden sm:short:hidden">
+            Frais Stripe estimés pour une carte européenne (1,5&nbsp;% + 0,25&nbsp;€ par paiement).
           </p>
 
-          <div className="mt-3 flex items-center gap-3 rounded-xl bg-blue-50/70 px-3.5 py-2.5 max-sm:hidden sm:short:mt-2 sm:short:py-1.5">
+          <div className="mt-3 flex items-center gap-3 rounded-xl bg-blue-50/70 px-3.5 py-2.5 max-sm:hidden sm:short:hidden">
             <Info className="h-5 w-5 shrink-0 text-blue-600" strokeWidth={1.75} />
             <p className="text-xs leading-snug text-slate-500">
-              <span className="block text-sm font-medium text-blue-700 sm:short:inline sm:short:text-xs">Aucun abonnement fixe</span>
-              <span className="hidden sm:short:inline"> — </span>
-              <span className="sm:short:lowercase">Vous</span> ne payez que pour vos patients abonnés.
+              <span className="block text-sm font-medium text-blue-700">Aucun abonnement fixe</span>
+              Vous ne payez que pour vos patients abonnés.
             </p>
           </div>
         </div>
