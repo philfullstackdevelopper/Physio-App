@@ -54,8 +54,6 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
           getPatientThread={noopResult}
           sendPatientMessage={noopResult}
           reactivatePatient={noopResult}
-          markPaymentLapsed={noopVoid}
-          clearPaymentLapsed={noopVoid}
           deletePatient={noopVoid}
         />
       </PatientsPageView>
@@ -185,8 +183,6 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
             paymentLapsedAt={null}
             paymentEligibleForDeletion={false}
             redirectTo="/prototypes/kine-telephone?ecran=fiche"
-            markPaymentLapsed={noopVoid}
-            clearPaymentLapsed={noopVoid}
             deletePatient={noopVoid}
             messages={{ patient: { id: "p2", name: "Thomas Bernard", initials: "TB" }, unreadCount: 1, getThread: noopResult, sendMessage: noopResult }}
           />

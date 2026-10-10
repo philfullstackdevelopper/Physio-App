@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, BadgeEuro, MessageCircle, MoreVertical, RotateCcw, Settings2, Trash2, UserRound, X } from "lucide-react";
+import { AlertTriangle, MessageCircle, MoreVertical, Settings2, Trash2, UserRound, X } from "lucide-react";
 import PatientMessagesModal, { type MessagesModalPatient } from "@/components/PatientMessagesModal";
 import type { ThreadMessage } from "@/components/MessageThread";
 import { isPhoneFormat } from "@/lib/phoneFormat";
@@ -34,9 +34,7 @@ export default function PatientActionsMenu({
   patientName,
   paymentLapsedAt,
   paymentEligibleForDeletion,
-  redirectTo,
-  markPaymentLapsed,
-  clearPaymentLapsed,
+  lapseReason = null,
   deletePatient,
   trigger = "button",
   messages,
@@ -46,12 +44,14 @@ export default function PatientActionsMenu({
 }: {
   patientId: string;
   patientName: string;
+  /** Depuis quand son abonnement ne lui donne plus accès (calculé d'après
+   *  Stripe, lib/patient/paymentStatus.ts) — null = pas un ancien patient. */
   paymentLapsedAt: string | null;
   /** `paymentLapsedAt` + 3 mois est déjà passé — calculé côté serveur. */
   paymentEligibleForDeletion: boolean;
+  /** Carte refusée ou abonnement terminé (même règle que le cadenas patient). */
+  lapseReason?: "payment_failed" | "ended" | null;
   redirectTo: string;
-  markPaymentLapsed: (formData: FormData) => Promise<void>;
-  clearPaymentLapsed: (formData: FormData) => Promise<void>;
   deletePatient: (formData: FormData) => Promise<void>;
   /** "button" (default) = la pill « Gérer » de la fiche patient. "icon" = un
    *  bouton compact (mêmes dimensions que le bouton Messages) pour une ligne
@@ -162,9 +162,11 @@ export default function PatientActionsMenu({
           <p className="truncate text-sm font-semibold text-ink">{patientName}</p>
           <p className="text-xs text-muted">
             {lapsedDate ? (
-              <span className="text-warn">Ne paie plus depuis le {fmt(lapsedDate)}</span>
+              <span className="text-warn">
+                {lapseReason === "payment_failed" ? "Paiement refusé" : "Abonnement terminé"} depuis le {fmt(lapsedDate)} — accès verrouillé
+              </span>
             ) : (
-              "Suivi actif, paiement à jour"
+              "Suivi actif"
             )}
           </p>
         </div>
@@ -231,35 +233,9 @@ export default function PatientActionsMenu({
         </div>
       )}
 
+      {/* Plus d'étiquette manuelle « ne paie plus » (Philippe, 2026-10-10) : le
+          statut vient de Stripe, tout seul — voir la ligne sous le nom. */}
       <div className="border-t border-line pt-1.5">
-        {lapsedDate ? (
-          <form action={clearPaymentLapsed}>
-            <input type="hidden" name="patient_id" value={patientId} />
-            <input type="hidden" name="redirect_to" value={redirectTo} />
-            <button type="submit" role="menuitem" className={itemClass}>
-              <RotateCcw className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
-              <span>
-                <span className="block text-sm font-medium text-ink">Marquer comme payant à nouveau</span>
-                <span className="block text-xs text-muted">Le suivi reprend normalement.</span>
-              </span>
-            </button>
-          </form>
-        ) : (
-          <form action={markPaymentLapsed}>
-            <input type="hidden" name="patient_id" value={patientId} />
-            <input type="hidden" name="redirect_to" value={redirectTo} />
-            <button type="submit" role="menuitem" className={itemClass}>
-              <BadgeEuro className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
-              <span>
-                <span className="block text-sm font-medium text-ink">Marquer comme ne payant plus</span>
-                <span className="block text-xs text-muted">Sans effet sur ses données ; suppression possible après 3 mois.</span>
-              </span>
-            </button>
-          </form>
-        )}
-      </div>
-
-      <div className="mt-1.5 border-t border-line pt-1.5">
         <button
           type="button"
           role="menuitem"
@@ -277,7 +253,7 @@ export default function PatientActionsMenu({
                 ? paymentEligibleForDeletion
                   ? `Possible depuis le ${fmt(eligibleDate!)}.`
                   : `Conseillé à partir du ${fmt(eligibleDate!)}.`
-                : "Efface définitivement son historique et ses messages."}
+                : "Efface définitivement son historique, ses messages et son identifiant de connexion."}
             </span>
           </span>
         </button>

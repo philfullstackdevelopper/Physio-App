@@ -10,6 +10,7 @@ import { computeSignal } from "./patientSignal.ts";
 import { relativeDay, daysBetween } from "../format/relativeDay.ts";
 import { initials } from "../format/initials.ts";
 import { getInstructor } from "./instructor.ts";
+import { subscriptionLapse } from "../patient/paymentStatus.ts";
 
 export interface DashboardHomeInput {
   now?: Date;
@@ -20,6 +21,8 @@ export interface DashboardHomeInput {
   logs: { id: string; patient_id: string; completed_at: string }[];
   /** 14 derniers jours. */
   feedback: { patient_id: string; pain_score: number | null; difficulty: number | null; created_at: string }[];
+  /** Abonnements Stripe des patients (migration 0055) — pour écarter les anciens patients. Optionnel pour les anciens tests. */
+  subscriptions?: { user_id: string; status: string | null; current_period_end: string | null }[];
 }
 
 export interface Tile { value: number; delta: number | null }
@@ -41,7 +44,12 @@ export interface DashboardHome {
 
 const TODAY_FMT = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
-export function buildDashboardHome({ now = new Date(), patients, profiles, logs, feedback }: DashboardHomeInput): Omit<DashboardHome, "firstName"> {
+export function buildDashboardHome({ now = new Date(), patients, profiles, logs, feedback, subscriptions = [] }: DashboardHomeInput): Omit<DashboardHome, "firstName"> {
+  // Anciens patients (abonnement terminé ou carte refusée — même règle que la
+  // liste « Mes patients » et que le cadenas côté patient) : ils ne sont plus
+  // suivis, donc ni « à suivre » ni comptés dans « Patients suivis »
+  // (Philippe, 2026-10-10).
+  const former = new Set(subscriptions.filter((sub) => subscriptionLapse(sub.status, sub.current_period_end, now)).map((sub) => sub.user_id));
   const nameOf = new Map(patients.map((p) => [p.id, p.full_name ?? "Patient"]));
   const isToday = (iso: string) => daysBetween(iso, now) === 0;
   const isYesterday = (iso: string) => daysBetween(iso, now) === 1;
@@ -75,7 +83,7 @@ export function buildDashboardHome({ now = new Date(), patients, profiles, logs,
 
   const toTreat: ToTreatRow[] = [];
   for (const p of patients) {
-    if (isOnboarding(p)) continue;
+    if (isOnboarding(p) || former.has(p.id)) continue;
     const sig = signalsBy.get(p.id) ?? { painScores: [], difficulties: [], lastPain: null, lastPainAt: "" };
     const a = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties });
     const s = computeSignal({ concerning: a.concerning, severe: a.severe, lastPain: sig.lastPain, lastSessionAt: lastSession.get(p.id) ?? null, createdAt: p.created_at, now });
@@ -106,7 +114,7 @@ export function buildDashboardHome({ now = new Date(), patients, profiles, logs,
     sessionsToday: { value: sessionsToday, delta: sessionsToday - sessionsYesterday },
     painToday: { value: painToday, delta: painToday - painYesterday },
     inactiveCount: toTreat.filter((r) => r.kind === "inactive").length,
-    patientCount: patients.length,
+    patientCount: patients.filter((p) => !former.has(p.id)).length,
     toTreat,
     surveillerCount: toTreat.length,
     recent,
@@ -116,12 +124,13 @@ export function buildDashboardHome({ now = new Date(), patients, profiles, logs,
 
 export async function loadDashboardHome(supabase: SupabaseClient, userId: string, now: Date = new Date()): Promise<DashboardHome> {
   const since14 = new Date(now.getTime() - 14 * 86_400_000).toISOString();
-  const [instructor, { data: patients }, { data: profiles }, { data: logs }, { data: feedback }] = await Promise.all([
+  const [instructor, { data: patients }, { data: profiles }, { data: logs }, { data: feedback }, { data: subscriptions }] = await Promise.all([
     getInstructor(supabase, userId),
     supabase.from("patients").select("id, full_name, created_at, terms_accepted_at"),
     supabase.from("patient_profiles").select("id, health_data_consent_at"),
     supabase.from("workout_logs").select("id, patient_id, completed_at"),
     supabase.from("patient_feedback").select("patient_id, pain_score, difficulty, created_at").gte("created_at", since14),
+    supabase.from("subscriptions").select("user_id, status, current_period_end"),
   ]);
   const firstName = instructor?.full_name ? instructor.full_name.split(" ")[0] : "";
   return {
@@ -132,6 +141,7 @@ export async function loadDashboardHome(supabase: SupabaseClient, userId: string
       profiles: (profiles ?? []) as DashboardHomeInput["profiles"],
       logs: (logs ?? []) as DashboardHomeInput["logs"],
       feedback: (feedback ?? []) as DashboardHomeInput["feedback"],
+      subscriptions: (subscriptions ?? []) as NonNullable<DashboardHomeInput["subscriptions"]>,
     }),
   };
 }

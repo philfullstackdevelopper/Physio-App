@@ -1,12 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { clerkClient } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase/server";
 import { deleteAppUserById } from "@/lib/db/admin";
 import { requireUser, forgetKnownUser } from "@/lib/supabase/require-user";
 import { revokeCurrentSession } from "@/lib/auth/clerk-session";
-import { cancelPatientSubscription } from "@/lib/billing/cancelSubscription";
+import { cancelPatientSubscription, setPatientCancelAtPeriodEnd } from "@/lib/billing/cancelSubscription";
+import { deleteClerkUserWithRetry } from "@/lib/auth/deleteClerkUser";
 
 // RGPD droit à l'effacement: a patient deletes their own account. Every
 // table referencing patients.id has "on delete cascade" (see the
@@ -59,18 +59,78 @@ export async function deleteMyAccount(formData: FormData) {
   }
   if (failure) redirect(`/patient/compte?error=${encodeURIComponent(failure)}`);
 
-  // 3) EN DERNIER, l'identité Clerk (connexion, e-mail, mot de passe). Les
-  // données de santé sont déjà effacées à ce stade : un échec ici est
-  // seulement journalisé (identifiant orphelin, sans aucune donnée, à
-  // supprimer à la main depuis le tableau de bord Clerk).
-  try {
-    const client = await clerkClient();
-    await client.users.deleteUser(user.clerkId);
-  } catch (err) {
-    console.error(`deleteMyAccount: suppression Clerk impossible (clerkId ${user.clerkId})`, err);
-  }
+  // 3) EN DERNIER, l'identité Clerk (connexion, e-mail, mot de passe), avec
+  // plusieurs tentatives. Les données de santé sont déjà effacées à ce stade.
+  // Si Clerk refuse quand même, l'identifiant reste (sans aucune donnée) et
+  // l'e-mail serait bloqué pour une future invitation : la personne pourra
+  // terminer elle-même en se reconnectant une fois — l'écran « compte non
+  // associé » (PatientNoRecordGate) propose alors de supprimer l'identifiant.
+  const identityDeleted = await deleteClerkUserWithRetry(user.clerkId);
 
   forgetKnownUser(user.clerkId);
   await revokeCurrentSession();
-  redirect("/login?deleted=1");
+  redirect(identityDeleted ? "/login?deleted=1" : "/login?deleted=partial");
+}
+
+// Résilier / reprendre son abonnement depuis l'appli (Philippe, 2026-10-10 :
+// le patient « doit pouvoir facilement » résilier depuis son compte, et garde
+// l'accès jusqu'à la fin de la période payée). Réservé au titulaire : la RLS
+// ne renvoie la ligne subscriptions qu'à son propre patient.
+async function changeCancellation(cancel: boolean) {
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+  let failure: string | null = null;
+  let changed = false;
+  try {
+    changed = await setPatientCancelAtPeriodEnd(user.id, cancel);
+  } catch (err) {
+    console.error("changeCancellation: Stripe a refusé", err);
+    failure = cancel
+      ? "Impossible de résilier pour le moment. Rien n'a changé — réessayez dans quelques minutes."
+      : "Impossible d'annuler la résiliation pour le moment. Réessayez dans quelques minutes.";
+  }
+  if (failure) redirect(`/patient/compte?error=${encodeURIComponent(failure)}`);
+  if (!changed) redirect(`/patient/compte?error=${encodeURIComponent("Aucun abonnement en cours à modifier.")}`);
+  // /billing/refresh relit l'abonnement chez Stripe et met la base à jour,
+  // puis revient sur /patient/compte (même chemin que le retour du portail).
+  redirect("/billing/refresh");
+}
+
+export async function cancelMySubscription() {
+  await changeCancellation(true);
+}
+
+export async function resumeMySubscription() {
+  await changeCancellation(false);
+}
+
+// Identifiant de connexion resté sans aucune donnée (compte supprimé par le
+// patient ou par son kiné, mais la suppression de l'identifiant avait échoué) :
+// la personne connectée le supprime elle-même, ce qui libère son e-mail pour
+// une nouvelle invitation. Elle n'agit que sur SON PROPRE identifiant, et
+// seulement s'il n'est rattaché ni à une fiche patient ni à un compte kiné.
+export async function deleteOrphanIdentity() {
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+
+  const [{ data: patientRow }, { data: kineRow }] = await Promise.all([
+    supabase.from("patients").select("id").eq("id", user.id).maybeSingle(),
+    supabase.from("instructors").select("id").eq("id", user.id).maybeSingle(),
+  ]);
+  if (patientRow) redirect("/patient");
+  if (kineRow) redirect("/dashboard");
+
+  let failure: string | null = null;
+  try {
+    await deleteAppUserById(user.id);
+  } catch (err) {
+    console.error("deleteOrphanIdentity: suppression de la correspondance impossible", err);
+    failure = "Suppression impossible pour le moment. Réessayez dans quelques minutes.";
+  }
+  if (failure) redirect(`/patient?error=${encodeURIComponent(failure)}`);
+
+  const identityDeleted = await deleteClerkUserWithRetry(user.clerkId);
+  forgetKnownUser(user.clerkId);
+  await revokeCurrentSession();
+  redirect(identityDeleted ? "/login?deleted=1" : "/login?deleted=partial");
 }

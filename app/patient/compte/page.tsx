@@ -8,7 +8,8 @@ import { hasActiveTier, isSubscriptionActive } from "@/lib/billing/access";
 import { getTierBilling } from "@/lib/billing/context";
 import { openBillingPortal } from "@/app/billing/actions";
 import { getStripe } from "@/lib/billing/stripe";
-import { deleteMyAccount } from "./actions";
+import SubmitButton from "@/components/SubmitButton";
+import { cancelMySubscription, deleteMyAccount, resumeMySubscription } from "./actions";
 
 const frDate = (iso: string) =>
   new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" }).format(new Date(iso));
@@ -48,6 +49,64 @@ async function scheduledCancellation(
     console.error("[compte] lecture de l'abonnement Stripe impossible :", e);
     return null;
   }
+}
+
+/**
+ * Résilier / annuler la résiliation depuis l'appli (Philippe, 2026-10-10).
+ * Résilier se déplie (<details>, sans JavaScript) pour demander confirmation :
+ * l'accès reste ouvert jusqu'à la fin de la période déjà payée, puis l'appli
+ * se verrouille. `until` = date de fin si une résiliation est déjà programmée.
+ */
+function CancellationControl({
+  canCancel,
+  until,
+  accessEnd,
+  ended,
+}: {
+  canCancel: boolean;
+  until: string | null;
+  accessEnd: string | null;
+  /** Ancien abonné sans accès : on lui propose de reprendre une offre. */
+  ended: boolean;
+}) {
+  if (ended) {
+    return (
+      <Link href="/patient/abonnement?offres=1" className="mt-3 block text-center text-sm font-semibold text-brand hover:underline">
+        Reprendre un abonnement
+      </Link>
+    );
+  }
+  if (until) {
+    return (
+      <form action={resumeMySubscription} className="mt-3 text-center">
+        <SubmitButton pendingText="Un instant…" className="text-sm font-medium text-brand hover:underline">
+          Annuler la résiliation et garder mon abonnement
+        </SubmitButton>
+      </form>
+    );
+  }
+  if (!canCancel) return null;
+  return (
+    <details className="group mt-3 text-center">
+      <summary className="cursor-pointer list-none text-sm font-medium text-muted hover:text-danger [&::-webkit-details-marker]:hidden">
+        Résilier mon abonnement
+      </summary>
+      <div className="mt-2 rounded-xl bg-danger-soft p-3 text-left">
+        <p className="text-sm text-ink">
+          Plus aucun prélèvement.{" "}
+          {accessEnd ? <>Vous gardez l&rsquo;accès jusqu&rsquo;au <strong>{accessEnd}</strong>, puis l&rsquo;appli se verrouille.</> : <>Vous gardez l&rsquo;accès jusqu&rsquo;à la fin de la période en cours.</>}
+        </p>
+        <form action={cancelMySubscription} className="mt-2">
+          <SubmitButton
+            pendingText="Résiliation…"
+            className="w-full rounded-full bg-danger py-2 text-sm font-semibold text-white hover:brightness-95"
+          >
+            Confirmer la résiliation
+          </SubmitButton>
+        </form>
+      </div>
+    </details>
+  );
 }
 
 // Refonte 2026-09-11 (Philippe, à partir d'une maquette fournie) : deux
@@ -120,6 +179,9 @@ export default async function CompteePage({
             ? `Jusqu'au ${frDate(billing.trialEndsAt)}`
             : null;
   const priceCents = isTierKey(billing.subPlan) ? kinePrices[billing.subPlan] : null;
+  // Résiliable : un abonnement Stripe en cours (payé ou en essai), pas déjà résilié.
+  const canCancel = hasCustomer && (billing.subStatus === "active" || billing.subStatus === "trialing") && !cancelAt;
+  const accessEnd = billing.subCurrentPeriodEnd ? frDate(billing.subCurrentPeriodEnd) : null;
 
   return (
     // Téléphone (Philippe, 2026-10-04 : tout sur un écran, plus efficace) :
@@ -138,6 +200,7 @@ export default async function CompteePage({
         hasCustomer={hasCustomer}
         canChangeOffer={isTierKey(billing.subPlan)}
         active={active}
+        cancellation={<CancellationControl canCancel={canCancel} until={cancelAt} accessEnd={accessEnd} ended={hasCustomer && !active} />}
       />
 
       <div className="mx-auto max-w-7xl max-sm:hidden max-sm:flex max-sm:w-full max-sm:flex-1 max-sm:flex-col max-sm:justify-between">
@@ -211,8 +274,9 @@ export default async function CompteePage({
                 </div>
                 <p className="mt-2 hidden items-center justify-center gap-1 text-center text-xs text-muted sm:flex">
                   <ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-                  Facturation et résiliation gérées via Stripe
+                  Paiement sécurisé par Stripe
                 </p>
+                <CancellationControl canCancel={canCancel} until={cancelAt} accessEnd={accessEnd} ended={hasCustomer && !active} />
               </div>
             ) : (
               !active && (
@@ -316,6 +380,7 @@ function PhoneSettings({
   hasCustomer,
   canChangeOffer,
   active,
+  cancellation,
 }: {
   fullName: string | null;
   error?: string;
@@ -328,6 +393,7 @@ function PhoneSettings({
   hasCustomer: boolean;
   canChangeOffer: boolean;
   active: boolean;
+  cancellation: React.ReactNode;
 }) {
   const priceLine = priceCents !== null ? `${(priceCents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € / mois` : null;
   return (
@@ -397,6 +463,7 @@ function PhoneSettings({
               </Link>
             )
           )}
+          {hasCustomer && cancellation}
         </div>
       </section>
 

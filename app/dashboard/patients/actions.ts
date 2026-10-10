@@ -94,7 +94,7 @@ export async function addPatient(formData: FormData) {
     const isDuplicate = clerkErrors.some((ce) => ce.code === "duplicate_record" || ce.code === "form_identifier_exists");
     const isPending = clerkErrors.some((ce) => ce.code === "invitation_already_pending" || ce.code === "duplicate_invitation");
     const message = isDuplicate
-      ? "Un compte existe déjà avec cette adresse."
+      ? "Un compte existe déjà avec cette adresse. Si cette personne a supprimé son ancien compte EasyPhysio, demandez-lui de se connecter une fois : l'appli lui proposera de supprimer son ancien identifiant, puis vous pourrez l'inviter."
       : isPending
         ? "Une invitation est déjà en attente pour cette adresse."
         : "Impossible d'inviter ce patient.";

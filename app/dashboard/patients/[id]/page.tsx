@@ -10,7 +10,7 @@ import { initials } from "@/lib/format/initials";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { ageFromDob } from "@/lib/exercise/patientProfile";
 import { EQUIPMENT_LABELS, type EquipmentId } from "@/lib/exercise/equipment";
-import { paymentEligibleForDeletion } from "@/lib/patient/paymentStatus";
+import { paymentEligibleForDeletion, subscriptionLapse } from "@/lib/patient/paymentStatus";
 import { type AddableWorkout } from "@/components/AdjustWorkoutModal";
 import KineWeekProgramme, { type KineWorkoutSummary } from "@/components/KineWeekProgramme";
 import PatientActionsMenu from "@/components/PatientActionsMenu";
@@ -22,8 +22,6 @@ import {
   addRecommendedWorkout,
   removeRecommendedWorkout,
   adjustPatientWorkout,
-  markPaymentLapsed,
-  clearPaymentLapsed,
   deletePatient,
 } from "./actions";
 import { getPatientThread, sendPatientMessage } from "../actions";
@@ -49,8 +47,12 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const { user } = await requireApprovedInstructor(supabase);
   const now = new Date();
 
-  const { data: patient } = await supabase.from("patients").select("id, full_name, email, condition_id, created_at, payment_lapsed_at").eq("id", id).maybeSingle();
+  const { data: patient } = await supabase.from("patients").select("id, full_name, email, condition_id, created_at").eq("id", id).maybeSingle();
   if (!patient) redirect("/dashboard/patients");
+  // « Ancien patient » : calculé d'après son abonnement Stripe (lisible par son
+  // kiné, migration 0055) — plus d'étiquette manuelle (Philippe, 2026-10-10).
+  const { data: patientSub } = await supabase.from("subscriptions").select("status, current_period_end").eq("user_id", id).maybeSingle();
+  const lapse = subscriptionLapse(patientSub?.status as string | null, patientSub?.current_period_end as string | null, now);
   const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || "ce patient";
 
   const WORKOUT_FIELDS =
@@ -224,7 +226,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     <PatientDetailView
       name={(patient.full_name as string | null) ?? "Patient"}
       warning={warning}
-      paymentLapsed={!!patient.payment_lapsed_at}
+      paymentLapsed={!!lapse}
       error={error}
       adjusted={adjusted === "1"}
       stats={{
@@ -242,11 +244,10 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       <PatientActionsMenu
         patientId={patient.id}
         patientName={firstName}
-        paymentLapsedAt={patient.payment_lapsed_at as string | null}
-        paymentEligibleForDeletion={paymentEligibleForDeletion(patient.payment_lapsed_at as string | null, now)}
+        paymentLapsedAt={lapse?.at ?? null}
+        paymentEligibleForDeletion={paymentEligibleForDeletion(lapse?.at ?? null, now)}
+        lapseReason={lapse?.reason ?? null}
         redirectTo={`/dashboard/patients/${patient.id}`}
-        markPaymentLapsed={markPaymentLapsed}
-        clearPaymentLapsed={clearPaymentLapsed}
         deletePatient={deletePatient}
         messages={{
           patient: { id: patient.id, name: (patient.full_name as string | null) ?? "Patient", initials: initials(patient.full_name as string | null) },

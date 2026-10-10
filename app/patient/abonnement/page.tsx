@@ -7,8 +7,9 @@ import { requireUser } from "@/lib/supabase/require-user";
 import SubmitButton from "@/components/SubmitButton";
 import { TIERS, TIER_KEYS, TRIAL_DAYS, resolveTierPrices, type InstructorTierPriceRow, type TierKey } from "@/lib/billing/plans";
 import { HIGHLIGHT, featuresFor } from "@/lib/billing/tierCopy";
-import { hasActiveTier } from "@/lib/billing/access";
-import { getTierBilling } from "@/lib/billing/context";
+import { lockReason } from "@/lib/billing/access";
+import PatientLockScreen from "@/components/PatientLockScreen";
+import { hasPatientAppAccess } from "@/lib/billing/context";
 import { openBillingPortal } from "@/app/billing/actions";
 import { startTierCheckout } from "./actions";
 
@@ -50,20 +51,21 @@ const firstChargeDateLabel = () =>
 export default async function AbonnementPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; checkout?: string }>;
+  searchParams: Promise<{ error?: string; checkout?: string; offres?: string }>;
 }) {
-  const { error, checkout } = await searchParams;
+  const { error, checkout, offres } = await searchParams;
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
   // Déjà une offre active (ou un accès historique) : rien à choisir ici.
-  if (hasActiveTier(await getTierBilling(supabase, user.id))) redirect("/patient");
+  // hasPatientAppAccess : couvre aussi le patient d'un kiné suspendu (accès gratuit).
+  if (await hasPatientAppAccess(supabase, user.id)) redirect("/patient");
 
   const [{ data: patient }, { data: sub }] = await Promise.all([
-    supabase.from("patients").select("instructor_id").eq("id", user.id).maybeSingle(),
+    supabase.from("patients").select("instructor_id, full_name").eq("id", user.id).maybeSingle(),
     supabase
       .from("subscriptions")
-      .select("stripe_customer_id, stripe_subscription_id, status")
+      .select("stripe_customer_id, stripe_subscription_id, status, current_period_end")
       .eq("user_id", user.id)
       .maybeSingle(),
   ]);
@@ -96,6 +98,17 @@ export default async function AbonnementPage({
   const kineName = (kine?.full_name as string | null) ?? null;
   const paymentsReady = connect?.status === "active";
   const firstChargeDate = firstChargeDateLabel();
+
+  // Écran cadenas (Philippe, 2026-10-10) : un patient qui AVAIT un abonnement
+  // et n'a plus accès (carte refusée, abonnement terminé) arrive d'abord sur
+  // le cadenas ; son bouton mène ici avec ?offres=1. Un nouveau patient, qui
+  // n'a jamais eu d'abonnement, voit directement les offres. Un retour de
+  // paiement (?checkout) ou un message d'erreur passent aussi directement.
+  const reason = lockReason(sub?.status as string | null, sub?.current_period_end as string | null);
+  if (reason && offres !== "1" && !error && !checkout) {
+    const fullName = (patient?.full_name as string | null) ?? null;
+    return <PatientLockScreen reason={reason} firstName={fullName ? fullName.split(" ")[0] : null} kineName={kineName} />;
+  }
 
   return (
     // h-dvh + overflow-hidden pin this to exactly the viewport (same

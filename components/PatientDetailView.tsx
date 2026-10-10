@@ -86,7 +86,7 @@ export default function PatientDetailView({
               </span>
             )}
             {paymentLapsed && (
-              <span className="rounded-full bg-warn-soft px-3 py-1 text-xs font-medium text-warn max-sm:px-2 max-sm:py-0.5 max-sm:text-[11px]">Ne paie plus</span>
+              <span className="rounded-full bg-warn-soft px-3 py-1 text-xs font-medium text-warn max-sm:px-2 max-sm:py-0.5 max-sm:text-[11px]">Ancien patient · accès verrouillé</span>
             )}
           </div>
           <div className="max-sm:shrink-0 sm:contents">{actionsMenu}</div>

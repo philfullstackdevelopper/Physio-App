@@ -14,10 +14,26 @@ test("computePatientCounts : total compte tous les patients, actif seulement ceu
   ];
   const subscriptions = [
     { user_id: "p1", plan: "essentiel", status: "active", current_period_end: future },
-    { user_id: "p2", plan: "standard", status: "canceled", current_period_end: future },
+    { user_id: "p2", plan: "standard", status: "canceled", current_period_end: past },
   ];
   const result = computePatientCounts(patients, subscriptions, now);
   assert.equal(result.total, 3);
+  assert.equal(result.active, 1);
+});
+
+test("computePatientCounts : résilié mais période payée en cours → encore actif ; carte refusée → non", () => {
+  // Règles du 2026-10-10 (lib/billing/access.ts) : l'accès court jusqu'à la
+  // fin de la période payée après une résiliation ; un prélèvement refusé
+  // verrouille tout de suite.
+  const patients = [
+    { id: "p1", trial_ends_at: null },
+    { id: "p2", trial_ends_at: null },
+  ];
+  const subscriptions = [
+    { user_id: "p1", plan: "standard", status: "canceled", current_period_end: future },
+    { user_id: "p2", plan: "standard", status: "past_due", current_period_end: future },
+  ];
+  const result = computePatientCounts(patients, subscriptions, now);
   assert.equal(result.active, 1);
 });
 

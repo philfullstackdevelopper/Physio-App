@@ -90,3 +90,32 @@ test("tri : les inscriptions en attente restent en bas, même en présence d'une
   });
   assert.deepEqual(rows.map((r) => r.id), ["p1", "p2", "p3", "p4"]);
 });
+
+test("anciens patients (abonnement terminé / carte refusée) : détectés d'après Stripe, tout en bas, sous les inscriptions en attente", () => {
+  const rows = buildPatientRows({
+    ...input,
+    subscriptions: [
+      // p1 : résilié, période payée terminée il y a 5 jours → ancien patient.
+      { user_id: "p1", status: "canceled", current_period_end: daysAgo(5) },
+      // p2 : abonnement en cours → patient actif.
+      { user_id: "p2", status: "active", current_period_end: new Date(now.getTime() + 10 * 86_400_000).toISOString() },
+    ],
+  });
+  const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
+  assert.equal(byId.p1.lapseReason, "ended");
+  assert.notEqual(byId.p1.paymentLapsedAt, null);
+  assert.equal(byId.p2.paymentLapsedAt, null);
+  assert.equal(byId.p3.paymentLapsedAt, null); // jamais abonné : en attente, pas « ancien »
+  // p1 a pourtant le signal le plus grave (douleur) : il passe quand même en dernier.
+  assert.equal(rows[rows.length - 1].id, "p1");
+  // p3 (inscription en attente) reste au-dessus de l'ancien patient.
+  assert.ok(rows.findIndex((r) => r.id === "p3") < rows.findIndex((r) => r.id === "p1"));
+});
+
+test("sans abonnement connu, personne n'est « ancien patient » (l'ancienne étiquette manuelle n'est plus lue)", () => {
+  const rows = buildPatientRows({
+    ...input,
+    patients: input.patients.map((p) => ({ ...p, payment_lapsed_at: daysAgo(10) })),
+  });
+  assert.ok(rows.every((r) => r.paymentLapsedAt === null && r.lapseReason === null));
+});

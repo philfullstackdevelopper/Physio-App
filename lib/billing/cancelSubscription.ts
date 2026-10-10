@@ -71,3 +71,46 @@ export async function cancelPatientSubscription(patientUserId: string): Promise<
     throw err;
   }
 }
+
+/**
+ * Résiliation « en fin de période » (Philippe, 2026-10-10 : « après
+ * résiliation, le patient a le droit d'utiliser jusqu'à la fin de son mois ») :
+ * `true` programme l'arrêt à la fin de la période déjà payée (ou de l'essai) —
+ * plus aucun prélèvement, l'accès court jusque-là ; `false` annule cette
+ * résiliation tant qu'elle n'a pas pris effet.
+ *
+ * Faite par l'appli elle-même plutôt que par le portail Stripe : le
+ * comportement du portail (immédiat ou fin de période) dépend d'un réglage
+ * dans le compte Stripe de CHAQUE kiné, que l'appli ne maîtrise pas.
+ *
+ * Renvoie `false` s'il n'y a rien à modifier (pas d'abonnement, déjà terminé).
+ * Mêmes lectures RLS que cancelPatientSubscription ci-dessus.
+ */
+export async function setPatientCancelAtPeriodEnd(patientUserId: string, cancel: boolean): Promise<boolean> {
+  const supabase = await createClient();
+  const [{ data: sub }, { data: patient }] = await Promise.all([
+    supabase.from("subscriptions").select("stripe_subscription_id, status").eq("user_id", patientUserId).maybeSingle(),
+    supabase.from("patients").select("instructor_id").eq("id", patientUserId).maybeSingle(),
+  ]);
+  const subscriptionId = (sub?.stripe_subscription_id as string | null) ?? null;
+  if (!subscriptionId || ENDED_STATUSES.has((sub?.status as string | null) ?? "")) return false;
+
+  const instructorId = (patient?.instructor_id as string | null) ?? null;
+  const { data: connect } = instructorId
+    ? await supabase
+        .from("instructor_connect_accounts")
+        .select("stripe_connect_account_id")
+        .eq("instructor_id", instructorId)
+        .maybeSingle()
+    : { data: null };
+  const stripeAccount = (connect?.stripe_connect_account_id as string | null) ?? null;
+  const opts = stripeAccount ? { stripeAccount } : undefined;
+
+  try {
+    await getStripe().subscriptions.update(subscriptionId, { cancel_at_period_end: cancel }, opts);
+    return true;
+  } catch (err) {
+    if (isResourceMissing(err)) return false;
+    throw err;
+  }
+}

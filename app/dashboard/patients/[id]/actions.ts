@@ -8,6 +8,7 @@ import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstru
 import { applyAdjustment, adjustmentMessage } from "@/lib/exercise/adjustPlan";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { cancelPatientSubscription } from "@/lib/billing/cancelSubscription";
+import { deleteClerkUserWithRetry } from "@/lib/auth/deleteClerkUser";
 import { deleteAppUserById } from "@/lib/db/admin";
 import { resolveAppUserId, precreateAppUserId } from "@/lib/auth/user-map";
 import { friendlyDbError } from "@/lib/format/dbError";
@@ -24,45 +25,9 @@ function ownRedirect(formData: FormData, fallback: string): string {
   return raw.startsWith("/dashboard/patients") ? raw : fallback;
 }
 
-// Instructor marks a patient as no longer paying (see supabase/migrations/0049 —
-// this app has no automatic view into the instructor's own Stripe Connect
-// account, so this is a manual record, not a webhook-driven one).
-export async function markPaymentLapsed(formData: FormData) {
-  const supabase = await createClient();
-  const { user } = await requireApprovedInstructor(supabase);
-
-  const patientId = String(formData.get("patient_id") ?? "");
-  const dest = ownRedirect(formData, `/dashboard/patients/${patientId}`);
-  const { error } = await supabase
-    .from("patients")
-    .update({ payment_lapsed_at: new Date().toISOString() })
-    .eq("id", patientId)
-    .eq("instructor_id", user.id);
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
-
-  revalidatePath(`/dashboard/patients/${patientId}`);
-  revalidatePath("/dashboard/patients");
-  redirect(dest);
-}
-
-// Reverses the above — the patient resumed paying, or it was marked by mistake.
-export async function clearPaymentLapsed(formData: FormData) {
-  const supabase = await createClient();
-  const { user } = await requireApprovedInstructor(supabase);
-
-  const patientId = String(formData.get("patient_id") ?? "");
-  const dest = ownRedirect(formData, `/dashboard/patients/${patientId}`);
-  const { error } = await supabase
-    .from("patients")
-    .update({ payment_lapsed_at: null })
-    .eq("id", patientId)
-    .eq("instructor_id", user.id);
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
-
-  revalidatePath(`/dashboard/patients/${patientId}`);
-  revalidatePath("/dashboard/patients");
-  redirect(dest);
-}
+// (2026-10-10) Les actions « marquer comme ne payant plus / payant à nouveau »
+// ont été retirées : le statut vient désormais de l'abonnement Stripe du
+// patient, automatiquement (lib/patient/paymentStatus.ts).
 
 // Permanently removes a patient: all their data (workout logs, profile,
 // messages, documents, recommendations — every table with an
@@ -141,7 +106,9 @@ export async function deletePatient(formData: FormData) {
     if (existingUsers.data.length > 0) {
       for (const u of existingUsers.data) {
         const email = u.primaryEmailAddress?.emailAddress ?? patient!.email;
-        if ((await resolveAppUserId(u.id, email)) === patientId) await client.users.deleteUser(u.id);
+        // Plusieurs tentatives : sans ça, un raté passager de Clerk laissait
+        // l'identifiant en place et l'e-mail impossible à réinviter (2026-10-10).
+        if ((await resolveAppUserId(u.id, email)) === patientId) await deleteClerkUserWithRetry(u.id);
       }
     } else {
       // Invitation jamais acceptée : on ne la révoque que si l'e-mail est bien

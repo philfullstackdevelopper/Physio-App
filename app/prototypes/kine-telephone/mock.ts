@@ -49,7 +49,9 @@ export function mockData(now = new Date()) {
     .map((p) => ({ patient_id: p.id, workout_id: `w-${p.id}`, week_start_date: ago(p.created).slice(0, 10), week_count: null, times_per_week: 3 }));
 
   const home = { firstName: "Philippe", ...buildDashboardHome({ now, patients, profiles, logs, feedback }) };
-  const rows = buildPatientRows({ now, patients, profiles, conditions, logs, feedback, recs });
+  // « Ancien patient » : abonnement terminé il y a 3 jours (calculé d'après Stripe dans la vraie appli).
+  const subscriptions = people.filter((p) => p.lapsed).map((p) => ({ user_id: p.id, status: "canceled", current_period_end: ago(3) }));
+  const rows = buildPatientRows({ now, patients, profiles, conditions, logs, feedback, recs, subscriptions });
 
   const messages = [
     { patient_id: "p2", body: "Bonjour, j'ai eu plus mal au genou après la séance d'hier, est-ce normal ?", created_at: ago(0, 3), sender: "patient", read_by_instructor_at: null },

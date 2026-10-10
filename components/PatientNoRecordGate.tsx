@@ -1,6 +1,8 @@
-import { AlertCircle, LogOut } from "lucide-react";
+import { AlertCircle, LogOut, Trash2 } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
+import SubmitButton from "@/components/SubmitButton";
+import { deleteOrphanIdentity } from "@/app/patient/compte/actions";
 
 // Shown in place of every /patient/* page (onboarding included) when this
 // authenticated identity has NO row in `patients` at all — see
@@ -33,10 +35,31 @@ export default function PatientNoRecordGate() {
               votre praticien pour qu&rsquo;il vérifie votre inscription.
             </p>
 
+            {/* Compte supprimé (par le patient ou par son kiné) dont l'identifiant
+                de connexion est resté : le supprimer libère l'adresse e-mail,
+                pour pouvoir être invité·e par un autre kinésithérapeute
+                (Philippe, 2026-10-10). N'agit que sur l'identifiant connecté. */}
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-sm font-medium text-slate-900">Votre ancien compte a été supprimé ?</p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                Supprimez cet identifiant de connexion pour libérer votre adresse e-mail : un kinésithérapeute
+                pourra alors vous inviter à nouveau.
+              </p>
+              <form action={deleteOrphanIdentity} className="mt-3">
+                <SubmitButton
+                  pendingText="Suppression…"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700"
+                >
+                  <Trash2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                  Supprimer cet identifiant
+                </SubmitButton>
+              </form>
+            </div>
+
             <SignOutButton redirectUrl="/login">
               <button
                 type="button"
-                className="mt-8 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-slate-200 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-slate-200 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
               >
                 <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                 Se déconnecter

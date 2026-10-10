@@ -1,26 +1,44 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { hasActiveTier, isSubscriptionActive } from "./access.ts";
+import { hasActiveTier, isSubscriptionActive, lockReason } from "./access.ts";
 
 const now = new Date("2026-09-10T12:00:00Z");
 const future = "2026-10-10T12:00:00Z";
 const past = "2026-08-10T12:00:00Z";
 
-test("isSubscriptionActive : active/trialing oui, canceled non, période échue non", () => {
+test("isSubscriptionActive : active/trialing oui, période échue non", () => {
   assert.equal(isSubscriptionActive("active", future, now), true);
   assert.equal(isSubscriptionActive("trialing", future, now), true);
-  assert.equal(isSubscriptionActive("canceled", future, now), false);
   assert.equal(isSubscriptionActive("active", past, now), false);
   assert.equal(isSubscriptionActive(null, null, now), false);
 });
 
-test("isSubscriptionActive : past_due garde l'accès 7 jours après l'échec, pas un mois", () => {
-  // Fin de période au 10 octobre → prélèvement échoué vers le 10 septembre.
-  assert.equal(isSubscriptionActive("past_due", "2026-10-10T12:00:00Z", new Date("2026-09-12T12:00:00Z")), true);
-  assert.equal(isSubscriptionActive("past_due", "2026-10-10T12:00:00Z", new Date("2026-09-18T12:00:00Z")), false);
+test("isSubscriptionActive : résilié → accès jusqu'à la fin de la période payée, puis plus rien", () => {
+  assert.equal(isSubscriptionActive("canceled", future, now), true);
+  assert.equal(isSubscriptionActive("canceled", past, now), false);
+  assert.equal(isSubscriptionActive("canceled", null, now), false);
+});
+
+test("isSubscriptionActive : prélèvement refusé (past_due / unpaid) → plus d'accès tout de suite", () => {
+  assert.equal(isSubscriptionActive("past_due", future, now), false);
   assert.equal(isSubscriptionActive("past_due", past, now), false);
   assert.equal(isSubscriptionActive("past_due", null, now), false);
   assert.equal(isSubscriptionActive("unpaid", future, now), false);
+});
+
+test("lockReason : pourquoi l'écran cadenas s'affiche", () => {
+  // Jamais abonné, ou accès en cours : pas de cadenas.
+  assert.equal(lockReason(null, null, now), null);
+  assert.equal(lockReason("active", future, now), null);
+  assert.equal(lockReason("trialing", future, now), null);
+  assert.equal(lockReason("canceled", future, now), null);
+  // Carte refusée.
+  assert.equal(lockReason("past_due", future, now), "payment_failed");
+  assert.equal(lockReason("unpaid", future, now), "payment_failed");
+  // Abonnement terminé.
+  assert.equal(lockReason("canceled", past, now), "ended");
+  assert.equal(lockReason("active", past, now), "ended");
+  assert.equal(lockReason("incomplete_expired", null, now), "ended");
 });
 
 test("hasActiveTier : offre en essai Stripe (trialing) → accès", () => {
@@ -33,8 +51,9 @@ test("hasActiveTier : offre payée (active) → accès, pour chacune des trois",
   }
 });
 
-test("hasActiveTier : offre annulée ou période échue → pas d'accès", () => {
-  assert.equal(hasActiveTier({ subPlan: "premium", subStatus: "canceled", subCurrentPeriodEnd: future }, now), false);
+test("hasActiveTier : offre résiliée → accès jusqu'à la fin de la période ; période échue → pas d'accès", () => {
+  assert.equal(hasActiveTier({ subPlan: "premium", subStatus: "canceled", subCurrentPeriodEnd: future }, now), true);
+  assert.equal(hasActiveTier({ subPlan: "premium", subStatus: "canceled", subCurrentPeriodEnd: past }, now), false);
   assert.equal(hasActiveTier({ subPlan: "premium", subStatus: "active", subCurrentPeriodEnd: past }, now), false);
 });
 

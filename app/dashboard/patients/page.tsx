@@ -3,7 +3,7 @@ import { loadPatientRows } from "@/lib/dashboard/patientRows";
 import PatientsTable, { type Segment } from "@/components/PatientsTable";
 import PatientsPageView from "@/components/PatientsPageView";
 import { getPatientThread, sendPatientMessage, reactivatePatient } from "./actions";
-import { markPaymentLapsed, clearPaymentLapsed, deletePatient } from "./[id]/actions";
+import { deletePatient } from "./[id]/actions";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
 export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ filtre?: string }> }) {
@@ -27,8 +27,6 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
         getPatientThread={getPatientThread}
         sendPatientMessage={sendPatientMessage}
         reactivatePatient={reactivatePatient}
-        markPaymentLapsed={markPaymentLapsed}
-        clearPaymentLapsed={clearPaymentLapsed}
         deletePatient={deletePatient}
       />
     </PatientsPageView>

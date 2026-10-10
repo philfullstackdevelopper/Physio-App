@@ -23,33 +23,58 @@ export type InstructorLevel = "free" | "pro";
 // Stripe subscription statuses that grant access.
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 
-/** Jours d'accès gardés après un prélèvement échoué (statut past_due). */
-export const PAST_DUE_GRACE_DAYS = 7;
+/** Statuts Stripe d'un prélèvement refusé : le patient est verrouillé. */
+const PAYMENT_FAILED_STATUSES = new Set(["past_due", "unpaid"]);
 
-/** True when a Stripe-backed subscription is currently granting access. */
+/** Le dernier prélèvement a-t-il été refusé (carte refusée, fonds insuffisants…) ? */
+export function isPaymentFailed(status: string | null | undefined): boolean {
+  return !!status && PAYMENT_FAILED_STATUSES.has(status);
+}
+
+/**
+ * True when a Stripe-backed subscription is currently granting access.
+ *
+ * Règles fixées par Philippe le 2026-10-10 :
+ *  - `active` / `trialing` (les 7 jours d'essai) : accès, tant que la période
+ *    en cours n'est pas échue ;
+ *  - `canceled` : le patient a résilié — il garde l'accès jusqu'à la fin de la
+ *    période déjà payée (ou de l'essai), puis plus rien. Avant, une
+ *    résiliation coupait tout de suite, même en plein mois payé ;
+ *  - `past_due` / `unpaid` : le prélèvement a été refusé — plus d'accès tout
+ *    de suite (écran cadenas, app/patient/layout.tsx). Avant, 7 jours de
+ *    délai : supprimés, « dès qu'un patient ne paie plus, l'accès est limité ».
+ *    Il retrouve l'accès dès que Stripe encaisse (statut repasse à `active`).
+ */
 export function isSubscriptionActive(
   status: string | null | undefined,
   currentPeriodEnd: string | null | undefined,
   now: Date = new Date(),
 ): boolean {
-  // (Philippe, 2026-10-07) past_due = un prélèvement a échoué mais Stripe
-  // réessaie encore : on ne coupe pas le patient tout de suite. Délai de
-  // grâce de PAST_DUE_GRACE_DAYS (7) jours après l'échec (audit du 2026-10-08) — avant, l'accès
-  // courait jusqu'à la fin de la période, déjà avancée d'un mois au moment de
-  // l'échec : selon les réglages de relance du compte Stripe du kiné, cela
-  // pouvait faire un mois offert. Le prélèvement mensuel échoue au début de
-  // la période : la date d'échec ≈ fin de période − 1 mois.
-  if (status === "past_due") {
-    if (!currentPeriodEnd) return false;
-    const failedAt = new Date(currentPeriodEnd);
-    failedAt.setUTCMonth(failedAt.getUTCMonth() - 1);
-    const graceEnd = Math.min(failedAt.getTime() + PAST_DUE_GRACE_DAYS * 86_400_000, new Date(currentPeriodEnd).getTime());
-    return graceEnd >= now.getTime();
+  if (!status || isPaymentFailed(status)) return false;
+  if (status === "canceled") {
+    // Sans date de fin connue, on ne peut pas prouver qu'une période payée court encore.
+    return !!currentPeriodEnd && new Date(currentPeriodEnd).getTime() >= now.getTime();
   }
-  if (!status || !ACTIVE_STATUSES.has(status)) return false;
+  if (!ACTIVE_STATUSES.has(status)) return false;
   // Honour the paid period end if Stripe gave us one (grace until then).
   if (currentPeriodEnd && new Date(currentPeriodEnd).getTime() < now.getTime()) return false;
   return true;
+}
+
+/**
+ * Pourquoi un patient qui a DÉJÀ eu un abonnement n'a plus accès — pour
+ * l'écran cadenas. `null` : il a accès, ou il n'a jamais eu d'abonnement
+ * (nouveau patient : on l'envoie directement choisir son offre).
+ */
+export type LockReason = "payment_failed" | "ended";
+export function lockReason(
+  status: string | null | undefined,
+  currentPeriodEnd: string | null | undefined,
+  now: Date = new Date(),
+): LockReason | null {
+  if (!status) return null;
+  if (isSubscriptionActive(status, currentPeriodEnd, now)) return null;
+  return isPaymentFailed(status) ? "payment_failed" : "ended";
 }
 
 // ---- Patient -------------------------------------------------------------

@@ -11,7 +11,8 @@ import { computeAdherence, adherenceLabel, adherenceTone, type Adherence } from 
 import { computeSignal, type Signal } from "./patientSignal.ts";
 import { relativeDay } from "../format/relativeDay.ts";
 import { initials } from "../format/initials.ts";
-import { paymentEligibleForDeletion } from "../patient/paymentStatus.ts";
+import { paymentEligibleForDeletion, subscriptionLapse } from "../patient/paymentStatus.ts";
+import type { LockReason } from "../billing/access.ts";
 
 export interface PatientRowsInput {
   now?: Date;
@@ -20,7 +21,7 @@ export interface PatientRowsInput {
     full_name: string | null;
     condition_id: string | null;
     created_at: string;
-    /** Optional so existing test fixtures (no payment tracking yet) still type-check. */
+    /** Ancienne étiquette manuelle (migration 0049) — plus lue depuis le 2026-10-10, voir `subscriptions`. */
     payment_lapsed_at?: string | null;
     /** CGU acceptance (app/patient/layout.tsx's gate). Optional for old test fixtures — see `onboardingStage`. */
     terms_accepted_at?: string | null;
@@ -31,6 +32,8 @@ export interface PatientRowsInput {
   /** 14 derniers jours. */
   feedback: { patient_id: string; pain_score: number | null; difficulty: number | null; created_at: string }[];
   recs: { patient_id: string; workout_id: string; week_start_date: string; week_count?: number | null; times_per_week: number | null }[];
+  /** Abonnements Stripe des patients (lisibles par leur kiné, migration 0055). Optionnel pour les anciens tests. */
+  subscriptions?: { user_id: string; status: string | null; current_period_end: string | null }[];
 }
 
 export interface PatientRow {
@@ -48,7 +51,14 @@ export interface PatientRow {
   adherenceLabel: "Bonne" | "Moyenne" | "Faible" | null;
   adherenceTone: "ok" | "warn" | "danger" | "muted";
   signal: Signal;
+  /**
+   * « Ancien patient » : date à laquelle son abonnement a cessé de lui donner
+   * accès (carte refusée ou abonnement terminé), sinon null. Calculé d'après
+   * Stripe depuis le 2026-10-10 — avant, une étiquette posée à la main.
+   */
   paymentLapsedAt: string | null;
+  /** Pourquoi il n'a plus accès (même règle que l'écran cadenas du patient). */
+  lapseReason: LockReason | null;
   paymentEligibleForDeletion: boolean;
   /**
    * `null` = onboarding terminé. `"invite"` = n'a jamais accepté les CGU (a
@@ -62,7 +72,8 @@ export interface PatientRow {
 
 const SIGNAL_RANK: Record<Signal["kind"], number> = { pain: 0, inactive: 1, ok: 2 };
 
-export function buildPatientRows({ now = new Date(), patients, profiles, conditions, logs, feedback, recs }: PatientRowsInput): PatientRow[] {
+export function buildPatientRows({ now = new Date(), patients, profiles, conditions, logs, feedback, recs, subscriptions = [] }: PatientRowsInput): PatientRow[] {
+  const subOf = new Map(subscriptions.map((sub) => [sub.user_id, sub]));
   const conditionName = new Map(conditions.map((c) => [c.id, c.name]));
   const stageOf = new Map(profiles.map((p) => [p.id, (p.injury_stage as InjuryStage | null) ?? null]));
   const healthConsentOf = new Map(profiles.map((p) => [p.id, p.health_data_consent_at ?? null]));
@@ -96,7 +107,9 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
     const sig = signalsBy.get(p.id) ?? { painScores: [], difficulties: [], lastPain: null, lastPainAt: "" };
     const assessment = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties });
     const adherence = computeAdherence({ completedAt: completed, assignments: recsBy.get(p.id) ?? [], now });
-    const paymentLapsedAt = p.payment_lapsed_at ?? null;
+    const sub = subOf.get(p.id);
+    const lapse = subscriptionLapse(sub?.status ?? null, sub?.current_period_end ?? null, now);
+    const paymentLapsedAt = lapse?.at ?? null;
     const termsAcceptedAt = p.terms_accepted_at ?? null;
     const onboardingStage: PatientRow["onboardingStage"] = !termsAcceptedAt
       ? "invite"
@@ -126,6 +139,7 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
         now,
       }),
       paymentLapsedAt,
+      lapseReason: lapse?.reason ?? null,
       paymentEligibleForDeletion: paymentEligibleForDeletion(paymentLapsedAt, now),
       onboardingStage,
       createdAt: p.created_at,
@@ -137,6 +151,12 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
     // le signal (Philippe, 2026-09-09 — un compte tout neuf sans donnée
     // ressortait sinon comme « À jour », ce qui laissait croire à tort que
     // le patient était opérationnel).
+    // Anciens patients (abonnement terminé ou paiement refusé) : tout en bas,
+    // SOUS les inscriptions en attente (Philippe, 2026-10-10).
+    const aFormer = a.paymentLapsedAt !== null;
+    const bFormer = b.paymentLapsedAt !== null;
+    if (aFormer !== bFormer) return aFormer ? 1 : -1;
+    if (aFormer && bFormer) return (b.paymentLapsedAt ?? "").localeCompare(a.paymentLapsedAt ?? "") || a.name.localeCompare(b.name, "fr");
     const aPending = a.onboardingStage !== null;
     const bPending = b.onboardingStage !== null;
     if (aPending !== bPending) return aPending ? 1 : -1;
@@ -152,14 +172,16 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
 /** Toutes les requêtes en parallèle ; RLS limite chaque table aux patients du kiné connecté. */
 export async function loadPatientRows(supabase: SupabaseClient, now: Date = new Date()): Promise<PatientRow[]> {
   const since14 = new Date(now.getTime() - 14 * 86_400_000).toISOString();
-  const [{ data: patients }, { data: profiles }, { data: conditions }, { data: logs }, { data: feedback }, { data: recs }] =
+  const [{ data: patients }, { data: profiles }, { data: conditions }, { data: logs }, { data: feedback }, { data: recs }, { data: subscriptions }] =
     await Promise.all([
-      supabase.from("patients").select("id, full_name, condition_id, created_at, payment_lapsed_at, terms_accepted_at"),
+      supabase.from("patients").select("id, full_name, condition_id, created_at, terms_accepted_at"),
       supabase.from("patient_profiles").select("id, injury_stage, health_data_consent_at"),
       supabase.from("conditions").select("id, name"),
       supabase.from("workout_logs").select("patient_id, completed_at"),
       supabase.from("patient_feedback").select("patient_id, pain_score, difficulty, created_at").gte("created_at", since14),
       supabase.from("patient_recommended_workouts").select("patient_id, workout_id, week_start_date, week_count, workouts ( times_per_week )"),
+      // Le kiné lit les abonnements de SES patients (subscriptions_instructor_read, migration 0055).
+      supabase.from("subscriptions").select("user_id, status, current_period_end"),
     ]);
 
   return buildPatientRows({
@@ -169,6 +191,7 @@ export async function loadPatientRows(supabase: SupabaseClient, now: Date = new 
     conditions: (conditions ?? []) as PatientRowsInput["conditions"],
     logs: (logs ?? []) as PatientRowsInput["logs"],
     feedback: (feedback ?? []) as PatientRowsInput["feedback"],
+    subscriptions: (subscriptions ?? []) as NonNullable<PatientRowsInput["subscriptions"]>,
     recs: (recs ?? []).map((r) => ({
       patient_id: r.patient_id as string,
       workout_id: r.workout_id as string,
