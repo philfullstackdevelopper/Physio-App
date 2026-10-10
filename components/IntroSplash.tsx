@@ -12,14 +12,20 @@ import { useEffect, useState } from "react";
  *   <html data-intro-seen> AVANT le premier affichage, donc un visiteur qui
  *   revient sur la page ne voit jamais le voile, même une fraction de seconde.
  * - Un clic ou une touche le passe ; « réduire les animations » le supprime.
- * - ~2,2 s au total : plus long, ça agace.
+ * - ~3,4 s au total (Philippe, 2026-10-10 : « leave that for 2 seconds, with
+ *   a little animation for the writing of the letters, then smoothly move to
+ *   accueil ») : le nom s'écrit en ~1,3 s, la devise suit, le tout reste
+ *   affiché, puis un fondu lent (FADE_MS) découvre la page.
  */
 const KEY = "ep-intro-seen";
 /** À placer dans la page (composant serveur), juste avant <IntroSplash /> :
  *  s'exécute pendant la lecture du HTML, avant le premier affichage. */
 export const INTRO_SEEN_SCRIPT = `try{if(sessionStorage.getItem("${KEY}")==="1")document.documentElement.dataset.introSeen="1"}catch(e){}`;
 const LETTERS = [..."Easy"].map((c) => ({ c, bold: true })).concat([..."Physio"].map((c) => ({ c, bold: false })));
-const TOTAL_MS = 1900;
+/** Fin de l'écriture + temps de lecture, avant le début du fondu. */
+const HOLD_MS = 2600;
+/** Durée du fondu vers la page (même valeur que la transition CSS ci-dessous). */
+const FADE_MS = 800;
 
 export default function IntroSplash() {
   const [gone, setGone] = useState(false);
@@ -34,11 +40,11 @@ export default function IntroSplash() {
     try {
       sessionStorage.setItem(KEY, "1");
     } catch {}
-    const leave = window.setTimeout(() => setLeaving(true), TOTAL_MS - 600);
-    const done = window.setTimeout(() => setGone(true), TOTAL_MS);
+    const leave = window.setTimeout(() => setLeaving(true), HOLD_MS);
+    const done = window.setTimeout(() => setGone(true), HOLD_MS + FADE_MS);
     const skip = () => {
       setLeaving(true);
-      window.setTimeout(() => setGone(true), 450);
+      window.setTimeout(() => setGone(true), FADE_MS);
     };
     window.addEventListener("keydown", skip, { once: true });
     return () => {
@@ -56,18 +62,18 @@ export default function IntroSplash() {
         html[data-intro-seen="1"] .ep-intro { display: none; }
         @media (prefers-reduced-motion: reduce) { .ep-intro { display: none; } }
         @keyframes ep-intro-icon { 0% { opacity: 0; transform: scale(.6) rotate(-8deg); } 60% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes ep-intro-letter { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: none; } }
+        @keyframes ep-intro-letter { 0% { opacity: 0; transform: translateY(8px); filter: blur(6px); } 100% { opacity: 1; transform: none; filter: blur(0); } }
         @keyframes ep-intro-tag { 0% { opacity: 0; letter-spacing: .5em; } 100% { opacity: 1; letter-spacing: .28em; } }
       `}</style>
       <div
         role="presentation"
         onClick={() => {
           setLeaving(true);
-          window.setTimeout(() => setGone(true), 450);
+          window.setTimeout(() => setGone(true), FADE_MS);
         }}
         // Fond plein couleur marque, puis fondu (Philippe, 2026-10-07 : « pop up
         // cleanly like Aurascan ») — plus de glissement vers le haut.
-        className={`ep-intro fixed inset-0 z-[100] flex cursor-pointer flex-col items-center justify-center bg-[#0f2a5c] transition-[opacity,transform] duration-500 ease-out ${
+        className={`ep-intro fixed inset-0 z-[100] flex cursor-pointer flex-col items-center justify-center bg-[#0f2a5c] transition-[opacity,transform] duration-[800ms] ease-in-out ${
           leaving ? "scale-[1.04] opacity-0" : ""
         }`}
       >
@@ -87,7 +93,7 @@ export default function IntroSplash() {
                 key={i}
                 aria-hidden
                 className={`inline-block ${l.bold ? "font-extrabold" : "font-medium"}`}
-                style={{ animation: `ep-intro-letter .35s cubic-bezier(.2,.8,.2,1) ${0.25 + i * 0.045}s both` }}
+                style={{ animation: `ep-intro-letter .45s cubic-bezier(.2,.8,.2,1) ${0.3 + i * 0.09}s both` }}
               >
                 {l.c}
               </span>
@@ -96,7 +102,7 @@ export default function IntroSplash() {
         </div>
         <p
           className="mt-5 text-[11px] font-medium uppercase text-white/60 sm:text-xs"
-          style={{ animation: "ep-intro-tag .6s ease-out .8s both", letterSpacing: ".28em" }}
+          style={{ animation: "ep-intro-tag .7s ease-out 1.35s both", letterSpacing: ".28em" }}
         >
           Rééducation · Progression · Bien-être
         </p>
