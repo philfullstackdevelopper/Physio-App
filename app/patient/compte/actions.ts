@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { clerkClient } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase/server";
 import { deleteAppUserById } from "@/lib/db/admin";
-import { requireUser } from "@/lib/supabase/require-user";
+import { requireUser, forgetKnownUser } from "@/lib/supabase/require-user";
 import { revokeCurrentSession } from "@/lib/auth/clerk-session";
 import { cancelPatientSubscription } from "@/lib/billing/cancelSubscription";
 
@@ -70,6 +70,7 @@ export async function deleteMyAccount(formData: FormData) {
     console.error(`deleteMyAccount: suppression Clerk impossible (clerkId ${user.clerkId})`, err);
   }
 
+  forgetKnownUser(user.clerkId);
   await revokeCurrentSession();
   redirect("/login?deleted=1");
 }

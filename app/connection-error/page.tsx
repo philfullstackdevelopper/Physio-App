@@ -1,5 +1,5 @@
 import { safeInternalPath } from "@/lib/format/safePath";
-import Link from "next/link";
+import ConnectionRetry from "@/components/ConnectionRetry";
 import DotCanvas from "@/components/DotCanvas";
 
 // Landed on when we couldn't reach Supabase to verify the session (a network
@@ -22,17 +22,11 @@ export default async function ConnectionErrorPage({
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-500">
           Impossible de vérifier votre session pour le moment — probablement un problème réseau
-          passager. Vous êtes sans doute toujours connecté.
+          passager. Vous êtes sans doute toujours connecté, et rien de ce que vous avez déjà
+          enregistré n&apos;est perdu.
         </p>
-        <Link
-          href={retryHref}
-          className="mt-6 block w-full rounded-xl bg-blue-600 py-2.5 font-medium text-white shadow-sm transition hover:bg-blue-700"
-        >
-          Réessayer
-        </Link>
-        <Link href="/login" className="mt-3 block text-sm text-slate-500 hover:underline">
-          Ou se reconnecter
-        </Link>
+        {/* Réessaie tout seul deux fois avant de proposer le bouton (2026-10-10). */}
+        <ConnectionRetry retryHref={retryHref} />
       </div>
     </main>
   );

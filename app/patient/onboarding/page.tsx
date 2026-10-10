@@ -48,7 +48,12 @@ export default async function OnboardingPage({
   const currentEquipment = new Set((profile?.equipment as EquipmentId[] | null) ?? []);
 
   return (
-    <main className="relative h-screen overflow-hidden bg-[#f6f8fd]">
+    // h-dvh (hauteur VISIBLE) et non h-screen (2026-10-10) : sur téléphone,
+    // « 100vh » compte aussi la zone cachée derrière les barres du navigateur
+    // — dans le navigateur intégré d'une appli de mail, ces barres ne se
+    // replient pas, et le bas de la carte (bouton « Suivant ») restait hors
+    // d'atteinte. h-screen reste le repli des navigateurs sans dvh.
+    <main className="relative h-screen overflow-hidden bg-[#f6f8fd] supports-[height:100dvh]:h-dvh">
       {/* Bottom-left, always reachable: the onboarding gate in
           app/patient/layout.tsx has no nav to escape from otherwise, and a
           patient who wants out (wrong account, second thoughts) needs a way
