@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Ouverture de la landing (Philippe, 2026-10-07 : « comme Aurascan — ça
@@ -8,19 +8,20 @@ import { useEffect, useState } from "react";
  * l'icône apparaît, « EasyPhysio » s'écrit lettre par lettre, puis le voile
  * glisse vers le haut et découvre la page.
  *
- * - Une seule fois par visite (sessionStorage) : le script en ligne marque
- *   <html data-intro-seen> AVANT le premier affichage, donc un visiteur qui
- *   revient sur la page ne voit jamais le voile, même une fraction de seconde.
+ * - À chaque chargement (ou rechargement) de la page d'accueil, mais pas en
+ *   y revenant par un lien interne (retour depuis /login…) : `played`
+ *   ci-dessous vit le temps de la page chargée. Avant le 2026-10-10 c'était
+ *   « une fois par visite » (sessionStorage + balise <script>) : Philippe
+ *   rechargeait la page, ne voyait qu'un éclair bleu et croyait l'ouverture
+ *   cassée ; et la balise <script> déclenchait une erreur React.
  * - Un clic ou une touche le passe ; « réduire les animations » le supprime.
  * - ~3,4 s au total (Philippe, 2026-10-10 : « leave that for 2 seconds, with
  *   a little animation for the writing of the letters, then smoothly move to
  *   accueil ») : le nom s'écrit en ~1,3 s, la devise suit, le tout reste
  *   affiché, puis un fondu lent (FADE_MS) découvre la page.
  */
-const KEY = "ep-intro-seen";
-/** À placer dans la page (composant serveur), juste avant <IntroSplash /> :
- *  s'exécute pendant la lecture du HTML, avant le premier affichage. */
-export const INTRO_SEEN_SCRIPT = `try{if(sessionStorage.getItem("${KEY}")==="1")document.documentElement.dataset.introSeen="1"}catch(e){}`;
+/** L'ouverture a déjà été jouée depuis le dernier chargement complet. */
+let played = false;
 const LETTERS = [..."Easy"].map((c) => ({ c, bold: true })).concat([..."Physio"].map((c) => ({ c, bold: false })));
 /** Fin de l'écriture + temps de lecture, avant le début du fondu. */
 const HOLD_MS = 2600;
@@ -30,16 +31,18 @@ const FADE_MS = 800;
 export default function IntroSplash() {
   const [gone, setGone] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  // Vrai dès que CE montage a lancé l'ouverture : en développement React
+  // rejoue l'effet une 2e fois, qui lirait sinon « déjà jouée » et couperait
+  // l'ouverture à peine commencée.
+  const started = useRef(false);
 
   useEffect(() => {
-    if (document.documentElement.dataset.introSeen === "1") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- l'état « déjà vu » ne se lit qu'après l'affichage (sessionStorage) ; le lire plus tôt ferait différer le rendu serveur et navigateur.
+    if (played && !started.current) {
       setGone(true);
       return;
     }
-    try {
-      sessionStorage.setItem(KEY, "1");
-    } catch {}
+    played = true;
+    started.current = true;
     const leave = window.setTimeout(() => setLeaving(true), HOLD_MS);
     const done = window.setTimeout(() => setGone(true), HOLD_MS + FADE_MS);
     const skip = () => {
@@ -59,7 +62,6 @@ export default function IntroSplash() {
   return (
     <>
       <style>{`
-        html[data-intro-seen="1"] .ep-intro { display: none; }
         @media (prefers-reduced-motion: reduce) { .ep-intro { display: none; } }
         @keyframes ep-intro-icon { 0% { opacity: 0; transform: scale(.6) rotate(-8deg); } 60% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes ep-intro-letter { 0% { opacity: 0; transform: translateY(8px); filter: blur(6px); } 100% { opacity: 1; transform: none; filter: blur(0); } }

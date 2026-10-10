@@ -18,7 +18,7 @@ import ExerciseShowcase from "@/components/ExerciseShowcase";
 import Testimonials from "@/components/Testimonials";
 import { HandNote, Underlined } from "@/components/HandDrawn";
 import Reveal from "@/components/Reveal";
-import IntroSplash, { INTRO_SEEN_SCRIPT } from "@/components/IntroSplash";
+import IntroSplash from "@/components/IntroSplash";
 
 // Textes de la landing réécrits le 2026-10-10 (Philippe : le site faisait
 // trop « IA ») : des phrases qu'un kiné dirait, des faits vérifiables, plus de
@@ -51,9 +51,7 @@ function PrimaryCta({
 export default function Home() {
   return (
     <div className="relative min-h-screen bg-[#f6f8fd] text-slate-800">
-      {/* Ouverture façon Aurascan (2026-10-07) : une fois par visite. Le script
-          marque la visite AVANT le premier affichage (pas de flash du voile). */}
-      <script dangerouslySetInnerHTML={{ __html: INTRO_SEEN_SCRIPT }} />
+      {/* Ouverture façon Aurascan (2026-10-07) : à chaque chargement de la page. */}
       <IntroSplash />
       {/* Ambient background: a soft blue glow behind the hero (echoes the
           dashboard's own corner glow, in the site's accent instead of its
