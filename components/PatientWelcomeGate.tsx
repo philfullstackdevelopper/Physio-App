@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { SignOutButton } from "@clerk/nextjs";
 import { AlertCircle, HeartHandshake, LogOut, ShieldCheck } from "lucide-react";
@@ -25,7 +25,18 @@ import { acceptTerms } from "@/app/patient/actions";
 // ?error= que rien ne lisait, et « Se déconnecter » est offert comme sur les
 // autres barrières (onboarding, PatientNoRecordGate).
 export default function PatientWelcomeGate({ instructorName }: { instructorName: string | null }) {
-  const [state, formAction, pending] = useActionState(acceptTerms, { error: null });
+  const [state, formAction, pending] = useActionState(acceptTerms, { error: null } as {
+    error: string | null;
+    accepted?: boolean;
+  });
+  // CGU acceptées : vrai chargement de page (pas une navigation interne, qui
+  // laissait un écran blanc — voir app/patient/actions.ts). La mise en page
+  // patient envoie ensuite d'elle-même vers le questionnaire.
+  const accepted = state.accepted === true;
+  useEffect(() => {
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- chargement complet VOULU : la navigation interne laissait un écran blanc.
+    if (accepted) window.location.assign("/patient");
+  }, [accepted]);
   return (
     <main className="relative min-h-screen bg-[#f6f8fd]">
       <SignOutButton redirectUrl="/login">
@@ -90,10 +101,10 @@ export default function PatientWelcomeGate({ instructorName }: { instructorName:
 
               <button
                 type="submit"
-                disabled={pending}
+                disabled={pending || accepted}
                 className="mt-4 w-full rounded-full bg-blue-600 py-2.5 text-sm font-medium text-white shadow-sm transition active:scale-[0.98] hover:bg-blue-700 disabled:opacity-60"
               >
-                {pending ? "Enregistrement…" : <>J&rsquo;accepte et je continue</>}
+                {pending || accepted ? "Enregistrement…" : <>J&rsquo;accepte et je continue</>}
               </button>
             </form>
           </div>

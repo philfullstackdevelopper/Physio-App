@@ -16,7 +16,14 @@ import { friendlyDbError } from "@/lib/format/dbError";
 // lieu de rediriger vers /patient?error=… : la barrière CGU s'affiche à la
 // place de la page, qui ne lisait jamais ce paramètre — l'échec était muet
 // (Philippe, 2026-10-07).
-export async function acceptTerms(): Promise<{ error: string | null }> {
+//
+// Pas de revalidatePath ici (2026-10-10) : il faisait re-rendre /patient dans
+// la réponse de l'action, dont la mise en page redirige alors vers
+// /patient/onboarding — navigation « en douceur » qui réutilisait une mise en
+// page vide : ÉCRAN BLANC juste après « J'accepte et je continue », jusqu'au
+// rechargement. La barrière (PatientWelcomeGate) fait à la place un vrai
+// chargement de page dès que `accepted` est vrai.
+export async function acceptTerms(): Promise<{ error: string | null; accepted?: boolean }> {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
@@ -25,8 +32,7 @@ export async function acceptTerms(): Promise<{ error: string | null }> {
     return { error: "L'acceptation n'a pas pu être enregistrée. Vérifiez votre connexion et réessayez." };
   }
 
-  revalidatePath("/patient", "layout");
-  return { error: null };
+  return { error: null, accepted: true };
 }
 
 // Patient marks every unread message from their instructor as read (the
