@@ -117,7 +117,7 @@ const TONE_BAR: Record<Tone, string> = { ok: "bg-ok", warn: "bg-warn", danger: "
 
 const PATIENT_ROWS = [
   { initials: "MT", name: "Marc T.", condition: "Gonarthrose", phase: "Phase 1", last: "Aujourd'hui", adherence: 82, adhTone: "ok" as Tone, signal: "Douleur signalée 7/10", signalTone: "danger" as Tone },
-  { initials: "SR", name: "Sophie R.", condition: "Tendinopathie de l'épaule", phase: "Phase 2", last: "Il y a 4 jours", adherence: 41, adhTone: "warn" as Tone, signal: "Aucune séance depuis 4 jours", signalTone: "warn" as Tone },
+  { initials: "SR", name: "Sophie R.", condition: "Tendinopathie de l'épaule", phase: "Phase 2", last: "Il y a 4 jours", adherence: 41, adhTone: "warn" as Tone, signal: "Dernière séance faite il y a 4 jours", signalTone: "warn" as Tone },
   { initials: "PM", name: "Paul M.", condition: "Lombalgie chronique", phase: "Phase 3", last: "Hier", adherence: 94, adhTone: "ok" as Tone, signal: "À jour", signalTone: "ok" as Tone },
   { initials: "JL", name: "Julie L.", condition: "Entorse de cheville", phase: "Phase 2", last: "Aujourd'hui", adherence: 88, adhTone: "ok" as Tone, signal: "À jour", signalTone: "ok" as Tone },
 ];

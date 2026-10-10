@@ -16,7 +16,7 @@ test("douleur prioritaire sur l'inactivité", () => {
 test("inactif à partir de 7 jours", () => {
   const s = computeSignal({ ...base, lastSessionAt: daysAgo(INACTIVE_DAYS) });
   assert.equal(s.kind, "inactive");
-  assert.equal(s.label, "Aucune séance depuis 7 jours");
+  assert.equal(s.label, "Dernière séance faite il y a 7 jours");
   assert.equal(s.days, 7);
 });
 

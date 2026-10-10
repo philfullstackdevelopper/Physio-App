@@ -46,7 +46,14 @@ export function computeSignal({ concerning, severe, lastPain, lastSessionAt, cre
   const accountAge = daysBetween(createdAt, now);
   const days = lastSessionAt ? daysBetween(lastSessionAt, now) : accountAge;
   if (days >= INACTIVE_DAYS && accountAge >= INACTIVE_DAYS) {
-    return { kind: "inactive", label: `Aucune séance depuis ${days} jours`, severe: false, score: null, days };
+    // Deux formulations (Philippe, 2026-10-10 : « Aucune séance depuis 29
+    // jours » se lisait comme « rien d'attribué » alors que le patient avait
+    // bien une séance dans son programme) : on parle de séances FAITES, et on
+    // distingue « n'en a plus fait depuis N jours » de « n'en a jamais fait ».
+    const label = lastSessionAt
+      ? `Dernière séance faite il y a ${days} jours`
+      : `Aucune séance faite depuis l'inscription (${days} j)`;
+    return { kind: "inactive", label, severe: false, score: null, days };
   }
   return { kind: "ok", label: "À jour", severe: false, score: null, days: null };
 }

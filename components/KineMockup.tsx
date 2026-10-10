@@ -21,7 +21,7 @@ const PATIENTS = [
     initials: "SR",
     name: "Sophie R.",
     program: "Lombalgie chronique",
-    status: "Aucune séance depuis 4 jours",
+    status: "Dernière séance faite il y a 4 jours",
     tone: "text-slate-500 bg-slate-100",
     icon: Clock,
   },

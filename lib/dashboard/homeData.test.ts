@@ -42,7 +42,7 @@ test("à traiter : douleur avant inactivité, avec score", () => {
   assert.deepEqual(h.toTreat.map((r) => [r.id, r.kind]), [["p1", "pain"], ["p2", "inactive"]]);
   assert.equal(h.toTreat[0].label, "Douleur signalée");
   assert.equal(h.toTreat[0].score, 7);
-  assert.equal(h.toTreat[1].label, "Aucune séance depuis 9 jours");
+  assert.equal(h.toTreat[1].label, "Dernière séance faite il y a 9 jours");
   assert.equal(h.surveillerCount, 2);
 });
 

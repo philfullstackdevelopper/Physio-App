@@ -55,7 +55,7 @@ test("inactivité et à jour", () => {
   const rows = buildPatientRows(input);
   const sophie = rows.find((r) => r.id === "p2")!;
   assert.equal(sophie.signal.kind, "inactive");
-  assert.equal(sophie.signal.label, "Aucune séance depuis 9 jours");
+  assert.equal(sophie.signal.label, "Dernière séance faite il y a 9 jours");
   assert.equal(sophie.lastSessionLabel, relativeDay(sophie.lastSessionAt, now));
   assert.notEqual(sophie.lastSessionLabel, "Jamais");
   const paul = rows.find((r) => r.id === "p3")!;
