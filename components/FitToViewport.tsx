@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
+import { isPhoneFormat } from "@/lib/phoneFormat";
 
 // Place prise en haut par le header fixe du site (SiteHeader) + une marge.
 const HEADER_SPACE = 88;
@@ -59,7 +60,7 @@ export default function FitToViewport({
       // Démo kiné (stable) à l'horizontale sur téléphone : sa largeur est déjà
       // calculée pour tenir dans l'écran (app/page.tsx, phone-land:max-w) —
       // la réduire une 2e fois la rendait minuscule.
-      if (window.innerWidth < 640 || (phoneLand && stable)) {
+      if (isPhoneFormat() || (phoneLand && stable)) {
         setFit({ scale: 1, natural });
         return;
       }

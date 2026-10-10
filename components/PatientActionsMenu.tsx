@@ -5,9 +5,9 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, BadgeEuro, MessageCircle, MoreVertical, RotateCcw, Settings2, Trash2, UserRound, X } from "lucide-react";
 import PatientMessagesModal, { type MessagesModalPatient } from "@/components/PatientMessagesModal";
 import type { ThreadMessage } from "@/components/MessageThread";
+import { isPhoneFormat } from "@/lib/phoneFormat";
 
 const MENU_WIDTH = 320;
-const SHEET_BREAKPOINT = 640; // sm — en dessous, le menu devient un tiroir bas.
 
 // Menu de gestion d'un patient : statut de paiement + suppression (derrière
 // une confirmation). Le même menu s'ouvre depuis deux endroits : le bouton
@@ -89,7 +89,7 @@ export default function PatientActionsMenu({
       const trigger = triggerRef.current;
       if (!trigger) return;
       const next =
-        window.innerWidth < SHEET_BREAKPOINT
+        isPhoneFormat()
           ? { sheet: true, top: 0, left: 0 }
           : (() => {
               const rect = trigger.getBoundingClientRect();

@@ -111,7 +111,7 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
             4e case mène déjà à la liste, et l'écran ne doit pas défiler. */}
         <section
           aria-label="À traiter"
-          className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:200ms] mt-5 hidden [@media(max-width:639px)_and_(min-height:760px)]:block"
+          className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:200ms] mt-5 hidden max-sm:[@media(min-height:760px)]:block"
         >
           {h.toTreat.length > 0 ? (
             <>

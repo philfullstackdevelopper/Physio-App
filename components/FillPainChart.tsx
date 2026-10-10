@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import PainHistoryChart from "@/components/PainHistoryChart";
 import type { PainSeries } from "@/lib/dashboard/painHistory";
+import { PHONE_FORMAT_QUERY } from "@/lib/phoneFormat";
 
 /**
  * « Mes progrès » sur téléphone : la courbe prend toute la hauteur libre
@@ -18,7 +19,7 @@ export default function FillPainChart({ series }: { series: PainSeries }) {
   useLayoutEffect(() => {
     const box = boxRef.current;
     if (!box) return;
-    const mq = window.matchMedia("(max-width: 639px)");
+    const mq = window.matchMedia(PHONE_FORMAT_QUERY);
     const update = () => {
       const { width, height } = box.getBoundingClientRect();
       if (!mq.matches || width === 0 || height === 0) return setViewHeight(null);

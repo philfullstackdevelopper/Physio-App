@@ -9,6 +9,7 @@ import { daysOfWeek, localDateKey, type WeekInfo } from "@/lib/patient/weeks";
 // WeekStrip.tsx depuis le 2026-09-09 : le kiné (KineWeekProgramme.tsx)
 // réutilise exactement le même rendu sur la fiche patient.
 import { SegmentRow, runViewTransition as runSharedViewTransition, type SegmentItem, type VTStyle } from "@/components/WeekStrip";
+import { PHONE_FORMAT_QUERY } from "@/lib/phoneFormat";
 
 export interface SessionDetail {
   logId: string;
@@ -34,7 +35,7 @@ export interface SessionDetail {
 export function useIsPhone() {
   const [phone, setPhone] = useState(false);
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
+    const mq = window.matchMedia(PHONE_FORMAT_QUERY);
     const update = () => setPhone(mq.matches);
     update();
     mq.addEventListener("change", update);

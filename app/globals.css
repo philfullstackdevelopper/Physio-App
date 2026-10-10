@@ -1,5 +1,28 @@
 @import "tailwindcss";
 
+/* FORMAT TÉLÉPHONE / FORMAT ORDINATEUR (Philippe, 2026-10-10 : « when you put
+   the app on half a screen, it defaults to the phone format — this can't
+   happen »). `sm:` et `max-sm:` ne dépendent plus seulement de la largeur :
+   - format téléphone (`max-sm:`) = écran TACTILE de moins de 640 px ;
+   - un ordinateur (souris ou pavé tactile) garde le format ordinateur
+     (`sm:`) dès 480 px de large — une moitié d'écran fait ~631 px chez lui.
+   En dessous de 480 px, même à la souris, le format ordinateur ne tient plus.
+   Les deux variantes sont exactement complémentaires. MÊME RÈGLE côté
+   JavaScript : lib/phoneFormat.ts — à modifier ensemble.
+   Ce bloc doit rester AVANT `short` et `phone-land` : l'ordre de définition
+   décide qui l'emporte, et ces deux variantes passaient déjà après `max-sm:`. */
+/* (Forme en bloc obligatoire : la forme courte coupe la requête à chaque virgule.) */
+@custom-variant sm {
+  @media (width >= 40rem), (width >= 30rem) and (hover: hover) and (pointer: fine) {
+    @slot;
+  }
+}
+@custom-variant max-sm {
+  @media (width < 30rem), (width < 40rem) and (hover: none), (width < 40rem) and (pointer: coarse), (width < 40rem) and (pointer: none) {
+    @slot;
+  }
+}
+
 /* Écran peu haut (portable zoomé, petit écran) : `short:` resserre les mises
    en page qui doivent tenir sur un écran sans défiler (hero de la landing). */
 @custom-variant short (@media (max-height: 800px));
@@ -62,7 +85,6 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
-
 
 /* Warm display serif for headings (opt-in via className). */
 .font-display {
@@ -262,8 +284,8 @@ body {
 /* Accueil patient sur téléphone : une semaine ouverte (WeekProgramme,
    data-week-open) prend tout l'écran — salutation et carte programme
    s'effacent le temps de la consulter (Philippe, 2026-10-04 : « no
-   scrolling »). Sans effet dès 640 px. */
-@media (max-width: 639px) {
+   scrolling »). Sans effet hors format téléphone. */
+@media (width < 30rem), (width < 40rem) and (hover: none), (width < 40rem) and (pointer: coarse), (width < 40rem) and (pointer: none) {
   body:has([data-week-open]) [data-hide-when-week-open] {
     display: none;
   }
@@ -272,8 +294,8 @@ body {
 /* Messagerie sur téléphone (Philippe, 2026-10-10, façon WhatsApp) : une page
    peut demander à masquer la barre du haut (data-hide-phone-topbar) ou les
    onglets du bas (data-hide-phone-tabbar) — conversation du kiné en plein
-   écran, page Messages du patient sans double en-tête. Sans effet dès 640 px. */
-@media (max-width: 639px) {
+   écran, page Messages du patient sans double en-tête. Sans effet hors format téléphone. */
+@media (width < 30rem), (width < 40rem) and (hover: none), (width < 40rem) and (pointer: coarse), (width < 40rem) and (pointer: none) {
   body:has([data-hide-phone-topbar]) [data-phone-topbar] {
     display: none;
   }
