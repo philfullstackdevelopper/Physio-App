@@ -42,7 +42,7 @@ Conceptually, the schema is organized around:
 - RLS is enabled on every table from the start — never add a table without RLS policies in the same migration.
 - Before applying any policy, explain in plain language what it does and why, so Philippe can confirm it matches this intent.
 - **Pending (2026-10-08):** `supabase/migrations/0063_audit_lockdown.sql` (database-level block of non-approved kinés, locked patient email/consent fields, server-only « RPPS vérifié », séance deletion no longer wipes session history) is written and tested on an in-memory Postgres, but **not applied yet** — waiting for Philippe's confirmation. Its header explains every rule in plain French.
-- **Pending (2026-10-12):** `supabase/migrations/0067_exercises_read_signed_in.sql` — today the `exercises` read policy is `using (true)`, so the library can be read through the API without being logged in (contrary to the rule above); the migration restricts reading to a signed-in kiné or patient. Written, **not applied** — waiting for Philippe's confirmation.
+- **Applied 2026-10-12 (confirmed by Philippe):** `supabase/migrations/0067_exercises_read_signed_in.sql` — the `exercises` read policy was `using (true)` (library readable through the API without logging in); it now requires a signed-in kiné or patient (`current_app_user_id() is not null`).
 
 ## 4. Core user flows (current)
 

@@ -1,8 +1,8 @@
 -- Physio-App — Migration 0067 : la bibliothèque d'exercices n'est lisible
 -- que par une personne connectée.
 --
--- ÉTAT : ÉCRITE, PAS APPLIQUÉE — en attente de la confirmation de Philippe
--- (2026-10-12). Ne pas lancer sans son accord.
+-- ÉTAT : APPLIQUÉE sur Scalingo le 2026-10-12, après confirmation de Philippe
+-- (vérifié : 0 exercice lu sans connexion, 361 par un kiné connecté).
 --
 -- Ce que ça change, en clair
 -- --------------------------
