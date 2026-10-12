@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, HeartPulse, Stethoscope } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
+import SignupClosed from "@/components/SignupClosed";
+import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 // Entry point for "Créer un compte" everywhere on the marketing site — a
 // full-bleed, two-way split rather than a small in-page toggle: the whole
@@ -11,6 +13,8 @@ import { LogoLockup } from "@/components/Logo";
 // genuinely ambiguous "Créer un compte" buttons and the /login "no account
 // yet" link.
 export default function SignupChooserPage() {
+  // Avant le lancement : pas de création de compte (lib/launchFlags.ts).
+  if (!SIGNUPS_OPEN) return <SignupClosed />;
   return (
     <main className="relative min-h-dvh bg-slate-950">
       <Link

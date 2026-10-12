@@ -9,6 +9,7 @@ import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 import { TIERS, TIER_KEYS, type TierKey } from "@/lib/billing/plans";
 import { HIGHLIGHT, featuresFor } from "@/lib/billing/tierCopy";
 import { TOTAL_FEE_RATE, estimateStripeFeeCents, platformFeeCentsFor } from "@/lib/billing/platformFee";
+import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 // Section "Tarifs" de la landing, avec un choix "Côté kiné" / "Côté patient" :
 // chacun ne se reconnaît que dans son propre prix (le kiné dans sa commission,
@@ -314,20 +315,23 @@ function KineOffer() {
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 max-sm:mt-4 sm:short:mt-3">
+        {/* Avant le lancement (lib/launchFlags.ts) : un seul bouton, vers la
+            liste d'attente du bas de page. */}
         <Link
-          href="/signup/kine"
+          href={SIGNUPS_OPEN ? "/signup/kine" : "#liste-attente"}
           className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-7 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.97]"
         >
-          Demander un accès
+          {SIGNUPS_OPEN ? "Demander un accès" : "Rejoindre la liste d'attente"}
           <ArrowRight className="h-4 w-4" strokeWidth={2} />
         </Link>
-        {/* Liste d'attente (bloc de fin de page) pour qui ne veut pas créer de compte tout de suite. */}
-        <a
-          href="#liste-attente"
-          className="inline-flex items-center text-sm font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
-        >
-          Me prévenir du lancement
-        </a>
+        {SIGNUPS_OPEN && (
+          <a
+            href="#liste-attente"
+            className="inline-flex items-center text-sm font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
+          >
+            Me prévenir du lancement
+          </a>
+        )}
       </div>
     </div>
   );

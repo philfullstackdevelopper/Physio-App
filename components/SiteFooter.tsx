@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogoLockup } from "@/components/Logo";
+import { SIGNUPS_OPEN, WAITLIST_HREF } from "@/lib/launchFlags";
 
 const COLUMNS = [
   {
@@ -14,7 +15,9 @@ const COLUMNS = [
     title: "Espace",
     links: [
       { href: "/login", label: "Connexion patient" },
-      { href: "/signup/kine", label: "Créer un compte praticien" },
+      SIGNUPS_OPEN
+        ? { href: "/signup/kine", label: "Créer un compte praticien" }
+        : { href: WAITLIST_HREF, label: "Liste d'attente" },
       { href: "/#faq", label: "Questions fréquentes" },
     ],
   },

@@ -5,6 +5,7 @@ import { resolveAppUserId } from "@/lib/auth/user-map";
 import { createClient } from "@/lib/supabase/server";
 import { rppsInUse, setInstructorStatus, setInstructorRppsVerified } from "@/lib/db/admin";
 import { verifyRpps, AUTO_APPROVE_VERIFIED_RPPS } from "@/lib/instructor/rppsVerification";
+import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 const PENDING_CABINET_COOKIE = "pending_cabinet";
 
@@ -83,6 +84,12 @@ export default async function SignupFinalizePage() {
     const { data: asPatient } = await supabase.from("patients").select("id").eq("id", appId).maybeSingle();
     if (asPatient) redirect("/patient");
   }
+
+  // Avant le lancement (lib/launchFlags.ts) : aucune NOUVELLE fiche kiné, même
+  // si une identité de connexion a été créée par un autre chemin (bouton
+  // Google de la page de connexion, ancien lien…). La personne arrive sur
+  // l'écran « les inscriptions ouvriront au lancement ».
+  if (!existing && !SIGNUPS_OPEN) redirect("/signup");
 
   if (!existing) {
     const fullName =

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 import { TRIAL_DAYS } from "@/lib/billing/plans";
+import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 const QUESTIONS = [
   {
@@ -38,7 +39,10 @@ const QUESTIONS = [
   },
   {
     question: "Je suis praticien : comment essayer avec mes patients ?",
+    // Avant le lancement (lib/launchFlags.ts), la première phrase annonce la
+    // liste d'attente ; la suite décrit ce qui se passera à l'ouverture.
     answer:
+      (SIGNUPS_OPEN ? "" : "EasyPhysio est en phase de test : inscrivez-vous sur la liste d'attente en bas de cette page, nous vous écrivons à l'ouverture. Ensuite : ") +
       "Créez votre compte praticien (validé par notre équipe avant le premier accès), composez un premier programme depuis la bibliothèque d'exercices, connectez votre compte Stripe pour être payé directement par vos patients, puis invitez-les. Ils recevront leur accès sans rien installer d'autre que l'app sur leur téléphone.",
   },
 ];

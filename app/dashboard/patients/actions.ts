@@ -7,6 +7,7 @@ import { isClerkAPIResponseError } from "@clerk/shared/error";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { precreateAppUserId } from "@/lib/auth/user-map";
+import { canInvitePatients, INVITATIONS_CLOSED_MESSAGE } from "@/lib/launch";
 import { requestOrigin } from "@/lib/requestOrigin";
 import type { ThreadMessage } from "@/components/MessageThread";
 import { friendlyDbError } from "@/lib/format/dbError";
@@ -18,6 +19,11 @@ import { deleteAppUserById } from "@/lib/db/admin";
 export async function addPatient(formData: FormData) {
   const supabase = await createClient();
   const { user, instructor } = await requireApprovedInstructor(supabase);
+
+  // Avant le lancement : aucune invitation de vrai patient (lib/launch.ts).
+  if (!canInvitePatients(user.email)) {
+    redirect(`/dashboard/patients/new?error=${encodeURIComponent(INVITATIONS_CLOSED_MESSAGE)}`);
+  }
 
   const fullName = String(formData.get("full_name") ?? "").trim();
   // (Philippe, 2026-10-07 : en minuscules partout — Clerk stocke les e-mails
@@ -146,6 +152,9 @@ export async function addPatient(formData: FormData) {
 export async function reactivatePatient(formData: FormData): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   const { user, instructor } = await requireApprovedInstructor(supabase);
+
+  // Avant le lancement : aucune invitation renvoyée non plus (lib/launch.ts).
+  if (!canInvitePatients(user.email)) return { error: INVITATIONS_CLOSED_MESSAGE };
 
   const patientId = String(formData.get("patient_id") ?? "");
   if (!patientId) return { error: "Patient introuvable." };

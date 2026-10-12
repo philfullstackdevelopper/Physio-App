@@ -20,6 +20,7 @@ import { HandNote, Underlined } from "@/components/HandDrawn";
 import Reveal from "@/components/Reveal";
 import IntroSplash from "@/components/IntroSplash";
 import WaitlistForm from "@/components/WaitlistForm";
+import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 // Textes de la landing réécrits le 2026-10-10 (Philippe : le site faisait
 // trop « IA ») : des phrases qu'un kiné dirait, des faits vérifiables, plus de
@@ -115,7 +116,11 @@ export default function Home() {
             </p>
 
             <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:220ms] mt-5 flex flex-col gap-3 max-sm:hidden sm:mt-8 sm:flex-row sm:items-center lg:short:mt-5 phone-land:mt-3">
-              <PrimaryCta href="/signup/kine">Créer un compte praticien</PrimaryCta>
+              {SIGNUPS_OPEN ? (
+                <PrimaryCta href="/signup/kine">Créer un compte praticien</PrimaryCta>
+              ) : (
+                <PrimaryCta href="#liste-attente">Rejoindre la liste d&apos;attente</PrimaryCta>
+              )}
               <Link
                 href="/login"
                 className="inline-flex items-center justify-center font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
@@ -166,7 +171,11 @@ export default function Home() {
 
           {/* Masqué sur téléphone et écran peu haut : le header garde son bouton « Créer un compte ». */}
           <div className="mt-10 hidden text-center sm:block sm:short:hidden">
-            <PrimaryCta>Créer un compte praticien</PrimaryCta>
+            {SIGNUPS_OPEN ? (
+              <PrimaryCta>Créer un compte praticien</PrimaryCta>
+            ) : (
+              <PrimaryCta href="#liste-attente">Rejoindre la liste d&apos;attente</PrimaryCta>
+            )}
           </div>
         </section>
         </Reveal>
@@ -265,16 +274,20 @@ export default function Home() {
         <Reveal>
         <section id="liste-attente" className="my-24 scroll-mt-24 sm:my-32 phone-land:my-12">
           <div className="rounded-[2rem] bg-slate-900 px-8 py-14 text-center shadow-xl max-sm:px-5 max-sm:py-10 sm:px-14 sm:short:py-6 phone-land:py-6">
+            {/* Avant le lancement (lib/launchFlags.ts) : ce bloc ne propose que la
+                liste d'attente. Après : le texte et les boutons d'inscription. */}
             <h2 className="font-display mx-auto max-w-xl text-3xl font-semibold leading-tight text-white sm:text-4xl phone-land:text-2xl">
-              Essayez avec un seul patient.
+              {SIGNUPS_OPEN ? "Essayez avec un seul patient." : "Soyez prévenu du lancement."}
             </h2>
             <p className="mx-auto mt-4 max-w-md leading-relaxed text-slate-300 sm:short:mt-2 sm:short:text-sm">
-              Créez votre compte, composez un premier programme, invitez un patient. Vous verrez
-              dès la première semaine si ça change vos consultations.
+              {SIGNUPS_OPEN
+                ? "Créez votre compte, composez un premier programme, invitez un patient. Vous verrez dès la première semaine si ça change vos consultations."
+                : "EasyPhysio est en phase de test et ouvre bientôt. Laissez votre e-mail : nous vous écrivons dès que vous pouvez créer votre compte et inviter vos premiers patients."}
             </p>
             <p className="mt-6 text-sm font-medium text-blue-300 sm:short:hidden phone-land:mt-3">
               Le programme reste conçu et piloté par vous. L&apos;app ne décide rien à votre place.
             </p>
+            {SIGNUPS_OPEN && (
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:short:mt-5 phone-land:mt-4">
               <Link
                 href="/signup/kine"
@@ -290,14 +303,30 @@ export default function Home() {
                 Se connecter
               </Link>
             </div>
+            )}
 
-            {/* Liste d'attente (Philippe, 2026-10-12) : pour le visiteur — surtout
-                le kiné — qui n'est pas prêt à créer un compte aujourd'hui. */}
-            <div className="mx-auto mt-8 max-w-md border-t border-white/10 pt-6 sm:short:mt-5 sm:short:pt-4 phone-land:mt-4 phone-land:pt-3">
-              <p className="mb-3 text-sm font-medium text-white">
-                Pas encore prêt&nbsp;? Laissez votre e-mail, nous vous prévenons au lancement.
-              </p>
+            {/* Liste d'attente (Philippe, 2026-10-12). */}
+            <div
+              className={
+                SIGNUPS_OPEN
+                  ? "mx-auto mt-8 max-w-md border-t border-white/10 pt-6 sm:short:mt-5 sm:short:pt-4 phone-land:mt-4 phone-land:pt-3"
+                  : "mx-auto mt-8 max-w-md sm:short:mt-5 phone-land:mt-4"
+              }
+            >
+              {SIGNUPS_OPEN && (
+                <p className="mb-3 text-sm font-medium text-white">
+                  Pas encore prêt&nbsp;? Laissez votre e-mail, nous vous prévenons au lancement.
+                </p>
+              )}
               <WaitlistForm />
+              {!SIGNUPS_OPEN && (
+                <p className="mt-5 text-sm text-slate-400">
+                  Vous avez déjà un compte&nbsp;?{" "}
+                  <Link href="/login" className="font-medium text-white underline-offset-4 hover:underline">
+                    Se connecter
+                  </Link>
+                </p>
+              )}
             </div>
           </div>
         </section>

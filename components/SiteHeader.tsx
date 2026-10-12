@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import { useUser, SignOutButton } from "@clerk/nextjs";
 import { LogOut } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
+import { SIGNUPS_OPEN, WAITLIST_HREF } from "@/lib/launchFlags";
 
 // Un en-tête plein mais aéré (Philippe, 2026-10-07 : d'abord « too much
 // information », puis « fill out the header a bit more ») : les 5 sections,
@@ -121,10 +122,10 @@ export default function SiteHeader() {
 
             {isLoaded && !isSignedIn && (
               <Link
-                href="/signup"
+                href={SIGNUPS_OPEN ? "/signup" : WAITLIST_HREF}
                 className="hidden shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition active:scale-[0.97] hover:bg-blue-700 sm:inline-flex"
               >
-                Créer un compte
+                {SIGNUPS_OPEN ? "Créer un compte" : "Liste d'attente"}
               </Link>
             )}
 

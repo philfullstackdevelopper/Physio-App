@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, Calendar, Lightbulb, Mail, ShieldCheck, UserRound } from "lucide-react";
 import PatientReferralMessage from "@/components/PatientReferralMessage";
+import SignupClosed from "@/components/SignupClosed";
+import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 const STEPS = [
   { icon: Mail, title: "Vous envoyez le message", body: "à votre kiné" },
@@ -9,6 +11,8 @@ const STEPS = [
 ];
 
 export default function SignupPatientPage() {
+  // Avant le lancement : pas de création de compte (lib/launchFlags.ts).
+  if (!SIGNUPS_OPEN) return <SignupClosed />;
   return (
     // Une page = un écran (audit 2026-10-10) : sur téléphone, seul le message
     // prêt à envoyer reste (les 3 étapes sont déjà résumées par la phrase du

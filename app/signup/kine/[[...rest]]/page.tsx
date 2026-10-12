@@ -4,6 +4,8 @@ import RandomLine from "@/components/RandomLine";
 import DotCanvas from "@/components/DotCanvas";
 import KineSignupFlow from "@/components/KineSignupFlow";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
+import SignupClosed from "@/components/SignupClosed";
+import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 const ENCOURAGEMENTS = [
   "Créez votre espace en quelques minutes et prescrivez dès aujourd'hui.",
@@ -13,6 +15,8 @@ const ENCOURAGEMENTS = [
 ];
 
 export default function SignupPage() {
+  // Avant le lancement : pas de création de compte (lib/launchFlags.ts).
+  if (!SIGNUPS_OPEN) return <SignupClosed />;
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#f6f8fd]">
       <DotCanvas />

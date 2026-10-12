@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { Info } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
+import { canInvitePatients, INVITATIONS_CLOSED_MESSAGE } from "@/lib/launch";
 import { addPatient } from "../actions";
 
 export default async function NewPatientPage({
@@ -7,6 +11,10 @@ export default async function NewPatientPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  // Avant le lancement, les invitations sont fermées (lib/launch.ts) : le
+  // formulaire reste visible, pour montrer comment ça marchera, mais éteint.
+  const user = await requireUser(await createClient());
+  const open = canInvitePatients(user.email);
 
   return (
     <main className="min-h-screen p-8 max-sm:min-h-0 max-sm:px-4 max-sm:pb-4 max-sm:pt-2">
@@ -26,13 +34,20 @@ export default async function NewPatientPage({
             Le patient recevra un e-mail pour créer son mot de passe.
           </p>
 
-          {error && (
+          {!open && (
+            <p className="mb-4 flex items-start gap-2 rounded-lg bg-brand-soft p-3 text-sm text-ink">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
+              <span>{INVITATIONS_CLOSED_MESSAGE}</span>
+            </p>
+          )}
+          {open && error && (
             <p className="mb-4 rounded-lg border-line bg-danger-soft p-3 text-sm text-danger">
               {error}
             </p>
           )}
 
           <form action={addPatient} className="space-y-4">
+            <fieldset disabled={!open} className="space-y-4 disabled:opacity-50">
             <div>
               <label htmlFor="full_name" className="mb-1 block text-sm font-medium text-ink">
                 Nom complet
@@ -59,10 +74,11 @@ export default async function NewPatientPage({
             </div>
             <button
               type="submit"
-              className="w-full rounded-full bg-brand py-2.5 font-medium text-white transition-colors duration-150 hover:bg-brand-dark"
+              className="w-full rounded-full bg-brand py-2.5 font-medium text-white transition-colors duration-150 hover:bg-brand-dark disabled:cursor-not-allowed"
             >
-              Envoyer l&apos;invitation
+              {open ? "Envoyer l'invitation" : "Disponible au lancement"}
             </button>
+            </fieldset>
           </form>
         </div>
       </div>
