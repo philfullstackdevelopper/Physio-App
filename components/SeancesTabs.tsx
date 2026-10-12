@@ -469,7 +469,12 @@ export default function SeancesTabs({
       {/* Zones du corps — mêmes pastilles que « Mes exercices ». Téléphone :
           une seule ligne qui glisse au doigt. */}
       {zones.length > 0 && (
-        <div className="mt-3 flex shrink-0 flex-wrap gap-1.5 max-sm:-mx-4 max-sm:flex-nowrap max-sm:gap-2 max-sm:overflow-x-auto max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none]">
+        // Ordinateur (Philippe, 2026-10-12) : mêmes tuiles que le sélecteur
+        // « Ajouter un exercice » — une seule rangée, dessin au-dessus du nom.
+        <div
+          style={{ gridTemplateColumns: `repeat(${zones.length + 1}, minmax(0, 7.5rem))` }}
+          className="mt-3 flex shrink-0 flex-wrap gap-1.5 max-sm:-mx-4 max-sm:flex-nowrap max-sm:gap-2 max-sm:overflow-x-auto max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none] md:grid"
+        >
           <button
             type="button"
             onClick={() => {
@@ -477,7 +482,7 @@ export default function SeancesTabs({
               setTemplatesShown(REVEAL_INITIAL);
             }}
             aria-pressed={zoneId === null}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:w-[5.5rem] max-sm:shrink-0 max-sm:flex-col max-sm:justify-center max-sm:gap-1 max-sm:rounded-2xl max-sm:px-1.5 max-sm:py-2 max-sm:text-center max-sm:text-xs max-sm:leading-tight ${
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:w-[5.5rem] max-sm:shrink-0 max-sm:flex-col max-sm:justify-center max-sm:gap-1 max-sm:rounded-2xl max-sm:px-1.5 max-sm:py-2 max-sm:text-center max-sm:text-xs max-sm:leading-tight md:min-w-0 md:flex-col md:justify-center md:gap-0.5 md:rounded-xl md:px-1 md:py-1.5 md:text-center md:text-xs md:leading-tight ${
               zoneId === null ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg max-sm:border-transparent max-sm:shadow-soft"
             }`}
           >
@@ -495,11 +500,11 @@ export default function SeancesTabs({
                   setTemplatesShown(REVEAL_INITIAL);
                 }}
                 aria-pressed={active}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:w-[5.5rem] max-sm:shrink-0 max-sm:flex-col max-sm:justify-start max-sm:gap-1 max-sm:rounded-2xl max-sm:px-1.5 max-sm:py-2 max-sm:text-center max-sm:text-xs max-sm:leading-tight ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:w-[5.5rem] max-sm:shrink-0 max-sm:flex-col max-sm:justify-start max-sm:gap-1 max-sm:rounded-2xl max-sm:px-1.5 max-sm:py-2 max-sm:text-center max-sm:text-xs max-sm:leading-tight md:min-w-0 md:flex-col md:justify-start md:gap-0.5 md:rounded-xl md:px-1 md:py-1.5 md:text-center md:text-xs md:leading-tight ${
                   active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg max-sm:border-transparent max-sm:shadow-soft"
                 }`}
               >
-                <BodyPartIllustration slug={bp.slug} className="h-5 w-5 max-sm:h-11 max-sm:w-11" active={active} />
+                <BodyPartIllustration slug={bp.slug} className="h-5 w-5 max-sm:h-11 max-sm:w-11 md:h-8 md:w-8" active={active} />
                 {bp.label}
                 <span className={active ? "text-brand/70" : "text-muted"}>{zoneCounts.counts.get(bp.id)}</span>
               </button>
