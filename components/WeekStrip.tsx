@@ -59,6 +59,7 @@ export function SegmentRow({
   perView = false,
   perViewClass = "[--per:1] md:[--per:3]",
   snapCenter = false,
+  horizontalOnly = false,
 }: {
   items: SegmentItem[];
   height: number;
@@ -76,6 +77,10 @@ export function SegmentRow({
   /** Aimanter les cartes au centre plutôt qu'au bord gauche (utile quand les
    *  voisines dépassent des deux côtés). */
   snapCenter?: boolean;
+  /** La frise ne glisse QUE de gauche à droite : pas de défilement vertical
+   *  parasite, et le geste ne déborde pas sur la page (retour arrière du
+   *  navigateur, rebond). Fiche patient côté kiné (Philippe, 2026-10-12). */
+  horizontalOnly?: boolean;
 }) {
   const notch = scrollable && !perView ? 30 : 16; // px — depth of the arrow tip / matching notch
   const rightTip = `polygon(0 0, calc(100% - ${notch}px) 0, 100% 50%, calc(100% - ${notch}px) 100%, 0 100%, ${notch}px 50%)`;
@@ -87,6 +92,8 @@ export function SegmentRow({
       className={`flex w-full min-w-0 items-center ${
         scrollable
           ? `snap-x overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+              horizontalOnly ? "touch-pan-x overflow-y-hidden overscroll-x-contain" : ""
+            } ${
               perView ? `pb-2 pt-10 ${perViewClass}` : "py-14"
             }`
           : "pb-2 pt-10"

@@ -20,7 +20,7 @@
 // passé en props : changer de semaine ici ne refait aucune requête.
 // =============================================================================
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Circle, X } from "lucide-react";
 import { daysOfWeek, localDateKey, type WeekInfo } from "@/lib/patient/weeks";
@@ -128,7 +128,14 @@ export default function KineWeekProgramme({
   const isPhone = useIsPhone();
   const stripBoxRef = useRef<HTMLDivElement>(null);
   const [phoneCardHeight, setPhoneCardHeight] = useState(248);
-  useEffect(() => {
+  // (Philippe, 2026-10-12 : « la frise ne doit bouger QUE à gauche ou à
+  // droite ».) À l'ouverture d'une fiche, la frise s'affichait d'abord à la
+  // mauvaise hauteur puis grandissait et se recentrait sous les yeux. Mesure
+  // et centrage se font maintenant AVANT l'affichage (useLayoutEffect), et la
+  // frise reste invisible le temps d'un rendu, jusqu'à ce que tout soit en place.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  useLayoutEffect(() => {
     const box = stripBoxRef.current;
     if (!box || !isPhone) return;
     // SegmentRow perView ajoute pt-10 pb-2 (48 px) autour des cartes.
@@ -144,16 +151,23 @@ export default function KineWeekProgramme({
   // à chaque redimensionnement (la barre d'adresse du téléphone qui se
   // replie ramenait la frise sur la semaine en cours en pleine navigation).
   const centeredFor = useRef<string | null>(null);
-  useEffect(() => {
+  // Retour de la vue « semaine » : la frise se rouvre SUR la semaine qu'on
+  // vient de consulter, sans animation — avant, elle repartait en glissant
+  // vers la semaine en cours pendant la transition, d'où l'accroc au retour.
+  const returning = useRef(false);
+  useLayoutEffect(() => {
     if (view !== "strip") {
       centeredFor.current = null;
+      returning.current = true;
       return;
     }
     const key = `${isPhone}|${isPhone && phoneCardHeight !== 248 ? "mesurée" : "initiale"}`;
     if (centeredFor.current === key) return;
     centeredFor.current = key;
-    const el = currentCardRef.current;
     const scroller = scrollerRef.current;
+    const back = returning.current;
+    const backIndex = weeks.findIndex((w) => w.weekNumber === selectedWeekNumber);
+    const el = back && backIndex >= 0 ? (scroller?.children[backIndex] as HTMLElement | undefined) : currentCardRef.current;
     if (!el || !scroller) return;
     // El.scrollIntoView() ne fonctionne pas ici : les cartes de la frise se
     // chevauchent volontairement (marge négative + clip-path pour l'effet
@@ -168,7 +182,8 @@ export default function KineWeekProgramme({
     // Téléphone : « instant » — la frise a scroll-smooth, et une animation
     // encore en cours quand la hauteur des cartes change laissait la semaine
     // en cours hors champ (même correctif que WeekProgramme). Ordinateur inchangé.
-    scroller.scrollTo({ left: Math.max(0, target), behavior: isPhone ? "instant" : undefined });
+    scroller.scrollTo({ left: Math.max(0, target), behavior: "instant" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recentrage voulu seulement à l'ouverture de la frise
   }, [view, isPhone, phoneCardHeight]);
 
   useEffect(() => {
@@ -307,7 +322,7 @@ export default function KineWeekProgramme({
             3 semaines visibles qui se partagent la largeur, la semaine en
             cours au centre ; hauteur réduite pour que toute la frise tienne
             à l'écran en arrivant sur la fiche. */}
-        <div ref={stripBoxRef} className="max-sm:-mt-6 max-sm:min-h-0 max-sm:flex-1 sm:contents">
+        <div ref={stripBoxRef} className={`max-sm:-mt-6 max-sm:min-h-0 max-sm:flex-1 sm:contents ${ready ? "" : "max-sm:invisible"}`}>
           {/* Téléphone (Philippe, 2026-10-10 : « plusieurs semaines à la fois,
               comme la frise du client ») : la semaine en cours au centre, la
               précédente et la suivante dépassent de chaque côté (1,5 carte
@@ -321,6 +336,7 @@ export default function KineWeekProgramme({
             snapCenter={isPhone}
             compact
             scrollerRef={scrollerRef}
+            horizontalOnly
           />
         </div>
       </div>
