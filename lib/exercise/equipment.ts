@@ -8,7 +8,7 @@
 //    (appareils de salle, kettlebell, piscine…).
 // 3. Quand le kiné compose ou ajuste une séance, l'appli lui SIGNALE les
 //    exercices pour lesquels il manque du matériel au patient (missingEquipment)
-//    et lui propose de n'afficher que les exercices faisables — sans jamais
+//    et les range tout en bas de la liste, après les exercices faisables — sans jamais
 //    l'empêcher de choisir : c'est lui qui décide (Philippe, 2026-10-12 : « are
 //    we sure that the exercises the physio can assign depend on what the
 //    patient can work with at home? »). Avant, le matériel du patient n'était

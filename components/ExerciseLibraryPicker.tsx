@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Check, Dumbbell, Info, Plus, Search } from "lucide-react";
 import { type BodyPart } from "@/lib/exercise/category";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
@@ -32,9 +32,12 @@ export type PickerExercise = {
 // Matériel (Philippe, 2026-10-12) : chaque exercice qui demande du matériel
 // porte une pastille qui le nomme. Quand le sélecteur est ouvert POUR UN
 // PATIENT (`patientEquipment` fourni — « Ajuster la séance »), la pastille
-// passe à l'orange si ce patient n'a pas ce matériel chez lui, une ligne
-// rappelle ce qu'il a déclaré, et un bouton n'affiche que les exercices
-// faisables. On signale, on ne bloque jamais : le kiné reste seul juge.
+// passe à l'orange si ce patient n'a pas ce matériel chez lui et une ligne
+// rappelle ce qu'il a déclaré. Le tri est AUTOMATIQUE, sans bouton (Philippe,
+// 2026-10-12, 2e retour : « se baser sur les renseignements du patient ») :
+// les exercices faisables d'abord, ceux pour lesquels il lui manque du
+// matériel tout en bas sous un intertitre — comme les inscriptions en attente
+// au bas de « Mes patients ». Ils restent sélectionnables : le kiné décide.
 export default function ExerciseLibraryPicker({
   exercises,
   bodyParts,
@@ -52,7 +55,6 @@ export default function ExerciseLibraryPicker({
   patientFirstName?: string;
 }) {
   const knowsEquipment = patientEquipment !== null;
-  const [feasibleOnly, setFeasibleOnly] = useState(false);
   const ownedLabel = (patientEquipment ?? [])
     .filter((id) => id !== "aucun")
     .map((id) => EQUIPMENT_LABELS[id as EquipmentId] ?? id)
@@ -79,9 +81,12 @@ export default function ExerciseLibraryPicker({
       : bodyPartId
         ? exercises.filter((ex) => ex.bodyPartIds.includes(bodyPartId))
         : [];
-    // « Faisable avec son matériel » : on retire ce pour quoi il manque quelque chose.
-    return feasibleOnly ? base.filter((ex) => missingEquipment(ex.equipment, patientEquipment).length === 0) : base;
-  }, [exercises, bodyPartId, query, feasibleOnly, patientEquipment]);
+    // Faisables d'abord, « matériel manquant » ensuite (ordre alphabétique conservé dans chaque groupe).
+    const blocked = (ex: PickerExercise) => missingEquipment(ex.equipment, patientEquipment).length > 0;
+    return [...base.filter((ex) => !blocked(ex)), ...base.filter(blocked)];
+  }, [exercises, bodyPartId, query, patientEquipment]);
+  // Premier exercice « matériel manquant » : l'intertitre se place juste avant.
+  const firstBlockedId = filtered.find((ex) => missingEquipment(ex.equipment, patientEquipment).length > 0)?.id ?? null;
 
   return (
     <section className="flex min-h-0 min-w-0 flex-col">
@@ -110,17 +115,6 @@ export default function ExerciseLibraryPicker({
               {patientFirstName ? `Matériel de ${patientFirstName}` : "Son matériel"} : <span className="font-medium text-ink">{ownedLabel || "aucun"}</span>
             </span>
           </p>
-          <button
-            type="button"
-            onClick={() => setFeasibleOnly((v) => !v)}
-            aria-pressed={feasibleOnly}
-            className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-              feasibleOnly ? "border-brand bg-brand text-white" : "border-line bg-surface text-ink hover:bg-app-bg"
-            }`}
-          >
-            <span className="max-sm:hidden">Faisable avec son matériel</span>
-            <span className="sm:hidden">Faisable chez lui</span>
-          </button>
         </div>
       )}
       {!query && (
@@ -153,7 +147,6 @@ export default function ExerciseLibraryPicker({
         {filtered.length === 0 && (
           <p className="text-sm text-muted">
             {query ? `Aucun exercice ne correspond à « ${q.trim()} ».` : "Aucun exercice dans cette catégorie."}
-            {feasibleOnly && " Le filtre « faisable avec son matériel » est actif."}
           </p>
         )}
         {/* Lignes compactes, sur 2 colonnes en grand écran. */}
@@ -166,8 +159,14 @@ export default function ExerciseLibraryPicker({
               // Deux boutons côte à côte dans la même ligne (un bouton ne peut
               // pas en contenir un autre) : la ligne ajoute/retire l'exercice,
               // le petit (i) ouvre sa démonstration (Philippe, 2026-10-10).
+              <Fragment key={ex.id}>
+              {ex.id === firstBlockedId && (
+                <p className="col-span-full mt-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-warn first:mt-0">
+                  <span className="shrink-0">Matériel que {patientFirstName ?? "le patient"} n'a pas</span>
+                  <span className="h-px flex-1 bg-warn/25" />
+                </p>
+              )}
               <div
-                key={ex.id}
                 className={`flex w-full min-w-0 items-center rounded-lg border text-sm transition-colors max-sm:relative max-sm:rounded-xl ${
                   marked ? "border-ok/30 bg-ok-soft text-ok" : "border-line bg-surface text-ink hover:border-brand/40 hover:bg-app-bg"
                 }`}
@@ -186,7 +185,7 @@ export default function ExerciseLibraryPicker({
                     <span
                       title={
                         missing.length > 0
-                          ? `Matériel que ${patientFirstName ?? "le patient"} n'a pas déclaré : ${equipmentListLabel(missing)}`
+                          ? `Matériel que ${patientFirstName ?? "le patient"} n'a pas : ${equipmentListLabel(missing)}`
                           : `Matériel nécessaire : ${required}`
                       }
                       className={`max-w-[45%] shrink-0 truncate rounded-full px-1.5 py-0.5 text-[10px] font-medium no-underline max-sm:max-w-full ${
@@ -208,6 +207,7 @@ export default function ExerciseLibraryPicker({
                   <Info className="h-4 w-4" strokeWidth={1.75} />
                 </button>
               </div>
+              </Fragment>
             );
           })}
         </div>
