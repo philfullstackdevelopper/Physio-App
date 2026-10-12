@@ -204,7 +204,7 @@ export default function ExerciseLibraryGrid({
       {!query.trim() && (
         // Téléphone : les catégories sur une seule ligne qui glisse au doigt,
         // au lieu de 3-4 lignes de pastilles avant le premier exercice.
-        <div className="mt-3 flex flex-wrap gap-1.5 max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none]">
+        <div className="mt-3 flex flex-wrap gap-1.5 max-sm:-mx-4 max-sm:flex-nowrap max-sm:gap-2 max-sm:overflow-x-auto max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none]">
           {bodyParts.map((bp) => {
             const active = bp.id === selectedId;
             const count = countByBodyPart.get(bp.id) ?? 0;
@@ -213,11 +213,11 @@ export default function ExerciseLibraryGrid({
                 key={bp.id}
                 type="button"
                 onClick={() => selectBodyPart(bp.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:shrink-0 max-sm:whitespace-nowrap ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:w-[5.5rem] max-sm:shrink-0 max-sm:flex-col max-sm:justify-start max-sm:gap-1 max-sm:rounded-2xl max-sm:px-1.5 max-sm:py-2 max-sm:text-center max-sm:text-xs max-sm:leading-tight ${
                   active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg max-sm:border-transparent max-sm:shadow-soft"
                 }`}
               >
-                <BodyPartIllustration slug={bp.slug} className="h-5 w-5" active={active} />
+                <BodyPartIllustration slug={bp.slug} className="h-5 w-5 max-sm:h-11 max-sm:w-11" active={active} />
                 {bp.label}
                 <span className={active ? "text-brand/70" : "text-muted"}>{count}</span>
               </button>
@@ -305,9 +305,10 @@ export default function ExerciseLibraryGrid({
         </form>
       )}
 
-      {/* Téléphone : une ligne compacte par exercice (dessin à gauche, nom
-          et consignes au milieu, menu à droite), comme Mes séances. */}
-      <div className="grid grid-cols-1 gap-3 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {/* Téléphone (Philippe, 2026-10-12) : même affichage que dans « Ajuster
+          la séance » — blocs 2 par rangée, dessin plus grand, nom sur deux
+          lignes ; les consignes restent sur ordinateur. */}
+      <div className="grid grid-cols-1 gap-3 max-sm:grid-cols-2 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.length === 0 ? (
           <p className="col-span-full rounded-xl border border-line bg-surface p-6 text-center text-sm text-muted">
             {query.trim()
@@ -318,14 +319,14 @@ export default function ExerciseLibraryGrid({
           filtered.map((ex) => (
             <div
               key={ex.id}
-              className="rounded-xl border border-line bg-surface p-4 max-sm:grid max-sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] max-sm:items-center max-sm:gap-x-3 max-sm:rounded-2xl max-sm:border-0 max-sm:p-3 max-sm:shadow-soft"
+              className="rounded-xl border border-line bg-surface p-4 max-sm:relative max-sm:rounded-2xl max-sm:border-0 max-sm:p-2.5 max-sm:text-center max-sm:shadow-soft"
             >
-              <div className="flex items-start justify-between gap-2 max-sm:contents">
+              <div className="flex items-start justify-between gap-2">
                 <ExerciseIllustration
                   name={ex.name}
-                  className="h-24 w-full text-brand max-sm:col-start-1 max-sm:row-start-1 max-sm:h-14 max-sm:w-14 max-sm:rounded-xl max-sm:bg-app-bg max-sm:p-1"
+                  className="h-24 w-full text-brand max-sm:h-16"
                 />
-                <span className="max-sm:col-start-3 max-sm:row-start-1 sm:contents">
+                <span className="max-sm:absolute max-sm:right-1 max-sm:top-1 sm:contents">
                   <ExerciseCardMenu
                     hidden={ex.hidden}
                     onHide={() => runAction(hideExercise, ex.id)}
@@ -333,13 +334,13 @@ export default function ExerciseLibraryGrid({
                   />
                 </span>
               </div>
-              <div className="max-sm:col-start-2 max-sm:row-start-1 max-sm:min-w-0 sm:contents">
-                <p className="mt-2 font-medium text-ink max-sm:mt-0 max-sm:truncate">{ex.name}</p>
+              <div className="sm:contents">
+                <p className="mt-2 font-medium text-ink max-sm:mt-1.5 max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:text-[13px] max-sm:leading-tight">{ex.name}</p>
                 {ex.created_by === currentUserId && (
-                  <span className="mt-1 inline-block text-xs text-brand max-sm:mt-0">Votre exercice</span>
+                  <span className="mt-1 inline-block text-xs text-brand max-sm:mt-0.5 max-sm:text-[11px]">Votre exercice</span>
                 )}
                 {ex.instructions && (
-                  <p className="mt-1 line-clamp-2 text-sm text-muted max-sm:mt-0.5 max-sm:line-clamp-1 max-sm:text-xs">{ex.instructions}</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted max-sm:hidden">{ex.instructions}</p>
                 )}
               </div>
               {/* (Philippe, 2026-10-07 : l'envoi de vidéo n'apparaît plus que
@@ -348,7 +349,7 @@ export default function ExerciseLibraryGrid({
                   Exception : l'administrateur gère les vidéos des exercices
                   plateforme, via une Server Action vérifiée côté serveur.) */}
               {(ex.created_by === currentUserId || (isAdmin && ex.created_by === null)) && (
-                <div className="max-sm:col-span-3 sm:contents">
+                <div className="max-sm:mt-1.5 sm:contents">
                   <ExerciseVideoUpload
                     exerciseId={ex.id}
                     initialUrl={ex.media_url}

@@ -61,7 +61,7 @@ function TemplateCardMenu({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="relative shrink-0">
+    <div className="relative shrink-0 max-sm:absolute max-sm:right-1 max-sm:top-1 max-sm:rounded-full max-sm:bg-surface/90">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -187,12 +187,12 @@ type Tab = "mine" | "templates";
 const REVEAL_INITIAL = 12;
 const REVEAL_STEP = 12;
 
-// Téléphone (Philippe, 2026-10-07 : mêmes règles que l'appli patient) : les
-// cartes deviennent des lignes compactes — vignette à gauche, nom au milieu,
-// menu à droite — pour voir plusieurs séances sans faire défiler longtemps.
+// Téléphone (Philippe, 2026-10-12) : même affichage que dans « Ajuster la
+// séance » — blocs 2 par rangée, dessin plus grand, nom sur deux lignes, le
+// menu ou la corbeille dans le coin du bloc.
 // Ordinateur / tablette (Philippe, 2026-10-10) : exactement la grille de
 // « Mes exercices » — mêmes cartes, 2 / 3 / 4 par ligne selon la largeur.
-const CARD_GRID = "grid grid-cols-1 gap-3 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+const CARD_GRID = "grid grid-cols-1 gap-3 max-sm:grid-cols-2 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 
 // The workout's own lead exercise (position 0) supplies a real illustration
 // via the same matching already solved for the exercise library — no
@@ -214,7 +214,7 @@ function SeanceThumb({
    *  card. */
   size?: "cover" | "inset";
 }) {
-  const boxClass = `${size === "inset" ? "h-24 w-full rounded-lg" : "aspect-[4/3] rounded-t-xl"} max-sm:aspect-auto max-sm:h-14 max-sm:w-14 max-sm:shrink-0 max-sm:rounded-xl max-sm:bg-app-bg max-sm:p-1`;
+  const boxClass = `${size === "inset" ? "h-24 w-full rounded-lg" : "aspect-[4/3] rounded-t-xl"} max-sm:aspect-auto max-sm:h-16 max-sm:w-full`;
   return (
     <div className={`relative ${boxClass} bg-surface`}>
       {leadExerciseName ? (
@@ -253,7 +253,7 @@ function SeanceThumb({
 function CardMeta({ s }: { s: ListItem }) {
   return (
     <>
-      <p className="mt-0.5 line-clamp-1 text-sm text-muted">
+      <p className="mt-0.5 line-clamp-1 text-sm text-muted max-sm:text-[11px]">
         {s.conditionName ?? "—"}
         {s.stageLabel && <span> · {s.stageLabel}</span>}
         {s.extra && <span className="text-muted"> · {s.extra}</span>}
@@ -270,7 +270,7 @@ function CardMeta({ s }: { s: ListItem }) {
 // list is still one click away on the séance's own page.
 function ExerciseNamesList({ names }: { names?: string[] }) {
   if (!names || names.length === 0) return null;
-  return <p className="mt-1 line-clamp-2 text-xs text-muted max-sm:mt-0.5 max-sm:line-clamp-1">{names.join(" · ")}</p>;
+  return <p className="mt-1 line-clamp-2 text-xs text-muted max-sm:hidden">{names.join(" · ")}</p>;
 }
 
 function VoirPlusButton({ onClick }: { onClick: () => void }) {
@@ -469,7 +469,7 @@ export default function SeancesTabs({
       {/* Zones du corps — mêmes pastilles que « Mes exercices ». Téléphone :
           une seule ligne qui glisse au doigt. */}
       {zones.length > 0 && (
-        <div className="mt-3 flex shrink-0 flex-wrap gap-1.5 max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none]">
+        <div className="mt-3 flex shrink-0 flex-wrap gap-1.5 max-sm:-mx-4 max-sm:flex-nowrap max-sm:gap-2 max-sm:overflow-x-auto max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none]">
           <button
             type="button"
             onClick={() => {
@@ -477,7 +477,7 @@ export default function SeancesTabs({
               setTemplatesShown(REVEAL_INITIAL);
             }}
             aria-pressed={zoneId === null}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:shrink-0 max-sm:whitespace-nowrap ${
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:w-[5.5rem] max-sm:shrink-0 max-sm:flex-col max-sm:justify-center max-sm:gap-1 max-sm:rounded-2xl max-sm:px-1.5 max-sm:py-2 max-sm:text-center max-sm:text-xs max-sm:leading-tight ${
               zoneId === null ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg max-sm:border-transparent max-sm:shadow-soft"
             }`}
           >
@@ -495,11 +495,11 @@ export default function SeancesTabs({
                   setTemplatesShown(REVEAL_INITIAL);
                 }}
                 aria-pressed={active}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:shrink-0 max-sm:whitespace-nowrap ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 max-sm:w-[5.5rem] max-sm:shrink-0 max-sm:flex-col max-sm:justify-start max-sm:gap-1 max-sm:rounded-2xl max-sm:px-1.5 max-sm:py-2 max-sm:text-center max-sm:text-xs max-sm:leading-tight ${
                   active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg max-sm:border-transparent max-sm:shadow-soft"
                 }`}
               >
-                <BodyPartIllustration slug={bp.slug} className="h-5 w-5" active={active} />
+                <BodyPartIllustration slug={bp.slug} className="h-5 w-5 max-sm:h-11 max-sm:w-11" active={active} />
                 {bp.label}
                 <span className={active ? "text-brand/70" : "text-muted"}>{zoneCounts.counts.get(bp.id)}</span>
               </button>
@@ -543,9 +543,9 @@ export default function SeancesTabs({
               {filteredMine.map((s) => (
                 <div
                   key={s.id}
-                  className="group rounded-xl border border-line bg-surface p-4 hover:border-brand max-sm:grid max-sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] max-sm:items-center max-sm:gap-3 max-sm:rounded-2xl max-sm:border-0 max-sm:p-3 max-sm:shadow-soft"
+                  className="group rounded-xl border border-line bg-surface p-4 hover:border-brand max-sm:relative max-sm:rounded-2xl max-sm:border-0 max-sm:p-2.5 max-sm:text-center max-sm:shadow-soft"
                 >
-                  <div className="flex items-start justify-between gap-2 max-sm:contents">
+                  <div className="flex items-start justify-between gap-2">
                     <Link href={`/dashboard/seances/${s.id}`} className="min-w-0 flex-1">
                       <SeanceThumb
                         badge="mine"
@@ -554,7 +554,7 @@ export default function SeancesTabs({
                         size="inset"
                       />
                     </Link>
-                    <span className="max-sm:order-1 sm:contents">
+                    <span className="max-sm:absolute max-sm:right-1 max-sm:top-1 max-sm:rounded-full max-sm:bg-surface/90 sm:contents">
                       <DeleteSeanceButton
                         seanceId={s.id}
                         seanceName={s.name}
@@ -563,8 +563,8 @@ export default function SeancesTabs({
                       />
                     </span>
                   </div>
-                  <Link href={`/dashboard/seances/${s.id}`} className="block max-sm:min-w-0">
-                    <p className="mt-2 font-medium text-ink max-sm:mt-0 max-sm:truncate">{s.name}</p>
+                  <Link href={`/dashboard/seances/${s.id}`} className="block">
+                    <p className="mt-2 font-medium text-ink max-sm:mt-1.5 max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:text-[13px] max-sm:leading-tight">{s.name}</p>
                     {s.exerciseCount === 0 && (
                       <span className="mt-1 inline-flex items-center rounded-full bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">
                         Aucun exercice
@@ -601,15 +601,16 @@ export default function SeancesTabs({
                 {visibleTemplates.map((t) => (
                   <div
                     key={t.id}
-                    className={`rounded-xl border border-line bg-surface p-4 max-sm:flex max-sm:items-center max-sm:gap-3 max-sm:rounded-2xl max-sm:border-0 max-sm:p-3 max-sm:shadow-soft ${t.hidden ? "opacity-60" : ""}`}
+                    className={`rounded-xl border border-line bg-surface p-4 max-sm:relative max-sm:rounded-2xl max-sm:border-0 max-sm:p-2.5 max-sm:text-center max-sm:shadow-soft ${t.hidden ? "opacity-60" : ""}`}
                   >
                     <SeanceThumb badge="template" stage={t.stage} leadExerciseName={t.leadExerciseName} size="inset" />
-                    <div className="mt-2 flex flex-col gap-1 max-sm:mt-0 max-sm:min-w-0 max-sm:flex-1 max-sm:gap-0">
-                      <div className="flex items-start justify-between gap-2">
+                    <div className="mt-2 flex flex-col gap-1 max-sm:mt-1.5 max-sm:gap-0">
+                      <div className="flex items-start justify-between gap-2 max-sm:block">
                         <div className="min-w-0">
-                          <p className="font-medium text-ink">{t.conditionName ?? t.name}</p>
-                          <p className="text-sm text-muted">{t.stageLabel ?? t.name}</p>
+                          <p className="font-medium text-ink max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:text-[13px] max-sm:leading-tight">{t.conditionName ?? t.name}</p>
+                          <p className="text-sm text-muted max-sm:mt-0.5 max-sm:truncate max-sm:text-[11px]">{t.stageLabel ?? t.name}</p>
                         </div>
+                        {/* Téléphone : le menu ⋮ passe dans le coin du bloc. */}
                         <TemplateCardMenu
                           templateId={t.id}
                           hidden={t.hidden}
