@@ -29,25 +29,25 @@ export default function PatientLockScreen({
 }) {
   const failed = reason === "payment_failed";
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-[#f6f8fd] px-5 py-8">
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-[#f6f8fd] px-5 py-8 short:py-3">
       <div className="w-full max-w-md text-center">
         <div className="flex justify-center">
           <LogoLockup height={36} />
         </div>
 
-        <div className="mt-8 rounded-3xl bg-white p-7 shadow-[0_10px_40px_-12px_rgba(20,71,201,0.25)] sm:p-9">
+        <div className="mt-8 rounded-3xl bg-white p-7 shadow-[0_10px_40px_-12px_rgba(20,71,201,0.25)] sm:p-9 short:mt-4 short:p-5 short:sm:p-6">
           <span
-            className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full ${
+            className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full short:h-14 short:w-14 ${
               failed ? "bg-danger-soft text-danger" : "bg-brand-soft text-brand"
             }`}
           >
-            <Lock className="h-9 w-9" strokeWidth={1.75} />
+            <Lock className="h-9 w-9 short:h-6 short:w-6" strokeWidth={1.75} />
           </span>
 
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="mt-5 text-2xl font-semibold tracking-tight text-slate-900 short:mt-3 short:text-xl">
             {failed ? "Votre paiement a été refusé" : "Votre abonnement est terminé"}
           </h1>
-          <p className="mt-2 text-base leading-relaxed text-slate-600">
+          <p className="mt-2 text-base leading-relaxed text-slate-600 short:mt-1.5 short:text-sm">
             {firstName ? `${firstName}, v` : "V"}otre programme est verrouillé.{" "}
             {failed
               ? "Votre carte n'a pas pu être débitée. Pour continuer, mettez à jour votre moyen de paiement."
@@ -57,7 +57,7 @@ export default function PatientLockScreen({
 
           {failed ? (
             <>
-              <form action={openBillingPortal} className="mt-6">
+              <form action={openBillingPortal} className="mt-6 short:mt-4">
                 <input type="hidden" name="intent" value="manage" />
                 <SubmitButton
                   pendingText="Ouverture…"
@@ -83,7 +83,7 @@ export default function PatientLockScreen({
           )}
         </div>
 
-        <div className="mt-6 flex flex-col items-center justify-center gap-3 text-sm font-medium text-slate-500 sm:flex-row sm:gap-6">
+        <div className="mt-6 flex flex-col items-center justify-center gap-3 text-sm font-medium text-slate-500 sm:flex-row sm:gap-6 short:mt-3 short:flex-row short:gap-5">
           <Link href="/patient/compte" className="inline-flex items-center gap-1.5 hover:text-slate-800">
             <UserRound className="h-4 w-4" strokeWidth={1.75} />
             Mon compte et mes données

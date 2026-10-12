@@ -4,7 +4,7 @@
 // composants (ProgrammeView, WorkoutSession) dans la même coquille que
 // app/patient/layout.tsx. Aucune donnée réelle, aucune requête. Pas lié
 // depuis l'appli.
-//   ?ecran=programme | seance | historique | seance-du-jour | changer-offre | informations | historique-detail | onboarding
+//   ?ecran=programme | seance | historique | seance-du-jour | changer-offre | informations | historique-detail | onboarding | progres | compte | abonnement | cadenas
 
 import PatientNav from "@/components/PatientNav";
 import ProgrammeView, { type ProgrammeWorkout } from "@/app/patient/programme/ProgrammeView";
@@ -18,9 +18,16 @@ import { TIERS } from "@/lib/billing/plans";
 import OnboardingView from "@/app/patient/onboarding/OnboardingView";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { EQUIPMENT_LABELS, EQUIPMENT_OPTIONS } from "@/lib/exercise/equipment";
+import ProgresView from "@/app/patient/progres/ProgresView";
+import AbonnementView from "@/app/patient/abonnement/AbonnementView";
+import CompteView from "@/app/patient/compte/CompteView";
+import PatientLockScreen from "@/components/PatientLockScreen";
+import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import SeanceDuJourView from "@/app/patient/seance-du-jour/SeanceDuJourView";
 
 export const metadata = { title: "Aperçu écrans patient", robots: { index: false } };
+// Recalculée à chaque visite : la courbe de douleur fictive suit la vraie date.
+export const dynamic = "force-dynamic";
 
 const EXERCISES = [
   ["Pont fessier (coxarthrose)", "Allongé sur le dos, genoux fléchis, soulevez le bassin en serrant les fessiers puis redescendez lentement."],
@@ -28,6 +35,9 @@ const EXERCISES = [
   ["Controlled Mini-Squat (Knee Arthritis)", "Debout, pieds écartés largeur du bassin, fléchissez doucement les genoux sans dépasser les orteils."],
   ["Assisted Partial Squat", "En vous tenant à un appui stable, descendez à mi-hauteur puis remontez en poussant dans les talons."],
 ] as const;
+
+// Hors du composant : la règle react-hooks/purity refuse Date.now() dans le rendu.
+const daysAgoIso = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
 
 async function noop() {
   "use server";
@@ -48,6 +58,23 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
       exercises: EXERCISES.map(([name, instructions], i) => ({ id: `ex${i}`, name, instructions, categoryLabel: "Genou / jambe" })),
     },
   ];
+
+  // Choix d'offre et écran cadenas : plein écran, sans la barre de navigation.
+  if (ecran === "abonnement") {
+    return (
+      <AbonnementView
+        paymentFailed={false}
+        trialAvailable
+        prices={{ essentiel: TIERS.essentiel.amount, standard: TIERS.standard.amount, premium: TIERS.premium.amount }}
+        kineName="Philippe Maupain"
+        paymentsReady
+        firstChargeDate="19 octobre"
+        startTierCheckout={noop}
+        openBillingPortal={noop}
+      />
+    );
+  }
+  if (ecran === "cadenas") return <PatientLockScreen reason="payment_failed" firstName="Léa" kineName="Philippe Maupain" />;
 
   // L'onboarding s'affiche sans la barre de navigation, comme dans l'appli.
   if (ecran === "onboarding") {
@@ -73,7 +100,38 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
     <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
       <PatientNav patientName="Léa Martin" unreadCount={1} pathnameOverride="/patient/programme" />
       <div className="relative min-w-0 flex-1 pb-20 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0">
-        {ecran === "informations" ? (
+        {ecran === "progres" ? (
+          <ProgresView
+            conditionName="Prothèse de genou"
+            hasPain
+            phoneTileCount={3}
+            adherenceNow={{ pct: 67, done: 8, expected: 12 }}
+            adherenceDelta={12}
+            painAvgNow={3.4}
+            painDelta={-0.8}
+            pain={buildPainSeries(
+              [26, 22, 19, 15, 12, 8, 5, 2].map((daysAgo, i) => ({
+                pain_score: [6, 5, 5, 4, 4, 3, 3, 2][i],
+                created_at: daysAgoIso(daysAgo),
+              })),
+            )}
+          />
+        ) : ecran === "compte" ? (
+          <CompteView
+            fullName="Léa Martin"
+            offerLabel="Standard"
+            priceCents={TIERS.standard.amount}
+            badgeLabel="Actif"
+            badgeClass="bg-ok-soft text-ok"
+            nextChargeLine="Prochain prélèvement le 19 octobre 2026"
+            hasCustomer
+            canChangeOffer
+            active
+            canCancel
+            cancelAt={null}
+            accessEnd="19 octobre 2026"
+          />
+        ) : ecran === "informations" ? (
           <InformationsView
             name="Léa Martin"
             email="lea.martin@exemple.fr"
