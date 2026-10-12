@@ -149,8 +149,11 @@ export default function ExerciseLibraryPicker({
             {query ? `Aucun exercice ne correspond à « ${q.trim()} ».` : "Aucun exercice dans cette catégorie."}
           </p>
         )}
-        {/* Lignes compactes, sur 2 colonnes en grand écran. */}
-        <div className="grid content-start gap-1.5 max-sm:grid-cols-2 max-sm:gap-2 lg:grid-cols-2">
+        {/* Blocs (dessin au-dessus du nom) sur tous les formats : 2 par rangée
+            sur téléphone, 3 sur ordinateur avec un dessin plus grand (Philippe,
+            2026-10-12 : « les exercices sont affichés trop petit » — avant,
+            l'ordinateur avait des lignes compactes avec une vignette de 28 px). */}
+        <div className="grid grid-cols-2 content-start gap-2 lg:grid-cols-3">
           {filtered.map((ex) => {
             const marked = selectedIds.has(ex.id);
             const required = equipmentListLabel(ex.equipment ?? []);
@@ -167,7 +170,7 @@ export default function ExerciseLibraryPicker({
                 </p>
               )}
               <div
-                className={`flex w-full min-w-0 items-center rounded-lg border text-sm transition-colors max-sm:relative max-sm:rounded-xl ${
+                className={`relative flex w-full min-w-0 items-stretch rounded-xl border text-sm transition-colors ${
                   marked ? "border-ok/30 bg-ok-soft text-ok" : "border-line bg-surface text-ink hover:border-brand/40 hover:bg-app-bg"
                 }`}
               >
@@ -176,10 +179,10 @@ export default function ExerciseLibraryPicker({
                   onClick={() => onToggle(ex.id)}
                   title={ex.name}
                   aria-pressed={marked}
-                  className="flex min-w-0 flex-1 items-center gap-2 rounded-l-lg py-1 pl-2 pr-1 text-left max-sm:flex-col max-sm:gap-1.5 max-sm:rounded-xl max-sm:p-2.5 max-sm:text-center"
+                  className="flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-xl p-2.5 text-center"
                 >
-                  <ExerciseIllustration name={ex.name} animate={false} className={`h-7 w-7 shrink-0 max-sm:h-16 max-sm:w-full ${marked ? "text-ok" : "text-brand"}`} />
-                  <span className="flex-1 truncate max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:flex-none max-sm:whitespace-normal max-sm:text-[13px] max-sm:leading-tight">{ex.name}</span>
+                  <ExerciseIllustration name={ex.name} animate={false} className={`h-16 w-full shrink-0 sm:h-24 ${marked ? "text-ok" : "text-brand"}`} />
+                  <span className="line-clamp-2 min-h-[2.5em] text-[13px] leading-tight sm:text-sm sm:leading-tight">{ex.name}</span>
                   {/* Matériel indispensable : orange s'il manque à ce patient. */}
                   {required && (
                     <span
@@ -188,7 +191,7 @@ export default function ExerciseLibraryPicker({
                           ? `Matériel que ${patientFirstName ?? "le patient"} n'a pas : ${equipmentListLabel(missing)}`
                           : `Matériel nécessaire : ${required}`
                       }
-                      className={`max-w-[45%] shrink-0 truncate rounded-full px-1.5 py-0.5 text-[10px] font-medium no-underline max-sm:max-w-full ${
+                      className={`max-w-full shrink-0 truncate rounded-full px-1.5 py-0.5 text-[10px] font-medium no-underline ${
                         missing.length > 0 ? "bg-warn-soft text-warn" : "bg-app-bg text-muted"
                       }`}
                     >
@@ -202,7 +205,7 @@ export default function ExerciseLibraryPicker({
                   onClick={() => setInfo({ id: ex.id, name: ex.name })}
                   aria-label={`Voir la démonstration : ${ex.name}`}
                   title="Voir la démonstration"
-                  className="mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand max-sm:absolute max-sm:right-1 max-sm:top-1 max-sm:mr-0 max-sm:h-8 max-sm:w-8"
+                  className="absolute right-1 top-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
                 >
                   <Info className="h-4 w-4" strokeWidth={1.75} />
                 </button>

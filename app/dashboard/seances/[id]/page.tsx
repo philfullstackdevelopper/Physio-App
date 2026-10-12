@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
-import ExercisePicker from "@/components/ExercisePicker";
+import EditSeanceModal from "@/components/EditSeanceModal";
 import { saveSeance, deleteSeance } from "../actions";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
@@ -43,9 +41,12 @@ export default async function SeanceEditorPage({
 
   const { data: current } = await supabase
     .from("workout_exercises")
-    .select("exercise_id")
-    .eq("workout_id", id);
-  const selected = new Set((current ?? []).map((r) => r.exercise_id as string));
+    .select("exercise_id, position")
+    .eq("workout_id", id)
+    .order("position");
+  // Dans l'ordre de la séance : c'est l'ordre affiché, et celui qui sera ré-enregistré.
+  const selectedIds = (current ?? []).map((r) => r.exercise_id as string);
+  const selected = new Set(selectedIds);
 
   // Exercises this instructor hid from their own search (migration 0037) drop
   // out of the picker — UNLESS this workout already includes them, so hiding
@@ -60,135 +61,34 @@ export default async function SeanceEditorPage({
     .map((ex) => ({
       id: ex.id,
       name: ex.name,
-      instructions: ex.instructions,
-      search_keywords: ex.search_keywords,
+      searchKeywords: (ex.search_keywords as string[] | null) ?? null,
       equipment: (ex.equipment as string[] | null) ?? [],
       bodyPartIds: (ex.exercise_body_parts ?? []).map((t) => t.body_part_id as string),
     }));
 
+  // Même fenêtre que « Nouvelle séance » et « Ajuster la séance » (Philippe,
+  // 2026-10-12) — l'ancienne page en liste de cases à cocher est remplacée.
   return (
     <main className="min-h-screen max-sm:min-h-0">
-      <div className="mx-auto max-w-2xl p-6 max-sm:px-4 max-sm:pt-2 sm:p-8">
-        <div className="animate-[fadeInUp_0.6s_ease-out_both]">
-          <Link href="/dashboard/seances" className="text-sm text-muted hover:text-ink max-sm:hidden">
-            ← Mes séances
-          </Link>
-          <h1 className="mt-3 text-2xl font-semibold text-ink max-sm:mt-0">Composer la séance</h1>
-        </div>
-
-        {error && (
-          <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>
-        )}
-
-        {saved && !error && (
-          <div className="animate-[fadeInUp_0.6s_ease-out_both] mt-4 flex items-center gap-1.5 rounded-xl bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
-            <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.5} />
-            Séance enregistrée
-          </div>
-        )}
-
-        <form action={saveSeance} className="mt-6 flex flex-col gap-6">
-          <input type="hidden" name="workout_id" value={workout.id} />
-
-          {/* Details */}
-          <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] rounded-xl border border-line bg-surface p-5">
-            <h2 className="text-sm font-medium text-ink">Détails</h2>
-            <div className="mt-3 flex flex-col gap-3">
-              <label className="text-sm text-muted">
-                Nom
-                <input
-                  name="name"
-                  required
-                  defaultValue={workout.name}
-                  className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-                />
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-sm text-muted">
-                  Condition
-                  <select
-                    name="condition_id"
-                    required
-                    defaultValue={workout.condition_id ?? ""}
-                    className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-                  >
-                    {conditions?.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-sm text-muted">
-                  Phase
-                  <select
-                    name="stage"
-                    defaultValue={workout.stage ?? ""}
-                    className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-                  >
-                    <option value="">Toutes phases</option>
-                    {STAGES.map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-sm text-muted">
-                  Durée (min)
-                  <input
-                    type="number" name="duration_minutes" min={1} max={90}
-                    defaultValue={workout.duration_minutes ?? 10}
-                    className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-                  />
-                </label>
-                <label className="text-sm text-muted">
-                  Fois / semaine
-                  <input
-                    type="number" name="times_per_week" min={1} max={14}
-                    defaultValue={workout.times_per_week ?? 3}
-                    className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-                  />
-                </label>
-              </div>
-            </div>
-          </section>
-
-          {/* Exercises — check to add, uncheck to remove */}
-          <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:200ms] rounded-xl border border-line bg-surface p-5">
-            <h2 className="text-sm font-medium text-ink">
-              Exercices <span className="font-normal text-muted">(par zone du corps — cochez pour ajouter)</span>
-            </h2>
-            <div className="mt-3">
-              <ExercisePicker
-                exercises={pickerExercises}
-                bodyParts={bodyParts ?? []}
-                selectedIds={[...selected]}
-              />
-            </div>
-          </section>
-
-          <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:280ms] flex items-center gap-3">
-            <button
-              type="submit"
-              className="rounded-full bg-brand px-5 py-2.5 font-medium text-white hover:bg-brand-dark"
-            >
-              Enregistrer la séance
-            </button>
-          </div>
-        </form>
-
-        {/* Delete (separate form) */}
-        <form action={deleteSeance} className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:280ms] mt-4">
-          <input type="hidden" name="workout_id" value={workout.id} />
-          <button
-            type="submit"
-            className="text-sm font-medium text-danger hover:underline"
-          >
-            Supprimer cette séance
-          </button>
-        </form>
-      </div>
+      <EditSeanceModal
+        conditions={conditions ?? []}
+        stages={STAGES}
+        exercises={pickerExercises}
+        bodyParts={bodyParts ?? []}
+        saveSeance={saveSeance}
+        edit={{
+          workoutId: workout.id,
+          name: workout.name,
+          conditionId: workout.condition_id,
+          stage: workout.stage,
+          durationMinutes: workout.duration_minutes,
+          timesPerWeek: workout.times_per_week,
+          exerciseIds: selectedIds,
+          deleteAction: deleteSeance,
+          saved: !!saved,
+          error: error ?? null,
+        }}
+      />
     </main>
   );
 }

@@ -723,7 +723,10 @@ export default function AdjustWorkoutModal({
                       {templateQuery ? `Aucune séance ne correspond à « ${qTemplate} ».` : "Aucune séance dans cette catégorie."}
                     </p>
                   ) : (
-                    <ul className="grid gap-2 max-sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3">
+                    // Blocs (dessin au-dessus du nom) sur tous les formats — 2 par rangée
+                    // sur téléphone, 3 sur ordinateur avec un dessin plus grand
+                    // (Philippe, 2026-10-12 : « affichés trop petit »).
+                    <ul className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
                       {filteredWorkouts.map((w, i) => {
                         const newGroup = i === 0 || filteredWorkouts[i - 1].conditionName !== w.conditionName;
                         const pick = () => {
@@ -733,22 +736,22 @@ export default function AdjustWorkoutModal({
                         return (
                           <li key={w.id} className="contents">
                             {newGroup && (
-                              <p className={`text-xs font-semibold uppercase tracking-wide text-muted max-sm:col-span-2 md:col-span-2 xl:col-span-3 ${i === 0 ? "" : "mt-2"}`}>
+                              <p className={`text-xs font-semibold uppercase tracking-wide text-muted col-span-full ${i === 0 ? "" : "mt-2"}`}>
                                 {w.conditionName ?? "Sans condition"}
                               </p>
                             )}
-                            <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface px-2.5 py-2 transition-colors hover:border-brand/40 max-sm:h-full max-sm:flex-col max-sm:items-stretch max-sm:gap-2 max-sm:p-2.5">
-                              <button type="button" onClick={pick} className="flex min-w-0 flex-1 items-center gap-2.5 text-left max-sm:flex-col max-sm:items-stretch max-sm:gap-1.5 max-sm:text-center">
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-app-bg max-sm:h-16 max-sm:w-full">
+                            <div className="flex h-full flex-col items-stretch gap-2 rounded-xl border border-line bg-surface p-2.5 transition-colors hover:border-brand/40 md:p-3">
+                              <button type="button" onClick={pick} className="flex min-w-0 flex-1 flex-col items-stretch gap-1.5 text-center">
+                                <span className="flex h-16 w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-app-bg md:h-28">
                                   {w.exerciseNames[0] ? (
-                                    <ExerciseIllustration name={w.exerciseNames[0]} animate={false} className="h-7 w-7 text-brand max-sm:h-14 max-sm:w-full" />
+                                    <ExerciseIllustration name={w.exerciseNames[0]} animate={false} className="h-14 w-full text-brand md:h-24" />
                                   ) : (
                                     <Dumbbell className="h-5 w-5 text-muted" strokeWidth={1.75} />
                                   )}
                                 </span>
                                 <span className="min-w-0 flex-1">
-                                  <span className="block truncate text-sm font-semibold text-ink max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:whitespace-normal max-sm:text-[13px] max-sm:leading-tight">{w.name}</span>
-                                  <span className="block truncate text-xs text-muted max-sm:mt-0.5 max-sm:text-[11px]">
+                                  <span className="line-clamp-2 min-h-[2.5em] text-[13px] font-semibold leading-tight text-ink md:text-sm md:leading-tight">{w.name}</span>
+                                  <span className="mt-0.5 block truncate text-[11px] text-muted md:text-xs">
                                     {[
                                       w.stageLabel,
                                       w.durationMinutes != null ? `${w.durationMinutes} min` : null,
@@ -761,14 +764,14 @@ export default function AdjustWorkoutModal({
                                 </span>
                               </button>
                               {w.editHref && (
-                                <Link href={w.editHref} className="shrink-0 text-xs font-medium text-muted underline underline-offset-2 hover:text-brand max-sm:hidden">
+                                <Link href={w.editHref} className="shrink-0 text-center text-xs font-medium text-muted underline underline-offset-2 hover:text-brand max-sm:hidden">
                                   Modifier
                                 </Link>
                               )}
                               <button
                                 type="button"
                                 onClick={pick}
-                                className="shrink-0 rounded-full border border-brand/30 px-3 py-1 text-xs font-medium text-brand hover:bg-brand-soft max-sm:w-full max-sm:py-1.5"
+                                className="w-full shrink-0 rounded-full border border-brand/30 px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand-soft"
                               >
                                 Choisir
                               </button>

@@ -24,6 +24,7 @@ export default function NewSeanceModal({
   bodyParts,
   createSeance,
   returnTo,
+  edit,
 }: {
   onClose: () => void;
   conditions: { id: string; name: string }[];
@@ -34,14 +35,31 @@ export default function NewSeanceModal({
   /** Fiche patient d'où vient le kiné (bouton « Créer une séance ») : il y
    *  retourne après la création pour attribuer la nouvelle séance. */
   returnTo?: string;
+  /** Mode « Modifier la séance » (Philippe, 2026-10-12 : même fenêtre que
+   *  « Nouvelle séance » / « Ajuster ») : champs et exercices pré-remplis,
+   *  `createSeance` reçoit alors l'action d'enregistrement, et la fenêtre
+   *  propose aussi la suppression. */
+  edit?: {
+    workoutId: string;
+    name: string;
+    conditionId: string | null;
+    stage: string | null;
+    durationMinutes: number | null;
+    timesPerWeek: number | null;
+    exerciseIds: string[];
+    deleteAction: (formData: FormData) => void;
+    saved?: boolean;
+    error?: string | null;
+  };
 }) {
+  const title = edit ? "Modifier la séance" : "Nouvelle séance";
   const isClient = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false,
   );
   // Ordre de clic conservé : c'est l'ordre des exercices dans la séance.
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(edit?.exerciseIds ?? []);
   // Téléphone (Philippe, 2026-10-12 : même optimisation que « Ajuster la
   // séance », plus d'espace perdu en haut) : la fenêtre prend tout l'écran et
   // se déroule en deux temps — d'abord le nom, la condition, la phase et les
@@ -86,7 +104,7 @@ export default function NewSeanceModal({
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
-        aria-label="Nouvelle séance"
+        aria-label={title}
         onClick={(e) => e.stopPropagation()}
         className="flex h-[90vh] w-full max-w-6xl flex-col rounded-2xl bg-surface shadow-sm outline-none max-sm:h-dvh max-sm:max-w-none max-sm:rounded-none"
       >
@@ -95,17 +113,18 @@ export default function NewSeanceModal({
             <input key={id} type="hidden" name="exercise_ids" value={id} />
           ))}
           {returnTo && <input type="hidden" name="return_to" value={returnTo} />}
+          {edit && <input type="hidden" name="workout_id" value={edit.workoutId} />}
 
           {/* Titre + nom, condition, phase sur UNE barre (Philippe, 2026-10-02 :
               le haut prenait près de la moitié de la fenêtre, alors que le
               plus important est la composition en dessous). */}
           <div className="flex flex-wrap items-center gap-2 border-b border-line px-6 py-3 max-sm:grid max-sm:grid-cols-2 max-sm:px-4 max-sm:py-2.5 md:flex-nowrap">
             <h2 className="mr-2 shrink-0 text-lg font-semibold text-ink max-sm:col-start-1 max-sm:row-start-1 max-sm:mr-0 max-sm:text-base">
-              <span className={hideOnAdd}>Nouvelle séance</span>
+              <span className={hideOnAdd}>{title}</span>
               {phoneTab === "add" && <span className="sm:hidden">Ajouter un exercice</span>}
             </h2>
-            <input name="name" required placeholder="Nom de la séance" aria-label="Nom de la séance" className={`min-w-0 flex-[2] max-sm:col-span-2 max-sm:h-10 max-sm:text-base ${hideOnAdd} ${fieldClass}`} />
-            <select name="condition_id" required defaultValue="" aria-label="Condition" className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
+            <input name="name" required defaultValue={edit?.name} placeholder="Nom de la séance" aria-label="Nom de la séance" className={`min-w-0 flex-[2] max-sm:col-span-2 max-sm:h-10 max-sm:text-base ${hideOnAdd} ${fieldClass}`} />
+            <select name="condition_id" required defaultValue={edit?.conditionId ?? ""} aria-label="Condition" className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
               <option value="" disabled>
                 Condition…
               </option>
@@ -115,7 +134,7 @@ export default function NewSeanceModal({
                 </option>
               ))}
             </select>
-            <select name="stage" defaultValue="" aria-label="Phase" className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
+            <select name="stage" defaultValue={edit?.stage ?? ""} aria-label="Phase" className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
               <option value="">Phase (toutes)</option>
               {stages.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -123,6 +142,19 @@ export default function NewSeanceModal({
                 </option>
               ))}
             </select>
+            {edit && (
+              <>
+                <label className={`flex shrink-0 items-center gap-1.5 text-xs text-muted ${hideOnAdd}`}>
+                  Durée
+                  <input type="number" name="duration_minutes" min={1} max={90} defaultValue={edit.durationMinutes ?? 10} aria-label="Durée en minutes" className={`w-16 max-sm:h-10 max-sm:flex-1 ${fieldClass}`} />
+                  min
+                </label>
+                <label className={`flex shrink-0 items-center gap-1.5 text-xs text-muted ${hideOnAdd}`}>
+                  <input type="number" name="times_per_week" min={1} max={14} defaultValue={edit.timesPerWeek ?? 3} aria-label="Fois par semaine" className={`w-14 max-sm:h-10 max-sm:flex-1 ${fieldClass}`} />
+                  fois / sem.
+                </label>
+              </>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -138,6 +170,10 @@ export default function NewSeanceModal({
             </button>
           </div>
 
+          {edit?.error && <p className={`mx-6 mt-3 rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger max-sm:mx-4 ${hideOnAdd}`}>{edit.error}</p>}
+          {edit?.saved && !edit.error && (
+            <p className={`mx-6 mt-3 rounded-xl bg-ok-soft px-4 py-2 text-sm font-medium text-ok max-sm:mx-4 ${hideOnAdd}`}>Séance enregistrée</p>
+          )}
           <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 max-sm:block max-sm:overflow-hidden max-sm:px-4 max-sm:py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
             <section className={`flex min-h-0 flex-col rounded-xl border border-line bg-app-bg p-4 max-sm:h-full max-sm:border-0 max-sm:bg-transparent max-sm:p-0 ${hideOnAdd}`}>
               {/* Titre « Exercices de la séance » retiré (Philippe, 2026-10-12) :
@@ -195,15 +231,30 @@ export default function NewSeanceModal({
               <Plus className="h-4 w-4 shrink-0" strokeWidth={2} />
               Ajouter un exercice
             </button>
+            {edit && (
+              // formAction : ce bouton envoie le même formulaire à l'action de
+              // suppression (un formulaire ne peut pas en contenir un autre).
+              <button
+                type="submit"
+                formAction={edit.deleteAction}
+                formNoValidate
+                onClick={(e) => {
+                  if (!window.confirm("Supprimer définitivement cette séance ?")) e.preventDefault();
+                }}
+                className="mr-auto rounded-full px-3 py-2 text-sm font-medium text-danger hover:bg-danger-soft max-sm:hidden"
+              >
+                Supprimer cette séance
+              </button>
+            )}
             <button type="button" onClick={onClose} className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg max-sm:hidden">
-              Annuler
+              {edit ? "Fermer" : "Annuler"}
             </button>
             <SubmitButton
-              pendingText="Création…"
+              pendingText={edit ? "Enregistrement…" : "Création…"}
               disabled={selected.length === 0}
               className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1 max-sm:px-2 max-sm:py-2.5 max-sm:text-[13px]"
             >
-              Créer la séance
+              {edit ? "Enregistrer" : "Créer la séance"}
             </SubmitButton>
           </div>
         </form>
