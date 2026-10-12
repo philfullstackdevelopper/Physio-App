@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
+import { isPhoneFormat } from "@/lib/phoneFormat";
 import { type BodyPart } from "@/lib/exercise/category";
 import { type InjuryStage } from "@/lib/exercise/prescription";
 import SubmitButton from "@/components/SubmitButton";
@@ -41,6 +42,14 @@ export default function NewSeanceModal({
   );
   // Ordre de clic conservé : c'est l'ordre des exercices dans la séance.
   const [selected, setSelected] = useState<string[]>([]);
+  // Téléphone (Philippe, 2026-10-12 : même optimisation que « Ajuster la
+  // séance », plus d'espace perdu en haut) : la fenêtre prend tout l'écran et
+  // se déroule en deux temps — d'abord le nom, la condition, la phase et les
+  // exercices choisis (blocs 2 par rangée) ; « Ajouter un exercice » ouvre la
+  // bibliothèque sur sa propre page ("add"), champs masqués pour lui laisser
+  // toute la hauteur.
+  const [phoneTab, setPhoneTab] = useState<"current" | "add">("current");
+  const hideOnAdd = phoneTab === "add" ? "max-sm:hidden" : "";
   const panelRef = useRef<HTMLDivElement>(null);
   const byId = new Map(exercises.map((e) => [e.id, e]));
   const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -71,7 +80,7 @@ export default function NewSeanceModal({
   // où document n'existe pas — on attend d'être dans le navigateur.
   if (!isClient) return null;
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-4 max-sm:p-0" onClick={onClose}>
       <div
         ref={panelRef}
         tabIndex={-1}
@@ -79,7 +88,7 @@ export default function NewSeanceModal({
         aria-modal="true"
         aria-label="Nouvelle séance"
         onClick={(e) => e.stopPropagation()}
-        className="flex h-[90vh] w-full max-w-6xl flex-col rounded-2xl bg-surface shadow-sm outline-none"
+        className="flex h-[90vh] w-full max-w-6xl flex-col rounded-2xl bg-surface shadow-sm outline-none max-sm:h-dvh max-sm:max-w-none max-sm:rounded-none"
       >
         <form action={createSeance} className="flex min-h-0 flex-1 flex-col">
           {selected.map((id) => (
@@ -90,10 +99,13 @@ export default function NewSeanceModal({
           {/* Titre + nom, condition, phase sur UNE barre (Philippe, 2026-10-02 :
               le haut prenait près de la moitié de la fenêtre, alors que le
               plus important est la composition en dessous). */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-line px-6 py-3 md:flex-nowrap">
-            <h2 className="mr-2 shrink-0 text-lg font-semibold text-ink">Nouvelle séance</h2>
-            <input name="name" required placeholder="Nom de la séance" aria-label="Nom de la séance" className={`min-w-0 flex-[2] ${fieldClass}`} />
-            <select name="condition_id" required defaultValue="" aria-label="Condition" className={`min-w-0 flex-1 ${fieldClass}`}>
+          <div className="flex flex-wrap items-center gap-2 border-b border-line px-6 py-3 max-sm:grid max-sm:grid-cols-2 max-sm:px-4 max-sm:py-2.5 md:flex-nowrap">
+            <h2 className="mr-2 shrink-0 text-lg font-semibold text-ink max-sm:col-start-1 max-sm:row-start-1 max-sm:mr-0 max-sm:text-base">
+              <span className={hideOnAdd}>Nouvelle séance</span>
+              {phoneTab === "add" && <span className="sm:hidden">Ajouter un exercice</span>}
+            </h2>
+            <input name="name" required placeholder="Nom de la séance" aria-label="Nom de la séance" className={`min-w-0 flex-[2] max-sm:col-span-2 max-sm:h-10 max-sm:text-base ${hideOnAdd} ${fieldClass}`} />
+            <select name="condition_id" required defaultValue="" aria-label="Condition" className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
               <option value="" disabled>
                 Condition…
               </option>
@@ -103,7 +115,7 @@ export default function NewSeanceModal({
                 </option>
               ))}
             </select>
-            <select name="stage" defaultValue="" aria-label="Phase" className={`min-w-0 flex-1 ${fieldClass}`}>
+            <select name="stage" defaultValue="" aria-label="Phase" className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
               <option value="">Phase (toutes)</option>
               {stages.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -111,13 +123,23 @@ export default function NewSeanceModal({
                 </option>
               ))}
             </select>
-            <button type="button" onClick={onClose} aria-label="Fermer" className="ml-1 shrink-0 rounded-lg p-1.5 text-muted hover:bg-app-bg hover:text-ink">
+            <button
+              type="button"
+              onClick={() => {
+                // Téléphone, page « Ajouter un exercice » : retour à la séance
+                // en cours de composition, pas fermeture de tout.
+                if (phoneTab === "add" && isPhoneFormat()) setPhoneTab("current");
+                else onClose();
+              }}
+              aria-label="Fermer"
+              className="ml-1 shrink-0 rounded-lg p-1.5 text-muted hover:bg-app-bg hover:text-ink max-sm:col-start-2 max-sm:row-start-1 max-sm:ml-0 max-sm:flex max-sm:h-9 max-sm:w-9 max-sm:items-center max-sm:justify-center max-sm:justify-self-end max-sm:rounded-full max-sm:bg-app-bg max-sm:text-ink"
+            >
               <X className="h-5 w-5" strokeWidth={1.75} />
             </button>
           </div>
 
-          <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
-            <section className="flex min-h-0 flex-col rounded-xl border border-line bg-app-bg p-4">
+          <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 max-sm:block max-sm:overflow-hidden max-sm:px-4 max-sm:py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
+            <section className={`flex min-h-0 flex-col rounded-xl border border-line bg-app-bg p-4 max-sm:h-full max-sm:border-0 max-sm:bg-transparent max-sm:p-0 ${hideOnAdd}`}>
               <div className="flex items-baseline justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted">Exercices de la séance</p>
                 <span className="text-xs text-muted">
@@ -125,9 +147,14 @@ export default function NewSeanceModal({
                 </span>
               </div>
               <p className="mt-1 text-xs text-muted">
-                {selected.length ? "Cliquez sur un exercice pour le retirer." : "Choisissez des exercices dans la bibliothèque, à droite."}
+                <span className="max-sm:hidden">
+                  {selected.length ? "Cliquez sur un exercice pour le retirer." : "Choisissez des exercices dans la bibliothèque, à droite."}
+                </span>
+                <span className="sm:hidden">
+                  {selected.length ? "Touchez un exercice pour le retirer." : "Touchez « Ajouter un exercice » pour composer la séance."}
+                </span>
               </p>
-              <ul className="mt-3 space-y-1.5 md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
+              <ul className="mt-3 space-y-1.5 max-sm:mt-2 max-sm:grid max-sm:min-h-0 max-sm:flex-1 max-sm:grid-cols-2 max-sm:content-start max-sm:gap-2 max-sm:space-y-0 max-sm:overflow-y-auto md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
                 {selected.map((id, i) => {
                   const ex = byId.get(id);
                   if (!ex) return null;
@@ -136,12 +163,12 @@ export default function NewSeanceModal({
                       <button
                         type="button"
                         onClick={() => toggle(id)}
-                        className="group flex w-full items-center gap-2.5 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-left text-sm text-ink transition-colors hover:border-danger/30"
+                        className="group flex w-full items-center gap-2.5 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-left text-sm text-ink transition-colors hover:border-danger/30 max-sm:relative max-sm:h-full max-sm:flex-col max-sm:gap-1.5 max-sm:rounded-xl max-sm:p-2.5 max-sm:text-center"
                       >
-                        <span className="w-4 shrink-0 text-xs text-muted">{i + 1}</span>
-                        <ExerciseIllustration name={ex.name} animate={false} className="h-8 w-8 shrink-0 text-brand" />
-                        <span className="flex-1 truncate">{ex.name}</span>
-                        <X className="h-4 w-4 shrink-0 text-muted group-hover:text-danger" strokeWidth={2} />
+                        <span className="w-4 shrink-0 text-xs text-muted max-sm:absolute max-sm:left-2 max-sm:top-2 max-sm:flex max-sm:h-5 max-sm:w-5 max-sm:items-center max-sm:justify-center max-sm:rounded-full max-sm:bg-app-bg max-sm:font-semibold">{i + 1}</span>
+                        <ExerciseIllustration name={ex.name} animate={false} className="h-8 w-8 shrink-0 text-brand max-sm:h-16 max-sm:w-full" />
+                        <span className="flex-1 truncate max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:flex-none max-sm:whitespace-normal max-sm:text-[13px] max-sm:leading-tight">{ex.name}</span>
+                        <X className="h-4 w-4 shrink-0 text-muted group-hover:text-danger max-sm:absolute max-sm:right-2 max-sm:top-2" strokeWidth={2} />
                       </button>
                     </li>
                   );
@@ -149,17 +176,36 @@ export default function NewSeanceModal({
               </ul>
             </section>
 
-            <ExerciseLibraryPicker exercises={exercises} bodyParts={bodyParts} selectedIds={new Set(selected)} onToggle={toggle} />
+            <div className={`sm:contents ${phoneTab === "add" ? "max-sm:grid max-sm:h-full max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[minmax(0,1fr)]" : "max-sm:hidden"}`}>
+              <ExerciseLibraryPicker exercises={exercises} bodyParts={bodyParts} selectedIds={new Set(selected)} onToggle={toggle} />
+            </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 border-t border-line px-6 py-3">
-            <button type="button" onClick={onClose} className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg">
+          {/* Téléphone, page « Ajouter un exercice » : un seul bouton. */}
+          {phoneTab === "add" && (
+            <div className="hidden border-t border-line px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2.5 max-sm:block">
+              <button type="button" onClick={() => setPhoneTab("current")} className="w-full rounded-full bg-brand py-2.5 text-sm font-semibold text-white">
+                {selected.length > 0 ? `Terminé · ${selected.length} exercice${selected.length > 1 ? "s" : ""}` : "Retour à la séance"}
+              </button>
+            </div>
+          )}
+
+          <div className={`flex items-center justify-end gap-2 border-t border-line px-6 py-3 max-sm:px-4 max-sm:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-sm:pt-2.5 ${hideOnAdd}`}>
+            <button
+              type="button"
+              onClick={() => setPhoneTab("add")}
+              className="hidden flex-1 items-center justify-center gap-1 rounded-full border border-brand/40 bg-brand-soft px-2 py-2.5 text-[13px] font-semibold text-brand max-sm:inline-flex"
+            >
+              <Plus className="h-4 w-4 shrink-0" strokeWidth={2} />
+              Ajouter un exercice
+            </button>
+            <button type="button" onClick={onClose} className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg max-sm:hidden">
               Annuler
             </button>
             <SubmitButton
               pendingText="Création…"
               disabled={selected.length === 0}
-              className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1 max-sm:px-2 max-sm:py-2.5 max-sm:text-[13px]"
             >
               Créer la séance
             </SubmitButton>
