@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { useUser, SignOutButton } from "@clerk/nextjs";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { LogOut } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import { SIGNUPS_OPEN, WAITLIST_HREF } from "@/lib/launchFlags";
@@ -31,6 +31,29 @@ export default function SiteHeader() {
   const lastY = useRef(0);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const { isLoaded, isSignedIn } = useUser();
+  const { signOut } = useClerk();
+  const [signingOut, setSigningOut] = useState(false);
+
+  // Déconnexion depuis la page d'accueil (Philippe, 2026-10-12 : « le bouton
+  // ne fonctionne pas »). Le <SignOutButton> de Clerk enchaînait sur une
+  // navigation INTERNE vers /login — or cette page a plusieurs liens /login,
+  // que Next précharge pendant qu'on est connecté : la réponse mémorisée est
+  // alors « déjà connecté → /dashboard » (proxy.ts), et la déconnexion
+  // ramenait dans l'espace, comme si rien ne s'était passé. On déconnecte,
+  // puis on RECHARGE la page pour de bon : aucune réponse en mémoire, et
+  // l'en-tête repasse à « Se connecter ».
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut({ redirectUrl: "/" });
+    } catch (e) {
+      console.error("Déconnexion :", e);
+    } finally {
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- rechargement complet VOULU : une navigation interne réutilise la réponse préchargée (voir plus haut).
+      window.location.assign("/");
+    }
+  };
 
   useEffect(() => {
     lastY.current = window.scrollY;
@@ -130,16 +153,16 @@ export default function SiteHeader() {
             )}
 
             {isLoaded && isSignedIn && (
-              <SignOutButton redirectUrl="/login">
-                <button
-                  type="button"
-                  aria-label="Se déconnecter"
-                  title="Se déconnecter"
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white/60 text-slate-500 transition active:scale-[0.97] hover:border-blue-200 hover:text-slate-800"
-                >
-                  <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                </button>
-              </SignOutButton>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                aria-label={signingOut ? "Déconnexion en cours" : "Se déconnecter"}
+                title="Se déconnecter"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white/60 text-slate-500 transition active:scale-[0.97] hover:border-blue-200 hover:text-slate-800 disabled:opacity-50"
+              >
+                <LogOut className={`h-4 w-4 shrink-0 ${signingOut ? "animate-pulse" : ""}`} strokeWidth={1.75} />
+              </button>
             )}
           </div>
         </div>
