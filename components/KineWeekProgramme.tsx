@@ -69,6 +69,7 @@ export default function KineWeekProgramme({
   workoutsById,
   patientId,
   patientFirstName,
+  patientEquipment = null,
   addableExercises,
   bodyParts,
   addableWorkouts,
@@ -84,6 +85,8 @@ export default function KineWeekProgramme({
   workoutsById: Record<string, KineWorkoutSummary>;
   patientId: string;
   patientFirstName: string;
+  /** Matériel déclaré par le patient ; null = inconnu. */
+  patientEquipment?: string[] | null;
   addableExercises: AddableExercise[];
   bodyParts: BodyPart[];
   addableWorkouts: AddableWorkout[];
@@ -449,6 +452,7 @@ export default function KineWeekProgramme({
               key={selectedWeek.startDateKey}
               patientId={patientId}
               patientFirstName={patientFirstName}
+              patientEquipment={patientEquipment}
               workout={selectedMeta.workout}
               recId={selectedMeta.assignment?.id ?? null}
               addableExercises={addableExercises}

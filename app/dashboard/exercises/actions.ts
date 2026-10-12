@@ -8,6 +8,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
 import { adminSetExerciseMedia as dbAdminSetExerciseMedia } from "@/lib/db/admin";
 import { friendlyDbError } from "@/lib/format/dbError";
+import { isExerciseEquipmentId } from "@/lib/exercise/equipment";
 
 // (Philippe, 2026-10-07 : délègue à la garde commune, qui vérifie aussi que
 // le compte kiné a été validé — avant, un kiné « pending » passait ici.)
@@ -23,13 +24,15 @@ export async function createExercise(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const instructions = String(formData.get("instructions") ?? "").trim() || null;
   const bodyPartIds = formData.getAll("body_part_ids").map(String).filter(Boolean);
+  // Matériel indispensable : on ne garde que les identifiants connus.
+  const equipment = [...new Set(formData.getAll("equipment").map(String).filter(isExerciseEquipmentId))];
   if (!name) {
     redirect(`/dashboard/exercises?error=${encodeURIComponent("Nom requis.")}`);
   }
 
   const { data: exercise, error } = await supabase
     .from("exercises")
-    .insert({ name, instructions, created_by: userId })
+    .insert({ name, instructions, equipment, created_by: userId })
     .select("id")
     .single();
   if (error) {

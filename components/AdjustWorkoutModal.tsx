@@ -10,13 +10,15 @@ import SubmitButton from "@/components/SubmitButton";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 import ExerciseLibraryPicker from "@/components/ExerciseLibraryPicker";
+import { equipmentListLabel, missingEquipment } from "@/lib/exercise/equipment";
 import { addWeeksToKey } from "@/lib/exercise/activeRecommendation";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 
 /** Choix « jusqu'à quand ? » de l'étape 2 (null = jusqu'à la prochaine séance). */
 const DURATION_CHOICES: (number | null)[] = [null, 1, 2, 3, 4, 6, 8, 12];
 
-export type ModalExercise = { id: string; name: string };
+/** `equipment` : matériel indispensable à l'exercice (exercises.equipment, migration 0065). */
+export type ModalExercise = { id: string; name: string; equipment?: string[] | null };
 export type AddableExercise = ModalExercise & { bodyPartIds: string[] };
 
 export type AddableWorkout = {
@@ -47,6 +49,7 @@ export type AddableWorkout = {
 export default function AdjustWorkoutModal({
   patientId,
   patientFirstName,
+  patientEquipment = null,
   workout,
   recId,
   addableExercises,
@@ -60,6 +63,8 @@ export default function AdjustWorkoutModal({
 }: {
   patientId: string;
   patientFirstName: string;
+  /** Matériel déclaré par le patient à l'onboarding ; null = inconnu (aucun signalement). */
+  patientEquipment?: string[] | null;
   workout: { id: string; name: string; exercises: ModalExercise[] } | null;
   /** `patient_recommended_workouts.id` for the current workout, if any — needed
    *  to unassign it and (adjust) to repoint exactly that row at the copy. */
@@ -387,6 +392,7 @@ export default function AdjustWorkoutModal({
                             >
                               <ExerciseIllustration name={ex.name} animate={false} className={`h-8 w-8 shrink-0 max-sm:h-16 max-sm:w-full ${marked ? "text-danger" : "text-brand"}`} />
                               <span className="flex-1 truncate max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:flex-none max-sm:whitespace-normal max-sm:text-[13px] max-sm:leading-tight">{ex.name}</span>
+                              {!marked && <MissingEquipmentPill required={ex.equipment} owned={patientEquipment} firstName={patientFirstName} />}
                               {marked ? (
                                 <span className="flex items-center gap-1 text-xs font-medium no-underline">À retirer <X className="h-3.5 w-3.5" strokeWidth={2} /></span>
                               ) : (
@@ -408,6 +414,7 @@ export default function AdjustWorkoutModal({
                             >
                               <ExerciseIllustration name={ex.name} animate={false} className="h-8 w-8 shrink-0 text-ok max-sm:h-16 max-sm:w-full" />
                               <span className="flex-1 truncate max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:flex-none max-sm:whitespace-normal max-sm:text-[13px] max-sm:leading-tight">{ex.name}</span>
+                              <MissingEquipmentPill required={ex.equipment} owned={patientEquipment} firstName={patientFirstName} />
                               <span className="text-xs font-medium">Ajouté</span>
                             </button>
                           </li>
@@ -423,6 +430,8 @@ export default function AdjustWorkoutModal({
                       bodyParts={bodyParts}
                       selectedIds={addIds}
                       onToggle={(id) => setAddIds((set) => toggle(set, id))}
+                      patientEquipment={patientEquipment}
+                      patientFirstName={patientFirstName}
                     />
                   </div>
                 </div>
@@ -775,5 +784,21 @@ export default function AdjustWorkoutModal({
         </div>
       , document.body)}
     </>
+  );
+}
+
+// Pastille orange « il lui manque : … » — seulement si le patient n'a pas le
+// matériel qu'exige l'exercice (Philippe, 2026-10-12). Un signal, pas un blocage.
+function MissingEquipmentPill({ required, owned, firstName }: { required?: string[] | null; owned: string[] | null; firstName: string }) {
+  const missing = missingEquipment(required, owned);
+  if (missing.length === 0) return null;
+  const label = equipmentListLabel(missing);
+  return (
+    <span
+      title={`Matériel que ${firstName} n'a pas déclaré : ${label}`}
+      className="max-w-[45%] shrink-0 truncate rounded-full bg-warn-soft px-1.5 py-0.5 text-[10px] font-medium text-warn no-underline max-sm:max-w-full"
+    >
+      {label}
+    </span>
   );
 }

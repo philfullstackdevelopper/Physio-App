@@ -57,7 +57,7 @@ export default async function SeancesPage({
   // l'éditeur de séance), sans les exercices que ce kiné a masqués.
   const [{ data: bodyParts }, { data: exerciseRows }, { data: hiddenExerciseRows }] = await Promise.all([
     supabase.from("body_parts").select("id, slug, label, position").order("position"),
-    supabase.from("exercises").select("id, name, search_keywords, exercise_body_parts(body_part_id)").order("name"),
+    supabase.from("exercises").select("id, name, equipment, search_keywords, exercise_body_parts(body_part_id)").order("name"),
     supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
   ]);
   const hiddenExerciseIds = new Set((hiddenExerciseRows ?? []).map((r) => r.exercise_id as string));
@@ -67,6 +67,7 @@ export default async function SeancesPage({
       id: ex.id as string,
       name: ex.name as string,
       searchKeywords: (ex.search_keywords as string[] | null) ?? null,
+      equipment: (ex.equipment as string[] | null) ?? [],
       bodyPartIds: ((ex.exercise_body_parts as { body_part_id: string }[] | null) ?? []).map((t) => t.body_part_id),
     }));
   const conditionName = (cid: string | null) => conditions?.find((c) => c.id === cid)?.name;

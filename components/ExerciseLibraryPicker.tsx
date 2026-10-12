@@ -1,13 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Info, Plus, Search } from "lucide-react";
+import { Check, Dumbbell, Info, Plus, Search } from "lucide-react";
 import { type BodyPart } from "@/lib/exercise/category";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 import ExerciseInfoModal from "@/components/ExerciseInfoModal";
+import { EQUIPMENT_LABELS, equipmentListLabel, missingEquipment, type EquipmentId } from "@/lib/exercise/equipment";
 
-export type PickerExercise = { id: string; name: string; bodyPartIds: string[]; searchKeywords?: string[] | null };
+export type PickerExercise = {
+  id: string;
+  name: string;
+  bodyPartIds: string[];
+  searchKeywords?: string[] | null;
+  /** Matériel indispensable (exercises.equipment, migration 0065). Vide = aucun. */
+  equipment?: string[] | null;
+};
 
 // La colonne de droite « Ajouter un exercice », partagée par les deux fenêtres
 // qui composent une séance : « Ajuster la séance » d'un patient
@@ -20,17 +28,35 @@ export type PickerExercise = { id: string; name: string; bodyPartIds: string[]; 
 // icône au-dessus du libellé, nombre d'exercices au survol ; sur téléphone la
 // ligne défile. L'état (recherche, catégorie) est local : il repart de zéro à
 // chaque ouverture de la fenêtre, qui remonte ce composant.
+//
+// Matériel (Philippe, 2026-10-12) : chaque exercice qui demande du matériel
+// porte une pastille qui le nomme. Quand le sélecteur est ouvert POUR UN
+// PATIENT (`patientEquipment` fourni — « Ajuster la séance »), la pastille
+// passe à l'orange si ce patient n'a pas ce matériel chez lui, une ligne
+// rappelle ce qu'il a déclaré, et un bouton n'affiche que les exercices
+// faisables. On signale, on ne bloque jamais : le kiné reste seul juge.
 export default function ExerciseLibraryPicker({
   exercises,
   bodyParts,
   selectedIds,
   onToggle,
+  patientEquipment = null,
+  patientFirstName,
 }: {
   exercises: PickerExercise[];
   bodyParts: BodyPart[];
   selectedIds: Set<string>;
   onToggle: (id: string) => void;
+  /** Matériel déclaré par le patient (onboarding). null = pas de patient, ou inconnu : aucun signalement. */
+  patientEquipment?: string[] | null;
+  patientFirstName?: string;
 }) {
+  const knowsEquipment = patientEquipment !== null;
+  const [feasibleOnly, setFeasibleOnly] = useState(false);
+  const ownedLabel = (patientEquipment ?? [])
+    .filter((id) => id !== "aucun")
+    .map((id) => EQUIPMENT_LABELS[id as EquipmentId] ?? id)
+    .join(", ");
   const countByBodyPart = useMemo(() => {
     const counts = new Map<string, number>();
     for (const ex of exercises) for (const bpId of ex.bodyPartIds) counts.set(bpId, (counts.get(bpId) ?? 0) + 1);
@@ -46,13 +72,16 @@ export default function ExerciseLibraryPicker({
   const [info, setInfo] = useState<{ id: string; name: string } | null>(null);
 
   const filtered = useMemo(() => {
-    if (query) {
-      return exercises.filter(
-        (ex) => ex.name.toLowerCase().includes(query) || (ex.searchKeywords ?? []).some((k) => k.toLowerCase().includes(query)),
-      );
-    }
-    return bodyPartId ? exercises.filter((ex) => ex.bodyPartIds.includes(bodyPartId)) : [];
-  }, [exercises, bodyPartId, query]);
+    const base = query
+      ? exercises.filter(
+          (ex) => ex.name.toLowerCase().includes(query) || (ex.searchKeywords ?? []).some((k) => k.toLowerCase().includes(query)),
+        )
+      : bodyPartId
+        ? exercises.filter((ex) => ex.bodyPartIds.includes(bodyPartId))
+        : [];
+    // « Faisable avec son matériel » : on retire ce pour quoi il manque quelque chose.
+    return feasibleOnly ? base.filter((ex) => missingEquipment(ex.equipment, patientEquipment).length === 0) : base;
+  }, [exercises, bodyPartId, query, feasibleOnly, patientEquipment]);
 
   return (
     <section className="flex min-h-0 min-w-0 flex-col">
@@ -72,6 +101,28 @@ export default function ExerciseLibraryPicker({
           />
         </label>
       </div>
+      {/* Matériel du patient + filtre — seulement quand on compose pour un patient. */}
+      {knowsEquipment && (
+        <div className="mt-2 flex items-center gap-2">
+          <p className="flex min-w-0 flex-1 items-center gap-1.5 text-xs text-muted" title={ownedLabel || "Aucun matériel déclaré"}>
+            <Dumbbell className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+            <span className="truncate">
+              {patientFirstName ? `Matériel de ${patientFirstName}` : "Son matériel"} : <span className="font-medium text-ink">{ownedLabel || "aucun"}</span>
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={() => setFeasibleOnly((v) => !v)}
+            aria-pressed={feasibleOnly}
+            className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+              feasibleOnly ? "border-brand bg-brand text-white" : "border-line bg-surface text-ink hover:bg-app-bg"
+            }`}
+          >
+            <span className="max-sm:hidden">Faisable avec son matériel</span>
+            <span className="sm:hidden">Faisable chez lui</span>
+          </button>
+        </div>
+      )}
       {!query && (
         <div
           style={{ gridTemplateColumns: `repeat(${bodyParts.length}, minmax(0, 1fr))` }}
@@ -102,12 +153,15 @@ export default function ExerciseLibraryPicker({
         {filtered.length === 0 && (
           <p className="text-sm text-muted">
             {query ? `Aucun exercice ne correspond à « ${q.trim()} ».` : "Aucun exercice dans cette catégorie."}
+            {feasibleOnly && " Le filtre « faisable avec son matériel » est actif."}
           </p>
         )}
         {/* Lignes compactes, sur 2 colonnes en grand écran. */}
         <div className="grid content-start gap-1.5 max-sm:grid-cols-2 max-sm:gap-2 lg:grid-cols-2">
           {filtered.map((ex) => {
             const marked = selectedIds.has(ex.id);
+            const required = equipmentListLabel(ex.equipment ?? []);
+            const missing = missingEquipment(ex.equipment, patientEquipment);
             return (
               // Deux boutons côte à côte dans la même ligne (un bouton ne peut
               // pas en contenir un autre) : la ligne ajoute/retire l'exercice,
@@ -127,6 +181,21 @@ export default function ExerciseLibraryPicker({
                 >
                   <ExerciseIllustration name={ex.name} animate={false} className={`h-7 w-7 shrink-0 max-sm:h-16 max-sm:w-full ${marked ? "text-ok" : "text-brand"}`} />
                   <span className="flex-1 truncate max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:flex-none max-sm:whitespace-normal max-sm:text-[13px] max-sm:leading-tight">{ex.name}</span>
+                  {/* Matériel indispensable : orange s'il manque à ce patient. */}
+                  {required && (
+                    <span
+                      title={
+                        missing.length > 0
+                          ? `Matériel que ${patientFirstName ?? "le patient"} n'a pas déclaré : ${equipmentListLabel(missing)}`
+                          : `Matériel nécessaire : ${required}`
+                      }
+                      className={`max-w-[45%] shrink-0 truncate rounded-full px-1.5 py-0.5 text-[10px] font-medium no-underline max-sm:max-w-full ${
+                        missing.length > 0 ? "bg-warn-soft text-warn" : "bg-app-bg text-muted"
+                      }`}
+                    >
+                      {missing.length > 0 ? equipmentListLabel(missing) : required}
+                    </span>
+                  )}
                   {marked ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Plus className="h-4 w-4 shrink-0 text-brand" strokeWidth={2} />}
                 </button>
                 <button

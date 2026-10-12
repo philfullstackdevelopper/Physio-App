@@ -196,6 +196,7 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
             workoutsById={f.workoutsById}
             patientId="p2"
             patientFirstName="Thomas"
+            patientEquipment={["tapis", "chaise", "halteres"]}
             addableExercises={f.addableExercises}
             bodyParts={f.bodyParts}
             addableWorkouts={f.addableWorkouts}

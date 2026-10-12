@@ -10,6 +10,7 @@
 // =============================================================================
 
 import { useMemo, useState } from "react";
+import { EXERCISE_EQUIPMENT_LABELS, EXERCISE_EQUIPMENT_OPTIONS } from "@/lib/exercise/equipment";
 import { MoreVertical, EyeOff, Eye, Search } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
@@ -276,6 +277,21 @@ export default function ExerciseLibraryGrid({
                   className="hidden"
                 />
                 {bp.label}
+              </label>
+            ))}
+          </div>
+
+          {/* Matériel indispensable (migration 0065) : sert à prévenir le kiné
+              quand un patient n'a pas ce matériel chez lui. */}
+          <p className="mt-4 text-xs font-medium text-muted">Matériel indispensable (laissez vide si aucun)</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {EXERCISE_EQUIPMENT_OPTIONS.map((id) => (
+              <label
+                key={id}
+                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1 text-sm text-ink transition-colors duration-150 has-[:checked]:border-brand has-[:checked]:bg-brand-soft has-[:checked]:text-brand"
+              >
+                <input type="checkbox" name="equipment" value={id} className="hidden" />
+                {EXERCISE_EQUIPMENT_LABELS[id]}
               </label>
             ))}
           </div>

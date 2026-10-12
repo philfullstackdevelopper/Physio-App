@@ -29,7 +29,7 @@ import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstru
 
 type WorkoutExercise = {
   position: number;
-  exercises: { id: string; name: string; exercise_body_parts: { body_part_id: string }[] } | null;
+  exercises: { id: string; name: string; equipment: string[] | null; exercise_body_parts: { body_part_id: string }[] } | null;
 };
 type Workout = {
   id: string; name: string; description: string | null; duration_minutes: number | null; times_per_week: number | null;
@@ -56,7 +56,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || "ce patient";
 
   const WORKOUT_FIELDS =
-    "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, patient_id, workout_exercises ( position, exercises ( id, name, exercise_body_parts ( body_part_id ) ) )";
+    "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, patient_id, workout_exercises ( position, exercises ( id, name, equipment, exercise_body_parts ( body_part_id ) ) )";
   const since30 = new Date(now.getTime() - 30 * 86_400_000).toISOString();
 
   // Tout l'historique du patient (séances + ressentis) est chargé une fois :
@@ -76,7 +76,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     supabase.from("workouts").select(WORKOUT_FIELDS).eq("created_by", user.id),
     supabase.from("workouts").select(WORKOUT_FIELDS).is("created_by", null),
     supabase.from("patient_recommended_workouts").select("id, week_start_date, week_count, workout_id, created_at").eq("patient_id", id).order("week_start_date", { ascending: false }),
-    supabase.from("exercises").select("id, name, exercise_body_parts(body_part_id)").order("name"),
+    supabase.from("exercises").select("id, name, equipment, exercise_body_parts(body_part_id)").order("name"),
     supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
     supabase.from("body_parts").select("id, slug, label, position").order("position"),
     supabase.from("patient_messages").select("id", { count: "exact", head: true }).eq("patient_id", id).eq("sender", "patient").is("read_by_instructor_at", null),
@@ -156,7 +156,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
         .sort((a, b) => a.position - b.position)
         .map((we) => we.exercises)
         .filter((e): e is NonNullable<typeof e> => !!e)
-        .map((e) => ({ id: e.id, name: e.name })),
+        .map((e) => ({ id: e.id, name: e.name, equipment: e.equipment ?? [] })),
     };
   }
   const warning = programmeWarning({
@@ -178,6 +178,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     .map((e) => ({
       id: e.id as string,
       name: e.name as string,
+      equipment: (e.equipment as string[] | null) ?? [],
       bodyPartIds: (e.exercise_body_parts ?? []).map((t) => t.body_part_id as string),
     }));
 
@@ -316,6 +317,8 @@ export default async function PatientDetailPage({ params, searchParams }: { para
         workoutsById={workoutSummaries}
         patientId={patient.id}
         patientFirstName={firstName}
+        // Matériel déclaré à l'onboarding — liste vide = pas encore renseigné (« aucun matériel » est une case à part) → null, aucun signalement.
+        patientEquipment={((profile?.equipment as string[] | null | undefined) ?? []).length > 0 ? (profile!.equipment as string[]) : null}
         addableExercises={addableExercises}
         bodyParts={bodyParts ?? []}
         addableWorkouts={addableWorkouts}
