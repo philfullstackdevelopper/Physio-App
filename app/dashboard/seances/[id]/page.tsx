@@ -38,7 +38,7 @@ export default async function SeanceEditorPage({
   const { data: bodyParts } = await supabase.from("body_parts").select("id, slug, label, position").order("position");
   const { data: exercises } = await supabase
     .from("exercises")
-    .select("id, name, instructions, search_keywords, exercise_body_parts(body_part_id)")
+    .select("id, name, instructions, equipment, search_keywords, exercise_body_parts(body_part_id)")
     .order("name");
 
   const { data: current } = await supabase
@@ -62,6 +62,7 @@ export default async function SeanceEditorPage({
       name: ex.name,
       instructions: ex.instructions,
       search_keywords: ex.search_keywords,
+      equipment: (ex.equipment as string[] | null) ?? [],
       bodyPartIds: (ex.exercise_body_parts ?? []).map((t) => t.body_part_id as string),
     }));
 

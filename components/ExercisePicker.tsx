@@ -9,6 +9,7 @@
 import { useMemo, useState } from "react";
 import { primaryBodyPart, type BodyPart } from "@/lib/exercise/category";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
+import { equipmentListLabel } from "@/lib/exercise/equipment";
 
 type Exercise = {
   id: string;
@@ -18,6 +19,8 @@ type Exercise = {
   /** Old French names this exercise was renamed or merged away from
    *  (migration 0042/0043) — searched, never displayed. */
   search_keywords: string[] | null;
+  /** Matériel indispensable (exercises.equipment, migration 0065). */
+  equipment?: string[] | null;
 };
 
 function matches(ex: Exercise, query: string) {
@@ -93,7 +96,12 @@ export default function ExercisePicker({
                         animate={false}
                         className="h-9 w-9 shrink-0 text-brand"
                       />
-                      <span className="text-sm text-ink">{ex.name}</span>
+                      <span className="min-w-0 flex-1 text-sm text-ink">{ex.name}</span>
+                      {equipmentListLabel(ex.equipment ?? []) && (
+                        <span className="shrink-0 rounded-full bg-app-bg px-1.5 py-0.5 text-[10px] font-medium text-muted">
+                          {equipmentListLabel(ex.equipment ?? [])}
+                        </span>
+                      )}
                     </label>
                   );
                 })}
