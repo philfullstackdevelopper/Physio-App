@@ -19,6 +19,7 @@ import Testimonials from "@/components/Testimonials";
 import { HandNote, Underlined } from "@/components/HandDrawn";
 import Reveal from "@/components/Reveal";
 import IntroSplash from "@/components/IntroSplash";
+import WaitlistForm from "@/components/WaitlistForm";
 
 // Textes de la landing réécrits le 2026-10-10 (Philippe : le site faisait
 // trop « IA ») : des phrases qu'un kiné dirait, des faits vérifiables, plus de
@@ -99,6 +100,15 @@ export default function Home() {
               «&nbsp;Oui oui, j&apos;ai fait mes exercices.&nbsp;»
               <br className="hidden sm:block" /> Maintenant, <Underlined>vous le voyez.</Underlined>
             </h1>
+            {/* Téléphone : le hero n'a plus de bouton (2026-10-10) — un simple
+                lien vers la liste d'attente du bas de page (2026-10-12). */}
+            <a
+              href="#liste-attente"
+              className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-700 underline-offset-4 hover:underline sm:hidden"
+            >
+              Être prévenu du lancement
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
+            </a>
             <p className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:160ms] mt-3 max-w-lg text-base leading-relaxed text-slate-600 max-sm:hidden sm:mt-5 sm:text-lg lg:short:mt-3 lg:short:text-base phone-land:mt-2 phone-land:text-sm">
               Vos patients suivent chez eux le programme que vous avez choisi, guidés pas à pas.
               Vous voyez qui l&apos;a fait, et qui a eu mal, avant le prochain rendez-vous.
@@ -253,19 +263,19 @@ export default function Home() {
 
         {/* ── Final CTA ────────────────────────────────────────── */}
         <Reveal>
-        <section className="my-24 sm:my-32 phone-land:my-12">
-          <div className="rounded-[2rem] bg-slate-900 px-8 py-14 text-center shadow-xl sm:px-14 phone-land:py-6">
+        <section id="liste-attente" className="my-24 scroll-mt-24 sm:my-32 phone-land:my-12">
+          <div className="rounded-[2rem] bg-slate-900 px-8 py-14 text-center shadow-xl max-sm:px-5 max-sm:py-10 sm:px-14 sm:short:py-6 phone-land:py-6">
             <h2 className="font-display mx-auto max-w-xl text-3xl font-semibold leading-tight text-white sm:text-4xl phone-land:text-2xl">
               Essayez avec un seul patient.
             </h2>
-            <p className="mx-auto mt-4 max-w-md leading-relaxed text-slate-300">
+            <p className="mx-auto mt-4 max-w-md leading-relaxed text-slate-300 sm:short:mt-2 sm:short:text-sm">
               Créez votre compte, composez un premier programme, invitez un patient. Vous verrez
               dès la première semaine si ça change vos consultations.
             </p>
-            <p className="mt-6 text-sm font-medium text-blue-300 phone-land:mt-3">
+            <p className="mt-6 text-sm font-medium text-blue-300 sm:short:hidden phone-land:mt-3">
               Le programme reste conçu et piloté par vous. L&apos;app ne décide rien à votre place.
             </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row phone-land:mt-4">
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:short:mt-5 phone-land:mt-4">
               <Link
                 href="/signup/kine"
                 className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-6 py-3 font-medium text-slate-900 shadow-sm transition hover:bg-slate-100 active:scale-95"
@@ -279,6 +289,15 @@ export default function Home() {
               >
                 Se connecter
               </Link>
+            </div>
+
+            {/* Liste d'attente (Philippe, 2026-10-12) : pour le visiteur — surtout
+                le kiné — qui n'est pas prêt à créer un compte aujourd'hui. */}
+            <div className="mx-auto mt-8 max-w-md border-t border-white/10 pt-6 sm:short:mt-5 sm:short:pt-4 phone-land:mt-4 phone-land:pt-3">
+              <p className="mb-3 text-sm font-medium text-white">
+                Pas encore prêt&nbsp;? Laissez votre e-mail, nous vous prévenons au lancement.
+              </p>
+              <WaitlistForm />
             </div>
           </div>
         </section>

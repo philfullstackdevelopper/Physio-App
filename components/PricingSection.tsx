@@ -313,7 +313,7 @@ function KineOffer() {
 
       </div>
 
-      <div className="mt-5 flex justify-center max-sm:mt-4 sm:short:mt-3">
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 max-sm:mt-4 sm:short:mt-3">
         <Link
           href="/signup/kine"
           className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-7 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.97]"
@@ -321,6 +321,13 @@ function KineOffer() {
           Demander un accès
           <ArrowRight className="h-4 w-4" strokeWidth={2} />
         </Link>
+        {/* Liste d'attente (bloc de fin de page) pour qui ne veut pas créer de compte tout de suite. */}
+        <a
+          href="#liste-attente"
+          className="inline-flex items-center text-sm font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
+        >
+          Me prévenir du lancement
+        </a>
       </div>
     </div>
   );

@@ -191,3 +191,19 @@ export async function testAccountMembers(appId: string): Promise<TestAccountMemb
 export async function deleteTestAccount(appId: string): Promise<void> {
   await getPool().query("select internal.admin_delete_test_account($1)", [appId]);
 }
+
+// ---------------------------------------------------------------------------
+// Liste d'attente du lancement (migration 0066). Lecture et retrait réservés à
+// l'administrateur : l'appelant doit avoir vérifié isAdminEmail().
+// ---------------------------------------------------------------------------
+
+export type WaitlistRow = { email: string; role: "kine" | "patient"; created_at: string };
+
+export async function listWaitlist(): Promise<WaitlistRow[]> {
+  const { rows } = await getPool().query<WaitlistRow>("select * from internal.admin_list_waitlist()");
+  return rows;
+}
+
+export async function deleteWaitlistEntry(email: string): Promise<void> {
+  await getPool().query("select internal.admin_delete_waitlist($1)", [email]);
+}

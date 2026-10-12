@@ -43,6 +43,12 @@ export default function ConfidentialitePage() {
               facturation, gérées par notre prestataire de paiement — nous ne stockons jamais
               de numéro de carte.
             </p>
+            <p className="mt-2">
+              <strong>Liste d&apos;attente.</strong> Si vous laissez votre adresse e-mail sur la page d&apos;accueil pour être
+              prévenu du lancement, nous conservons uniquement cette adresse et votre statut (kiné ou patient). Elle ne
+              sert qu&apos;à vous annoncer le lancement, n&apos;est transmise à personne, et est supprimée sur simple demande
+              ou au plus tard un an après le lancement.
+            </p>
           </section>
 
           <section>

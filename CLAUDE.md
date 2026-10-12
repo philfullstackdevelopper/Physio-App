@@ -14,7 +14,7 @@ The entire user interface is in French. Do not add an internationalization/trans
 
 There are three roles. Build for exactly these three — do not add extra roles (e.g. "clinic admin," "assistant") unless explicitly asked.
 
-**Admin** (the platform owner, i.e. Philippe): manages the platform itself. Built so far: approving new instructor signups from `/admin` (see migration `0023_instructor_approval.sql` — instructors default to `pending` on self-serve signup and must be approved before they can use the dashboard).
+**Admin** (the platform owner, i.e. Philippe): manages the platform itself. Built so far: approving new instructor signups from `/admin` (see migration `0023_instructor_approval.sql` — instructors default to `pending` on self-serve signup and must be approved before they can use the dashboard). Also in `/admin`: the overview/suspension of all kinés, **test accounts** (fake kiné + fake patients created in one click, migration `0064`), and the **launch waiting list** (migration `0066`): visitors leave their e-mail on the home page (`components/WaitlistForm.tsx`, block `#liste-attente`), stored in `internal.waitlist` (server-only, never exposed by PostgREST); `/admin` lists them with a « copier les adresses » button. No automatic e-mail is sent — Philippe writes to the list himself.
 
 **Instructor** (the physiotherapist / kiné): signs up, waits for admin approval, logs in, manages their own roster of patients, builds programs for patients from a shared exercise library, views patient adherence, messages their patients, and connects Stripe to get paid.
 

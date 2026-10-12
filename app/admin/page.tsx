@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { isAdminEmail } from "@/lib/admin";
 import { getPool } from "@/lib/db/pool";
-import { listAllInstructors, listTestAccounts, type TestAccountRow } from "@/lib/db/admin";
+import { listAllInstructors, listTestAccounts, listWaitlist, type TestAccountRow, type WaitlistRow } from "@/lib/db/admin";
+import Waitlist from "./Waitlist";
 import TestAccounts from "./TestAccounts";
 import { approveInstructor, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
 
@@ -41,6 +42,14 @@ export default async function AdminPage({
   // Comptes de test (migration 0064). Tant qu'elle n'est pas appliquée, la
   // fonction n'existe pas en base : la section l'indique au lieu de faire
   // tomber toute la page /admin.
+  // Liste d'attente (migration 0066) : même prudence que les comptes de test.
+  let waitlist: WaitlistRow[] | null = null;
+  try {
+    waitlist = await listWaitlist();
+  } catch (e) {
+    console.error("[admin] liste d'attente indisponible", e);
+  }
+
   let testAccounts: TestAccountRow[] | null = null;
   try {
     testAccounts = await listTestAccounts();
@@ -223,6 +232,14 @@ export default async function AdminPage({
           );
         })}
       </ul>
+
+      {waitlist ? (
+        <Waitlist rows={waitlist} />
+      ) : (
+        <p className="mt-12 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+          Liste d&apos;attente : la base n&apos;est pas encore prête (migration 0066 non appliquée).
+        </p>
+      )}
 
       {testAccounts ? (
         <TestAccounts accounts={testAccounts} />
