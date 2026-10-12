@@ -470,7 +470,7 @@ export default function AdjustWorkoutModal({
                           setPickedId(null);
                           setView("template");
                         }}
-                        className="hidden flex-1 items-center justify-center gap-1 rounded-full border border-line px-2 py-2.5 text-[13px] font-semibold text-ink max-sm:inline-flex"
+                        className="hidden flex-1 items-center justify-center gap-1 rounded-full bg-brand-dark px-2 py-2.5 text-[13px] font-semibold text-white shadow-sm max-sm:inline-flex"
                       >
                         <Repeat className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                         Changer de séance
@@ -663,7 +663,8 @@ export default function AdjustWorkoutModal({
                 </div>
               </form>
             ) : (
-              // Étape 1 : choisir la séance. Recherche + catégories sur UNE
+              // Étape 1 : choisir la séance. Téléphone (Philippe, 2026-10-12) :
+              // mêmes blocs 2 par rangée que la page « Ajouter un exercice ». Recherche + catégories sur UNE
               // ligne (pastilles qui défilent si elles débordent), liste en
               // cartes compactes jusqu'à 3 colonnes (Philippe, 2026-10-01 :
               // « pas assez de place »).
@@ -722,7 +723,7 @@ export default function AdjustWorkoutModal({
                       {templateQuery ? `Aucune séance ne correspond à « ${qTemplate} ».` : "Aucune séance dans cette catégorie."}
                     </p>
                   ) : (
-                    <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                    <ul className="grid gap-2 max-sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3">
                       {filteredWorkouts.map((w, i) => {
                         const newGroup = i === 0 || filteredWorkouts[i - 1].conditionName !== w.conditionName;
                         const pick = () => {
@@ -732,22 +733,22 @@ export default function AdjustWorkoutModal({
                         return (
                           <li key={w.id} className="contents">
                             {newGroup && (
-                              <p className={`text-xs font-semibold uppercase tracking-wide text-muted md:col-span-2 xl:col-span-3 ${i === 0 ? "" : "mt-2"}`}>
+                              <p className={`text-xs font-semibold uppercase tracking-wide text-muted max-sm:col-span-2 md:col-span-2 xl:col-span-3 ${i === 0 ? "" : "mt-2"}`}>
                                 {w.conditionName ?? "Sans condition"}
                               </p>
                             )}
-                            <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface px-2.5 py-2 transition-colors hover:border-brand/40 max-sm:py-2.5">
-                              <button type="button" onClick={pick} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-app-bg">
+                            <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface px-2.5 py-2 transition-colors hover:border-brand/40 max-sm:h-full max-sm:flex-col max-sm:items-stretch max-sm:gap-2 max-sm:p-2.5">
+                              <button type="button" onClick={pick} className="flex min-w-0 flex-1 items-center gap-2.5 text-left max-sm:flex-col max-sm:items-stretch max-sm:gap-1.5 max-sm:text-center">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-app-bg max-sm:h-16 max-sm:w-full">
                                   {w.exerciseNames[0] ? (
-                                    <ExerciseIllustration name={w.exerciseNames[0]} animate={false} className="h-7 w-7 text-brand" />
+                                    <ExerciseIllustration name={w.exerciseNames[0]} animate={false} className="h-7 w-7 text-brand max-sm:h-14 max-sm:w-full" />
                                   ) : (
                                     <Dumbbell className="h-5 w-5 text-muted" strokeWidth={1.75} />
                                   )}
                                 </span>
                                 <span className="min-w-0 flex-1">
-                                  <span className="block truncate text-sm font-semibold text-ink">{w.name}</span>
-                                  <span className="block truncate text-xs text-muted">
+                                  <span className="block truncate text-sm font-semibold text-ink max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:whitespace-normal max-sm:text-[13px] max-sm:leading-tight">{w.name}</span>
+                                  <span className="block truncate text-xs text-muted max-sm:mt-0.5 max-sm:text-[11px]">
                                     {[
                                       w.stageLabel,
                                       w.durationMinutes != null ? `${w.durationMinutes} min` : null,
@@ -767,7 +768,7 @@ export default function AdjustWorkoutModal({
                               <button
                                 type="button"
                                 onClick={pick}
-                                className="shrink-0 rounded-full border border-brand/30 px-3 py-1 text-xs font-medium text-brand hover:bg-brand-soft"
+                                className="shrink-0 rounded-full border border-brand/30 px-3 py-1 text-xs font-medium text-brand hover:bg-brand-soft max-sm:w-full max-sm:py-1.5"
                               >
                                 Choisir
                               </button>
