@@ -140,13 +140,9 @@ export default function NewSeanceModal({
 
           <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 max-sm:block max-sm:overflow-hidden max-sm:px-4 max-sm:py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
             <section className={`flex min-h-0 flex-col rounded-xl border border-line bg-app-bg p-4 max-sm:h-full max-sm:border-0 max-sm:bg-transparent max-sm:p-0 ${hideOnAdd}`}>
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted">Exercices de la séance</p>
-                <span className="text-xs text-muted">
-                  {selected.length} exercice{selected.length > 1 ? "s" : ""}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-muted">
+              {/* Titre « Exercices de la séance » retiré (Philippe, 2026-10-12) :
+                  il prenait de la place sans rien apprendre. */}
+              <p className="text-xs text-muted">
                 <span className="max-sm:hidden">
                   {selected.length ? "Cliquez sur un exercice pour le retirer." : "Choisissez des exercices dans la bibliothèque, à droite."}
                 </span>
