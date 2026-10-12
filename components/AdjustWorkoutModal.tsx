@@ -88,6 +88,10 @@ export default function AdjustWorkoutModal({
   const [pickedId, setPickedId] = useState<string | null>(null);
   // « Retirer cette séance » demande une confirmation (action destructive).
   const [confirmRemove, setConfirmRemove] = useState(false);
+  // Téléphone (Philippe, 2026-10-12 : « seulement l'info la plus importante,
+  // tout voir clairement ») : la fenêtre prend tout l'écran et n'affiche
+  // qu'UN panneau à la fois — la séance actuelle OU la bibliothèque à ajouter.
+  const [phoneTab, setPhoneTab] = useState<"current" | "add">("current");
   const firstBodyPartId = bodyParts[0]?.id ?? null;
   // Which body-part tile is selected in each picker — "Ajouter un exercice"
   // (exercises view) and "Choisir/Changer de séance" (template view) filter
@@ -102,6 +106,7 @@ export default function AdjustWorkoutModal({
   const openModal = () => {
     setView(workout ? "exercises" : "template");
     setTemplateBodyPartId(firstBodyPartId);
+    setPhoneTab("current");
     setOpen(true);
   };
 
@@ -222,11 +227,21 @@ export default function AdjustWorkoutModal({
         onClick={openModal}
         disabled={triggerDisabled}
         title={triggerDisabled ? "Aucune séance disponible — créez-en une dans Mes séances." : undefined}
-        className="inline-flex items-center rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex shrink-0 items-center rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
       >
         {/* « Ajuster / changer » : le même bouton ouvre les deux (modifier les
             exercices, ou « Changer de séance ») — Philippe, 2026-10-02. */}
-        {workout ? "Ajuster / changer la séance" : "Choisir une séance"}
+        {workout ? (
+          <>
+            <span className="max-sm:hidden">Ajuster / changer la séance</span>
+            <span className="sm:hidden">Modifier</span>
+          </>
+        ) : (
+          <>
+            <span className="max-sm:hidden">Choisir une séance</span>
+            <span className="sm:hidden">Choisir</span>
+          </>
+        )}
       </button>
 
       {/* Portail vers document.body, comme NewSeanceModal : un ancêtre avec
@@ -236,7 +251,7 @@ export default function AdjustWorkoutModal({
       {open &&
         typeof document !== "undefined" &&
         createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-4" onClick={close}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-4 max-sm:p-0" onClick={close}>
           <div
             ref={panelRef}
             tabIndex={-1}
@@ -248,17 +263,17 @@ export default function AdjustWorkoutModal({
             // les colonnes se partagent l'espace et scrollent chacune de leur
             // côté, au lieu d'une modale qui grandit puis fait scroller toute
             // la page (Philippe, 2026-09-09).
-            className="flex h-[90vh] w-full max-w-6xl flex-col rounded-2xl bg-surface shadow-sm outline-none"
+            className="flex h-[90vh] w-full max-w-6xl flex-col rounded-2xl bg-surface shadow-sm outline-none max-sm:h-dvh max-sm:max-w-none max-sm:rounded-none"
           >
             {/* Titre + précision sur UNE ligne (Philippe, 2026-10-02 : même
                 rigueur que « Nouvelle séance » — le haut ne doit pas manger la
                 place de la composition). */}
-            <div className="flex items-center justify-between gap-3 border-b border-line px-6 py-3">
-              <div className="flex min-w-0 items-baseline gap-3">
-                <h2 className="shrink-0 text-lg font-semibold text-ink">
+            <div className="flex items-center justify-between gap-3 border-b border-line px-6 py-3 max-sm:gap-2 max-sm:px-4 max-sm:py-2.5">
+              <div className="flex min-w-0 items-baseline gap-3 max-sm:flex-col max-sm:items-stretch max-sm:gap-0">
+                <h2 className="shrink-0 text-lg font-semibold text-ink max-sm:text-base">
                   {view === "exercises" && workout ? "Ajuster la séance" : workout ? "Changer de séance" : "Choisir une séance"}
                 </h2>
-                <p className="truncate text-sm text-muted">
+                <p className="truncate text-sm text-muted max-sm:text-xs">
                   {view === "exercises" && workout
                     ? `${workout.name} · pour ${patientFirstName} uniquement`
                     : `${weekLabel ?? "Cette semaine"}${workout ? ` · remplace ${workout.name}` : ""}`}
@@ -270,10 +285,11 @@ export default function AdjustWorkoutModal({
                 {view === "template" && !picked && (
                   <Link
                     href={`/dashboard/seances?nouvelle=1&retour=/dashboard/patients/${patientId}`}
-                    className="mr-1 inline-flex items-center gap-1.5 rounded-full bg-brand-dark px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand"
+                    aria-label="Créer une séance"
+                    className="mr-1 inline-flex items-center gap-1.5 rounded-full bg-brand-dark px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand max-sm:h-9 max-sm:w-9 max-sm:justify-center max-sm:p-0"
                   >
                     <Plus className="h-4 w-4" strokeWidth={2} />
-                    Créer une séance
+                    <span className="max-sm:hidden">Créer une séance</span>
                   </Link>
                 )}
                 {/* Recherche de séance dans l'en-tête (étape 1) : la ligne du
@@ -299,7 +315,7 @@ export default function AdjustWorkoutModal({
                     }}
                     // Bleu plein foncé (Philippe, 2026-10-01 : « encore plus
                     // visible, dans un bleu plus foncé »).
-                    className="inline-flex items-center gap-1.5 rounded-full bg-brand-dark px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-brand-dark px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand max-sm:hidden"
                   >
                     <Repeat className="h-4 w-4" strokeWidth={2} />
                     Changer de séance
@@ -315,7 +331,7 @@ export default function AdjustWorkoutModal({
                     Retour
                   </button>
                 )}
-                <button type="button" onClick={close} aria-label="Fermer" className="rounded-lg p-1.5 text-muted hover:bg-app-bg hover:text-ink">
+                <button type="button" onClick={close} aria-label="Fermer" className="rounded-lg p-1.5 text-muted hover:bg-app-bg hover:text-ink max-sm:flex max-sm:h-9 max-sm:w-9 max-sm:items-center max-sm:justify-center max-sm:rounded-full max-sm:bg-app-bg max-sm:text-ink">
                   <X className="h-5 w-5" strokeWidth={1.75} />
                 </button>
               </div>
@@ -331,18 +347,40 @@ export default function AdjustWorkoutModal({
 
                 {/* Sur desktop chaque colonne scrolle indépendamment (min-h-0 +
                     overflow-y-auto) ; sur mobile la grille entière scrolle. */}
-                <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
+                {/* Téléphone : deux onglets, un seul panneau visible. */}
+                <div className="mx-4 mt-3 hidden shrink-0 rounded-full bg-line/60 p-1 max-sm:flex">
+                  {(
+                    [
+                      { key: "current", label: `Séance actuelle · ${workout.exercises.length - removed + added}` },
+                      { key: "add", label: "Ajouter un exercice" },
+                    ] as const
+                  ).map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setPhoneTab(t.key)}
+                      aria-pressed={phoneTab === t.key}
+                      className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium ${phoneTab === t.key ? "bg-surface text-ink shadow-sm" : "text-muted"}`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 max-sm:block max-sm:overflow-hidden max-sm:px-4 max-sm:py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
                   {/* Séance actuelle : un panneau à part, sur fond gris, pour
                       bien la distinguer de la bibliothèque à droite. */}
-                  <section className="flex min-h-0 flex-col rounded-xl border border-line bg-app-bg p-4">
-                    <div className="flex items-baseline justify-between gap-2">
+                  <section className={`flex min-h-0 flex-col rounded-xl border border-line bg-app-bg p-4 max-sm:h-full max-sm:rounded-2xl max-sm:border-0 max-sm:p-3 ${phoneTab === "current" ? "" : "max-sm:hidden"}`}>
+                    <div className="flex items-baseline justify-between gap-2 max-sm:hidden">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted">Séance actuelle</p>
                       <span className="text-xs text-muted">
                         {workout.exercises.length} exercice{workout.exercises.length > 1 ? "s" : ""}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-muted">Cliquez sur un exercice pour le retirer.</p>
-                    <ul className="mt-3 space-y-1.5 md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
+                    <p className="mt-1 text-xs text-muted max-sm:mt-0">
+                      <span className="max-sm:hidden">Cliquez sur un exercice pour le retirer.</span>
+                      <span className="sm:hidden">Touchez un exercice pour le retirer.</span>
+                    </p>
+                    <ul className="mt-3 space-y-1.5 max-sm:mt-2 max-sm:min-h-0 max-sm:flex-1 max-sm:overflow-y-auto md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
                       {workout.exercises.map((ex) => {
                         const marked = removeIds.has(ex.id);
                         return (
@@ -350,7 +388,7 @@ export default function AdjustWorkoutModal({
                             <button
                               type="button"
                               onClick={() => setRemoveIds((s) => toggle(s, ex.id))}
-                              className={`flex w-full items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-left text-sm transition-colors ${
+                              className={`flex w-full items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-left text-sm transition-colors max-sm:rounded-xl max-sm:py-2.5 ${
                                 marked ? "border-danger/30 bg-danger-soft text-danger line-through" : "border-line bg-surface text-ink hover:border-danger/30"
                               }`}
                             >
@@ -386,16 +424,34 @@ export default function AdjustWorkoutModal({
                     </ul>
                   </section>
 
-                  <ExerciseLibraryPicker
-                    exercises={addableExercises}
-                    bodyParts={bodyParts}
-                    selectedIds={addIds}
-                    onToggle={(id) => setAddIds((set) => toggle(set, id))}
-                  />
+                  <div className={`sm:contents ${phoneTab === "add" ? "max-sm:grid max-sm:h-full max-sm:grid-rows-[minmax(0,1fr)]" : "max-sm:hidden"}`}>
+                    <ExerciseLibraryPicker
+                      exercises={addableExercises}
+                      bodyParts={bodyParts}
+                      selectedIds={addIds}
+                      onToggle={(id) => setAddIds((set) => toggle(set, id))}
+                    />
+                  </div>
                 </div>
 
-                <div className="border-t border-line px-6 py-3">
+                <div className="border-t border-line px-6 py-3 max-sm:px-4 max-sm:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-sm:pt-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2 max-sm:w-full">
+                    {/* Téléphone : « Changer de séance » descend ici (l'en-tête
+                        ne garde que le titre et la croix). */}
+                    {addableWorkouts.length > 0 && !confirmRemove && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPickedId(null);
+                          setView("template");
+                        }}
+                        className="hidden flex-1 items-center justify-center gap-1.5 rounded-full border border-line px-3 py-2 text-sm font-medium text-ink max-sm:inline-flex"
+                      >
+                        <Repeat className="h-4 w-4" strokeWidth={1.75} />
+                        Changer de séance
+                      </button>
+                    )}
                     {recId ? (
                       confirmRemove ? (
                         <div className="flex flex-wrap items-center gap-2">
@@ -422,14 +478,16 @@ export default function AdjustWorkoutModal({
                         <button
                           type="button"
                           onClick={() => setConfirmRemove(true)}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-danger/30 px-4 py-1.5 text-sm font-medium text-danger transition-colors hover:bg-danger-soft"
+                          className="inline-flex items-center gap-1.5 rounded-full border border-danger/30 px-4 py-1.5 text-sm font-medium text-danger transition-colors hover:bg-danger-soft max-sm:shrink-0 max-sm:px-3 max-sm:py-2"
                         >
                           <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-                          Retirer cette séance
+                          <span className="max-sm:hidden">Retirer cette séance</span>
+                          <span className="sm:hidden">Retirer</span>
                         </button>
                       )
                     ) : <span />}
-                    <div className="flex flex-wrap items-center gap-2">
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 max-sm:w-full">
                       {/* Compteurs et avertissement à côté des boutons plutôt
                           qu'au-dessus : une ligne de moins. */}
                       {wouldBeEmpty ? (
@@ -440,13 +498,14 @@ export default function AdjustWorkoutModal({
                           {added > 0 && <span className="rounded-full bg-ok-soft px-3 py-1 text-xs font-medium text-ok">{added} ajouté{added > 1 ? "s" : ""}</span>}
                         </>
                       )}
-                      <button type="button" onClick={close} className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg">Annuler</button>
+                      <button type="button" onClick={close} className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg max-sm:hidden">Annuler</button>
                       <SubmitButton
                         pendingText="Enregistrement…"
                         disabled={noChanges || wouldBeEmpty}
-                        className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+                        className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50 max-sm:flex-1 max-sm:py-2.5"
                       >
-                        Enregistrer les modifications
+                        <span className="max-sm:hidden">Enregistrer les modifications</span>
+                        <span className="sm:hidden">Enregistrer</span>
                       </SubmitButton>
                     </div>
                   </div>
@@ -468,18 +527,18 @@ export default function AdjustWorkoutModal({
                 <input type="hidden" name="workout_id" value={picked.id} />
                 {weekStartDate && <input type="hidden" name="week_start_date" value={weekStartDate} />}
                 {weekCount && <input type="hidden" name="week_count" value={weekCount} />}
-                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-3">
+                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-3 max-sm:px-4">
                   <button
                     type="button"
                     onClick={() => setPickedId(null)}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-muted hover:text-ink"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-muted hover:text-ink max-sm:hidden"
                   >
                     <ChevronLeft className="h-4 w-4" strokeWidth={2} />
                     Retour à la liste des séances
                   </button>
 
-                  <div className="mx-auto mt-3 grid max-w-5xl gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                    <section className="rounded-xl border border-line bg-app-bg p-4">
+                  <div className="mx-auto mt-3 grid max-w-5xl gap-5 max-sm:mt-0 max-sm:gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                    <section className="rounded-xl border border-line bg-app-bg p-4 max-sm:rounded-2xl max-sm:border-0 max-sm:p-3">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted">Séance choisie</p>
                       <p className="mt-1 text-base font-semibold text-ink">{picked.name}</p>
                       <p className="mt-0.5 text-xs text-muted">
@@ -492,8 +551,13 @@ export default function AdjustWorkoutModal({
                           .filter(Boolean)
                           .join(" · ")}
                       </p>
-                      {picked.description && <p className="mt-1 text-xs text-muted">{picked.description}</p>}
-                      <ul className="mt-3 grid grid-cols-2 gap-2">
+                      {picked.description && <p className="mt-1 text-xs text-muted max-sm:hidden">{picked.description}</p>}
+                      {/* Téléphone : le nombre d'exercices suffit, la liste
+                          illustrée prendrait tout l'écran. */}
+                      <p className="mt-1 text-xs font-medium text-ink sm:hidden">
+                        {picked.exerciseNames.length} exercice{picked.exerciseNames.length > 1 ? "s" : ""}
+                      </p>
+                      <ul className="mt-3 grid grid-cols-2 gap-2 max-sm:hidden">
                         {picked.exerciseNames.map((n, i) => (
                           <li key={`${n}-${i}`} className="flex items-center gap-2 rounded-lg bg-surface p-1.5">
                             <ExerciseIllustration name={n} animate={false} className="h-9 w-9 shrink-0 text-brand" />
@@ -551,7 +615,7 @@ export default function AdjustWorkoutModal({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 border-t border-line px-6 py-3">
+                <div className="flex items-center justify-end gap-2 border-t border-line px-6 py-3 max-sm:px-4 max-sm:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-sm:pt-2.5">
                   <button
                     type="button"
                     onClick={() => setPickedId(null)}
@@ -559,7 +623,7 @@ export default function AdjustWorkoutModal({
                   >
                     Retour
                   </button>
-                  <button type="submit" className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
+                  <button type="submit" className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-dark max-sm:flex-1 max-sm:py-2.5">
                     Appliquer la séance
                   </button>
                 </div>
@@ -570,8 +634,21 @@ export default function AdjustWorkoutModal({
               // cartes compactes jusqu'à 3 colonnes (Philippe, 2026-10-01 :
               // « pas assez de place »).
               <div className="flex min-h-0 flex-1 flex-col">
+                {/* Téléphone : la recherche (dans l'en-tête sur ordinateur) passe ici. */}
                 {addableWorkouts.length > 3 && (
-                  <div className="flex items-center border-b border-line px-6 py-2">
+                  <label className="relative mx-4 mt-3 block shrink-0 md:hidden">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.75} />
+                    <input
+                      type="search"
+                      value={qTemplate}
+                      onChange={(e) => setQTemplate(e.target.value)}
+                      placeholder="Rechercher une séance…"
+                      className="h-10 w-full rounded-xl border border-line bg-surface pl-9 pr-3 text-base text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
+                    />
+                  </label>
+                )}
+                {addableWorkouts.length > 3 && (
+                  <div className="flex items-center border-b border-line px-6 py-2 max-sm:px-4">
                     {/* Une case par catégorie, toutes de même largeur sur une seule ligne
                         (le libellé passe sur 2 lignes si besoin) ; sur
                         téléphone, la ligne défile. */}
@@ -603,7 +680,7 @@ export default function AdjustWorkoutModal({
                     </div>
                   </div>
                 )}
-                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 max-sm:px-4 max-sm:py-3">
                   {addableWorkouts.length === 0 ? (
                     <p className="text-sm text-muted">Aucune séance disponible — créez-en une dans Mes séances.</p>
                   ) : filteredWorkouts.length === 0 ? (
@@ -625,7 +702,7 @@ export default function AdjustWorkoutModal({
                                 {w.conditionName ?? "Sans condition"}
                               </p>
                             )}
-                            <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface px-2.5 py-2 transition-colors hover:border-brand/40">
+                            <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface px-2.5 py-2 transition-colors hover:border-brand/40 max-sm:py-2.5">
                               <button type="button" onClick={pick} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
                                 <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-app-bg">
                                   {w.exerciseNames[0] ? (
@@ -649,7 +726,7 @@ export default function AdjustWorkoutModal({
                                 </span>
                               </button>
                               {w.editHref && (
-                                <Link href={w.editHref} className="shrink-0 text-xs font-medium text-muted underline underline-offset-2 hover:text-brand">
+                                <Link href={w.editHref} className="shrink-0 text-xs font-medium text-muted underline underline-offset-2 hover:text-brand max-sm:hidden">
                                   Modifier
                                 </Link>
                               )}

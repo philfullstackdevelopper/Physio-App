@@ -416,7 +416,7 @@ export default function KineWeekProgramme({
           <div className="flex flex-wrap items-center gap-3 max-sm:w-full max-sm:flex-nowrap max-sm:justify-between max-sm:rounded-xl max-sm:bg-app-bg max-sm:px-3 max-sm:py-2">
             <div className="text-right max-sm:min-w-0 max-sm:text-left">
               <p className="text-xs font-medium text-muted">Séance cette semaine</p>
-              <p className={`text-sm ${selectedMeta.workout ? "font-semibold text-ink" : "italic text-muted"}`}>
+              <p className={`text-sm max-sm:truncate ${selectedMeta.workout ? "font-semibold text-ink" : "italic text-muted"}`}>
                 {selectedMeta.workout ? selectedMeta.workout.name : "Aucune séance"}
                 {selectedMeta.workout && selectedMeta.assignment?.weekCount ? (
                   <span className="ml-1 text-xs font-normal text-muted">

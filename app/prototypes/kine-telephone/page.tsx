@@ -197,7 +197,7 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
             patientId="p2"
             patientFirstName="Thomas"
             addableExercises={f.addableExercises}
-            bodyParts={[]}
+            bodyParts={f.bodyParts}
             addableWorkouts={f.addableWorkouts}
             adjustAction={noopVoid}
             assignAction={noopVoid}

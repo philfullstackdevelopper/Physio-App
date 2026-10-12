@@ -97,8 +97,12 @@ export function mockFiche(now = new Date()) {
     dayDetails,
     assignments: [{ id: "r1", workoutId: "w1", weekStartDate: weeks[0].startDateKey, weekCount: null }],
     workoutsById: { w1: { id: "w1", name: "Genou — renforcement doux", exercises } },
-    addableExercises: [{ id: "e5", name: "Assisted Partial Squat", bodyPartIds: [] }],
-    addableWorkouts: [],
+    bodyParts: [["genou", "Genou / jambe"], ["dos", "Dos / lombaires"], ["epaule", "Épaule"], ["hanche", "Hanche / fessiers"]].map(([slug, label], i) => ({ id: `bp-${slug}`, slug, label, position: i })),
+    addableExercises: ["Assisted Partial Squat", "Isometric Wall Sit (60 Degrees)", "Protected Squat (Quadriceps)", "Mini Wall Sit (Shallow)", "Light Closed-Chain Quad Strengthening", "Controlled Mini-Squat (Knee Arthritis)"].map((name, i) => ({ id: `a${i}`, name, bodyPartIds: [i % 2 ? "bp-hanche" : "bp-genou"] })),
+    addableWorkouts: [
+      ["Genou — phase 1", "Prothèse de genou", "bp-genou"], ["Genou — phase 2", "Prothèse de genou", "bp-genou"], ["Genou — retour au sport", "Prothèse de genou", "bp-genou"],
+      ["Lombaires — mobilité du matin", "Lombalgie chronique", "bp-dos"], ["Lombaires — gainage doux", "Lombalgie chronique", "bp-dos"], ["Épaule — retour au geste", "Épaule douloureuse", "bp-epaule"],
+    ].map(([name, conditionName, bp], i) => ({ id: `aw${i}`, name, description: "Renforcement progressif, sans douleur.", durationMinutes: 20, timesPerWeek: 3, stageLabel: "Phase " + ((i % 3) + 1), conditionName, editHref: i === 0 ? "/dashboard/seances/x" : null, exerciseNames: exercises.map((e) => e.name), bodyPartIds: [bp] })),
     stats: {
       painLatest: 7,
       painPrevious: 6,

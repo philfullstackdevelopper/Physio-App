@@ -60,7 +60,7 @@ export default function ExerciseLibraryPicker({
           basses : la liste d'exercices récupère la hauteur (Philippe,
           2026-10-02 : « encore plus de place pour choisir »). */}
       <div className="flex items-center gap-3">
-        <p className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted">Ajouter un exercice</p>
+        <p className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted max-sm:hidden">Ajouter un exercice</p>
         <label className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.75} />
           <input
@@ -98,7 +98,7 @@ export default function ExerciseLibraryPicker({
           })}
         </div>
       )}
-      <div className="mt-2 max-h-80 overflow-y-auto pr-1 md:min-h-0 md:max-h-none md:flex-1">
+      <div className="mt-2 max-h-80 overflow-y-auto pr-1 max-sm:max-h-none max-sm:min-h-0 max-sm:flex-1 md:min-h-0 md:max-h-none md:flex-1">
         {filtered.length === 0 && (
           <p className="text-sm text-muted">
             {query ? `Aucun exercice ne correspond à « ${q.trim()} ».` : "Aucun exercice dans cette catégorie."}
