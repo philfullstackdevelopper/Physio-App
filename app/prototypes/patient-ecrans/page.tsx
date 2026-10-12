@@ -4,7 +4,7 @@
 // composants (ProgrammeView, WorkoutSession) dans la même coquille que
 // app/patient/layout.tsx. Aucune donnée réelle, aucune requête. Pas lié
 // depuis l'appli.
-//   ?ecran=programme | seance | historique | seance-du-jour | changer-offre | informations | historique-detail | onboarding | progres | compte | abonnement | cadenas
+//   ?ecran=programme | seance | historique | seance-du-jour | changer-offre | informations | historique-detail | onboarding | progres | compte | abonnement | cadenas | cabinet (formulaire kiné de secours)
 
 import PatientNav from "@/components/PatientNav";
 import ProgrammeView, { type ProgrammeWorkout } from "@/app/patient/programme/ProgrammeView";
@@ -23,6 +23,7 @@ import AbonnementView from "@/app/patient/abonnement/AbonnementView";
 import CompteView from "@/app/patient/compte/CompteView";
 import PatientLockScreen from "@/components/PatientLockScreen";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
+import SignupOnboardingView from "@/app/signup/onboarding/SignupOnboardingView";
 import SeanceDuJourView from "@/app/patient/seance-du-jour/SeanceDuJourView";
 
 export const metadata = { title: "Aperçu écrans patient", robots: { index: false } };
@@ -73,6 +74,9 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
         openBillingPortal={noop}
       />
     );
+  }
+  if (ecran === "cabinet") {
+    return <SignupOnboardingView defaults={{ cabinet_name: null, cabinet_address: null, phone: null, rpps_number: null, siret: null }} action={noop} />;
   }
   if (ecran === "cadenas") return <PatientLockScreen reason="payment_failed" firstName="Léa" kineName="Philippe Maupain" />;
 

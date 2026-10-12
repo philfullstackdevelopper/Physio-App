@@ -19,15 +19,18 @@ const ACCOUNTS: TestAccountRow[] = [
 
 export default function AdminTestAccountsPrototype() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
+    // Même coquille que app/admin/layout.tsx : en-tête fixe, liste qui défile.
+    <div className="flex h-dvh flex-col bg-slate-50">
+      <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 py-4 max-sm:px-4 max-sm:py-3 short:py-2.5">
         <span className="flex items-center gap-2 font-display text-lg font-semibold text-slate-900">
           <ShieldCheck className="h-5 w-5 text-blue-600" strokeWidth={1.75} />
           EasyPhysio — Admin
         </span>
       </header>
-      <div className="mx-auto max-w-3xl p-6 sm:p-8">
-        <TestAccounts accounts={ACCOUNTS} />
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="mx-auto max-w-3xl p-6 max-sm:p-4 sm:p-8 short:sm:py-5">
+          <TestAccounts accounts={ACCOUNTS} />
+        </div>
       </div>
     </div>
   );
