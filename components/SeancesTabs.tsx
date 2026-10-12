@@ -487,7 +487,9 @@ export default function SeancesTabs({
             }`}
           >
             Toutes
-            <span className={zoneId === null ? "text-brand/70" : "text-muted"}>{zoneCounts.total}</span>
+            {/* Téléphone (Philippe, 2026-10-12) : même tuile que dans « Ajuster
+                la séance » — pas de compteur, il allongeait la tuile. */}
+            <span className={`max-sm:hidden ${zoneId === null ? "text-brand/70" : "text-muted"}`}>{zoneCounts.total}</span>
           </button>
           {zones.map((bp) => {
             const active = bp.id === zoneId;
@@ -505,8 +507,8 @@ export default function SeancesTabs({
                 }`}
               >
                 <BodyPartIllustration slug={bp.slug} className="h-5 w-5 max-sm:h-11 max-sm:w-11 md:h-8 md:w-8" active={active} />
-                {bp.label}
-                <span className={active ? "text-brand/70" : "text-muted"}>{zoneCounts.counts.get(bp.id)}</span>
+                <span className="max-sm:line-clamp-2">{bp.label}</span>
+                <span className={`max-sm:hidden ${active ? "text-brand/70" : "text-muted"}`}>{zoneCounts.counts.get(bp.id)}</span>
               </button>
             );
           })}
