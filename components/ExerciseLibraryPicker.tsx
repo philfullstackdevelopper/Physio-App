@@ -105,7 +105,7 @@ export default function ExerciseLibraryPicker({
           </p>
         )}
         {/* Lignes compactes, sur 2 colonnes en grand écran. */}
-        <div className="grid content-start gap-1.5 lg:grid-cols-2">
+        <div className="grid content-start gap-1.5 max-sm:grid-cols-2 max-sm:gap-2 lg:grid-cols-2">
           {filtered.map((ex) => {
             const marked = selectedIds.has(ex.id);
             return (
@@ -114,7 +114,7 @@ export default function ExerciseLibraryPicker({
               // le petit (i) ouvre sa démonstration (Philippe, 2026-10-10).
               <div
                 key={ex.id}
-                className={`flex w-full min-w-0 items-center rounded-lg border text-sm transition-colors ${
+                className={`flex w-full min-w-0 items-center rounded-lg border text-sm transition-colors max-sm:relative max-sm:rounded-xl ${
                   marked ? "border-ok/30 bg-ok-soft text-ok" : "border-line bg-surface text-ink hover:border-brand/40 hover:bg-app-bg"
                 }`}
               >
@@ -123,10 +123,10 @@ export default function ExerciseLibraryPicker({
                   onClick={() => onToggle(ex.id)}
                   title={ex.name}
                   aria-pressed={marked}
-                  className="flex min-w-0 flex-1 items-center gap-2 rounded-l-lg py-1 pl-2 pr-1 text-left"
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded-l-lg py-1 pl-2 pr-1 text-left max-sm:flex-col max-sm:gap-1.5 max-sm:rounded-xl max-sm:p-2.5 max-sm:text-center"
                 >
-                  <ExerciseIllustration name={ex.name} animate={false} className={`h-7 w-7 shrink-0 ${marked ? "text-ok" : "text-brand"}`} />
-                  <span className="flex-1 truncate">{ex.name}</span>
+                  <ExerciseIllustration name={ex.name} animate={false} className={`h-7 w-7 shrink-0 max-sm:h-16 max-sm:w-full ${marked ? "text-ok" : "text-brand"}`} />
+                  <span className="flex-1 truncate max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:flex-none max-sm:whitespace-normal max-sm:text-[13px] max-sm:leading-tight">{ex.name}</span>
                   {marked ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Plus className="h-4 w-4 shrink-0 text-brand" strokeWidth={2} />}
                 </button>
                 <button
@@ -134,7 +134,7 @@ export default function ExerciseLibraryPicker({
                   onClick={() => setInfo({ id: ex.id, name: ex.name })}
                   aria-label={`Voir la démonstration : ${ex.name}`}
                   title="Voir la démonstration"
-                  className="mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                  className="mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand max-sm:absolute max-sm:right-1 max-sm:top-1 max-sm:mr-0 max-sm:h-8 max-sm:w-8"
                 >
                   <Info className="h-4 w-4" strokeWidth={1.75} />
                 </button>

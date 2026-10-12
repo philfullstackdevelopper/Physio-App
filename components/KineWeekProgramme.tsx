@@ -373,18 +373,31 @@ export default function KineWeekProgramme({
   const assignmentStartWeek = startedWeekNumber ?? selectedWeek.weekNumber;
 
   return (
-    <div className="w-full max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col">
+    // data-week-open : sur téléphone, globals.css masque alors la barre
+    // Douleur / Adhérence / Dernière de la fiche (data-hide-when-week-open) —
+    // la semaine prend presque tout l'écran et les 7 jours respirent
+    // (Philippe, 2026-10-12).
+    <div data-week-open="" className="w-full max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col">
       <section
         style={{ viewTransitionName: `kine-week-${selectedWeek.weekNumber}` } as VTStyle}
-        className="rounded-2xl border border-line bg-surface p-5 shadow-sm max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col max-sm:border-0 max-sm:p-4 max-sm:shadow-soft"
+        className="rounded-2xl border border-line bg-surface p-5 shadow-sm max-sm:relative max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col max-sm:border-0 max-sm:p-3 max-sm:shadow-soft"
       >
-        <button type="button" onClick={closeWeek} className="flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink">
+        {/* Téléphone : en-tête de la semaine sur UNE ligne — flèche retour
+            ronde à gauche, « ‹ Semaine N › » puis les dates à droite — pour
+            laisser la hauteur aux 7 jours (Philippe, 2026-10-12 : « on ne
+            voit même pas les jours, ils sont tous comprimés »). */}
+        <button
+          type="button"
+          onClick={closeWeek}
+          aria-label="Toutes les semaines"
+          className="flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink max-sm:absolute max-sm:left-3 max-sm:top-3 max-sm:h-9 max-sm:w-9 max-sm:justify-center max-sm:rounded-full max-sm:bg-app-bg max-sm:text-ink"
+        >
           <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-          Toutes les semaines
+          <span className="max-sm:hidden">Toutes les semaines</span>
         </button>
 
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-4 max-sm:mt-2 max-sm:gap-2">
-          <div>
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-4 max-sm:mt-0 max-sm:gap-2">
+          <div className="max-sm:flex max-sm:h-9 max-sm:w-full max-sm:items-center max-sm:justify-between max-sm:gap-2 max-sm:pl-11">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -406,7 +419,7 @@ export default function KineWeekProgramme({
                 <ChevronRight className="h-4 w-4" strokeWidth={2} />
               </button>
             </div>
-            <p className="text-sm text-muted">{selectedWeek.rangeLabel}</p>
+            <p className="text-sm text-muted max-sm:truncate max-sm:text-xs">{selectedWeek.rangeLabel}</p>
           </div>
 
           {/* Séance effective cette semaine + le bouton pour la changer À
@@ -458,7 +471,7 @@ export default function KineWeekProgramme({
             (WeekProgramme) — même couleur que la flèche du jour sur
             ordinateur (pire ressenti : rouge douleur, jaune à surveiller,
             vert fait). Les 7 lignes se partagent la hauteur restante. */}
-        <ol className="relative mt-3 flex min-h-0 flex-1 flex-col sm:hidden">
+        <ol className="relative mt-3 flex min-h-0 flex-1 flex-col max-sm:short:mt-2 sm:hidden">
           <span aria-hidden className="absolute bottom-5 left-[15px] top-5 w-0.5 bg-line" />
           {days.map((d) => {
             const key = localDateKey(d.date);
@@ -505,7 +518,7 @@ export default function KineWeekProgramme({
                       <Circle className="h-2.5 w-2.5 fill-current" strokeWidth={0} />
                     )}
                   </span>
-                  <span className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 ${row}`}>
+                  <span className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 max-sm:short:py-1.5 ${row}`}>
                     <span className="flex min-w-0 items-baseline gap-2">
                       <span className="text-base font-semibold capitalize">{d.dayLabel}</span>
                       <span className="truncate text-sm opacity-80">{d.dateLabel}</span>

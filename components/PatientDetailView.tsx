@@ -65,7 +65,7 @@ export default function PatientDetailView({
     <main className="min-h-screen max-sm:flex max-sm:h-[calc(100dvh-var(--phone-chrome))] max-sm:min-h-0 max-sm:flex-col">
       {/* max-w-7xl comme la liste patients (Philippe, 2026-09-09 : « prendre
           toute la place ») — la frise a besoin de largeur. */}
-      <div className="mx-auto max-w-7xl px-6 py-5 max-sm:flex max-sm:min-h-0 max-sm:w-full max-sm:flex-1 max-sm:flex-col max-sm:px-4 max-sm:pb-3 max-sm:pt-1 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-7xl px-6 py-5 max-sm:flex max-sm:min-h-0 max-sm:w-full max-sm:flex-1 max-sm:flex-col max-sm:px-4 max-sm:pb-3 max-sm:pt-1 sm:px-8 sm:py-6 short:sm:py-4">
         <Link href="/dashboard/patients" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink max-sm:hidden"><ArrowLeft className="h-4 w-4" strokeWidth={1.75} />Retour à la liste</Link>
         {/* En-tête épuré (Philippe, 2026-10-01 : « trop d'information ») :
             le nom, les alertes et « Gérer ». Condition, profil déclaré et
@@ -99,7 +99,7 @@ export default function PatientDetailView({
             plutôt que trois grandes cases, pour que la frise tienne à l'écran
             sans scroller (Philippe, 2026-09-29). Téléphone : trois cases côte
             à côte. */}
-        <div className="mt-4 grid divide-y divide-line rounded-xl border border-line bg-surface max-sm:mt-3 max-sm:shrink-0 max-sm:grid-cols-3 max-sm:divide-x max-sm:divide-y-0 max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-soft sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <div data-hide-when-week-open="" className="mt-4 grid divide-y divide-line rounded-xl border border-line bg-surface max-sm:mt-3 max-sm:shrink-0 max-sm:grid-cols-3 max-sm:divide-x max-sm:divide-y-0 max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-soft sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className={STAT_CELL}>
             <p className="text-xs font-medium text-muted">Douleur</p>
             <p className={`text-lg font-semibold tabular-nums ${s.painLatest !== null && s.painLatest >= 6 ? "text-danger" : "text-ink"}`}>{s.painLatest !== null ? `${s.painLatest}/10` : "—"}</p>
@@ -125,7 +125,7 @@ export default function PatientDetailView({
             DANS la carte « Cette semaine » de la frise (Philippe, 2026-09-09,
             deuxième retour : « mets-les sur la frise, qu'elle grossisse ») —
             plus de section séparée à faire défiler pour les voir. */}
-        <div className="mt-5 w-full min-w-0 max-sm:mt-4 max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col">{programme}</div>
+        <div className="mt-5 w-full min-w-0 short:sm:mt-4 max-sm:mt-4 max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col">{programme}</div>
       </div>
     </main>
   );
