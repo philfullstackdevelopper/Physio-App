@@ -186,7 +186,7 @@ export default function NewSeanceModal({
                   {selected.length ? "Touchez un exercice pour le retirer." : "Touchez « Ajouter un exercice » pour composer la séance."}
                 </span>
               </p>
-              <ul className="mt-3 space-y-1.5 max-sm:mt-2 max-sm:grid max-sm:min-h-0 max-sm:flex-1 max-sm:grid-cols-2 max-sm:content-start max-sm:gap-2 max-sm:space-y-0 max-sm:overflow-y-auto md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
+              <ul className="mt-3 grid grid-cols-2 content-start gap-2 max-sm:mt-2 max-sm:min-h-0 max-sm:flex-1 max-sm:overflow-y-auto md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
                 {selected.map((id, i) => {
                   const ex = byId.get(id);
                   if (!ex) return null;
@@ -195,12 +195,12 @@ export default function NewSeanceModal({
                       <button
                         type="button"
                         onClick={() => toggle(id)}
-                        className="group flex w-full items-center gap-2.5 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-left text-sm text-ink transition-colors hover:border-danger/30 max-sm:relative max-sm:h-full max-sm:flex-col max-sm:gap-1.5 max-sm:rounded-xl max-sm:p-2.5 max-sm:text-center"
+                        className="group relative flex h-full w-full flex-col items-center gap-1.5 rounded-xl border border-line bg-surface p-2.5 text-center text-sm text-ink transition-colors hover:border-danger/30"
                       >
-                        <span className="w-4 shrink-0 text-xs text-muted max-sm:absolute max-sm:left-2 max-sm:top-2 max-sm:flex max-sm:h-5 max-sm:w-5 max-sm:items-center max-sm:justify-center max-sm:rounded-full max-sm:bg-app-bg max-sm:font-semibold">{i + 1}</span>
-                        <ExerciseIllustration name={ex.name} animate={false} className="h-8 w-8 shrink-0 text-brand max-sm:h-16 max-sm:w-full" />
-                        <span className="flex-1 truncate max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:flex-none max-sm:whitespace-normal max-sm:text-[13px] max-sm:leading-tight">{ex.name}</span>
-                        <X className="h-4 w-4 shrink-0 text-muted group-hover:text-danger max-sm:absolute max-sm:right-2 max-sm:top-2" strokeWidth={2} />
+                        <span className="absolute left-2 top-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-app-bg text-xs font-semibold text-muted">{i + 1}</span>
+                        <ExerciseIllustration name={ex.name} animate={false} className="h-16 w-full shrink-0 text-brand md:h-20" />
+                        <span className="line-clamp-2 min-h-[2.5em] text-[13px] leading-tight">{ex.name}</span>
+                        <X className="absolute right-2 top-2 h-4 w-4 shrink-0 text-muted group-hover:text-danger" strokeWidth={2} />
                       </button>
                     </li>
                   );

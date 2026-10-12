@@ -378,7 +378,7 @@ export default function AdjustWorkoutModal({
                       <span className="max-sm:hidden">Cliquez sur un exercice pour le retirer.</span>
                       <span className="sm:hidden">Touchez un exercice pour le retirer.</span>
                     </p>
-                    <ul className="mt-3 space-y-1.5 max-sm:mt-2 max-sm:grid max-sm:min-h-0 max-sm:flex-1 max-sm:grid-cols-2 max-sm:content-start max-sm:gap-2 max-sm:space-y-0 max-sm:overflow-y-auto md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
+                    <ul className="mt-3 grid grid-cols-2 content-start gap-2 max-sm:mt-2 max-sm:min-h-0 max-sm:flex-1 max-sm:overflow-y-auto md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
                       {workout.exercises.map((ex) => {
                         const marked = removeIds.has(ex.id);
                         return (
@@ -386,12 +386,12 @@ export default function AdjustWorkoutModal({
                             <button
                               type="button"
                               onClick={() => setRemoveIds((s) => toggle(s, ex.id))}
-                              className={`flex w-full items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-left text-sm transition-colors max-sm:h-full max-sm:flex-col max-sm:gap-1.5 max-sm:rounded-xl max-sm:p-2.5 max-sm:text-center ${
+                              className={`flex h-full w-full flex-col items-center gap-1.5 rounded-xl border p-2.5 text-center text-sm transition-colors ${
                                 marked ? "border-danger/30 bg-danger-soft text-danger line-through" : "border-line bg-surface text-ink hover:border-danger/30"
                               }`}
                             >
-                              <ExerciseIllustration name={ex.name} animate={false} className={`h-8 w-8 shrink-0 max-sm:h-16 max-sm:w-full ${marked ? "text-danger" : "text-brand"}`} />
-                              <span className="flex-1 truncate max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:flex-none max-sm:whitespace-normal max-sm:text-[13px] max-sm:leading-tight">{ex.name}</span>
+                              <ExerciseIllustration name={ex.name} animate={false} className={`h-16 w-full shrink-0 md:h-20 ${marked ? "text-danger" : "text-brand"}`} />
+                              <span className="line-clamp-2 min-h-[2.5em] text-[13px] leading-tight">{ex.name}</span>
                               {!marked && <MissingEquipmentPill required={ex.equipment} owned={patientEquipment} firstName={patientFirstName} />}
                               {marked ? (
                                 <span className="flex items-center gap-1 text-xs font-medium no-underline">À retirer <X className="h-3.5 w-3.5" strokeWidth={2} /></span>
@@ -410,17 +410,17 @@ export default function AdjustWorkoutModal({
                             <button
                               type="button"
                               onClick={() => setAddIds((s) => toggle(s, id))}
-                              className="flex w-full items-center gap-2.5 rounded-lg border border-ok/30 bg-ok-soft px-2.5 py-1.5 text-left text-sm text-ok transition-colors max-sm:h-full max-sm:flex-col max-sm:gap-1.5 max-sm:rounded-xl max-sm:p-2.5 max-sm:text-center"
+                              className="flex h-full w-full flex-col items-center gap-1.5 rounded-xl border border-ok/30 bg-ok-soft p-2.5 text-center text-sm text-ok transition-colors"
                             >
-                              <ExerciseIllustration name={ex.name} animate={false} className="h-8 w-8 shrink-0 text-ok max-sm:h-16 max-sm:w-full" />
-                              <span className="flex-1 truncate max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:flex-none max-sm:whitespace-normal max-sm:text-[13px] max-sm:leading-tight">{ex.name}</span>
+                              <ExerciseIllustration name={ex.name} animate={false} className="h-16 w-full shrink-0 text-ok md:h-20" />
+                              <span className="line-clamp-2 min-h-[2.5em] text-[13px] leading-tight">{ex.name}</span>
                               <MissingEquipmentPill required={ex.equipment} owned={patientEquipment} firstName={patientFirstName} />
                               <span className="text-xs font-medium">Ajouté</span>
                             </button>
                           </li>
                         );
                       })}
-                      {workout.exercises.length === 0 && addIds.size === 0 && <li className="text-sm text-muted max-sm:col-span-2">Cette séance est vide.</li>}
+                      {workout.exercises.length === 0 && addIds.size === 0 && <li className="col-span-2 text-sm text-muted">Cette séance est vide.</li>}
                     </ul>
                   </section>
 
@@ -800,7 +800,7 @@ function MissingEquipmentPill({ required, owned, firstName }: { required?: strin
   return (
     <span
       title={`Matériel que ${firstName} n'a pas déclaré : ${label}`}
-      className="max-w-[45%] shrink-0 truncate rounded-full bg-warn-soft px-1.5 py-0.5 text-[10px] font-medium text-warn no-underline max-sm:max-w-full"
+      className="max-w-full shrink-0 truncate rounded-full bg-warn-soft px-1.5 py-0.5 text-[10px] font-medium text-warn no-underline"
     >
       {label}
     </span>
