@@ -417,7 +417,7 @@ export default function AdjustWorkoutModal({
                     </ul>
                   </section>
 
-                  <div className={`sm:contents ${phoneTab === "add" ? "max-sm:grid max-sm:h-full max-sm:grid-rows-[minmax(0,1fr)]" : "max-sm:hidden"}`}>
+                  <div className={`sm:contents ${phoneTab === "add" ? "max-sm:grid max-sm:h-full max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[minmax(0,1fr)]" : "max-sm:hidden"}`}>
                     <ExerciseLibraryPicker
                       exercises={addableExercises}
                       bodyParts={bodyParts}
@@ -679,7 +679,7 @@ export default function AdjustWorkoutModal({
                         téléphone, la ligne défile. */}
                     <div
                       style={{ gridTemplateColumns: `repeat(${bodyParts.length}, minmax(0, 1fr))` }}
-                      className={`flex min-w-0 flex-1 gap-1.5 overflow-x-auto md:grid md:overflow-visible ${templateQuery ? "opacity-40" : ""}`}
+                      className={`flex min-w-0 flex-1 gap-1.5 overflow-x-auto max-sm:-mx-4 max-sm:gap-2 max-sm:px-4 max-sm:[scrollbar-width:none] md:grid md:overflow-visible ${templateQuery ? "opacity-40" : ""}`}
                     >
                       {bodyParts.map((bp) => {
                         const active = !templateQuery && bp.id === templateBodyPartId;
@@ -693,12 +693,12 @@ export default function AdjustWorkoutModal({
                               setQTemplate("");
                               setTemplateBodyPartId(bp.id);
                             }}
-                            className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-1.5 py-1 text-left text-[11px] font-medium leading-tight transition-colors md:min-w-0 ${
+                            className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-1.5 py-1 text-left text-[11px] font-medium leading-tight transition-colors max-sm:w-[5.5rem] max-sm:flex-col max-sm:gap-1 max-sm:rounded-2xl max-sm:py-2 max-sm:text-center max-sm:text-xs md:min-w-0 ${
                               active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
                             }`}
                           >
-                            <BodyPartIllustration slug={bp.slug} className="h-7 w-7 shrink-0" active={active} />
-                            <span className="line-clamp-2 whitespace-nowrap md:whitespace-normal">{bp.label}</span>
+                            <BodyPartIllustration slug={bp.slug} className="h-7 w-7 shrink-0 max-sm:h-11 max-sm:w-11" active={active} />
+                            <span className="line-clamp-2 whitespace-nowrap max-sm:whitespace-normal md:whitespace-normal">{bp.label}</span>
                           </button>
                         );
                       })}

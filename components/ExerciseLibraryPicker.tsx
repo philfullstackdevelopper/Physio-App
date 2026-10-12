@@ -55,7 +55,7 @@ export default function ExerciseLibraryPicker({
   }, [exercises, bodyPartId, query]);
 
   return (
-    <section className="flex min-h-0 flex-col">
+    <section className="flex min-h-0 min-w-0 flex-col">
       {/* Titre et recherche sur la même ligne, cases de catégories plus
           basses : la liste d'exercices récupère la hauteur (Philippe,
           2026-10-02 : « encore plus de place pour choisir »). */}
@@ -75,7 +75,7 @@ export default function ExerciseLibraryPicker({
       {!query && (
         <div
           style={{ gridTemplateColumns: `repeat(${bodyParts.length}, minmax(0, 1fr))` }}
-          className="mt-2 flex gap-1 overflow-x-auto md:grid md:overflow-visible"
+          className="mt-2 flex gap-1 overflow-x-auto max-sm:-mx-4 max-sm:gap-2 max-sm:px-4 max-sm:pb-1 max-sm:[scrollbar-width:none] md:grid md:overflow-visible"
         >
           {bodyParts.map((bp) => {
             const active = bp.id === bodyPartId;
@@ -87,11 +87,11 @@ export default function ExerciseLibraryPicker({
                 title={`${bp.label} — ${count} exercice${count > 1 ? "s" : ""}`}
                 onClick={() => setBodyPartId(bp.id)}
                 disabled={count === 0}
-                className={`flex w-20 shrink-0 flex-col items-center rounded-xl border px-1 py-0.5 text-center text-[10px] font-medium leading-tight transition-colors disabled:cursor-not-allowed disabled:opacity-40 md:w-auto md:min-w-0 ${
+                className={`flex w-20 shrink-0 flex-col items-center rounded-xl border px-1 py-0.5 text-center text-[10px] font-medium leading-tight transition-colors disabled:cursor-not-allowed disabled:opacity-40 max-sm:w-[5.5rem] max-sm:gap-1 max-sm:rounded-2xl max-sm:px-1.5 max-sm:py-2 max-sm:text-xs md:w-auto md:min-w-0 ${
                   active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
                 }`}
               >
-                <BodyPartIllustration slug={bp.slug} className="h-6 w-6 shrink-0" active={active} />
+                <BodyPartIllustration slug={bp.slug} className="h-6 w-6 shrink-0 max-sm:h-11 max-sm:w-11" active={active} />
                 <span className="line-clamp-2">{bp.label}</span>
               </button>
             );
