@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { joinWaitlist, type WaitlistState } from "@/app/waitlistActions";
@@ -16,6 +16,45 @@ type Role = "kine" | "patient";
 export default function WaitlistForm() {
   const [state, formAction, pending] = useActionState(joinWaitlist, INITIAL);
   const [role, setRole] = useState<Role>("kine");
+
+  // Tous les boutons « liste d'attente » de la page (en-tête, haut de page,
+  // Tarifs, pied de page) pointent vers #liste-attente. Le défilement
+  // automatique vers une ancre ne se déclenchait pas (Philippe, 2026-10-12 :
+  // « appuyer sur le bouton ne fait absolument rien ») : on le fait donc ici,
+  // pour tous ces liens d'un coup, et on place le curseur dans le champ e-mail.
+  useEffect(() => {
+    const goToForm = () => {
+      const target = document.getElementById("liste-attente");
+      if (!target) return false;
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Filet de sécurité : si le défilement animé n'a pas abouti (onglet en
+      // arrière-plan, animations désactivées, navigateur capricieux), on saute
+      // directement au formulaire. Puis le curseur va dans le champ e-mail.
+      window.setTimeout(() => {
+        const r = target.getBoundingClientRect();
+        const visible = r.top < window.innerHeight * 0.6 && r.bottom > window.innerHeight * 0.4;
+        if (!visible) target.scrollIntoView({ behavior: "instant", block: "center" });
+        document.getElementById("waitlist-email")?.focus({ preventScroll: true });
+      }, 1000);
+      return true;
+    };
+    const onClick = (e: MouseEvent) => {
+      const link = (e.target as Element | null)?.closest?.('a[href$="#liste-attente"]');
+      if (!link || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+      if (!goToForm()) return; // pas sur la page d'accueil : le lien y mène normalement
+      e.preventDefault();
+      window.history.replaceState(null, "", "#liste-attente");
+    };
+    // Phase de capture : avant le gestionnaire de navigation de Next.
+    document.addEventListener("click", onClick, true);
+    // Arrivée directe sur …/#liste-attente (lien envoyé, autre page du site) :
+    // on attend que la page ait pris sa hauteur définitive.
+    const arrival = window.location.hash === "#liste-attente" ? window.setTimeout(goToForm, 900) : undefined;
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.clearTimeout(arrival);
+    };
+  }, []);
 
   if (state.ok) {
     return (
