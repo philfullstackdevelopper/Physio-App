@@ -61,3 +61,6 @@ graphify-out/
 
 # Identifiants des comptes de test (jamais dans git)
 *.local.txt
+
+# Prospection locale (coordonnées de cabinets) : ne pas publier sur GitHub
+docs/prospection/

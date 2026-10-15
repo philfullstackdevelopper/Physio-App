@@ -1,0 +1,68 @@
+{
+ "codman-pendulum": {
+  "2": "the hanging arm, relaxed and straight, swung clearly FORWARD about 40 degrees towards his head, hand in front of his face level below the table height",
+  "3": "the hanging arm, relaxed and straight, swung clearly BACKWARD about 35 degrees, hand next to his front thigh, still pointing down towards the floor"
+ },
+ "hop-and-stick": {
+  "3": "just LANDED from the hop on the right leg only and holding still: the right knee clearly bent about 45 degrees, hips pushed back, torso leaning forward about 30 degrees, both arms reaching forward horizontally in front of him for balance, left foot off the floor behind him. This must look clearly different from image 2: a deep, stable single-leg landing"
+ },
+ "band-shoulder-external-rotation": {
+  "3": "same arm as in image 2 (the arm on the VIEWER'S LEFT, with the rolled towel against the ribs): its elbow stays touching the towel at waist height, and only that forearm swings outward so the hand points to the VIEWER'S LEFT at waist height; the band is now stretched from that hand across his belly to the anchor on the viewer's right. The other arm stays relaxed down by his side"
+ },
+ "band-shoulder-internal-rotation": {
+  "2": "same arm as in image 2 (the arm on the VIEWER'S RIGHT, towards the post): elbow still bent 90 degrees and pressed against his ribs at waist height, forearm now pointing straight FORWARD towards the viewer, so the hand is in front of the right side of his belly; the band runs from the hand to the post",
+  "3": "same arm as in image 2 (the arm on the VIEWER'S RIGHT, towards the post): elbow still bent 90 degrees and pressed against his ribs at waist height, forearm swung inward ACROSS his belly so the hand is in front of his navel; the band is stretched from the post to the hand"
+ },
+ "quad-set": {
+  "3": "both legs stay COMPLETELY STRAIGHT and flat on the floor (knee NOT bent at all); the right thigh muscle is tightened, the back of the right knee presses down on the towel, and the right heel rises only a couple of centimetres off the floor"
+ },
+ "terminal-knee-extension": {
+  "1": "right (front) knee bent about 30 degrees, pulled forward by the band, right heel on the floor",
+  "2": "right (front) knee bent about 15 degrees, pushing back against the band",
+  "3": "right (front) leg completely straight, knee locked back against the band, band taut",
+  "view": "side view, standing in a split stance: RIGHT foot forward, LEFT foot one step behind on the ball of the foot; hands on hips; a resistance band looped behind the RIGHT (front) knee, the band running straight forward horizontally at knee height out of the right edge of the picture (anchored in front of him)"
+ },
+ "y-balance": {
+  "3": "standing on the LEFT leg only with the left knee bent in a small squat; the RIGHT leg stretched far BEHIND him diagonally, right toes lightly touching the floor behind; torso leaning slightly forward, hands on hips. IMPORTANT: the man has exactly TWO legs, count them: no extra leg, no ghost leg."
+ },
+ "ankle-dorsiflexion-band": {
+  "1": "foot pointed away (toes pointing forward, away from the shin), band taut",
+  "2": "foot vertical, toes pointing straight up to the ceiling",
+  "3": "foot pulled strongly back, toes coming towards the shin, sharp angle at the ankle, band stretched",
+  "view": "CLOSE-UP view showing only the lower leg (from the knee down) and the foot, drawn large and centred, same blue outline style; side view, the leg lying straight on the floor, a resistance band looped over the top of the foot, the band running horizontally away from the toes out of the picture edge"
+ },
+ "ankle-plantar-flexion-band": {
+  "1": "foot pulled back, toes towards the shin",
+  "2": "foot vertical, toes pointing straight up",
+  "3": "foot pointed fully away like a ballerina, band stretched",
+  "view": "CLOSE-UP view showing only the lower leg (from the knee down) and the foot, drawn large and centred, same blue outline style; side view, the leg lying straight on the floor, a resistance band looped around the ball of the foot, the band running back up towards the knee and out of the picture top-left (held by his hands)"
+ },
+ "ankle-inversion-band": {
+  "1": "foot upright and neutral, toes pointing up",
+  "2": "foot turned halfway to the RIGHT of the picture (inward), sole tilting to face right",
+  "3": "foot turned fully to the RIGHT of the picture (inward), sole facing right, band stretched",
+  "view": "CLOSE-UP view showing only the lower leg (from the knee down) and the foot, drawn large and centred, same blue outline style; front view looking at the front of the right shin and the top of the right foot, heel resting on the floor, a resistance band looped around the forefoot, the band running horizontally to the LEFT edge of the picture"
+ },
+ "ankle-eversion-band": {
+  "1": "foot upright and neutral, toes pointing up",
+  "2": "foot turned halfway to the LEFT of the picture (outward), sole tilting to face left",
+  "3": "foot turned fully to the LEFT of the picture (outward), sole facing left, band stretched",
+  "view": "CLOSE-UP view showing only the lower leg (from the knee down) and the foot, drawn large and centred, same blue outline style; front view looking at the front of the right shin and the top of the right foot, heel resting on the floor, a resistance band looped around the forefoot, the band running horizontally to the RIGHT edge of the picture"
+ },
+ "knee-to-wall": {
+  "1": "standing tall, BOTH knees completely straight, body upright",
+  "2": "right knee bent halfway forward towards the wall, right heel still flat on the floor",
+  "3": "right knee bent far forward and touching the wall, right heel still flat on the floor",
+  "view": "side view, standing facing a vertical wall (drawn as a simple vertical double line) on the right of the picture, both hands flat on the wall at shoulder height, right foot forward a hand-width from the wall, left foot one step back, both heels flat on the floor"
+ },
+ "straight-leg-raise": {
+  "1": "both legs straight and flat on the floor, side by side. The man has exactly TWO legs: the left leg lies straight and flat on the floor, the right leg is the one lifted. No other leg.",
+  "2": "upper body EXACTLY as in image 2: propped up on both elbows, head up, looking at his legs. The right leg, perfectly straight, lifted about 25 degrees off the floor; the left leg stays straight and flat on the floor. The man has exactly TWO legs.",
+  "3": "the right leg, perfectly straight, lifted about 50 degrees off the floor; the left leg stays straight and flat on the floor. The man has exactly TWO legs: the left leg lies straight and flat on the floor, the right leg is the one lifted. No other leg.",
+  "view": "side view, lying on his back on the floor, arms along his body, BOTH legs straight (no bent knee)"
+ },
+ "passive-knee-extension": {
+  "1": "hands resting on the floor beside his hips; the right knee clearly BENT about 30 degrees and lifted up off the floor (only the heel rests on the towel)",
+  "2": "hands on the floor; the right knee sagging halfway down, bent about 15 degrees"
+ }
+}
