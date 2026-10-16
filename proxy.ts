@@ -9,7 +9,22 @@ import { NextResponse } from "next/server";
 // no built-in way to read the request pathname, and app/patient/layout.tsx
 // needs it to gate incomplete-onboarding patients to /patient/onboarding
 // without looping when they're already there.
+// Adresse principale du site (Philippe, 2026-10-16 : domaines achetés chez
+// OVH). Les variantes — www, et easy-physio.fr avec tiret, acheté pour éviter
+// qu'un tiers ne l'utilise — renvoient définitivement (301) vers easyphysio.fr.
+// La redirection est faite ici et pas avec le « domaine canonique » de
+// Scalingo : celui-ci redirigerait aussi easyphysio.osc-fr1.scalingo.io, où
+// Stripe envoie ses notifications de paiement, et Stripe ne suit pas les
+// redirections.
+const MAIN_HOST = "easyphysio.fr";
+const ALIAS_HOSTS = new Set(["www.easyphysio.fr", "easy-physio.fr", "www.easy-physio.fr"]);
+
 export default clerkMiddleware(async (auth, req) => {
+  const host = (req.headers.get("host") ?? "").split(":")[0].toLowerCase();
+  if (ALIAS_HOSTS.has(host)) {
+    return NextResponse.redirect(`https://${MAIN_HOST}${req.nextUrl.pathname}${req.nextUrl.search}`, 301);
+  }
+
   // Already signed in and asking for the login page (any « Se connecter »
   // link): go straight to the app instead of flashing Clerk's <SignIn> while
   // it notices the session and forwards (Philippe, 2026-10-02 — confusing for
