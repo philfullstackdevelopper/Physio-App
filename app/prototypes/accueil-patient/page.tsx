@@ -29,7 +29,7 @@ export default function AccueilPatientPrototype() {
     dayDetails[localDateKey(d)] = [
       {
         logId: `demo-${daysAgo}`,
-        workoutName: "Renforcement lombaire — niveau 2",
+        workoutName: "Renforcement lombaire, niveau 2",
         time: "18:15",
         durationMinutes: 20,
         painScore: 3,
@@ -52,7 +52,7 @@ export default function AccueilPatientPrototype() {
           today={today}
           week={week}
           programmeCard={{
-            title: "Renforcement lombaire — niveau 2",
+            title: "Renforcement lombaire, niveau 2",
             subtitle: "2 séances à réaliser · 20 minutes environ",
             cta: "Voir mon programme",
             done: false,

@@ -40,6 +40,16 @@ const EXERCISES = [
 // Hors du composant : la règle react-hooks/purity refuse Date.now() dans le rendu.
 const daysAgoIso = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
 
+// Onglet surligné dans la barre de navigation, selon l'écran affiché.
+const NAV_PATH: Record<string, string> = {
+  progres: "/patient/progres",
+  compte: "/patient/compte",
+  informations: "/patient/compte",
+  "changer-offre": "/patient/compte",
+  historique: "/patient/progres",
+  "historique-detail": "/patient/progres",
+};
+
 async function noop() {
   "use server";
 }
@@ -50,7 +60,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
   const workouts: ProgrammeWorkout[] = [
     {
       id: "demo-seance",
-      name: "Renforcement du genou — niveau 2",
+      name: "Renforcement du genou, niveau 2",
       description: "Renforcement doux des quadriceps et des fessiers.",
       durationMinutes: 20,
       timesPerWeek: 3,
@@ -67,7 +77,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
         paymentFailed={false}
         trialAvailable
         prices={{ essentiel: TIERS.essentiel.amount, standard: TIERS.standard.amount, premium: TIERS.premium.amount }}
-        kineName="Philippe Maupain"
+        kineName="Julien Roux"
         paymentsReady
         firstChargeDate="19 octobre"
         startTierCheckout={noop}
@@ -78,7 +88,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
   if (ecran === "cabinet") {
     return <SignupOnboardingView defaults={{ cabinet_name: null, cabinet_address: null, phone: null, rpps_number: null, siret: null }} action={noop} />;
   }
-  if (ecran === "cadenas") return <PatientLockScreen reason="payment_failed" firstName="Léa" kineName="Philippe Maupain" />;
+  if (ecran === "cadenas") return <PatientLockScreen reason="payment_failed" firstName="Léa" kineName="Julien Roux" />;
 
   // L'onboarding s'affiche sans la barre de navigation, comme dans l'appli.
   if (ecran === "onboarding") {
@@ -102,7 +112,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
 
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
-      <PatientNav patientName="Léa Martin" unreadCount={1} pathnameOverride="/patient/programme" />
+      <PatientNav patientName="Léa Martin" unreadCount={1} pathnameOverride={NAV_PATH[ecran] ?? "/patient/programme"} />
       <div className="relative min-w-0 flex-1 pb-20 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0">
         {ecran === "progres" ? (
           <ProgresView
@@ -141,7 +151,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
             email="lea.martin@exemple.fr"
             situation={[
               { label: "Zones travaillées", value: "Genou / jambe, Hanche / fessiers" },
-              { label: "Étape de récupération", value: "Phase intermédiaire — reprise progressive" },
+              { label: "Étape de récupération", value: "Phase intermédiaire, reprise progressive" },
               { label: "Avancée de la rééducation", value: "Je marche sans béquilles depuis deux semaines, encore gênée dans les escaliers." },
               { label: "Ce qui s'est passé", value: "Entorse du genou droit au ski en février, opérée en mars." },
               { label: "Date de naissance", value: "14 mars 1988" },
@@ -152,7 +162,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
           />
         ) : ecran === "historique-detail" ? (
           <HistoriqueDetailView
-            name="Renforcement du genou — niveau 2"
+            name="Renforcement du genou, niveau 2"
             dateLabel="lundi 28 septembre à 18:15"
             feedback={{ pain_score: 3, notes: "Un peu raide au début, mieux à la fin." }}
             exercises={[...EXERCISES.map(([name]) => name), "Light Closed-Chain Quad Strengthening", "Isometric Wall Sit (60 Degrees)", "Protected Squat (Quadriceps)"]}
@@ -167,7 +177,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
           <HistoriqueView
             groups={Array.from({ length: 9 }, (_, i) => ({
               day: `jour ${i + 1} — ${["lundi", "mercredi", "vendredi"][i % 3]} ${28 - i * 2} septembre`,
-              logs: [{ id: `log${i}`, name: "Renforcement du genou — niveau 2", time: "18:15" }],
+              logs: [{ id: `log${i}`, name: "Renforcement du genou, niveau 2", time: "18:15" }],
             }))}
             lockedDays={["mardi 2 septembre", "dimanche 31 août"]}
           />
@@ -175,7 +185,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
           <SeanceDuJourView
             activeWorkout={{
               id: "demo-seance",
-              name: "Renforcement du genou — niveau 2",
+              name: "Renforcement du genou, niveau 2",
               description: "Renforcement doux des quadriceps et des fessiers.",
               duration_minutes: 20,
               times_per_week: 3,
@@ -191,9 +201,10 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
               <WorkoutSession
                 workoutId="demo-seance"
                 patientId="demo-patient"
-                workoutName="Renforcement du genou — niveau 2"
+                workoutName="Renforcement du genou, niveau 2"
                 exercises={EXERCISES.map(([name, instructions]) => ({ name, instructions, mediaUrl: null, mediaStartSeconds: 0 }))}
                 prescription={DEFAULT_SQUAT}
+                demo
               />
             </div>
           </main>

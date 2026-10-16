@@ -2,6 +2,7 @@
 
 import { useMemo, useState, Fragment } from "react";
 import { useRouter } from "next/navigation";
+import { useAppHref } from "@/components/DemoContext";
 import Link from "next/link";
 import { ChevronRight, Info, MessageCircle, RotateCcw, Search, SlidersHorizontal, UserPlus } from "lucide-react";
 import type { PatientRow } from "@/lib/dashboard/patientRows";
@@ -105,6 +106,8 @@ export default function PatientsTable({
   deletePatient: (formData: FormData) => Promise<void>;
 }) {
   const router = useRouter();
+  // Démo publique : la fiche s'ouvre dans la démo (components/DemoContext.tsx).
+  const appHref = useAppHref();
   const [q, setQ] = useState("");
   const [segment, setSegment] = useState<Segment>(initialSegment);
   const [conditionId, setConditionId] = useState("");
@@ -281,7 +284,7 @@ export default function PatientsTable({
                   // faisait rien). onClick + cursor-pointer sur <tr> plutôt
                   // qu'un <Link> englobant, invalide en HTML autour de <td>. */}
                   <tr
-                    onClick={() => router.push(`/dashboard/patients/${r.id}`)}
+                    onClick={() => router.push(appHref(`/dashboard/patients/${r.id}`))}
                     className={`group cursor-pointer border-b border-line last:border-b-0 hover:bg-app-bg ${r.onboardingStage || isFormer(r) ? "bg-app-bg/60" : ""}`}
                   >
                     <td className="px-4 py-3">

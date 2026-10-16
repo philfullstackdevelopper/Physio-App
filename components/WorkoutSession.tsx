@@ -171,12 +171,16 @@ export default function WorkoutSession({
   workoutName,
   exercises,
   prescription,
+  demo = false,
 }: {
   workoutId: string;
   patientId: string;
   workoutName: string;
   exercises: SessionExercise[];
   prescription: Prescription;
+  /** Démo publique (/demo) : rien n'est enregistré, la fin de séance et le
+   *  ressenti s'affichent comme si l'enregistrement avait réussi. */
+  demo?: boolean;
 }) {
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<Phase>("exercise");
@@ -216,6 +220,12 @@ export default function WorkoutSession({
     savingRef.current = true;
     setSaving(true);
     setSaveError(false);
+    if (demo) {
+      savingRef.current = false;
+      setSaving(false);
+      setPhase("finished");
+      return;
+    }
     try {
       const supabase = createClient();
       // Déjà enregistrée lors d'un essai précédent (réseau coupé juste après) :
@@ -252,6 +262,11 @@ export default function WorkoutSession({
     if (pain == null) return;
     setFbBusy(true);
     setFbError(false);
+    if (demo) {
+      setFbSent(true);
+      setFbBusy(false);
+      return;
+    }
     try {
       const supabase = createClient();
       const { error } = await supabase.from("patient_feedback").insert({
@@ -316,7 +331,7 @@ export default function WorkoutSession({
             La séance n&apos;a pas été enregistrée
           </h2>
           <p className="mt-2 text-slate-600">
-            Vérifiez votre connexion et réessayez — vos exercices ne sont pas perdus.
+            Vérifiez votre connexion et réessayez : vos exercices ne sont pas perdus.
           </p>
           <button
             onClick={finish}

@@ -48,7 +48,7 @@ export function mockData(now = new Date()) {
     .filter((p) => !p.invite)
     .map((p) => ({ patient_id: p.id, workout_id: `w-${p.id}`, week_start_date: ago(p.created).slice(0, 10), week_count: null, times_per_week: 3 }));
 
-  const home = { firstName: "Philippe", ...buildDashboardHome({ now, patients, profiles, logs, feedback }) };
+  const home = { firstName: "Julien", ...buildDashboardHome({ now, patients, profiles, logs, feedback }) };
   // « Ancien patient » : abonnement terminé il y a 3 jours (calculé d'après Stripe dans la vraie appli).
   const subscriptions = people.filter((p) => p.lapsed).map((p) => ({ user_id: p.id, status: "canceled", current_period_end: ago(3) }));
   const rows = buildPatientRows({ now, patients, profiles, conditions, logs, feedback, recs, subscriptions });
@@ -88,7 +88,7 @@ export function mockFiche(now = new Date()) {
   for (const [daysAgo, pain] of [[1, 7], [3, 6], [8, 7], [10, 4], [15, 3], [17, 3], [22, 2], [24, 3]] as const) {
     const d = new Date(now.getTime() - daysAgo * DAY);
     dayDetails[localDateKey(d)] = [
-      { logId: `f-${daysAgo}`, workoutName: "Genou — renforcement doux", time: "18:15", durationMinutes: 20, painScore: pain, difficulty: 2, notes: daysAgo === 1 ? "Douleur au réveil" : null },
+      { logId: `f-${daysAgo}`, workoutName: "Genou, renforcement doux", time: "18:15", durationMinutes: 20, painScore: pain, difficulty: 2, notes: daysAgo === 1 ? "Douleur au réveil" : null },
     ];
   }
   return {
@@ -96,12 +96,12 @@ export function mockFiche(now = new Date()) {
     currentWeekNumber: currentWeekNumber(weeks, now),
     dayDetails,
     assignments: [{ id: "r1", workoutId: "w1", weekStartDate: weeks[0].startDateKey, weekCount: null }],
-    workoutsById: { w1: { id: "w1", name: "Genou — renforcement doux", exercises } },
+    workoutsById: { w1: { id: "w1", name: "Genou, renforcement doux", exercises } },
     bodyParts: [["genou", "Genou / jambe"], ["dos", "Dos / lombaires"], ["epaule", "Épaule"], ["hanche", "Hanche / fessiers"], ["cheville", "Cheville / pied"], ["cervicales", "Cervicales / cou"], ["poignet", "Poignet / main"], ["tronc", "Tronc / gainage"], ["coude", "Coude / bras"]].map(([slug, label], i) => ({ id: `bp-${slug}`, slug, label, position: i })),
     addableExercises: ["Assisted Partial Squat", "Isometric Wall Sit (60 Degrees)", "Protected Squat (Quadriceps)", "Mini Wall Sit (Shallow)", "Light Closed-Chain Quad Strengthening", "Controlled Mini-Squat (Knee Arthritis)"].map((name, i) => ({ id: `a${i}`, name, bodyPartIds: [i % 2 ? "bp-hanche" : "bp-genou"], equipment: [[], ["chaise"], ["elastiques"], [], ["salle"], ["halteres"]][i] })),
     addableWorkouts: [
-      ["Genou — phase 1", "Prothèse de genou", "bp-genou"], ["Genou — phase 2", "Prothèse de genou", "bp-genou"], ["Genou — retour au sport", "Prothèse de genou", "bp-genou"],
-      ["Lombaires — mobilité du matin", "Lombalgie chronique", "bp-dos"], ["Lombaires — gainage doux", "Lombalgie chronique", "bp-dos"], ["Épaule — retour au geste", "Épaule douloureuse", "bp-epaule"],
+      ["Genou, phase 1", "Prothèse de genou", "bp-genou"], ["Genou, phase 2", "Prothèse de genou", "bp-genou"], ["Genou, retour au sport", "Prothèse de genou", "bp-genou"],
+      ["Lombaires, mobilité du matin", "Lombalgie chronique", "bp-dos"], ["Lombaires, gainage doux", "Lombalgie chronique", "bp-dos"], ["Épaule, retour au geste", "Épaule douloureuse", "bp-epaule"],
     ].map(([name, conditionName, bp], i) => ({ id: `aw${i}`, name, description: "Renforcement progressif, sans douleur.", durationMinutes: 20, timesPerWeek: 3, stageLabel: "Phase " + ((i % 3) + 1), conditionName, editHref: i === 0 ? "/dashboard/seances/x" : null, exerciseNames: exercises.map((e) => e.name), bodyPartIds: [bp] })),
     stats: {
       painLatest: 7,

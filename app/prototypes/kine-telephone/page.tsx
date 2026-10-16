@@ -74,7 +74,7 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
       />
     );
   } else if (ecran === "informations") {
-    screen = <KineInfosView instructorName="Philippe Maupain" />;
+    screen = <KineInfosView instructorName="Julien Roux" />;
   } else if (ecran === "revenus") {
     screen = (
       <FacturationView
@@ -111,14 +111,14 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
             exercises={names.map((name, i) => ({ id: `demo-ex-${i}`, name, bodyPartIds: ["bp-genou"] }))}
             bodyParts={zones}
             mine={[
-              item("s1", "Genou — renforcement doux", "Prothèse de genou", "acute", 0),
-              item("s2", "Lombaires — mobilité du matin", "Lombalgie chronique", "subacute", 1),
-              item("s3", "Épaule — retour au geste", "Épaule douloureuse", "recovery", 2),
+              item("s1", "Genou, renforcement doux", "Prothèse de genou", "acute", 0),
+              item("s2", "Lombaires, mobilité du matin", "Lombalgie chronique", "subacute", 1),
+              item("s3", "Épaule, retour au geste", "Épaule douloureuse", "recovery", 2),
             ]}
             templates={[
-              item("t1", "Lombalgie — phase 1", "Lombalgie chronique", "acute", 3),
-              item("t2", "Lombalgie — phase 2", "Lombalgie chronique", "subacute", 0),
-              item("t3", "Genou — phase 1", "Prothèse de genou", "acute", 2),
+              item("t1", "Lombalgie, phase 1", "Lombalgie chronique", "acute", 3),
+              item("t2", "Lombalgie, phase 2", "Lombalgie chronique", "subacute", 0),
+              item("t3", "Genou, phase 1", "Prothèse de genou", "acute", 2),
             ]}
             duplicateSeance={noopVoid}
             deleteSeance={noopVoid}
@@ -213,7 +213,7 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
 
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
-      <DashboardSidebar instructorName="Philippe Maupain" unreadCount={d.unreadCount} pathnameOverride={PATHS[ecran] ?? "/dashboard"} />
+      <DashboardSidebar instructorName="Julien Roux" unreadCount={d.unreadCount} pathnameOverride={PATHS[ecran] ?? "/dashboard"} />
       <div data-phone-pad="" className="relative min-w-0 flex-1 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))]">{screen}</div>
     </div>
   );

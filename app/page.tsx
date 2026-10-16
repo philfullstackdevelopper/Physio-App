@@ -121,11 +121,18 @@ export default function Home() {
               ) : (
                 <PrimaryCta href="#liste-attente">Rejoindre la liste d&apos;attente</PrimaryCta>
               )}
+              {/* Démo dans le navigateur, sans compte (2026-10-16). */}
+              <Link
+                href="/demo"
+                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 font-medium text-slate-800 transition hover:border-blue-600 hover:text-blue-700"
+              >
+                Essayer la démo
+              </Link>
               <Link
                 href="/login"
                 className="inline-flex items-center justify-center font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
               >
-                Je suis patient, j&apos;ai un programme
+                J&apos;ai déjà un programme
               </Link>
             </div>
 
@@ -168,6 +175,13 @@ export default function Home() {
           <FitToViewport stable className="mx-auto mt-4 max-w-7xl sm:mt-12 sm:short:mt-4 lg:-mx-6 min-[1240px]:-mx-16 phone-land:mt-2 phone-land:max-w-[calc((100dvh-10.5rem)*1.65)]">
             <KineJourneyDemo />
           </FitToViewport>
+
+          {/* Lien vers la démo complète, visible partout (2026-10-16). */}
+          <p className="mt-4 text-center text-sm sm:mt-6 sm:short:mt-2">
+            <Link href="/demo" className="font-semibold text-blue-700 underline-offset-4 hover:underline">
+              Essayer l&apos;appli dans votre navigateur, sans compte →
+            </Link>
+          </p>
 
           {/* Masqué sur téléphone et écran peu haut : le header garde son bouton « Créer un compte ». */}
           <div className="mt-10 hidden text-center sm:block sm:short:hidden">
