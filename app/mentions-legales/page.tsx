@@ -70,7 +70,8 @@ export default function MentionsLegalesPage() {
               >
                 Creative Commons BY-SA 4.0
               </a>
-              .
+              . Les autres illustrations ont été réalisées pour EasyPhysio dans le même style et sont diffusées sous la
+              même licence.
             </p>
           </section>
 

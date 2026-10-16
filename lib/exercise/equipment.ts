@@ -29,7 +29,9 @@ export type EquipmentId =
   | "chaise"
   | "velo_rameur"
   | "barre_traction"
-  | "swiss_ball";
+  | "swiss_ball"
+  | "ballon"
+  | "baton";
 
 export const EQUIPMENT_LABELS: Record<EquipmentId, string> = {
   aucun: "Aucun matériel (poids du corps)",
@@ -40,6 +42,8 @@ export const EQUIPMENT_LABELS: Record<EquipmentId, string> = {
   velo_rameur: "Vélo d'appartement ou rameur",
   barre_traction: "Barre de traction",
   swiss_ball: "Swiss ball / ballon de gym",
+  ballon: "Petit ballon (ou coussin)",
+  baton: "Bâton (ou manche à balai)",
 };
 
 export const EQUIPMENT_OPTIONS = Object.keys(EQUIPMENT_LABELS) as EquipmentId[];
@@ -62,6 +66,8 @@ export const EXERCISE_EQUIPMENT_LABELS: Record<ExerciseEquipmentId, string> = {
   velo_rameur: "Vélo ou rameur",
   barre_traction: "Barre de traction",
   swiss_ball: "Swiss ball",
+  ballon: "Petit ballon",
+  baton: "Bâton",
   salle: "Matériel de salle",
   kettlebell: "Kettlebell",
   corde_a_sauter: "Corde à sauter",

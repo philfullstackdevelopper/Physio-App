@@ -214,7 +214,7 @@ export default function Home() {
               Des exercices que vos patients comprennent du premier coup.
             </h2>
             <p className="mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 phone-land:hidden">
-              302 mouvements dessinés et animés, du pont fessier au gainage. Les vidéos d&apos;exécution arrivent ici.
+              326 mouvements dessinés et animés, du pont fessier au gainage. Les vidéos d&apos;exécution arrivent ici.
             </p>
           </div>
           <FitToViewport className="mt-8 sm:short:mt-4 phone-land:mt-0">

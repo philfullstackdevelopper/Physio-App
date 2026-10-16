@@ -32,6 +32,8 @@ Certaines illustrations d'exercices proviennent du projet
 [bryllim/workout-guide](https://github.com/bryllim/workout-guide) — illustrations
 créées par **Bryl Lim** ([bryllim.com](https://bryllim.com)) — sous licence
 [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+Les autres illustrations ont été réalisées pour EasyPhysio dans le même style et
+sont diffusées sous la même licence.
 
 ## Données personnelles
 

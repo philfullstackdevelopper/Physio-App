@@ -429,4 +429,34 @@ export const EXERCISE_ILLUSTRATION_MAP: Record<string, string> = {
   "Cross-Body Shoulder Stretch": "cross-body-shoulder-stretch",
   "Wall Calf Stretch": "wall-calf-stretch",
   "Butterfly Stretch": "butterfly-stretch",
+
+  // 24 exercices de rééducation ajoutés par la migration 0068 (2026-10-16).
+  // Dessins EasyPhysio générés avec Gemini dans le style des dessins
+  // ci-dessus (docs/test-illustrations-ia/gemini-api/). Pour 8 d'entre eux
+  // (Codman, chevilles à l'élastique, ballon, bascule du bassin, genou au mur)
+  // les 3 images sont identiques : image fixe en attendant la vidéo filmée.
+  "Quad Set": "quad-set",
+  "Heel Slide": "heel-slide",
+  "Straight Leg Raise": "straight-leg-raise",
+  "Terminal Knee Extension (Band)": "terminal-knee-extension",
+  "Passive Knee Extension (Heel Prop)": "passive-knee-extension",
+  "Ankle Dorsiflexion (Band)": "ankle-dorsiflexion-band",
+  "Ankle Plantar Flexion (Band)": "ankle-plantar-flexion-band",
+  "Ankle Inversion (Band)": "ankle-inversion-band",
+  "Ankle Eversion (Band)": "ankle-eversion-band",
+  "Knee-to-Wall Ankle Mobilization": "knee-to-wall",
+  "Single-Leg Stance": "single-leg-stance",
+  "Y-Balance Reach": "y-balance",
+  "Hop and Stick": "hop-and-stick",
+  "Band Shoulder External Rotation": "band-shoulder-external-rotation",
+  "Band Shoulder Internal Rotation": "band-shoulder-internal-rotation",
+  "Codman Pendulum": "codman-pendulum",
+  "Supine Stick Shoulder Flexion": "supine-stick-shoulder-flexion",
+  "Chin Tuck": "chin-tuck",
+  "Cervical Isometrics": "cervical-isometrics",
+  "Prone Press-Up (McKenzie)": "prone-press-up",
+  "Supine Pelvic Tilt": "pelvic-tilt",
+  "Knee-to-Chest Stretch": "knee-to-chest",
+  "Sit-to-Stand": "sit-to-stand",
+  "Ball Squeeze (Knees)": "ball-squeeze",
 };
