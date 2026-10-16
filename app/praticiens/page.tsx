@@ -16,7 +16,7 @@ import DotCanvas from "@/components/DotCanvas";
 export const metadata: Metadata = {
   title: "Pour les kinésithérapeutes",
   description:
-    "Construisez vos programmes en quelques minutes, suivez l'assiduité de vos patients entre deux rendez-vous et ajustez à distance. Gratuit pendant la bêta.",
+    "Construisez vos programmes en quelques minutes, suivez l'assiduité de vos patients entre deux rendez-vous et ajustez à distance.",
 };
 
 const PAIN_POINTS = [
@@ -27,24 +27,24 @@ const PAIN_POINTS = [
   },
   {
     icon: Bell,
-    title: "Un trou noir entre deux séances",
+    title: "Aucune nouvelle entre deux séances",
     body: "Six semaines sans savoir si les exercices sont faits, mal faits, ou pas faits du tout.",
   },
   {
     icon: FileBarChart,
     title: "Des bilans reconstruits de mémoire",
-    body: "« Ça va mieux » n'est pas une donnée. Sans suivi, chaque consultation repart de zéro.",
+    body: "Sans suivi, le bilan repose sur ce que le patient se rappelle de ses deux dernières semaines.",
   },
 ];
 
 const CAPABILITIES = [
   {
     title: "Composez un programme en quelques minutes",
-    body: "Bibliothèque d'exercices filmés, classés par zone et par phase. Ajustez séries, tempo et intensité pour chaque patient.",
+    body: "Plus de 300 exercices illustrés, classés par zone du corps. Pour chaque patient, ajoutez ou retirez des exercices sans toucher au modèle.",
   },
   {
     title: "Voyez qui fait ses exercices",
-    body: "Séances validées, durée réelle, ressenti après chaque exercice : l'assiduité est visible patient par patient, semaine par semaine.",
+    body: "Séances faites et douleur notée en fin de séance : l'assiduité se lit patient par patient, semaine par semaine.",
   },
   {
     title: "Soyez alerté quand ça bloque",
@@ -52,14 +52,14 @@ const CAPABILITIES = [
   },
   {
     title: "Ajustez à distance",
-    body: "Allégez un exercice ou changez de phase en deux clics. Le patient voit la mise à jour aussitôt dans son application.",
+    body: "Retirez un exercice, ajoutez-en un ou changez de séance : le patient voit la mise à jour dans son application et reçoit un message.",
   },
 ];
 
 const SETUP_STEPS = [
   {
     title: "Créez votre compte cabinet",
-    body: "Nom du cabinet, tarif patient éventuel, c'est tout. Vos patients n'ont rien à payer.",
+    body: "Nom et adresse du cabinet, numéro RPPS. Votre compte est vérifié avant le premier accès.",
   },
   {
     title: "Composez votre premier programme",
@@ -67,7 +67,7 @@ const SETUP_STEPS = [
   },
   {
     title: "Suivez et ajustez en continu",
-    body: "Le tableau de bord devient votre point de départ avant chaque séance, et votre filet de sécurité entre elles.",
+    body: "Avant chaque rendez-vous, le tableau de bord vous montre ce que le patient a fait depuis le précédent.",
   },
 ];
 
@@ -99,14 +99,13 @@ export default function PraticiensPage() {
             </h1>
             <p className="mt-5 max-w-lg text-lg leading-relaxed text-slate-600">
               Pensé pour les kinésithérapeutes : EasyPhysio distribue vos programmes sur le téléphone du patient, le guide
-              exercice par exercice, et vous remontre ce qui se passe vraiment entre deux
-              rendez-vous.
+              exercice par exercice, et vous montre ce qu&apos;il a fait entre deux rendez-vous.
             </p>
             <div className="mt-8">
               <Cta />
             </div>
             <p className="mt-4 text-sm text-slate-500">
-              Gratuit pendant la bêta · sans engagement · vos patients ne payent jamais
+              Sans abonnement fixe : 15 % retenus sur chaque abonnement patient, frais de paiement compris.
             </p>
           </div>
           <KineMockup />
@@ -184,15 +183,15 @@ export default function PraticiensPage() {
           {/* Beta band */}
           <div className="mt-14 rounded-[2rem] bg-slate-900 px-8 py-12 text-center shadow-xl sm:px-14">
             <h2 className="font-display mx-auto max-w-lg text-2xl font-semibold leading-tight text-white sm:text-3xl">
-              Bêta : gratuit pour les premiers cabinets
+              Ce que ça vous coûte
             </h2>
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-300">
-              Patients illimités, bibliothèque complète, suivi et alertes. Le tarif définitif
-              sera annoncé avant la fin de la bêta. Les cabinets pionniers garderont des
-              conditions avantageuses.
+              Aucun abonnement fixe. Vos patients vous paient directement ; sur chaque
+              abonnement, 15 % sont retenus (commission EasyPhysio et frais de paiement
+              compris) et vous gardez 85 %. Patients illimités, bibliothèque complète.
             </p>
             <ul className="mx-auto mt-6 flex max-w-md flex-col gap-2 text-left sm:flex-row sm:justify-center sm:gap-6 sm:text-left">
-              {["Sans engagement", "Données RGPD", "Support direct"].map((point) => (
+              {["Sans engagement", "Données hébergées en France"].map((point) => (
                 <li key={point} className="flex items-center gap-2 text-sm text-slate-200">
                   <Check className="h-4 w-4 shrink-0 text-emerald-400" strokeWidth={2.5} />
                   {point}

@@ -30,7 +30,7 @@ const ROWS: { label: string; values: [Status, Status, Status] }[] = [
   { label: "Suivi de l'évolution par le kiné", values: ["yes", "no", "no"] },
   { label: "Signalement de douleur en temps réel", values: ["yes", "no", "no"] },
   { label: "Ajustement du programme à distance", values: ["yes", "no", "no"] },
-  { label: "Coût clair, sans surprise", values: ["yes", "partial", "yes"] },
+  { label: "Prix connu avant de s'abonner", values: ["yes", "partial", "yes"] },
 ];
 
 function scoreOf(col: number) {
@@ -74,11 +74,6 @@ export default function ComparisonTable() {
           <span />
           {COLUMNS.map((col) => (
             <div key={col.name} className="relative flex flex-col items-center text-center">
-              {col.highlight && (
-                <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-semibold max-sm:px-1.5 max-sm:text-[8px] max-sm:tracking-normal uppercase tracking-wide text-white">
-                  Le meilleur choix
-                </span>
-              )}
               {/* Colonne EasyPhysio : la vraie icône et le mot-symbole de la
                   marque (Philippe, 2026-10-07 : « use my logo / visual
                   identity »), pas une icône générique. */}

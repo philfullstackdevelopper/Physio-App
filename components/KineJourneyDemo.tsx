@@ -92,7 +92,7 @@ const PHASES: Phase[] = [
   { ...base, scene: 3, target: "adjust", clicking: true, duration: 700,
     caption: ["3. La semaine, jour par jour.", "Le kiné clique sur « Ajuster / changer la séance »."] },
   { ...base, scene: 4, target: null, duration: 1900,
-    caption: ["4. Ajuster la séance.", "Un exercice à retirer, un autre à ajouter — pour Marc uniquement."] },
+    caption: ["4. Ajuster la séance.", "Un exercice à retirer, un autre à ajouter, pour Marc uniquement."] },
   { ...base, scene: 4, target: "squat", duration: 1000,
     caption: ["4. Ajuster la séance.", "Le squat assisté était trop douloureux : il clique pour le retirer."] },
   { ...base, scene: 4, target: "squat", clicking: true, squatOut: true, duration: 1200,
@@ -436,7 +436,7 @@ export default function KineJourneyDemo() {
                   {ph.saved && (
                     <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-ok-soft px-3 py-2 text-xs font-medium text-ok">
                       <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
-                      Séance ajustée — le patient a été prévenu.
+                      Séance ajustée, le patient a été prévenu.
                     </p>
                   )}
                   <div className="mt-3"><StatBar /></div>

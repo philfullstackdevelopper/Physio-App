@@ -7,6 +7,6 @@ export const brandedHeaderTitle = {
   "&::before": {
     content: '"EasyPhysio · "',
     color: "#1d4ed8",
-    fontFamily: 'var(--font-display), Georgia, "Times New Roman", serif',
+    fontFamily: "var(--font-sans), system-ui, sans-serif",
   },
 };

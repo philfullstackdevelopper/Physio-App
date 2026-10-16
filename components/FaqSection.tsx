@@ -10,12 +10,12 @@ const QUESTIONS = [
   {
     question: "Comment reprendre le sport sans risquer une rechute ?",
     answer:
-      "Votre programme avance par étapes définies par votre kiné : on ne passe à la suivante que lorsque la précédente est acquise. Rien n'est laissé au hasard ni à un algorithme seul.",
+      "Votre programme avance par étapes définies par votre kiné : on ne passe à la suivante que lorsque la précédente est acquise. Si vous signalez une douleur, votre kiné le voit et peut adapter le programme.",
   },
   {
     question: "Puis-je faire mes exercices seul(e), sans risque ?",
     answer:
-      "Chaque exercice est démontré en vidéo avec des consignes claires, et un rappel s'affiche à chaque séance : en cas de douleur vive, on s'arrête et on en parle à son kiné. Votre praticien reste informé de votre ressenti après chaque séance.",
+      "Chaque exercice est montré par un dessin animé et des consignes écrites (les vidéos arrivent). Pendant la séance, un rappel vous dit de vous arrêter en cas de douleur vive. À la fin, vous notez votre douleur, et votre kiné la voit.",
   },
   {
     question: "Comment mon kiné peut-il me suivre à distance ?",
@@ -25,7 +25,7 @@ const QUESTIONS = [
   {
     question: "Faut-il du matériel ou une caméra chez moi ?",
     answer:
-      "Non. Un téléphone suffit. Les exercices se suivent à l'écran, avec la vidéo et les consignes sous les yeux, sans caméra, sans capteur, sans montre connectée.",
+      "Non, un téléphone suffit : les exercices se suivent à l'écran, avec le dessin et les consignes sous les yeux. Aucune caméra ni montre connectée. Si un exercice demande un objet (élastique, chaise), votre kiné le sait d'après ce que vous avez déclaré.",
   },
   {
     question: "Que deviennent mes données de santé ?",
@@ -42,8 +42,9 @@ const QUESTIONS = [
     // Avant le lancement (lib/launchFlags.ts), la première phrase annonce la
     // liste d'attente ; la suite décrit ce qui se passera à l'ouverture.
     answer:
-      (SIGNUPS_OPEN ? "" : "EasyPhysio est en phase de test : inscrivez-vous sur la liste d'attente en bas de cette page, nous vous écrivons à l'ouverture. Ensuite : ") +
-      "Créez votre compte praticien (validé par notre équipe avant le premier accès), composez un premier programme depuis la bibliothèque d'exercices, connectez votre compte Stripe pour être payé directement par vos patients, puis invitez-les. Ils recevront leur accès sans rien installer d'autre que l'app sur leur téléphone.",
+      (SIGNUPS_OPEN ? "" : "EasyPhysio est en phase de test : inscrivez-vous sur la liste d'attente en bas de cette page, nous vous écrivons à l'ouverture. Ensuite, ") +
+      (SIGNUPS_OPEN ? "Créez" : "créez") +
+      " votre compte praticien (validé par notre équipe avant le premier accès), composez un premier programme depuis la bibliothèque d'exercices, connectez votre compte Stripe pour être payé directement par vos patients, puis invitez-les. Ils recevront leur accès sans rien installer d'autre que l'app sur leur téléphone.",
   },
 ];
 

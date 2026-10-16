@@ -106,7 +106,7 @@ export default function IntroSplash() {
           className="mt-5 text-[11px] font-medium uppercase text-white/60 sm:text-xs"
           style={{ animation: "ep-intro-tag .7s ease-out 1.35s both", letterSpacing: ".28em" }}
         >
-          Rééducation · Progression · Bien-être
+          Vos exercices de kiné, à la maison
         </p>
       </div>
     </>

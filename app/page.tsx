@@ -29,7 +29,7 @@ import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 const HERO_CHIPS = [
   { icon: BadgeCheck, label: "Kinés vérifiés dans l'Annuaire Santé (RPPS)" },
   { icon: ListChecks, label: "Guidé pas à pas, sans caméra ni capteur" },
-  { icon: ShieldCheck, label: "Vous décidez du programme, jamais un algorithme" },
+  { icon: ShieldCheck, label: "C'est vous qui composez le programme" },
 ];
 
 function PrimaryCta({
@@ -191,12 +191,12 @@ export default function Home() {
           <div className="flex flex-col gap-6 max-sm:hidden lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-                La feuille d&apos;exercices finit dans un tiroir. Pas le téléphone.
+                Une feuille d&apos;exercices finit souvent au fond d&apos;un tiroir.
               </h2>
               <p className="mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 phone-land:hidden">
-                Une fiche photocopiée ne montre pas le mouvement, et ne vous dit pas si ça fait mal.{" "}
+                Elle ne montre pas le mouvement et ne vous dit pas si ça fait mal.{" "}
                 <br className="hidden sm:block lg:hidden" />
-                EasyPhysio, si.
+                Sur le téléphone, le patient voit l&apos;exercice et vous signale sa douleur.
               </p>
             </div>
           </div>
@@ -259,9 +259,8 @@ export default function Home() {
         <Reveal>
         <section id="faq" className="mx-auto mt-24 max-w-2xl scroll-mt-28 sm:mt-32 phone-land:mt-12 phone-land:grid phone-land:max-w-none phone-land:grid-cols-[1fr_2fr] phone-land:items-center phone-land:gap-5">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Encore un doute&nbsp;?</p>
-            <h2 className="font-display mt-2 text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-              Les réponses, sans détour
+            <h2 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
+              Questions fréquentes
             </h2>
           </div>
           <div className="mt-8 sm:short:mt-4 phone-land:mt-0">
@@ -285,7 +284,7 @@ export default function Home() {
                 : "EasyPhysio est en phase de test et ouvre bientôt. Laissez votre e-mail : nous vous écrivons dès que vous pouvez créer votre compte et inviter vos premiers patients."}
             </p>
             <p className="mt-6 text-sm font-medium text-blue-300 sm:short:hidden phone-land:mt-3">
-              Le programme reste conçu et piloté par vous. L&apos;app ne décide rien à votre place.
+              Vous composez le programme et vous l&apos;ajustez ; l&apos;app ne le modifie pas à votre place.
             </p>
             {SIGNUPS_OPEN && (
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:short:mt-5 phone-land:mt-4">

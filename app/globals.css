@@ -86,9 +86,13 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* Warm display serif for headings (opt-in via className). */
+/* Police des titres (opt-in via className). */
 .font-display {
-  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  /* Titres : même police que le texte (Instrument Sans), un peu resserrée.
+     L'ancienne police à empattements (Fraunces) se lisait mal et donnait un
+     rendu « bugué » selon un premier lecteur (2026-10-16). */
+  font-family: var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.015em;
 }
 
 @keyframes fadeInUp {

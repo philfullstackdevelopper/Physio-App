@@ -34,13 +34,13 @@ const TESTIMONIALS: {
 }[] = [
   {
     quote:
-      "Je vois qui a fait ses exercices avant même d'ouvrir le dossier. Les consultations commencent par ce qui compte vraiment.",
+      "Je vois qui a fait ses exercices avant même d'ouvrir le dossier. Je commence la consultation par ce qui s'est passé à la maison.",
     name: "Julien M.",
     photo: "/testimonials/julien.png",
     role: "Kinésithérapeute",
     city: "Lyon",
     voice: "kine",
-    highlight: "+ de temps pour l'essentiel, de meilleurs résultats.",
+    highlight: "Moins de temps passé à reconstituer la semaine du patient.",
   },
   {
     quote:
@@ -236,8 +236,7 @@ export default function Testimonials() {
 
       {/* Bandeau secondaire, masqué sur écran peu haut pour que la section tienne. */}
       <div className="mt-8 text-center sm:short:hidden">
-        <p className="text-sm text-slate-500">Adopté par des kinés partout en France</p>
-        <ul className="mt-3 flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
+        <ul className=" flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
           {TRUST.map((label) => (
             <li key={label} className="flex items-center gap-2 text-sm text-slate-700">
               <CircleCheck className="h-4 w-4 text-blue-600" strokeWidth={2} /> {label}

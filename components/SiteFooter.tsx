@@ -42,9 +42,10 @@ export default function SiteFooter() {
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-slate-500">
             Les programmes de rééducation de votre kiné, suivis sérieusement à la maison.
           </p>
-          <p className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Données hébergées en France · jamais revendues
+          {/* Ligne de texte simple (2026-10-16) : la pastille à point vert, sur
+              deux lignes en étroit, « faisait bugué ». */}
+          <p className="mt-3 max-w-xs text-xs leading-relaxed text-slate-500">
+            Vos données sont hébergées en France et ne sont jamais revendues.
           </p>
           {/* Une ligne datée, tirée de l'historique réel du projet : montre un
               produit vivant, tenu par des gens (2026-10-10). À mettre à jour

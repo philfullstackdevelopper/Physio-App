@@ -48,8 +48,7 @@ function PatientOffers() {
   return (
     <div>
       <p className="mx-auto max-w-md text-center text-sm leading-relaxed text-slate-500">
-        Votre kiné choisit l&apos;offre qu&apos;il vous propose et peut ajuster son tarif — voici les
-        prix de base.
+        Votre kiné vous propose l&apos;une de ces trois offres mensuelles.
       </p>
       <RevealGroup className="mt-8 grid gap-4 sm:grid-cols-3 sm:short:mt-5">
         {TIER_KEYS.map((key) => {
@@ -108,7 +107,7 @@ function PatientOffers() {
         })}
       </RevealGroup>
       <p className="mt-6 text-center text-xs text-slate-400 sm:short:mt-4">
-        Réglé directement à votre kiné, via Stripe — 7 jours gratuits avant le premier prélèvement.
+        Réglé directement à votre kiné, via Stripe. 7 jours gratuits avant le premier prélèvement.
       </p>
       <div className="mt-6 flex justify-center sm:short:mt-2">
         <Link

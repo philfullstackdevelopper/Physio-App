@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Sans, Fraunces, Plus_Jakarta_Sans } from "next/font/google";
+import { Instrument_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { frFR } from "@clerk/localizations";
 import CookieBanner from "@/components/CookieBanner";
@@ -10,13 +10,6 @@ import "./globals.css";
 // font — keeps the UI from reading as a generic scaffolded app.
 const instrumentSans = Instrument_Sans({
   variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-// Warm display serif for headings.
-const fraunces = Fraunces({
-  variable: "--font-display",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
@@ -68,7 +61,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${instrumentSans.variable} ${fraunces.variable} ${brandFont.variable} h-full antialiased`}
+      className={`${instrumentSans.variable} ${brandFont.variable} h-full antialiased`}
       // Browser extensions (e.g. LanguageTool) add attributes to <html> before React loads.
       suppressHydrationWarning
     >

@@ -171,7 +171,7 @@ export function HomeScreen({ tap }: { tap: boolean }) {
           <MountainScene variant="goal" progress={1 / 3} className="pointer-events-none absolute -bottom-0.5 left-0 h-12 w-[4.5rem] text-white/90" />
           <div className="relative pl-14">
             <p className="text-[7.5px] font-semibold uppercase tracking-wide text-white/75">Semaine 5</p>
-            <p className="mt-0.5 text-[10.5px] font-semibold leading-tight text-white">Renforcement lombaire — niveau 2</p>
+            <p className="mt-0.5 text-[10.5px] font-semibold leading-tight text-white">Renforcement lombaire, niveau 2</p>
             <p className="mt-0.5 text-[8px] text-white/85">2 séances à réaliser · 20 minutes environ</p>
             <div className="mt-1.5 flex items-center gap-1.5">
               <div className="flex flex-1 gap-1">
@@ -255,7 +255,7 @@ export function ProgrammeScreen({ tap }: { tap: boolean }) {
               <span className="inline-flex rounded-full bg-blue-600/15 px-1.5 py-px text-[6.5px] font-semibold uppercase tracking-wide text-blue-600">
                 Séance en cours
               </span>
-              <p className="mt-0.5 truncate text-[10.5px] font-semibold leading-tight text-slate-900">Renforcement lombaire — niv. 2</p>
+              <p className="mt-0.5 truncate text-[10.5px] font-semibold leading-tight text-slate-900">Renforcement lombaire, niv. 2</p>
               <p className="text-[8px] text-slate-500">1 / 3 cette semaine · 20 min</p>
             </div>
           </div>

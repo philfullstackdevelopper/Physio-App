@@ -93,7 +93,7 @@ export default function PatientDetailView({
         </div>
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger max-sm:mt-2 max-sm:py-2">{error}</p>}
-        {adjusted && <p className="mt-4 flex items-center gap-2 rounded-xl bg-ok-soft px-4 py-3 text-sm text-ok max-sm:mt-2 max-sm:py-2"><CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />Séance ajustée — le patient a été prévenu.</p>}
+        {adjusted && <p className="mt-4 flex items-center gap-2 rounded-xl bg-ok-soft px-4 py-3 text-sm text-ok max-sm:mt-2 max-sm:py-2"><CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />Séance ajustée, le patient a été prévenu.</p>}
 
         {/* Trois stats — une barre fine (valeur + détail sur la même ligne)
             plutôt que trois grandes cases, pour que la frise tienne à l'écran
