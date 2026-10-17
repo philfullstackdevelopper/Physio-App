@@ -12,17 +12,38 @@
 //    en démo affiche un petit message au lieu d'envoyer vers la connexion ;
 //  - bloque tout envoi de formulaire (rien n'est jamais enregistré) avec un
 //    message ;
-//  - affiche une pastille « Démo » (passer côté kiné / patient, quitter).
+//  - affiche un guide (Philippe, 2026-10-17 : « faciliter davantage
+//    l'utilisation de la démo ») : les écrans à visiter dans l'ordre, chacun
+//    cliquable, l'écran en cours en évidence, plus « passer côté kiné /
+//    patient » et « quitter ». Ouvert d'office sur ordinateur à l'arrivée,
+//    replié en pastille sur téléphone (il masquerait l'écran).
 // Aucune donnée réelle, aucune requête vers la base.
 // =============================================================================
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowLeftRight, LogOut, Sparkles, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeftRight, Check, LogOut, Sparkles, X } from "lucide-react";
 import { DemoHrefContext } from "@/components/DemoContext";
 
 type Side = "kine" | "patient";
+
+// Parcours conseillé, dans l'ordre. `ecran` = paramètre de /demo/<side>.
+const TOUR: Record<Side, { ecran: string; title: string; hint: string }[]> = {
+  kine: [
+    { ecran: "accueil", title: "Tableau de bord", hint: "Qui va bien, qui est à surveiller." },
+    { ecran: "patients", title: "Mes patients", hint: "Toute votre patientèle, triée." },
+    { ecran: "fiche", title: "La fiche d'un patient", hint: "Sa frise semaine par semaine. Essayez « Ajuster / changer la séance »." },
+    { ecran: "seances", title: "Mes séances", hint: "Vos séances et la bibliothèque d'exercices." },
+    { ecran: "messages", title: "Messages", hint: "Vos échanges avec les patients." },
+  ],
+  patient: [
+    { ecran: "accueil", title: "Accueil", hint: "Le programme de la semaine en un coup d'œil." },
+    { ecran: "seance-du-jour", title: "La séance du jour", hint: "Les exercices guidés, un par un." },
+    { ecran: "progres", title: "Mes progrès", hint: "La frise et l'évolution de la douleur." },
+    { ecran: "messages", title: "Messages", hint: "Écrire à son kiné." },
+  ],
+};
 
 /** Écran de démo kiné correspondant à une adresse de l'appli, ou null. */
 function kineScreen(url: URL): string | null {
@@ -76,8 +97,22 @@ const mapHref = (href: string) => {
 
 export default function DemoShell({ side, children }: { side: Side; children: React.ReactNode }) {
   const router = useRouter();
+  const current = useSearchParams().get("ecran") ?? "accueil";
   const [toast, setToast] = useState<string | null>("Démo avec des données fictives : rien n'est enregistré.");
+  // Guide ouvert d'office sur ordinateur (≥ 640 px), une fois par espace et
+  // par visite ; replié sur téléphone, où il cacherait l'écran.
   const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    const key = `demo-guide-vu-${side}`;
+    try {
+      if (window.matchMedia("(min-width: 640px)").matches && !sessionStorage.getItem(key)) setMenuOpen(true);
+      sessionStorage.setItem(key, "1");
+    } catch {
+      /* stockage indisponible : guide replié */
+    }
+  }, [side]);
+  const steps = TOUR[side];
+  const stepIndex = steps.findIndex((s) => s.ecran === current);
   const timer = useRef<number | null>(null);
 
   const show = (message: string) => {
@@ -133,22 +168,69 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
           sur téléphone, pour ne rien masquer de l'en-tête. */}
       <div className="fixed bottom-4 right-4 z-[70] max-sm:bottom-[calc(5.75rem+env(safe-area-inset-bottom))] max-sm:right-3">
         {menuOpen && (
-          <div className="mb-2 w-60 overflow-hidden rounded-2xl bg-surface text-sm shadow-xl ring-1 ring-line">
-            <p className="border-b border-line px-4 py-3 text-xs leading-snug text-muted">
-              Vous visitez l&apos;espace {side === "kine" ? "kiné" : "patient"} avec des données fictives. Rien n&apos;est enregistré.
-            </p>
-            <Link
-              href={`/demo/${other}`}
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-2.5 px-4 py-3 font-medium text-ink hover:bg-app-bg"
-            >
-              <ArrowLeftRight className="h-4 w-4 text-brand" strokeWidth={1.75} />
-              Voir l&apos;espace {other === "kine" ? "kiné" : "patient"}
-            </Link>
-            <Link href="/" className="flex items-center gap-2.5 px-4 py-3 font-medium text-ink hover:bg-app-bg">
-              <LogOut className="h-4 w-4 text-muted" strokeWidth={1.75} />
-              Quitter la démo
-            </Link>
+          <div className="mb-2 max-h-[calc(100dvh-5.5rem)] w-72 overflow-y-auto rounded-2xl bg-surface text-sm shadow-xl ring-1 ring-line max-sm:w-[calc(100vw-1.5rem)]">
+            <div className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">
+              <div>
+                <p className="font-semibold text-ink">Guide de la démo</p>
+                <p className="mt-0.5 text-xs leading-snug text-muted">
+                  Espace {side === "kine" ? "kiné" : "patient"} · données fictives, rien n&apos;est enregistré.
+                </p>
+              </div>
+              <button type="button" onClick={() => setMenuOpen(false)} aria-label="Replier le guide" className="rounded-full p-1 text-muted hover:bg-app-bg hover:text-ink">
+                <X className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </div>
+            <ol className="py-1">
+              {steps.map((st, i) => {
+                const here = st.ecran === current;
+                const done = stepIndex > i;
+                return (
+                  <li key={st.ecran}>
+                    <Link
+                      href={`/demo/${side}?ecran=${st.ecran}`}
+                      aria-current={here ? "step" : undefined}
+                      className={`flex gap-3 px-4 py-2 transition-colors [@media(max-height:650px)]:py-1.5 ${here ? "bg-brand-soft" : "hover:bg-app-bg"}`}
+                    >
+                      <span
+                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
+                          here ? "bg-brand text-white" : done ? "bg-ok-soft text-ok" : "bg-app-bg text-muted"
+                        }`}
+                      >
+                        {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
+                      </span>
+                      <span className="min-w-0">
+                        <span className={`block font-medium ${here ? "text-brand" : "text-ink"}`}>{st.title}</span>
+                        <span className="block text-xs leading-snug text-muted [@media(max-height:650px)]:hidden">{st.hint}</span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ol>
+            {stepIndex >= 0 && stepIndex < steps.length - 1 && (
+              <div className="px-4 pb-3">
+                <Link
+                  href={`/demo/${side}?ecran=${steps[stepIndex + 1].ecran}`}
+                  className="flex w-full items-center justify-center rounded-full bg-brand py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+                >
+                  Écran suivant : {steps[stepIndex + 1].title}
+                </Link>
+              </div>
+            )}
+            <div className="border-t border-line">
+              <Link
+                href={`/demo/${other}`}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2.5 px-4 py-2.5 font-medium text-ink hover:bg-app-bg"
+              >
+                <ArrowLeftRight className="h-4 w-4 text-brand" strokeWidth={1.75} />
+                Voir l&apos;espace {other === "kine" ? "kiné" : "patient"}
+              </Link>
+              <Link href="/" className="flex items-center gap-2.5 px-4 py-2.5 font-medium text-ink hover:bg-app-bg">
+                <LogOut className="h-4 w-4 text-muted" strokeWidth={1.75} />
+                Quitter la démo
+              </Link>
+            </div>
           </div>
         )}
         <button
@@ -158,7 +240,7 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
           className="ml-auto flex items-center gap-1.5 rounded-full bg-ink px-3.5 py-2 text-xs font-semibold text-white shadow-lg"
         >
           {menuOpen ? <X className="h-3.5 w-3.5" strokeWidth={2} /> : <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />}
-          Démo · {side === "kine" ? "espace kiné" : "espace patient"}
+          {menuOpen ? "Fermer le guide" : `Guide de la démo · ${side === "kine" ? "kiné" : "patient"}`}
         </button>
       </div>
 
