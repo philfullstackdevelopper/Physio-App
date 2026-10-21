@@ -1,10 +1,53 @@
 # Simplifier la banque d'exercices — proposition à valider
 
-**111 exercices retirés** sur 385 (banque : 361 + 24 P1). Il en resterait **274**.
+**149 exercices retirés** sur 385 (banque actuelle). Il en resterait **236**.
 
 Règle : on retire les variantes « salle de musculation » (barre, machine guidée, poulie, versions lestées ou acrobatiques) qu'un kiné ne prescrit presque jamais, surtout quand une variante plus simple existe déjà. **Aucune séance ne perd d'exercice** : partout où un exercice retiré apparaît, il est remplacé par l'exercice gardé indiqué. Rien n'est supprimé tant que Philippe n'a pas validé (la migration 0069 est écrite mais pas appliquée).
 
 Pour garder un exercice, il suffit de le rayer de la liste : je l'enlève du fichier `scripts/simplification-banque.mjs` et je régénère.
+
+## Doublons de rééducation : le même mouvement décliné par pathologie ou par dosage (même dessin) — le kiné adapte l'amplitude, la durée et les consignes lui-même (38)
+
+| Retiré | Remplacé dans les séances par | Pourquoi |
+|---|---|---|
+| Assisted Progressive Walking (Post-Knee-Replacement) | Assisted Progressive Walking | même marche avec aide technique |
+| Fractionated Short Walks | Walking | marche : seule la durée change |
+| Forward-Leaning Walk (Short Duration) | Walking | marche : seule la consigne change |
+| Unassisted Prolonged Walking (Hip) | Walking | marche : seule la durée change |
+| Progressive Brisk Walking | Walking | marche : seule l'allure change |
+| Walking on Varied Terrain | Walking | marche : seul le terrain change |
+| Controlled Mini-Squat (Knee Arthritis) | Bodyweight Squat | squat : seule l'amplitude change |
+| Limited-Range Squat (Hip) | Bodyweight Squat | squat : seule l'amplitude change |
+| Protected Squat (Quadriceps) | Bodyweight Squat | squat : seule l'amplitude change |
+| ACL-Protected Squat (Limited Range) | Bodyweight Squat | squat : seule l'amplitude change |
+| Light Closed-Chain Quad Strengthening | Bodyweight Squat | c'est un squat partiel |
+| Slow Bilateral Calf Raise | Calf Raise | même élévation sur la pointe des pieds |
+| Assisted Calf Raise (Post-Achilles) | Calf Raise | même exercice, avec appui |
+| Eccentric Calf Raise (Bent Knee, Soleus) | Eccentric Calf Raise (Straight Knee, Single-Leg) | même excentrique, genou fléchi |
+| Isometric Calf Hold (Resistance) | Isometric Calf Hold | même isométrique |
+| Gentle Supine Core Bracing (Hernia) | Postural Core Bracing | même gainage doux |
+| Dynamic Plank (Limb Movement) | Plank | variante de la planche |
+| Wrist Extension (Light Dumbbell) | Wrist Extension | même extension du poignet |
+| Wrist Extension (Band) | Wrist Extension | même extension du poignet |
+| Wrist Curl (Light Dumbbell) | Wrist Curl | même flexion du poignet |
+| Seated Stationary Cycling (Forward Lean) | Cycling | vélo : seule la consigne change |
+| Stationary Cycling (No Resistance) | Cycling | vélo : seule la résistance change |
+| Stationary Cycling (Low Resistance, Meniscus) | Cycling | vélo : seule la résistance change |
+| Assisted Low Step-Up (Slow) | Step-Up | même montée de marche |
+| Front Raise (Bodyweight) | Front Raise | même élévation frontale |
+| Limited Front Raise (Pain-Guided) | Assisted Front Raise | même élévation frontale douce |
+| Heel-Driven Glute Bridge (Hamstring Focus) | Glute Bridge | même pont fessier |
+| Isometric Wall Sit (60 Degrees) | Wall Sit | même chaise contre le mur |
+| Clamshell (Band) | Banded Clamshell | doublon exact |
+| Progressive Clamshell | Banded Clamshell | même coquillage avec résistance |
+| Side-Lying Hip Abduction (Band) | Side-Lying Hip Abduction | même abduction couché |
+| Side-Lying Leg Raise | Side-Lying Hip Abduction | doublon exact |
+| Lateral Lunge (Band) | Lateral Lunge | même fente latérale |
+| Anti-Rotation Hold (Band) | Pallof Press | même anti-rotation |
+| Banded Pallof Press | Pallof Press | doublon exact |
+| Cable Pallof Hold | Pallof Press | même anti-rotation, à la poulie |
+| Controlled Lateral Jump (Hip/Knee Alignment) | Skater Hop | même saut latéral |
+| Single-Leg Romanian Deadlift (Light, Bodyweight) | Single-Leg Romanian Deadlift | doublon |
 
 ## Pompes : on garde Pompe murale, inclinée, à genoux, classique, scapulaire, avec touches d'épaule, archer, diamant, explosive et typewriter (9)
 
@@ -67,9 +110,9 @@ Pour garder un exercice, il suffit de le rayer de la liste : je l'enlève du fic
 | Smith Machine Squat | Goblet Squat | machine guidée |
 | Hack Squat | Leg Press | machine, doublon de la presse |
 | Leg Press Calf Raise | Calf Raise | machine, doublon des mollets debout |
-| Seated Calf Raise | Eccentric Calf Raise (Bent Knee, Soleus) | machine ; le travail genou fléchi (soléaire) existe sans machine |
+| Seated Calf Raise | Eccentric Calf Raise (Straight Knee, Single-Leg) | machine ; le travail genou fléchi (soléaire) existe sans machine |
 | Standing Calf Raise | Calf Raise | barre sur les épaules, doublon |
-| Assisted Standing Calf Raise | Slow Bilateral Calf Raise | même exercice que l'élévation lente à deux pieds (demandé par Philippe) |
+| Assisted Standing Calf Raise | Calf Raise | même exercice que l'élévation lente à deux pieds (demandé par Philippe) |
 | Lying Leg Curl | Leg Curl | doublon du leg curl |
 | Kettlebell Romanian Deadlift | Romanian Deadlift | doublon (haltères) |
 | Landmine Squat | Goblet Squat | barre, salle de sport |
