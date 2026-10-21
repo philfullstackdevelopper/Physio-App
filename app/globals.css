@@ -210,6 +210,47 @@ body {
 .ei-frame-1 { animation: ei-frame-1 3.6s ease-in-out infinite; }
 .ei-frame-2 { animation: ei-frame-2 3.6s ease-in-out infinite; }
 .ei-frame-3 { animation: ei-frame-3 3.6s ease-in-out infinite; }
+/* Animations à 8 dessins (planches générées avec Codex, 2026-10-17) : aller
+   1 → 8 puis retour 7 → 2, une coupure nette à chaque dessin (pas de
+   fondu, qui brouillerait le mouvement). Les dessins 1 et 8 restent deux
+   fois plus longtemps. Liste des exercices concernés :
+   lib/exercise/illustrationFrames.ts (fichiers anim-1..8.svg). Mouvement réduit : la règle
+   prefers-reduced-motion plus bas fige l'animation sur le dessin 1. */
+@keyframes ei8-1 { 0% { opacity: 1; } 6.25% { opacity: 1; } 12.5% { opacity: 0; } 18.75% { opacity: 0; } 25% { opacity: 0; } 31.25% { opacity: 0; } 37.5% { opacity: 0; } 43.75% { opacity: 0; } 50% { opacity: 0; } 56.25% { opacity: 0; } 62.5% { opacity: 0; } 68.75% { opacity: 0; } 75% { opacity: 0; } 81.25% { opacity: 0; } 87.5% { opacity: 0; } 93.75% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes ei8-2 { 0% { opacity: 0; } 6.25% { opacity: 0; } 12.5% { opacity: 1; } 18.75% { opacity: 0; } 25% { opacity: 0; } 31.25% { opacity: 0; } 37.5% { opacity: 0; } 43.75% { opacity: 0; } 50% { opacity: 0; } 56.25% { opacity: 0; } 62.5% { opacity: 0; } 68.75% { opacity: 0; } 75% { opacity: 0; } 81.25% { opacity: 0; } 87.5% { opacity: 0; } 93.75% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes ei8-3 { 0% { opacity: 0; } 6.25% { opacity: 0; } 12.5% { opacity: 0; } 18.75% { opacity: 1; } 25% { opacity: 0; } 31.25% { opacity: 0; } 37.5% { opacity: 0; } 43.75% { opacity: 0; } 50% { opacity: 0; } 56.25% { opacity: 0; } 62.5% { opacity: 0; } 68.75% { opacity: 0; } 75% { opacity: 0; } 81.25% { opacity: 0; } 87.5% { opacity: 1; } 93.75% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes ei8-4 { 0% { opacity: 0; } 6.25% { opacity: 0; } 12.5% { opacity: 0; } 18.75% { opacity: 0; } 25% { opacity: 1; } 31.25% { opacity: 0; } 37.5% { opacity: 0; } 43.75% { opacity: 0; } 50% { opacity: 0; } 56.25% { opacity: 0; } 62.5% { opacity: 0; } 68.75% { opacity: 0; } 75% { opacity: 0; } 81.25% { opacity: 1; } 87.5% { opacity: 0; } 93.75% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes ei8-5 { 0% { opacity: 0; } 6.25% { opacity: 0; } 12.5% { opacity: 0; } 18.75% { opacity: 0; } 25% { opacity: 0; } 31.25% { opacity: 1; } 37.5% { opacity: 0; } 43.75% { opacity: 0; } 50% { opacity: 0; } 56.25% { opacity: 0; } 62.5% { opacity: 0; } 68.75% { opacity: 0; } 75% { opacity: 1; } 81.25% { opacity: 0; } 87.5% { opacity: 0; } 93.75% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes ei8-6 { 0% { opacity: 0; } 6.25% { opacity: 0; } 12.5% { opacity: 0; } 18.75% { opacity: 0; } 25% { opacity: 0; } 31.25% { opacity: 0; } 37.5% { opacity: 1; } 43.75% { opacity: 0; } 50% { opacity: 0; } 56.25% { opacity: 0; } 62.5% { opacity: 0; } 68.75% { opacity: 1; } 75% { opacity: 0; } 81.25% { opacity: 0; } 87.5% { opacity: 0; } 93.75% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes ei8-7 { 0% { opacity: 0; } 6.25% { opacity: 0; } 12.5% { opacity: 0; } 18.75% { opacity: 0; } 25% { opacity: 0; } 31.25% { opacity: 0; } 37.5% { opacity: 0; } 43.75% { opacity: 1; } 50% { opacity: 0; } 56.25% { opacity: 0; } 62.5% { opacity: 1; } 68.75% { opacity: 0; } 75% { opacity: 0; } 81.25% { opacity: 0; } 87.5% { opacity: 0; } 93.75% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes ei8-8 { 0% { opacity: 0; } 6.25% { opacity: 0; } 12.5% { opacity: 0; } 18.75% { opacity: 0; } 25% { opacity: 0; } 31.25% { opacity: 0; } 37.5% { opacity: 0; } 43.75% { opacity: 0; } 50% { opacity: 1; } 56.25% { opacity: 1; } 62.5% { opacity: 0; } 68.75% { opacity: 0; } 75% { opacity: 0; } 81.25% { opacity: 0; } 87.5% { opacity: 0; } 93.75% { opacity: 0; } 100% { opacity: 0; } }
+.ei8-1 { animation: ei8-1 3.6s step-end infinite; }
+.ei8-2 { animation: ei8-2 3.6s step-end infinite; }
+.ei8-3 { animation: ei8-3 3.6s step-end infinite; }
+.ei8-4 { animation: ei8-4 3.6s step-end infinite; }
+.ei8-5 { animation: ei8-5 3.6s step-end infinite; }
+.ei8-6 { animation: ei8-6 3.6s step-end infinite; }
+.ei8-7 { animation: ei8-7 3.6s step-end infinite; }
+.ei8-8 { animation: ei8-8 3.6s step-end infinite; }
+/* Mouvements circulaires (cercles de cheville…) : 1 → 8 puis on repart de 1,
+   sans retour en arrière, à vitesse constante. Liste : EIGHT_FRAME_LOOP_SLUGS. */
+@keyframes ei8l-1 { 0% { opacity: 1; } 12.5%, 100% { opacity: 0; } }
+@keyframes ei8l-2 { 0% { opacity: 0; } 12.5% { opacity: 1; } 25%, 100% { opacity: 0; } }
+@keyframes ei8l-3 { 0% { opacity: 0; } 25% { opacity: 1; } 37.5%, 100% { opacity: 0; } }
+@keyframes ei8l-4 { 0% { opacity: 0; } 37.5% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes ei8l-5 { 0% { opacity: 0; } 50% { opacity: 1; } 62.5%, 100% { opacity: 0; } }
+@keyframes ei8l-6 { 0% { opacity: 0; } 62.5% { opacity: 1; } 75%, 100% { opacity: 0; } }
+@keyframes ei8l-7 { 0% { opacity: 0; } 75% { opacity: 1; } 87.5%, 100% { opacity: 0; } }
+@keyframes ei8l-8 { 0% { opacity: 0; } 87.5%, 100% { opacity: 1; } }
+.ei8l-1 { animation: ei8l-1 2.4s step-end infinite; }
+.ei8l-2 { animation: ei8l-2 2.4s step-end infinite; }
+.ei8l-3 { animation: ei8l-3 2.4s step-end infinite; }
+.ei8l-4 { animation: ei8l-4 2.4s step-end infinite; }
+.ei8l-5 { animation: ei8l-5 2.4s step-end infinite; }
+.ei8l-6 { animation: ei8l-6 2.4s step-end infinite; }
+.ei8l-7 { animation: ei8l-7 2.4s step-end infinite; }
+.ei8l-8 { animation: ei8l-8 2.4s step-end infinite; }
+
 
 /* Motion-sensitive users: entrance/pulse/cross-fade animations are decorative
    pacing, not state carriers, so they can simply stop — nothing they convey

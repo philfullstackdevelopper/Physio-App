@@ -17,6 +17,7 @@
 
 import { ImageOff } from "lucide-react";
 import { EXERCISE_ILLUSTRATION_MAP } from "@/lib/exercise/illustrationMap";
+import { EIGHT_FRAME_LOOP_SLUGS, EIGHT_FRAME_SLUGS } from "@/lib/exercise/illustrationFrames";
 
 /** Real 3-frame vendored illustration for exercises matched in EXERCISE_ILLUSTRATION_MAP.
  *  The cross-fade keyframes (.ei-frame-*) live once in app/globals.css rather
@@ -51,17 +52,23 @@ function VendoredIllustration({
     );
   }
 
+  // 8 dessins anim-1..8.svg (animation aller-retour, lib/exercise/illustrationFrames.ts)
+  // ou les 3 dessins d'origine frame-1..3.svg en fondu.
+  const eight = EIGHT_FRAME_SLUGS.has(slug);
+  const frames = eight ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3];
+  const file = eight ? "anim" : "frame";
+  const cls = eight ? (EIGHT_FRAME_LOOP_SLUGS.has(slug) ? "ei8l" : "ei8") : "ei-frame";
   return (
     <div className={`relative ${className}`} role="img" aria-label={`Démonstration : ${name}`}>
-      {[1, 2, 3].map((frame) => (
+      {frames.map((frame) => (
         // eslint-disable-next-line @next/next/no-img-element -- static local SVG, no next/image benefit
         <img
           key={frame}
-          src={`/exercise-illustrations/${slug}/frame-${frame}.svg`}
+          src={`/exercise-illustrations/${slug}/${file}-${frame}.svg`}
           alt=""
           loading="lazy"
           decoding="async"
-          className={`ei-frame-${frame} absolute inset-0 h-full w-full object-contain`}
+          className={`${cls}-${frame} absolute inset-0 h-full w-full object-contain`}
         />
       ))}
     </div>

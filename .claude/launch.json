@@ -4,8 +4,19 @@
     {
       "name": "physio-app-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "galerie-animations",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "docs/test-illustrations-ia/codex/outils/serveur.mjs"
+      ],
+      "port": 8090
     }
   ]
 }

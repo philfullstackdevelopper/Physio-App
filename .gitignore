@@ -64,3 +64,9 @@ graphify-out/
 
 # Prospection locale (coordonnées de cabinets) : ne pas publier sur GitHub
 docs/prospection/
+
+# Outils de génération d illustrations (dépendances locales)
+# Planches et animations générées (copies installées dans public/exercise-illustrations)
+docs/test-illustrations-ia/codex/*
+!docs/test-illustrations-ia/codex/outils/
+docs/test-illustrations-ia/codex/outils/node_modules/
