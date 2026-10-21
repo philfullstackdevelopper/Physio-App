@@ -67,7 +67,7 @@ const frOf = new Map(NOUVEAUX.map((e) => [e.slug, e.fr]));
 let nNew = 0;
 for (const [z, slugs] of Object.entries(ZN))
   for (const s of slugs) {
-    if (fs.existsSync(path.join(APP, "public/exercise-illustrations", s))) continue;
+    if ([...ex.keys()].some((n) => slugOf.get(n) === s)) continue; // déjà utilisé par un exercice existant
     cards.get(z).push({ name: frOf.get(s) ?? s, src: gif(s), tag: "nouveau" });
     nNew++;
   }
