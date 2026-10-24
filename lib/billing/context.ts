@@ -2,7 +2,7 @@
 // the layout, the home page and the guided session can never disagree on who
 // is let in. The pure rules live in access.ts.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { hasActiveTier, type TierBilling } from "./access";
+import { type TierBilling } from "./access";
 
 /** Ce que hasActiveTier() a besoin de savoir sur un patient, en une requête. */
 export async function getTierBilling(supabase: SupabaseClient, userId: string): Promise<TierBilling> {
@@ -34,7 +34,11 @@ export async function isPatientKineSuspended(supabase: SupabaseClient, userId: s
  * seule la mise en page faisait l'exception : l'Accueil et les séances
  * renvoyaient quand même vers le paiement.
  */
-export async function hasPatientAppAccess(supabase: SupabaseClient, userId: string): Promise<boolean> {
-  const [billing, suspended] = await Promise.all([getTierBilling(supabase, userId), isPatientKineSuspended(supabase, userId)]);
-  return suspended || hasActiveTier(billing);
+// Nouveau modèle (2026-10-24) : c'est le kiné qui paie l'appli pour ses
+// patients (forfait par patient actif). Un patient n'a donc plus d'offre à
+// choisir pour accéder à son programme : l'accès est toujours ouvert. Le
+// suivi mensuel (payé au kiné) est une option, jamais une condition d'accès.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function hasPatientAppAccess(_supabase: SupabaseClient, _userId: string): Promise<boolean> {
+  return true;
 }

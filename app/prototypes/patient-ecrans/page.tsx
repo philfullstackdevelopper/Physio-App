@@ -133,17 +133,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
         ) : ecran === "compte" ? (
           <CompteView
             fullName="Léa Martin"
-            offerLabel="Standard"
-            priceCents={TIERS.standard.amount}
-            badgeLabel="Actif"
-            badgeClass="bg-ok-soft text-ok"
-            nextChargeLine="Prochain prélèvement le 19 octobre 2026"
-            hasCustomer
-            canChangeOffer
-            active
-            canCancel
-            cancelAt={null}
-            accessEnd="19 octobre 2026"
+            followUp={{ status: "active", priceCents: 2000, cardLabel: "VISA •••• 4242", kineName: "Julien Roux" }}
           />
         ) : ecran === "informations" ? (
           <InformationsView

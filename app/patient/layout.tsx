@@ -65,7 +65,11 @@ export default async function PatientLayout({ children }: { children: React.Reac
   const pathname = (await headers()).get("x-pathname") ?? "";
   const onOnboardingPath = pathname.startsWith(ONBOARDING_PATH);
   const onAccountPath = pathname.startsWith("/patient/compte");
-  const needsTierCheck = !onOnboardingPath && !pathname.startsWith(ABONNEMENT_PATH) && !onAccountPath && !kineSuspended;
+  // Nouveau modèle (2026-10-24) : plus d'offre patient à choisir, le kiné paie
+  // l'appli pour ses patients — plus de renvoi vers /patient/abonnement.
+  void onAccountPath;
+  void kineSuspended;
+  const needsTierCheck = false;
   const fullBleed = onOnboardingPath || pathname.startsWith(ABONNEMENT_PATH);
 
   // Les trois lectures qui suivent ne dépendent pas l'une de l'autre : en

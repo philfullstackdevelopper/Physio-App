@@ -1,215 +1,93 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Calendar, CheckCircle2, ChevronRight, CreditCard, Download, LogOut, ShieldCheck, Trash2, User } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight, CreditCard, Download, LogOut, ShieldCheck, Trash2, User } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
-import { openBillingPortal } from "@/app/billing/actions";
-import SubmitButton from "@/components/SubmitButton";
-import { cancelMySubscription, deleteMyAccount, resumeMySubscription } from "./actions";
+import { deleteMyAccount } from "./actions";
 
 // Affichage seul de « Paramètres » du patient (les données viennent de
 // page.tsx) — séparé pour pouvoir le prévisualiser avec des données fictives
 // sans connexion (/prototypes/patient-ecrans?ecran=compte), audit des formats
 // d'écran du 2026-10-10. Les formulaires gardent leurs vraies actions.
 
-/**
- * Résilier / annuler la résiliation depuis l'appli (Philippe, 2026-10-10).
- * Résilier se déplie (<details>, sans JavaScript) pour demander confirmation :
- * l'accès reste ouvert jusqu'à la fin de la période déjà payée, puis l'appli
- * se verrouille. `until` = date de fin si une résiliation est déjà programmée.
- */
-function CancellationControl({
-  canCancel,
-  until,
-  accessEnd,
-  ended,
-}: {
-  canCancel: boolean;
-  until: string | null;
-  accessEnd: string | null;
-  /** Ancien abonné sans accès : on lui propose de reprendre une offre. */
-  ended: boolean;
-}) {
-  if (ended) {
-    return (
-      <Link href="/patient/abonnement?offres=1" className="mt-3 block text-center text-sm font-semibold text-brand hover:underline">
-        Reprendre un abonnement
-      </Link>
-    );
-  }
-  if (until) {
-    return (
-      <form action={resumeMySubscription} className="mt-3 text-center">
-        <SubmitButton pendingText="Un instant…" className="text-sm font-medium text-brand hover:underline">
-          Annuler la résiliation et garder mon abonnement
-        </SubmitButton>
-      </form>
-    );
-  }
-  if (!canCancel) return null;
-  return (
-    <details className="group mt-3 text-center">
-      <summary className="cursor-pointer list-none text-sm font-medium text-muted hover:text-danger [&::-webkit-details-marker]:hidden">
-        Résilier mon abonnement
-      </summary>
-      <div className="mt-2 rounded-xl bg-danger-soft p-3 text-left">
-        <p className="text-sm text-ink">
-          Plus aucun prélèvement.{" "}
-          {accessEnd ? <>Vous gardez l&rsquo;accès jusqu&rsquo;au <strong>{accessEnd}</strong>, puis l&rsquo;appli se verrouille.</> : <>Vous gardez l&rsquo;accès jusqu&rsquo;à la fin de la période en cours.</>}
-        </p>
-        <form action={cancelMySubscription} className="mt-2">
-          <SubmitButton
-            pendingText="Résiliation…"
-            className="w-full rounded-full bg-danger py-2 text-sm font-semibold text-white hover:brightness-95"
-          >
-            Confirmer la résiliation
-          </SubmitButton>
-        </form>
-      </div>
-    </details>
-  );
-}
+export type FollowUpSummary = {
+  status: "none" | "pending_card" | "active" | "stopped";
+  priceCents: number;
+  cardLabel: string | null;
+  kineName: string | null;
+};
 
 export interface CompteViewProps {
   fullName: string | null;
   error?: string;
-  refreshed?: string;
-  changed?: string;
-  offerLabel: string;
-  priceCents: number | null;
-  badgeLabel: string;
-  badgeClass: string;
-  nextChargeLine: string | null;
-  hasCustomer: boolean;
-  /** L'offre actuelle est l'une des trois offres (on peut en changer). */
-  canChangeOffer: boolean;
-  active: boolean;
-  canCancel: boolean;
-  /** Date ISO de fin si une résiliation est programmée, sinon null. */
-  cancelAt: string | null;
-  accessEnd: string | null;
+  notice?: string | null;
+  followUp: FollowUpSummary;
+}
+
+const euros = (cents: number) => (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 });
+
+// Nouveau modèle (2026-10-24) : plus d'abonnement patient — l'appli est
+// offerte par le kiné. La carte « Suivi mensuel » résume le suivi payé au
+// kiné (bilan mensuel) et mène à /patient/suivi pour le gérer.
+function followUpText(f: FollowUpSummary): { title: string; line: string; badge: string; badgeClass: string; cta: string } {
+  const kine = f.kineName ?? "votre kiné";
+  if (f.status === "active") {
+    return { title: "Suivi mensuel actif", line: `${euros(f.priceCents)} € par bilan · ${f.cardLabel ?? "carte enregistrée"}`, badge: "Actif", badgeClass: "bg-ok-soft text-ok", cta: "Gérer mon suivi" };
+  }
+  if (f.status === "pending_card") {
+    return { title: "Suivi mensuel", line: "Carte pas encore enregistrée", badge: "À terminer", badgeClass: "bg-warn-soft text-warn", cta: "Terminer" };
+  }
+  if (f.status === "stopped") {
+    return { title: "Suivi mensuel arrêté", line: `Vous pouvez le reprendre avec ${kine}`, badge: "Arrêté", badgeClass: "bg-app-bg text-muted", cta: "Reprendre" };
+  }
+  return { title: "Suivi mensuel", line: `Un bilan par mois avec ${kine}, ${euros(f.priceCents)} € (non remboursé)`, badge: "Non activé", badgeClass: "bg-app-bg text-muted", cta: "Découvrir" };
 }
 
 export default function CompteView({
   fullName,
   error,
-  refreshed,
-  changed,
-  offerLabel,
-  priceCents,
-  badgeLabel,
-  badgeClass,
-  nextChargeLine,
-  hasCustomer,
-  canChangeOffer,
-  active,
-  canCancel,
-  cancelAt,
-  accessEnd,
+  notice,
+  followUp,
 }: CompteViewProps) {
+  const f = followUpText(followUp);
   return (
     // Téléphone (Philippe, 2026-10-04 : tout sur un écran, plus efficace) :
-    // cartes resserrées, textes secondaires masqués, offre + prix sur une
-    // ligne. Dès sm : inchangé.
+    // cartes resserrées, textes secondaires masqués. Dès sm : deux cartes.
     <main className="bg-app-bg p-4 pt-5 max-sm:bg-transparent max-sm:pt-2 max-sm:flex max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:flex-col sm:min-h-dvh sm:p-8 short:sm:py-4">
-      <PhoneSettings
-        fullName={fullName}
-        error={error}
-        notice={changed === "1" ? "Offre changée avec succès." : refreshed === "1" ? "Abonnement mis à jour." : null}
-        offerLabel={offerLabel}
-        priceCents={priceCents}
-        badgeLabel={badgeLabel}
-        badgeClass={badgeClass}
-        nextChargeLine={nextChargeLine}
-        hasCustomer={hasCustomer}
-        canChangeOffer={canChangeOffer}
-        active={active}
-        cancellation={<CancellationControl canCancel={canCancel} until={cancelAt} accessEnd={accessEnd} ended={hasCustomer && !active} />}
-      />
+      <PhoneSettings fullName={fullName} error={error} notice={notice ?? null} f={f} />
 
       <div className="mx-auto max-w-7xl max-sm:hidden max-sm:flex max-sm:w-full max-sm:flex-1 max-sm:flex-col max-sm:justify-between">
         <h1 className="text-xl font-semibold text-ink sm:text-2xl">Paramètres</h1>
-        <p className="mt-1 hidden text-sm text-muted sm:block short:sm:hidden">Gérez votre compte, votre abonnement et vos données.</p>
+        <p className="mt-1 hidden text-sm text-muted sm:block short:sm:hidden">Gérez votre compte, votre suivi et vos données.</p>
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger">{error}</p>}
-        {(refreshed === "1" || changed === "1") && (
+        {notice && (
           <p className="mt-4 flex items-center gap-1.5 rounded-xl bg-ok-soft p-3 text-sm text-ok">
             <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-            {changed === "1" ? "Offre changée avec succès." : "Abonnement mis à jour."}
+            {notice}
           </p>
         )}
 
         <div className="mt-4 grid gap-3 sm:mt-6 sm:gap-5 short:sm:mt-3 short:sm:gap-3 lg:grid-cols-[3fr_2fr]">
-          {/* Mon abonnement */}
+          {/* Suivi mensuel (nouveau modèle, 2026-10-24) */}
           <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6 short:sm:p-4">
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2 font-medium text-ink">
                 <CreditCard className="h-4 w-4 text-brand" strokeWidth={1.75} />
-                Mon abonnement
+                {f.title}
               </h2>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{badgeLabel}</span>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${f.badgeClass}`}>{f.badge}</span>
             </div>
-
-            <div className="mt-3 flex flex-wrap items-baseline gap-x-2 sm:mt-4 sm:block">
-            <p className="text-lg font-semibold text-ink">{offerLabel}</p>
-            {priceCents !== null && (
-              <p className="text-sm text-muted">
-                {(priceCents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })}&nbsp;€ / mois
-              </p>
-            )}
-            </div>
-
-            {nextChargeLine && (
-              <div className="mt-3 flex items-center gap-2 border-t border-line pt-3 text-sm text-muted sm:mt-4 sm:pt-4 short:sm:mt-2 short:sm:pt-2">
-                <Calendar className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
-                {nextChargeLine}
-              </div>
-            )}
-
-            {hasCustomer ? (
-              <div className="mt-3 sm:mt-5 short:sm:mt-3">
-                {/* Deux boutons de même poids, côte à côte : "gérer" couvre
-                    déjà changer de carte, voir les factures ET résilier (page
-                    Stripe) — un 3ème bouton "annuler" séparé était redondant
-                    avec lui (Philippe, 2026-09-11). "Changer d'offre" reste à
-                    part car Stripe ne peut pas le faire lui-même (tarifs
-                    propres à chaque kiné, voir changer-offre/actions.ts). */}
-                <div className="grid grid-cols-2 gap-2">
-                  <form action={openBillingPortal}>
-                    <input type="hidden" name="intent" value="manage" />
-                    <button
-                      type="submit"
-                      className="flex w-full items-center justify-center gap-1.5 rounded-full bg-brand py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
-                    >
-                      <span className="sm:hidden">Gérer</span>
-                      <span className="hidden sm:inline">Gérer mon abonnement</span>
-                    </button>
-                  </form>
-                  {canChangeOffer ? (
-                    <Link
-                      href="/patient/compte/changer-offre"
-                      className="flex w-full items-center justify-center rounded-full border border-brand py-2.5 text-sm font-semibold text-brand transition hover:bg-brand-soft"
-                    >
-                      Changer d&rsquo;offre
-                    </Link>
-                  ) : (
-                    <span />
-                  )}
-                </div>
-                <p className="mt-2 hidden items-center justify-center gap-1 text-center text-xs text-muted sm:flex">
-                  <ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-                  Paiement sécurisé par Stripe
-                </p>
-                <CancellationControl canCancel={canCancel} until={cancelAt} accessEnd={accessEnd} ended={hasCustomer && !active} />
-              </div>
-            ) : (
-              !active && (
-                <Link
-                  href="/patient/abonnement"
-                  className="mt-5 inline-block rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-                >
-                  Choisir une offre
-                </Link>
-              )
-            )}
+            <p className="mt-3 text-sm text-muted sm:mt-4">{f.line}</p>
+            <p className="mt-2 text-sm text-muted">
+              Votre programme et l&apos;appli vous sont offerts par votre kiné. Le suivi mensuel est une option : un bilan par
+              mois, payé directement à votre kiné, seulement le mois où il est fait.
+            </p>
+            <Link
+              href="/patient/suivi"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark"
+            >
+              {f.cta}
+              <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            </Link>
           </section>
 
           {/* Mon compte */}
@@ -294,35 +172,18 @@ function PhoneSettings({
   fullName,
   error,
   notice,
-  offerLabel,
-  priceCents,
-  badgeLabel,
-  badgeClass,
-  nextChargeLine,
-  hasCustomer,
-  canChangeOffer,
-  active,
-  cancellation,
+  f,
 }: {
   fullName: string | null;
   error?: string;
   notice: string | null;
-  offerLabel: string;
-  priceCents: number | null;
-  badgeLabel: string;
-  badgeClass: string;
-  nextChargeLine: string | null;
-  hasCustomer: boolean;
-  canChangeOffer: boolean;
-  active: boolean;
-  cancellation: React.ReactNode;
+  f: ReturnType<typeof followUpText>;
 }) {
-  const priceLine = priceCents !== null ? `${(priceCents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € / mois` : null;
   return (
     <div className="flex flex-1 flex-col gap-3 short:gap-2 sm:hidden">
       <div>
         <h1 className="text-2xl font-semibold text-ink">Paramètres</h1>
-        <p className="mt-0.5 text-sm text-muted short:hidden">Gérez votre compte, votre abonnement et vos données.</p>
+        <p className="mt-0.5 text-sm text-muted short:hidden">Gérez votre compte, votre suivi et vos données.</p>
       </div>
 
       {error && <p className="rounded-xl bg-danger-soft p-3 text-sm text-danger">{error}</p>}
@@ -345,48 +206,18 @@ function PhoneSettings({
       </Link>
 
       <section>
-        <h2 className="mb-1.5 px-1 text-sm font-semibold text-ink short:hidden">Mon abonnement</h2>
-        <div className="rounded-2xl bg-surface p-3.5 shadow-soft short:p-2.5">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
-              <CreditCard className="h-[18px] w-[18px]" strokeWidth={1.75} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-ink">{offerLabel}</span>
-              {(priceLine || nextChargeLine) && (
-                <span className="block truncate text-xs text-muted">{[priceLine, nextChargeLine].filter(Boolean).join(" · ")}</span>
-              )}
-            </span>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${badgeClass}`}>{badgeLabel}</span>
-          </div>
-          {hasCustomer ? (
-            <div className="mt-3 grid grid-cols-2 gap-2 short:mt-2">
-              <form action={openBillingPortal}>
-                <input type="hidden" name="intent" value="manage" />
-                <button type="submit" className="w-full rounded-full bg-brand py-2.5 text-sm font-semibold text-white">
-                  Gérer
-                </button>
-              </form>
-              {canChangeOffer ? (
-                <Link
-                  href="/patient/compte/changer-offre"
-                  className="flex w-full items-center justify-center rounded-full border border-brand py-2.5 text-sm font-semibold text-brand"
-                >
-                  Changer d&rsquo;offre
-                </Link>
-              ) : (
-                <span />
-              )}
-            </div>
-          ) : (
-            !active && (
-              <Link href="/patient/abonnement" className="mt-3 block rounded-full bg-brand py-2.5 text-center text-sm font-semibold text-white">
-                Choisir une offre
-              </Link>
-            )
-          )}
-          {hasCustomer && cancellation}
-        </div>
+        <h2 className="mb-1.5 px-1 text-sm font-semibold text-ink short:hidden">Suivi mensuel</h2>
+        <Link href="/patient/suivi" className="flex items-center gap-3 rounded-2xl bg-surface p-3.5 shadow-soft short:p-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
+            <CreditCard className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-ink">{f.title}</span>
+            <span className="block truncate text-xs text-muted">{f.line}</span>
+          </span>
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${f.badgeClass}`}>{f.badge}</span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
+        </Link>
       </section>
 
       <section>

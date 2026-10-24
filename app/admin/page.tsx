@@ -7,7 +7,8 @@ import { getPool } from "@/lib/db/pool";
 import { listAllInstructors, listTestAccounts, listWaitlist, type TestAccountRow, type WaitlistRow } from "@/lib/db/admin";
 import Waitlist from "./Waitlist";
 import TestAccounts from "./TestAccounts";
-import { approveInstructor, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
+import { approveInstructor, invoiceLastMonth, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
+import { periodLabel, periodOf, previousPeriod } from "@/lib/billing/reviewModel";
 
 const STATUS_LABEL: Record<string, { label: string; tone: string }> = {
   approved: { label: "Actif", tone: "bg-emerald-50 text-emerald-700" },
@@ -69,6 +70,25 @@ export default async function AdminPage({
         </p>
       )}
       {sp.error && <p className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{sp.error}</p>}
+      {/* Bilan de la dernière facturation mensuelle (nouveau modèle, 2026-10-24). */}
+      {sp.facture && (
+        <p className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
+          Facturation de {periodLabel(sp.facture)} : {sp.factures ?? 0} facture(s) envoyée(s), {sp.offerts ?? 0} premier(s) mois offert(s)
+          {Number(sp.deja ?? 0) > 0 ? `, ${sp.deja} déjà facturé(s)` : ""}.
+          {Number(sp.sans_moyen ?? 0) > 0 && ` ${sp.sans_moyen} kiné(s) sans moyen de paiement : leur facture reste « à régler » sur leur page Suivi & facturation.`}
+          {Number(sp.erreurs ?? 0) > 0 && ` ${sp.erreurs} erreur(s) — voir les journaux, puis relancer.`}
+        </p>
+      )}
+
+      {/* Facture EasyPhysio des kinés (forfait par patient actif). */}
+      <form action={invoiceLastMonth} className="mb-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">Facturer les kinés — {periodLabel(previousPeriod(periodOf(new Date())))}</p>
+          <p className="text-xs text-slate-500">3 € HT par patient actif + TVA, prélevé automatiquement. Premier mois offert. Un mois n&apos;est jamais facturé deux fois.</p>
+        </div>
+        <input type="hidden" name="period" value={previousPeriod(periodOf(new Date()))} />
+        <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Lancer la facturation</button>
+      </form>
 
       <h1 className="font-display text-2xl font-semibold text-slate-900">
         Comptes praticiens en attente
