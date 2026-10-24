@@ -22,6 +22,7 @@ import ExerciseLibraryGrid from "@/components/ExerciseLibraryGrid";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { mockData, mockFiche } from "./mock";
 import { noopResult, noopVoid } from "./actions";
+import MonthlyReviewBar from "@/components/MonthlyReviewBar";
 
 export const metadata = { title: "Aperçu tableau de bord kiné", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -192,6 +193,26 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
         paymentLapsed={false}
         adjusted={false}
         stats={f.stats}
+        monthlyReview={
+          <MonthlyReviewBar
+            state={{
+              patientId: "p2",
+              firstName: "Thomas",
+              monthLabel: "octobre 2026",
+              followUp: "active",
+              priceCents: 2000,
+              review: null,
+              draft: `Bonjour Thomas,
+
+Ce mois-ci : 9 séances faites, assiduité 82 %, dernière douleur notée 7/10.
+
+La douleur d'hier vient sûrement de la montée en charge des squats : je les remplace cette semaine par des demi-squats. Continuez la marche quotidienne. On refait le point dans deux semaines.`,
+              connectActive: true,
+            }}
+            validateAction={noopVoid}
+            proposeAction={noopVoid}
+          />
+        }
         actionsMenu={
           <PatientActionsMenu
             patientId="p2"

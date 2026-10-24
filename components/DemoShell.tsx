@@ -33,7 +33,8 @@ const TOUR: Record<Side, { ecran: string; title: string; hint: string }[]> = {
   kine: [
     { ecran: "accueil", title: "Tableau de bord", hint: "Qui va bien, qui est à surveiller." },
     { ecran: "patients", title: "Mes patients", hint: "Toute votre patientèle, triée." },
-    { ecran: "fiche", title: "La fiche d'un patient", hint: "Sa frise semaine par semaine. Essayez « Ajuster / changer la séance »." },
+    { ecran: "fiche", title: "La fiche d'un patient", hint: "Sa frise semaine par semaine. Essayez « Faire le bilan » du mois." },
+    { ecran: "revenus", title: "Suivi & facturation", hint: "Bilans du mois, votre tarif, vos documents, votre facture EasyPhysio." },
     { ecran: "seances", title: "Mes séances", hint: "Vos séances et la bibliothèque d'exercices." },
     { ecran: "messages", title: "Messages", hint: "Vos échanges avec les patients." },
   ],
@@ -42,6 +43,7 @@ const TOUR: Record<Side, { ecran: string; title: string; hint: string }[]> = {
     { ecran: "seance-du-jour", title: "La séance du jour", hint: "Les exercices guidés, un par un." },
     { ecran: "progres", title: "Mes progrès", hint: "La frise et l'évolution de la douleur." },
     { ecran: "messages", title: "Messages", hint: "Écrire à son kiné." },
+    { ecran: "suivi", title: "Le suivi mensuel", hint: "Accepter le tarif de son kiné, ses bilans et notes d'honoraires." },
   ],
 };
 
@@ -69,6 +71,7 @@ function patientScreen(url: URL): string | null {
     "/patient/progres": "progres",
     "/patient/messages": "messages",
     "/patient/compte": "compte",
+    "/patient/suivi": "suivi",
     "/patient/compte/informations": "informations",
     "/patient/compte/changer-offre": "changer-offre",
     "/patient/historique": "historique",

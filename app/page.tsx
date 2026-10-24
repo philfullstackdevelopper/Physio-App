@@ -105,13 +105,23 @@ export default function Home() {
             </h1>
             {/* Téléphone : le hero n'a plus de bouton (2026-10-10) — un simple
                 lien vers la liste d'attente du bas de page (2026-10-12). */}
-            <a
-              href="#liste-attente"
-              className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-700 underline-offset-4 hover:underline sm:hidden"
-            >
-              Être prévenu du lancement
-              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
-            </a>
+            {/* Téléphone (Philippe, 2026-10-24) : la démo doit s'essayer aussi
+                depuis un téléphone — bouton visible dès le premier écran. */}
+            <div className="mt-3 flex items-center gap-4 sm:hidden">
+              <Link
+                href="/demo"
+                className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm active:scale-95"
+              >
+                Essayer la démo
+                <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              </Link>
+              <a
+                href="#liste-attente"
+                className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+              >
+                Être prévenu
+              </a>
+            </div>
             <p className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:160ms] mt-3 max-w-lg text-base leading-relaxed text-slate-600 max-sm:hidden sm:mt-5 sm:text-lg lg:short:mt-3 lg:short:text-base phone-land:mt-2 phone-land:text-sm">
               Vos patients suivent chez eux le programme que vous avez choisi, guidés pas à pas.
               Vous voyez qui l&apos;a fait, et qui a eu mal, avant le prochain rendez-vous.

@@ -6,6 +6,7 @@
 // depuis l'appli.
 //   ?ecran=programme | seance | historique | seance-du-jour | changer-offre | informations | historique-detail | onboarding | progres | compte | abonnement | cadenas | cabinet (formulaire kiné de secours)
 
+import SuiviView from "@/app/patient/suivi/SuiviView";
 import PatientNav from "@/components/PatientNav";
 import ProgrammeView, { type ProgrammeWorkout } from "@/app/patient/programme/ProgrammeView";
 import WorkoutSession from "@/components/WorkoutSession";
@@ -129,6 +130,21 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
                 created_at: daysAgoIso(daysAgo),
               })),
             )}
+          />
+        ) : ecran === "suivi" ? (
+          <SuiviView
+            sp={{}}
+            kineName="Julien Roux"
+            kineReady
+            status="active"
+            currentPrice={2000}
+            acceptedPrice={2000}
+            price={2000}
+            cardLabel="VISA •••• 4242"
+            reviews={[
+              { id: "r2", period: "2026-09-01", amount_cents: 2000, payment_status: "paid", fee_note_year: 2026, fee_note_seq: 14 },
+              { id: "r1", period: "2026-08-01", amount_cents: 2000, payment_status: "paid", fee_note_year: 2026, fee_note_seq: 6 },
+            ]}
           />
         ) : ecran === "compte" ? (
           <CompteView
