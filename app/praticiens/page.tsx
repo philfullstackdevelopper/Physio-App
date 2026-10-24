@@ -12,6 +12,18 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import KineMockup from "@/components/KineMockup";
 import DotCanvas from "@/components/DotCanvas";
+import {
+  FREE_FIRST_MONTH,
+  KINE_FEE_PER_ACTIVE_PATIENT_CENTS,
+  KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS,
+  RECOMMENDED_REVIEW_PRICE_CENTS,
+  eurosFR,
+} from "@/lib/billing/reviewModel";
+
+// Montants du nouveau modèle (2026-10-24), jamais écrits en dur.
+const KINE_FEE_HT = eurosFR(KINE_FEE_PER_ACTIVE_PATIENT_CENTS, 0);
+const KINE_FEE_TTC = eurosFR(KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS);
+const REVIEW_PRICE = eurosFR(RECOMMENDED_REVIEW_PRICE_CENTS, 0);
 
 export const metadata: Metadata = {
   title: "Pour les kinésithérapeutes",
@@ -53,6 +65,14 @@ const CAPABILITIES = [
   {
     title: "Ajustez à distance",
     body: "Retirez un exercice, ajoutez-en un ou changez de séance : le patient voit la mise à jour dans son application et reçoit un message.",
+  },
+  {
+    title: "Facturez votre suivi mensuel",
+    body: "Après les soins, un bilan à distance par mois, au tarif que vous fixez. Le patient n'est prélevé que le mois où le bilan est fait.",
+  },
+  {
+    title: "Votre comptabilité en un clic",
+    body: "Une note d'honoraires par bilan, et en fin de mois le récapitulatif de vos recettes, prêt pour votre comptable.",
   },
 ];
 
@@ -105,7 +125,7 @@ export default function PraticiensPage() {
               <Cta />
             </div>
             <p className="mt-4 text-sm text-slate-500">
-              Sans abonnement fixe : 15 % retenus sur chaque abonnement patient, frais de paiement compris.
+              {KINE_FEE_HT} € HT par patient actif et par mois. Vos honoraires de suivi restent à 100 % à vous.
             </p>
           </div>
           <KineMockup />
@@ -186,12 +206,12 @@ export default function PraticiensPage() {
               Ce que ça vous coûte
             </h2>
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-300">
-              Aucun abonnement fixe. Vos patients vous paient directement ; sur chaque
-              abonnement, 15 % sont retenus (commission EasyPhysio et frais de paiement
-              compris) et vous gardez 85 %. Patients illimités, bibliothèque complète.
+              {KINE_FEE_HT} € HT ({KINE_FEE_TTC} € TTC) par patient actif et par mois, en une seule facture.
+              Vos patients en suivi mensuel vous paient directement chaque bilan fait, au tarif que vous fixez
+              (conseillé : {REVIEW_PRICE} €) : EasyPhysio ne prend rien sur vos honoraires.
             </p>
-            <ul className="mx-auto mt-6 flex max-w-md flex-col gap-2 text-left sm:flex-row sm:justify-center sm:gap-6 sm:text-left">
-              {["Sans engagement", "Données hébergées en France"].map((point) => (
+            <ul className="mx-auto mt-6 flex max-w-lg flex-col gap-2 text-left sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-6 sm:text-left">
+              {[...(FREE_FIRST_MONTH ? ["Premier mois offert"] : []), "Sans engagement", "Données hébergées en France"].map((point) => (
                 <li key={point} className="flex items-center gap-2 text-sm text-slate-200">
                   <Check className="h-4 w-4 shrink-0 text-emerald-400" strokeWidth={2.5} />
                   {point}

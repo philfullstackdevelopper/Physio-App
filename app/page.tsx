@@ -14,6 +14,7 @@ import FitToViewport from "@/components/FitToViewport";
 import KineJourneyDemo from "@/components/KineJourneyDemo";
 import ComparisonTable from "@/components/ComparisonTable";
 import PricingSection from "@/components/PricingSection";
+import KinePaymentBrief from "@/components/KinePaymentBrief";
 import ExerciseShowcase from "@/components/ExerciseShowcase";
 import Testimonials from "@/components/Testimonials";
 import { HandNote, Underlined } from "@/components/HandDrawn";
@@ -25,7 +26,8 @@ import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 // Textes de la landing réécrits le 2026-10-10 (Philippe : le site faisait
 // trop « IA ») : des phrases qu'un kiné dirait, des faits vérifiables, plus de
 // formules lisses. « Gratuit pour les patients » a été retiré : c'était faux
-// (le patient paie une offre mensuelle à son kiné, voir #tarifs).
+// (le patient paie son suivi mensuel à son kiné, ou l'appli seule à
+// EasyPhysio, voir #remuneration et #tarifs).
 const HERO_CHIPS = [
   { icon: BadgeCheck, label: "Kinés vérifiés dans l'Annuaire Santé (RPPS)" },
   { icon: ListChecks, label: "Guidé pas à pas, sans caméra ni capteur" },
@@ -251,16 +253,34 @@ export default function Home() {
         </section>
         </Reveal>
 
+        {/* ── Rémunération du kiné ─────────────────────────────── */}
+        {/* « Et moi, comment je suis payé ? » est la première question d'un
+            kiné (Philippe, 2026-10-24) : le circuit de l'argent et les six
+            réponses courtes, juste avant les tarifs. */}
+        <Reveal>
+        <section id="remuneration" className="mt-24 scroll-mt-24 text-center sm:mt-32">
+          <h2 className="font-display mx-auto max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
+            «&nbsp;Et moi, comment je suis payé&nbsp;?&nbsp;»
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg sm:short:text-sm">
+            Vos patients vous paient leur suivi mensuel. Vous payez l&apos;appli. <Underlined>Les deux ne se mélangent jamais.</Underlined>
+          </p>
+          <div className="mt-10 sm:short:mt-6">
+            <KinePaymentBrief />
+          </div>
+        </section>
+        </Reveal>
+
         {/* ── Tarifs ───────────────────────────────────────────── */}
         {/* Bascule "Côté kiné" / "Côté patient" (Philippe, 2026-09-13) : un
-            seul prix parle à chaque audience (la commission pour le kiné,
-            les 3 offres pour le patient) — les montrer côte à côte, comme
-            avant, ne parlait vraiment à personne. Les prix patient viennent
-            de lib/billing/plans.ts (même source que /patient/abonnement). */}
+            seul prix parle à chaque audience. Nouveau modèle (2026-10-24) :
+            côté kiné, le circuit en 3 étapes + un simulateur ; côté patient,
+            le suivi par son kiné ou l'appli seule. Montants :
+            lib/billing/reviewModel.ts. */}
         <Reveal>
         <section id="tarifs" className="mt-24 scroll-mt-24 text-center sm:mt-32">
           <h2 className="font-display mx-auto max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-            Le patient paie son kiné. Le kiné paie EasyPhysio.
+            Ce que chacun paie, simplement.
           </h2>
 
           <FitToViewport className="mt-10 text-left sm:short:mt-5 phone-land:mt-2">

@@ -3,8 +3,18 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
-import { TRIAL_DAYS } from "@/lib/billing/plans";
+import {
+  FREE_FIRST_MONTH,
+  KINE_FEE_PER_ACTIVE_PATIENT_CENTS,
+  PATIENT_APP_ONLY_MONTHLY_CENTS,
+  RECOMMENDED_REVIEW_PRICE_CENTS,
+  eurosFR,
+} from "@/lib/billing/reviewModel";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
+
+const REVIEW_PRICE = eurosFR(RECOMMENDED_REVIEW_PRICE_CENTS, 0);
+const KINE_FEE_HT = eurosFR(KINE_FEE_PER_ACTIVE_PATIENT_CENTS, 0);
+const APP_ONLY = eurosFR(PATIENT_APP_ONLY_MONTHLY_CENTS);
 
 const QUESTIONS = [
   {
@@ -34,8 +44,12 @@ const QUESTIONS = [
   },
   {
     question: "Combien coûte l'application pour moi, patient ?",
-    answer:
-      `Votre kiné vous propose l'une de ses trois offres mensuelles (Essentiel, Standard ou Premium), avec ${TRIAL_DAYS} jours d'essai gratuit avant le premier prélèvement. Le paiement est réglé directement à votre kiné, sans engagement, annulable à tout moment.`,
+    // Nouveau modèle (Philippe, 2026-10-24) : deux façons de l'utiliser.
+    answer: `Pendant vos soins au cabinet, l'appli vous est offerte par votre kiné. Ensuite, deux possibilités : le suivi mensuel par votre kiné (environ ${REVIEW_PRICE} € par bilan, tarif fixé et encaissé par votre kiné, prélevé seulement le mois où le bilan est fait), ou l'appli seule, sans suivi, à ${APP_ONLY} € par mois payés à EasyPhysio. Sans engagement dans les deux cas.`,
+  },
+  {
+    question: "Je suis kiné : combien ça me coûte, et combien ça me rapporte ?",
+    answer: `${KINE_FEE_HT} € HT par patient actif et par mois, en une seule facture${FREE_FIRST_MONTH ? ", premier mois offert" : ""}. Vos patients en suivi mensuel vous paient directement chaque bilan fait, au tarif que vous fixez : EasyPhysio ne prend rien sur vos honoraires. Avec 20 patients suivis à ${REVIEW_PRICE} €, c'est ${eurosFR(20 * RECOMMENDED_REVIEW_PRICE_CENTS, 0)} € de bilans par mois.`,
   },
   {
     question: "Je suis praticien : comment essayer avec mes patients ?",
