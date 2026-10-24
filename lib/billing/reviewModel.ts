@@ -50,3 +50,86 @@ export const FREE_FIRST_MONTH = true;
 
 export const eurosFR = (cents: number, decimals = 2) =>
   (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
+// -----------------------------------------------------------------------------
+// Règles de calcul (pures, testées dans reviewModel.test.ts)
+// -----------------------------------------------------------------------------
+
+/** Le tarif choisi par le kiné, ou le tarif conseillé s'il n'a rien fixé. */
+export function effectiveReviewPrice(kinePriceCents: number | null | undefined): number {
+  return isValidReviewPrice(kinePriceCents) ? (kinePriceCents as number) : RECOMMENDED_REVIEW_PRICE_CENTS;
+}
+
+export function isValidReviewPrice(cents: unknown): boolean {
+  return (
+    typeof cents === "number" &&
+    Number.isInteger(cents) &&
+    cents >= REVIEW_PRICE_MIN_CENTS &&
+    cents <= REVIEW_PRICE_MAX_CENTS
+  );
+}
+
+/** Le mois (heure de Paris) sous forme « AAAA-MM-01 » — la clé d'un bilan. */
+export function periodOf(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit" }).formatToParts(date);
+  const y = parts.find((p) => p.type === "year")?.value;
+  const m = parts.find((p) => p.type === "month")?.value;
+  return `${y}-${m}-01`;
+}
+
+/** Le premier jour du mois suivant, « AAAA-MM-01 ». */
+export function nextPeriod(period: string): string {
+  const [y, m] = period.split("-").map(Number);
+  return m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+}
+
+/** Le mois précédent, « AAAA-MM-01 ». */
+export function previousPeriod(period: string): string {
+  const [y, m] = period.split("-").map(Number);
+  return m === 1 ? `${y - 1}-12-01` : `${y}-${String(m - 1).padStart(2, "0")}-01`;
+}
+
+const MONTHS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+/** « octobre 2026 ». */
+export function periodLabel(period: string): string {
+  const [y, m] = period.split("-").map(Number);
+  return `${MONTHS_FR[m - 1]} ${y}`;
+}
+
+/** Numéro de note d'honoraires : « 2026-0007 » (suite par kiné et par année). */
+export function feeNoteNumber(year: number, seq: number): string {
+  return `${year}-${String(seq).padStart(4, "0")}`;
+}
+
+/**
+ * Patient actif sur un mois : il a accepté l'invitation (CGU) et, dans le
+ * mois, a fait au moins une séance, noté un ressenti, ou reçu un bilan validé.
+ * Même règle que internal.admin_month_active_patients (migration 0071).
+ */
+export function isActivePatient(input: {
+  termsAccepted: boolean;
+  sessionsThisMonth: number;
+  feedbackThisMonth: number;
+  reviewThisMonth: boolean;
+}): boolean {
+  if (!input.termsAccepted) return false;
+  return input.sessionsThisMonth > 0 || input.feedbackThisMonth > 0 || input.reviewThisMonth;
+}
+
+/**
+ * Facture EasyPhysio d'un mois, hors TVA et TVA comprise. Le premier mois
+ * facturable d'un kiné est offert (FREE_FIRST_MONTH).
+ */
+export function platformFeeForMonth(activePatients: number, isFirstBilledMonth: boolean) {
+  const free = FREE_FIRST_MONTH && isFirstBilledMonth;
+  const htCents = free ? 0 : Math.max(0, activePatients) * KINE_FEE_PER_ACTIVE_PATIENT_CENTS;
+  const vatCents = Math.round(htCents * VAT_RATE);
+  return { free, htCents, vatCents, ttcCents: htCents + vatCents };
+}
+
+/** Échappe une valeur pour un fichier CSV (séparateur « ; », Excel français). */
+export function csvCell(value: string | number | null | undefined): string {
+  const s = value == null ? "" : String(value);
+  return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}

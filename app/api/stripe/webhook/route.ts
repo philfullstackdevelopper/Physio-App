@@ -4,6 +4,8 @@ import { getStripe } from "@/lib/billing/stripe";
 import { syncSubscription } from "@/lib/billing/sync";
 import { connectStatusFromAccount, verifiedInstructorId } from "@/lib/billing/connectStatus";
 import { upsertConnectAccount } from "@/lib/db/admin";
+import { handleFollowUpSetupEvent, syncReviewPaymentFromIntent } from "@/lib/billing/followUp";
+import { finalizePlatformBillingSetup, syncPlatformInvoice } from "@/lib/billing/platformInvoice";
 
 // Stripe needs the Node runtime (not Edge) and the raw request body to verify
 // the signature, so this route reads req.text() and never parses JSON first.
@@ -43,6 +45,14 @@ export async function POST(req: Request) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
+      // Nouveau modèle (2026-10-24) : enregistrement d'une carte, sans
+      // prélèvement. Sur un compte Connect = suivi mensuel d'un patient ;
+      // sur la plateforme = moyen de paiement du kiné pour sa facture EasyPhysio.
+      if (session.mode === "setup") {
+        if (event.account) await handleFollowUpSetupEvent(session, event.account);
+        else await finalizePlatformBillingSetup(session.id);
+        break;
+      }
       if (session.subscription) {
         const subId =
           typeof session.subscription === "string" ? session.subscription : session.subscription.id;
@@ -111,6 +121,23 @@ export async function POST(req: Request) {
       } else {
         console.warn(`[stripe/webhook] account.updated ignoré : ${account.id} sans rattachement signé.`);
       }
+      break;
+    }
+    // Prélèvement d'un bilan mensuel (compte Connect du kiné) : résultat final,
+    // utile surtout quand la banque répond après coup.
+    case "payment_intent.succeeded":
+    case "payment_intent.processing":
+    case "payment_intent.payment_failed": {
+      if (event.account) {
+        await syncReviewPaymentFromIntent(event.data.object as Stripe.PaymentIntent, event.account);
+      }
+      break;
+    }
+    // Facture EasyPhysio du kiné (compte plateforme).
+    case "invoice.paid":
+    case "invoice.payment_failed":
+    case "invoice.marked_uncollectible": {
+      if (!event.account) await syncPlatformInvoice(event.data.object as Stripe.Invoice);
       break;
     }
     default:

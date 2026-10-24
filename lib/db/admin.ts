@@ -207,3 +207,134 @@ export async function listWaitlist(): Promise<WaitlistRow[]> {
 export async function deleteWaitlistEntry(email: string): Promise<void> {
   await getPool().query("select internal.admin_delete_waitlist($1)", [email]);
 }
+
+// ---------------------------------------------------------------------------
+// Nouveau modèle de facturation (migration 0071, 2026-10-24) : suivi mensuel
+// payé au kiné, bilans validés, facture EasyPhysio par patient actif.
+// Toutes ces écritures viennent du serveur, après vérification chez Stripe
+// ou de l'identité du kiné (lib/billing/followUp.ts, lib/billing/platformInvoice.ts).
+// ---------------------------------------------------------------------------
+
+export async function upsertFollowUp(params: {
+  patientId: string;
+  instructorId: string;
+  priceCents: number;
+  status: "pending_card" | "active" | "stopped";
+  stripeCustomerId: string | null;
+  stripePaymentMethodId: string | null;
+  cardLabel: string | null;
+}): Promise<void> {
+  await getPool().query("select internal.upsert_follow_up($1, $2, $3, $4, $5, $6, $7)", [
+    params.patientId,
+    params.instructorId,
+    params.priceCents,
+    params.status,
+    params.stripeCustomerId,
+    params.stripePaymentMethodId,
+    params.cardLabel,
+  ]);
+}
+
+export type FollowUpForCharge = {
+  instructor_id: string;
+  price_cents: number;
+  status: string;
+  stripe_customer_id: string | null;
+  stripe_payment_method_id: string | null;
+  connect_account_id: string | null;
+};
+
+export async function followUpForCharge(patientId: string): Promise<FollowUpForCharge | null> {
+  const { rows } = await getPool().query<FollowUpForCharge>("select * from internal.follow_up_for_charge($1)", [patientId]);
+  return rows[0] ?? null;
+}
+
+/** Enregistre un bilan validé ; lève une erreur si ce mois a déjà son bilan. */
+export async function recordMonthlyReview(params: {
+  patientId: string;
+  instructorId: string;
+  period: string;
+  feedback: string;
+  amountCents: number;
+}): Promise<{ review_id: string; fee_note_year: number; fee_note_seq: number }> {
+  const { rows } = await getPool().query<{ review_id: string; fee_note_year: number; fee_note_seq: number }>(
+    "select * from internal.record_monthly_review($1, $2, $3, $4, $5)",
+    [params.patientId, params.instructorId, params.period, params.feedback, params.amountCents],
+  );
+  return rows[0];
+}
+
+export async function setReviewPayment(
+  reviewId: string,
+  status: "pending" | "paid" | "failed",
+  paymentIntentId: string | null,
+): Promise<void> {
+  await getPool().query("select internal.set_review_payment($1, $2, $3)", [reviewId, status, paymentIntentId]);
+}
+
+export async function reviewForPayment(
+  reviewId: string,
+): Promise<{ review_id: string; payment_status: string; connect_account_id: string | null } | null> {
+  const { rows } = await getPool().query<{ review_id: string; payment_status: string; connect_account_id: string | null }>(
+    "select * from internal.review_for_payment($1)",
+    [reviewId],
+  );
+  return rows[0] ?? null;
+}
+
+export async function upsertPlatformBilling(params: {
+  instructorId: string;
+  stripeCustomerId: string;
+  stripePaymentMethodId: string | null;
+  label: string | null;
+}): Promise<void> {
+  await getPool().query("select internal.upsert_platform_billing($1, $2, $3, $4)", [
+    params.instructorId,
+    params.stripeCustomerId,
+    params.stripePaymentMethodId,
+    params.label,
+  ]);
+}
+
+export async function upsertPlatformInvoice(params: {
+  instructorId: string;
+  periodStart: string;
+  periodEnd: string;
+  patientCount: number;
+  amountCents: number;
+  stripeInvoiceId: string | null;
+  status: "draft" | "open" | "paid" | "void" | "uncollectible";
+}): Promise<void> {
+  await getPool().query("select internal.upsert_platform_invoice($1, $2, $3, $4, $5, $6, $7)", [
+    params.instructorId,
+    params.periodStart,
+    params.periodEnd,
+    params.patientCount,
+    params.amountCents,
+    params.stripeInvoiceId,
+    params.status,
+  ]);
+}
+
+/** Réservé à l'administrateur (isAdminEmail vérifié par l'appelant). */
+export async function monthActivePatients(periodStart: string, periodEnd: string): Promise<{ instructor_id: string; active_count: number }[]> {
+  const { rows } = await getPool().query<{ instructor_id: string; active_count: number }>(
+    "select * from internal.admin_month_active_patients($1, $2)",
+    [periodStart, periodEnd],
+  );
+  return rows;
+}
+
+/** Réservé à l'administrateur (isAdminEmail vérifié par l'appelant). */
+export async function platformBillingList(): Promise<
+  { instructor_id: string; stripe_customer_id: string; stripe_payment_method_id: string | null }[]
+> {
+  const { rows } = await getPool().query("select * from internal.admin_platform_billing_list()");
+  return rows;
+}
+
+/** Réservé à l'administrateur (isAdminEmail vérifié par l'appelant). */
+export async function platformInvoicesList(): Promise<{ instructor_id: string; period_start: string; status: string; amount_cents: number }[]> {
+  const { rows } = await getPool().query("select instructor_id, to_char(period_start, 'YYYY-MM-DD') as period_start, status, amount_cents from internal.admin_platform_invoices_list()");
+  return rows;
+}
