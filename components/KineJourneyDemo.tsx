@@ -128,7 +128,7 @@ const SIDEBAR_LINKS = [
   { label: "Messages", icon: MessageCircle, active: false },
   { label: "Mes séances", icon: Dumbbell, active: false },
   { label: "Mes exercices", icon: ListChecks, active: false },
-  { label: "Tarif & paiements", icon: Wallet, active: false },
+  { label: "Suivi & facturation", icon: Wallet, active: false },
 ];
 
 // Reprend components/DashboardSidebar.tsx (colonne sombre, mêmes six

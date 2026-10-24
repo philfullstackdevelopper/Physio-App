@@ -12,7 +12,7 @@ import { initials } from "@/lib/format/initials";
 const TILES = [
   { href: "/dashboard/seances", label: "Séances", hint: "Vos séances et les modèles prévus", icon: Dumbbell, tone: "bg-brand-soft text-brand" },
   { href: "/dashboard/exercises", label: "Exercices", hint: "La bibliothèque d'exercices", icon: ListChecks, tone: "bg-violet-soft text-violet" },
-  { href: "/dashboard/facturation", label: "Revenus", hint: "Tarifs, abonnés et paiements", icon: Wallet, tone: "bg-ok-soft text-ok" },
+  { href: "/dashboard/facturation", label: "Suivi & facturation", hint: "Bilans du mois, tarif, documents", icon: Wallet, tone: "bg-ok-soft text-ok" },
 ];
 
 export default function KineInfosView({ instructorName }: { instructorName: string | null }) {

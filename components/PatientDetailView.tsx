@@ -48,7 +48,10 @@ export default function PatientDetailView({
   adjusted,
   stats,
   programme,
+  monthlyReview,
 }: {
+  /** La barre « Suivi mensuel » (MonthlyReviewBar), construite par la page. */
+  monthlyReview?: React.ReactNode;
   name: string;
   warning: { label: string; detail: string } | null;
   paymentLapsed: boolean;
@@ -116,6 +119,8 @@ export default function PatientDetailView({
             {s.lastSessionDetail && <p className="text-xs text-muted max-sm:hidden">{s.lastSessionDetail}</p>}
           </div>
         </div>
+
+        {monthlyReview}
 
         {/* Frise semaine par semaine — remplace le calendrier mensuel et le
             graphique « Historique douleur » (audit Philippe, 2026-09-09) : une

@@ -14,7 +14,7 @@ const LINKS = [
   { href: "/dashboard/messages", label: "Messages", icon: MessageCircle },
   { href: "/dashboard/seances", label: "Mes séances", icon: Dumbbell },
   { href: "/dashboard/exercises", label: "Mes exercices", icon: ListChecks },
-  { href: "/dashboard/facturation", label: "Tarif & paiements", icon: Wallet },
+  { href: "/dashboard/facturation", label: "Suivi & facturation", icon: Wallet },
 ];
 
 // Téléphone : 4 onglets en bas, comme l'appli patient (5 = trop, Philippe

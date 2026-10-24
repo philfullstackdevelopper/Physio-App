@@ -78,10 +78,26 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
   } else if (ecran === "revenus") {
     screen = (
       <FacturationView
-        counts={{ total: 7, active: 5, byTier: { essentiel: 2, standard: 2, premium: 1 } }}
-        prices={{ essentiel: 1999, standard: 2999, premium: 3999 }}
         connectStatus="active"
-        split={{ totalCents: 13995, platformFeeCents: 2239, stripeFeeCents: 330, netCents: 11426 }}
+        data={{
+          period: "2026-10-01",
+          kinePriceCents: 2000,
+          priceCents: 2000,
+          followUps: [
+            { patientId: "p1", name: "Claire Martin", status: "active", priceCents: 2000, cardLabel: "VISA •••• 4242", review: null },
+            { patientId: "p2", name: "Hugo Bernard", status: "pending_card", priceCents: 2000, cardLabel: null, review: null },
+            { patientId: "p3", name: "Léa Petit", status: "active", priceCents: 2000, cardLabel: "VISA •••• 1881", review: { id: "r1", paymentStatus: "paid", amountCents: 2000, validatedAt: "2026-10-12T09:00:00Z" } },
+          ],
+          notInFollowUp: 4,
+          activePatients: 7,
+          monthEstimate: { free: false, htCents: 2100, vatCents: 420, ttcCents: 2520 },
+          firstBilledMonth: false,
+          platformPaymentLabel: "Prélèvement SEPA •••• 3201",
+          platformCustomerId: "cus_demo",
+          invoices: [{ periodStart: "2026-09-01", amountCents: 2160, status: "paid", patientCount: 6 }],
+          reviewMonths: ["2026-10-01", "2026-09-01"],
+          collectedCents: 2000,
+        }}
       />
     );
   } else if (ecran === "seances") {
