@@ -43,34 +43,40 @@ export default function CguPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">3. Statut du service</h2>
+            <h2 className="font-display font-semibold text-slate-900">3. Accès à l&apos;application</h2>
             <p className="mt-1">
-              L&apos;abonnement patient à EasyPhysio n&apos;est jamais pris en charge ni
-              remboursé par l&apos;Assurance Maladie. Il s&apos;agit d&apos;un service
-              complémentaire au suivi kinésithérapique, facturé directement au patient.
+              L&apos;application est mise à disposition du patient par son kinésithérapeute, qui
+              règle à EasyPhysio un forfait par patient actif. Le patient n&apos;a rien à payer à
+              EasyPhysio pour accéder à son programme. Ce forfait ne dépend ni des honoraires du
+              kinésithérapeute ni des paiements de ses patients.
             </p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">4. Inscription et comptes</h2>
+            <h2 className="font-display font-semibold text-slate-900">4. Suivi mensuel par le kinésithérapeute</h2>
             <p className="mt-1">
-              L&apos;usage d&apos;EasyPhysio par le patient est libre et volontaire — le
-              kinésithérapeute ne peut conditionner la poursuite du suivi kinésithérapique
-              classique à la souscription du patient.
+              Le kinésithérapeute peut proposer un suivi mensuel à distance : une fois par mois, il
+              analyse les séances et les ressentis du patient, ajuste son programme et lui adresse un
+              retour écrit (« bilan de suivi »). Ce bilan est un acte du kinésithérapeute, non
+              remboursé par l&apos;Assurance Maladie, au tarif qu&apos;il fixe et que le patient
+              accepte par écrit avant le premier bilan.
+            </p>
+            <p className="mt-2">
+              Le patient enregistre une carte bancaire ; il n&apos;est prélevé que le mois où un bilan
+              est effectivement réalisé, directement au profit de son kinésithérapeute, qui lui
+              délivre une note d&apos;honoraires. EasyPhysio ne perçoit aucune part de ces honoraires.
+              Le suivi est libre et volontaire : le kinésithérapeute ne peut pas conditionner les
+              soins à sa souscription, et le patient peut l&apos;arrêter à tout moment depuis son
+              espace, sans frais.
             </p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">5. Essai gratuit, facturation et résiliation</h2>
+            <h2 className="font-display font-semibold text-slate-900">5. Comptes et résiliation</h2>
             <p className="mt-1">
-              L&apos;abonnement patient débute par un essai gratuit de 7 jours. Le patient doit
-              enregistrer une carte bancaire dès la souscription ; à l&apos;issue de l&apos;essai,
-              si l&apos;abonnement n&apos;a pas été résilié, la carte est débitée automatiquement
-              du tarif mensuel en vigueur, puis chaque mois par reconduction tacite. Le patient
-              peut résilier à tout moment depuis son espace personnel, avec effet à la fin de la
-              période déjà payée — aucun remboursement au prorata n&apos;est effectué pour une
-              période entamée, sauf erreur de facturation. Le kinésithérapeute peut également
-              résilier son propre compte à tout moment.
+              Le patient peut supprimer son compte à tout moment depuis son espace personnel. Le
+              kinésithérapeute peut également résilier son propre compte à tout moment ; le forfait
+              EasyPhysio est facturé au mois, pour les patients actifs du mois écoulé.
             </p>
           </section>
 
