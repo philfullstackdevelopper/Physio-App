@@ -12,8 +12,6 @@ import { deleteClerkUserWithRetry } from "@/lib/auth/deleteClerkUser";
 import { deleteAppUserById } from "@/lib/db/admin";
 import { resolveAppUserId, precreateAppUserId } from "@/lib/auth/user-map";
 import { friendlyDbError } from "@/lib/format/dbError";
-import { weeklyCapViolation } from "@/lib/billing/weeklyCap";
-import { isSubscriptionActive } from "@/lib/billing/access";
 
 // PatientActionsMenu is used both on the patient detail page and inline in
 // the "Mes patients" table, so its forms carry where to land afterwards.
@@ -200,21 +198,10 @@ export async function addRecommendedWorkout(formData: FormData) {
   // La séance doit être visible par ce kiné (sa bibliothèque ou celle de la
   // plateforme) et ne pas être la copie personnelle d'un AUTRE patient
   // (audit du 2026-10-08 : un formulaire modifié pouvait l'attribuer).
-  const [{ data: workout }, { data: sub }] = await Promise.all([
-    supabase.from("workouts").select("id, patient_id, times_per_week").eq("id", workoutId).maybeSingle(),
-    supabase.from("subscriptions").select("plan, status, current_period_end").eq("user_id", patientId).maybeSingle(),
-  ]);
+  const { data: workout } = await supabase.from("workouts").select("id, patient_id, times_per_week").eq("id", workoutId).maybeSingle();
   if (!workout || (workout.patient_id !== null && workout.patient_id !== patientId)) {
     redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Cette séance ne peut pas être attribuée à ce patient.")}`);
   }
-
-  // Plafond de séances/semaine de l'offre du patient (lib/billing/weeklyCap.ts).
-  const capMessage = weeklyCapViolation(
-    (sub?.plan as string | null) ?? null,
-    isSubscriptionActive((sub?.status as string | null) ?? null, (sub?.current_period_end as string | null) ?? null),
-    (workout.times_per_week as number | null) ?? null,
-  );
-  if (capMessage) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(capMessage)}`);
 
   // Pendant combien de semaines (migration 0059). Absent, vide ou hors 1-52
   // → null = jusqu'à la prochaine séance attribuée, comme avant.

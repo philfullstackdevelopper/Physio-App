@@ -73,10 +73,10 @@ function patientScreen(url: URL): string | null {
     "/patient/compte": "compte",
     "/patient/suivi": "suivi",
     "/patient/compte/informations": "informations",
-    "/patient/compte/changer-offre": "changer-offre",
+    "/patient/compte/changer-offre": "compte",
     "/patient/historique": "historique",
     "/patient/seance-du-jour": "seance-du-jour",
-    "/patient/abonnement": "abonnement",
+    "/patient/abonnement": "suivi",
     "/patient/onboarding": "onboarding",
   };
   if (exact[p]) return exact[p];

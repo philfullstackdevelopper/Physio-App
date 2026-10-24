@@ -6,60 +6,6 @@ import { upsertConnectAccount } from "@/lib/db/admin";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { getStripe } from "@/lib/billing/stripe";
 import { requestOrigin } from "@/lib/requestOrigin";
-import { TIERS, TIER_KEYS, type TierKey } from "@/lib/billing/plans";
-
-// Sets the kiné's own price for each of the three patient offers (Philippe,
-// 2026-09-10: the amounts in lib/billing/plans.ts are the default base, each
-// kiné may change them). This is what a patient pays HIM directly via Stripe
-// Connect — see app/patient/abonnement/actions.ts.
-//
-// monthly_patient_price_cents is kept in step with the Standard price as a
-// bridge: lib/billing/platformFee.ts (the 16 % estimate) and
-// lib/billing/context.ts (the kiné's "pro" level) still read that single
-// column. The real 16 % per actual tier is charged automatically by Stripe
-// on every invoice (app/patient/abonnement/actions.ts,
-// subscription_data.application_fee_percent) — no separate collection step.
-//
-// Le formulaire a été retiré exprès (Philippe, 2026-09-11 — CLAUDE.md §4) ;
-// l'action reste pour le jour où il reviendra. Gardes ajoutées à l'audit du
-// 2026-10-08 : kiné validé uniquement, et des tarifs que Stripe accepte.
-const MIN_TIER_CENTS = 100; // Stripe refuse moins de 0,50 € ; 1 € minimum ici
-const MAX_TIER_CENTS = 50_000; // 500 € par mois : au-delà, une faute de frappe
-export async function setTierPrices(formData: FormData) {
-  const supabase = await createClient();
-  const { user } = await requireApprovedInstructor(supabase);
-
-  const fail = (msg: string): never => redirect(`/dashboard/facturation?error=${encodeURIComponent(msg)}`);
-
-  const cents = {} as Record<TierKey, number>;
-  for (const key of TIER_KEYS) {
-    const euros = Number(formData.get(`${key}_euros`));
-    if (!Number.isFinite(euros) || euros <= 0) fail(`Merci d'indiquer un tarif valide pour l'offre ${TIERS[key].label}.`);
-    cents[key] = Math.round(euros * 100);
-    if (cents[key] < MIN_TIER_CENTS || cents[key] > MAX_TIER_CENTS) {
-      fail(`Le tarif de l'offre ${TIERS[key].label} doit être compris entre 1 € et 500 € par mois.`);
-    }
-  }
-  if (!(cents.essentiel < cents.standard && cents.standard < cents.premium)) {
-    fail("Les tarifs doivent être croissants : Essentiel < Standard < Premium.");
-  }
-
-  const { error } = await supabase
-    .from("instructors")
-    .update({
-      tier_essentiel_cents: cents.essentiel,
-      tier_standard_cents: cents.standard,
-      tier_premium_cents: cents.premium,
-      monthly_patient_price_cents: cents.standard,
-    })
-    .eq("id", user.id);
-  if (error) {
-    console.error("setTierPrices:", error);
-    fail("Enregistrement des tarifs impossible pour le moment. Réessayez dans un instant.");
-  }
-
-  redirect("/dashboard/facturation?saved=1");
-}
 
 // Starts (or resumes) Stripe Connect onboarding for the kiné — this is the
 // account that will receive his patients' payments directly (Flow A).

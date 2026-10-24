@@ -14,15 +14,11 @@ import { DEFAULT_SQUAT } from "@/lib/exercise/prescription";
 import HistoriqueView from "@/app/patient/historique/HistoriqueView";
 import HistoriqueDetailView from "@/app/patient/historique/[logId]/HistoriqueDetailView";
 import InformationsView from "@/app/patient/compte/informations/InformationsView";
-import ChangerOffreView from "@/app/patient/compte/changer-offre/ChangerOffreView";
-import { TIERS } from "@/lib/billing/plans";
 import OnboardingView from "@/app/patient/onboarding/OnboardingView";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { EQUIPMENT_LABELS, EQUIPMENT_OPTIONS } from "@/lib/exercise/equipment";
 import ProgresView from "@/app/patient/progres/ProgresView";
-import AbonnementView from "@/app/patient/abonnement/AbonnementView";
 import CompteView from "@/app/patient/compte/CompteView";
-import PatientLockScreen from "@/components/PatientLockScreen";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import SignupOnboardingView from "@/app/signup/onboarding/SignupOnboardingView";
 import SeanceDuJourView from "@/app/patient/seance-du-jour/SeanceDuJourView";
@@ -72,24 +68,9 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
   ];
 
   // Choix d'offre et écran cadenas : plein écran, sans la barre de navigation.
-  if (ecran === "abonnement") {
-    return (
-      <AbonnementView
-        paymentFailed={false}
-        trialAvailable
-        prices={{ essentiel: TIERS.essentiel.amount, standard: TIERS.standard.amount, premium: TIERS.premium.amount }}
-        kineName="Julien Roux"
-        paymentsReady
-        firstChargeDate="19 octobre"
-        startTierCheckout={noop}
-        openBillingPortal={noop}
-      />
-    );
-  }
   if (ecran === "cabinet") {
     return <SignupOnboardingView defaults={{ cabinet_name: null, cabinet_address: null, phone: null, rpps_number: null, siret: null }} action={noop} />;
   }
-  if (ecran === "cadenas") return <PatientLockScreen reason="payment_failed" firstName="Léa" kineName="Julien Roux" />;
 
   // L'onboarding s'affiche sans la barre de navigation, comme dans l'appli.
   if (ecran === "onboarding") {
@@ -172,12 +153,6 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
             dateLabel="lundi 28 septembre à 18:15"
             feedback={{ pain_score: 3, notes: "Un peu raide au début, mieux à la fin." }}
             exercises={[...EXERCISES.map(([name]) => name), "Light Closed-Chain Quad Strengthening", "Isometric Wall Sit (60 Degrees)", "Protected Squat (Quadriceps)"]}
-          />
-        ) : ecran === "changer-offre" ? (
-          <ChangerOffreView
-            currentTier="essentiel"
-            prices={{ essentiel: TIERS.essentiel.amount, standard: TIERS.standard.amount, premium: TIERS.premium.amount }}
-            changeTier={noop}
           />
         ) : ecran === "historique" ? (
           <HistoriqueView

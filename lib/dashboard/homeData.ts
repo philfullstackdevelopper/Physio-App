@@ -124,13 +124,12 @@ export function buildDashboardHome({ now = new Date(), patients, profiles, logs,
 
 export async function loadDashboardHome(supabase: SupabaseClient, userId: string, now: Date = new Date()): Promise<DashboardHome> {
   const since14 = new Date(now.getTime() - 14 * 86_400_000).toISOString();
-  const [instructor, { data: patients }, { data: profiles }, { data: logs }, { data: feedback }, { data: subscriptions }] = await Promise.all([
+  const [instructor, { data: patients }, { data: profiles }, { data: logs }, { data: feedback }] = await Promise.all([
     getInstructor(supabase, userId),
     supabase.from("patients").select("id, full_name, created_at, terms_accepted_at"),
     supabase.from("patient_profiles").select("id, health_data_consent_at"),
     supabase.from("workout_logs").select("id, patient_id, completed_at"),
     supabase.from("patient_feedback").select("patient_id, pain_score, difficulty, created_at").gte("created_at", since14),
-    supabase.from("subscriptions").select("user_id, status, current_period_end"),
   ]);
   const firstName = instructor?.full_name ? instructor.full_name.split(" ")[0] : "";
   return {
@@ -141,7 +140,6 @@ export async function loadDashboardHome(supabase: SupabaseClient, userId: string
       profiles: (profiles ?? []) as DashboardHomeInput["profiles"],
       logs: (logs ?? []) as DashboardHomeInput["logs"],
       feedback: (feedback ?? []) as DashboardHomeInput["feedback"],
-      subscriptions: (subscriptions ?? []) as NonNullable<DashboardHomeInput["subscriptions"]>,
     }),
   };
 }

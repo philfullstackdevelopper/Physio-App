@@ -172,7 +172,7 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
 /** Toutes les requêtes en parallèle ; RLS limite chaque table aux patients du kiné connecté. */
 export async function loadPatientRows(supabase: SupabaseClient, now: Date = new Date()): Promise<PatientRow[]> {
   const since14 = new Date(now.getTime() - 14 * 86_400_000).toISOString();
-  const [{ data: patients }, { data: profiles }, { data: conditions }, { data: logs }, { data: feedback }, { data: recs }, { data: subscriptions }] =
+  const [{ data: patients }, { data: profiles }, { data: conditions }, { data: logs }, { data: feedback }, { data: recs }] =
     await Promise.all([
       supabase.from("patients").select("id, full_name, condition_id, created_at, terms_accepted_at"),
       supabase.from("patient_profiles").select("id, injury_stage, health_data_consent_at"),
@@ -180,8 +180,8 @@ export async function loadPatientRows(supabase: SupabaseClient, now: Date = new 
       supabase.from("workout_logs").select("patient_id, completed_at"),
       supabase.from("patient_feedback").select("patient_id, pain_score, difficulty, created_at").gte("created_at", since14),
       supabase.from("patient_recommended_workouts").select("patient_id, workout_id, week_start_date, week_count, workouts ( times_per_week )"),
-      // Le kiné lit les abonnements de SES patients (subscriptions_instructor_read, migration 0055).
-      supabase.from("subscriptions").select("user_id, status, current_period_end"),
+      // Plus d'abonnements patient depuis le 2026-10-24 (nouveau modèle) : on ne
+      // les lit plus, donc personne n'est « ancien patient » d'après un abonnement.
     ]);
 
   return buildPatientRows({
@@ -191,7 +191,6 @@ export async function loadPatientRows(supabase: SupabaseClient, now: Date = new 
     conditions: (conditions ?? []) as PatientRowsInput["conditions"],
     logs: (logs ?? []) as PatientRowsInput["logs"],
     feedback: (feedback ?? []) as PatientRowsInput["feedback"],
-    subscriptions: (subscriptions ?? []) as NonNullable<PatientRowsInput["subscriptions"]>,
     recs: (recs ?? []).map((r) => ({
       patient_id: r.patient_id as string,
       workout_id: r.workout_id as string,

@@ -10,7 +10,7 @@ import { initials } from "@/lib/format/initials";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { ageFromDob } from "@/lib/exercise/patientProfile";
 import { EQUIPMENT_LABELS, type EquipmentId } from "@/lib/exercise/equipment";
-import { paymentEligibleForDeletion, subscriptionLapse } from "@/lib/patient/paymentStatus";
+import { paymentEligibleForDeletion } from "@/lib/patient/paymentStatus";
 import { type AddableWorkout } from "@/components/AdjustWorkoutModal";
 import KineWeekProgramme, { type KineWorkoutSummary } from "@/components/KineWeekProgramme";
 import PatientActionsMenu from "@/components/PatientActionsMenu";
@@ -52,10 +52,9 @@ export default async function PatientDetailPage({ params, searchParams }: { para
 
   const { data: patient } = await supabase.from("patients").select("id, full_name, email, condition_id, created_at").eq("id", id).maybeSingle();
   if (!patient) redirect("/dashboard/patients");
-  // « Ancien patient » : calculé d'après son abonnement Stripe (lisible par son
-  // kiné, migration 0055) — plus d'étiquette manuelle (Philippe, 2026-10-10).
-  const { data: patientSub } = await supabase.from("subscriptions").select("status, current_period_end").eq("user_id", id).maybeSingle();
-  const lapse = subscriptionLapse(patientSub?.status as string | null, patientSub?.current_period_end as string | null, now);
+  // Plus d'abonnement patient depuis le 2026-10-24 : plus d'« ancien patient »
+  // calculé d'après un abonnement.
+  const lapse = null as { at: string; reason: "payment_failed" | "ended" } | null;
   const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || "ce patient";
 
   // Suivi mensuel (nouveau modèle, 2026-10-24) : état du suivi, bilan du mois, tarif.
