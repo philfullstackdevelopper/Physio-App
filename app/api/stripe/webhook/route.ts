@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/billing/stripe";
-import { syncSubscription } from "@/lib/billing/sync";
 import { connectStatusFromAccount, verifiedInstructorId } from "@/lib/billing/connectStatus";
 import { upsertConnectAccount } from "@/lib/db/admin";
 import { handleFollowUpSetupEvent, syncReviewPaymentFromIntent } from "@/lib/billing/followUp";
@@ -53,53 +52,6 @@ export async function POST(req: Request) {
         else await finalizePlatformBillingSetup(session.id);
         break;
       }
-      if (session.subscription) {
-        const subId =
-          typeof session.subscription === "string" ? session.subscription : session.subscription.id;
-        // The checkout session (and the subscription it created) lives on the
-        // kiné's own Connect account (Direct charge — app/patient/abonnement/actions.ts),
-        // never on the platform account. A Connect webhook event carries which
-        // connected account it came from in `event.account`; without passing
-        // that back as the request option, the platform's own view of Stripe
-        // can't see the connected account's objects at all ("No such
-        // subscription" — confirmed via a live test, 2026-09-11).
-        const sub = await stripe.subscriptions.retrieve(
-          subId,
-          undefined,
-          event.account ? { stripeAccount: event.account } : undefined,
-        );
-        await syncSubscription(
-          sub,
-          {
-            user_id: session.metadata?.user_id,
-            plan: session.metadata?.plan,
-          },
-          { stripeAccount: event.account },
-        );
-      }
-      break;
-    }
-    case "customer.subscription.updated":
-    case "customer.subscription.deleted": {
-      // event.account : le compte Connect du kiné d'où vient l'événement —
-      // syncSubscription en a besoin pour vérifier qu'un événement tardif
-      // d'un ancien abonnement n'écrase pas l'abonnement en cours.
-      // Stripe ne garantit pas l'ordre des événements (audit du 2026-10-08) :
-      // un « updated (active) » arrivé APRÈS le « deleted » rendait l'accès.
-      // On relit donc l'abonnement chez Stripe et on enregistre son état
-      // ACTUEL, pas celui figé dans l'événement.
-      const fromEvent = event.data.object as Stripe.Subscription;
-      let current = fromEvent;
-      try {
-        current = await stripe.subscriptions.retrieve(
-          fromEvent.id,
-          undefined,
-          event.account ? { stripeAccount: event.account } : undefined,
-        );
-      } catch (err) {
-        console.error(`[stripe/webhook] relecture de ${fromEvent.id} impossible, état de l'événement utilisé :`, err);
-      }
-      await syncSubscription(current, undefined, { stripeAccount: event.account });
       break;
     }
     case "account.updated": {

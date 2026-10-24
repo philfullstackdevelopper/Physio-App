@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { recommendPrescription } from "@/lib/exercise/prescription";
 import { isProfileComplete, profileToContext } from "@/lib/exercise/patientProfile";
-import { hasPatientAppAccess } from "@/lib/billing/context";
 import WorkoutSession, { type SessionExercise } from "@/components/WorkoutSession";
 
 type WorkoutExerciseRow = {
@@ -32,7 +31,6 @@ export default async function SeancePage({
     .eq("id", user.id)
     .maybeSingle();
   if (!isProfileComplete(profile)) redirect("/patient/onboarding");
-  if (!(await hasPatientAppAccess(supabase, user.id))) redirect("/patient/abonnement");
 
   // media_start_seconds needs migration 0022. Until it's run by hand in
   // Supabase (this project's convention — see CLAUDE.md), fall back to the

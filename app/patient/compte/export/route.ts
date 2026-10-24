@@ -26,7 +26,7 @@ export async function GET() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, messages, subscription, personalWorkouts] =
+  const [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, messages, subscription, personalWorkouts, followUp, monthlyReviews] =
     await Promise.all([
       supabase.from("patient_profiles").select("*").eq("id", user.id).maybeSingle(),
       supabase.from("patients").select("*").eq("id", user.id).maybeSingle(),
@@ -38,11 +38,14 @@ export async function GET() {
       // « Ajuster la séance » copiées spécialement pour ce patient (0044).
       supabase.from("subscriptions").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("workouts").select("*, workout_exercises ( * )").eq("patient_id", user.id),
+      // Nouveau modèle (2026-10-24) : suivi mensuel accepté et bilans reçus.
+      supabase.from("patient_follow_ups").select("patient_id, instructor_id, price_cents, status, consented_at, card_label, stopped_at, created_at").eq("patient_id", user.id).maybeSingle(),
+      readAll((a, b) => supabase.from("monthly_reviews").select("*").eq("patient_id", user.id).order("period").range(a, b)),
     ]);
 
   // Une requête en échec ne doit pas apparaître comme « aucune donnée » dans
   // un export RGPD : on refuse plutôt l'export, le patient peut réessayer.
-  const failed = [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, messages, subscription, personalWorkouts].some(
+  const failed = [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, messages, subscription, personalWorkouts, followUp, monthlyReviews].some(
     (r) => r.error,
   );
   if (failed) {
@@ -63,6 +66,8 @@ export async function GET() {
     workout_logs: workoutLogs.data,
     messages: messages.data,
     subscription: subscription.data,
+    monthly_follow_up: followUp.data,
+    monthly_reviews: monthlyReviews.data,
   };
 
   return new NextResponse(JSON.stringify(payload, null, 2), {

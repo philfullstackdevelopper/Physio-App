@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Check, Info } from "lucide-react";
 import { HandNote, Underlined } from "@/components/HandDrawn";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
-import { estimateStripeFeeCents } from "@/lib/billing/platformFee";
+import { estimateStripeFeeCents } from "@/lib/billing/reviewModel";
 import {
   FREE_FIRST_MONTH,
   KINE_FEE_PER_ACTIVE_PATIENT_CENTS,

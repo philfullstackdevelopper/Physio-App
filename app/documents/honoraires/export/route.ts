@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { loadMonthFeeNotes } from "@/lib/billing/feeNotes";
-import { estimateStripeFeeCents } from "@/lib/billing/platformFee";
+import { estimateStripeFeeCents } from "@/lib/billing/reviewModel";
 import { csvCell, periodOf } from "@/lib/billing/reviewModel";
 
 // Tableur des recettes d'un mois pour le comptable du kiné (nouveau modèle,

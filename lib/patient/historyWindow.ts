@@ -12,10 +12,3 @@ export function formatHistoryDay(iso: string) {
 /** Nombre de jours (avec séance) visibles en clair avant le verrou.
  *  Plan inconnu/historique (patient_monthly, grandfathering) = illimité (null),
  *  pas de mauvaise surprise sur un abonnement qui n'a jamais eu cette règle. */
-// Nouveau modèle (2026-10-24) : plus d'offres patient, l'historique est
-// toujours visible en entier. Gardé pour ne pas toucher les trois pages qui
-// l'appellent.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function historyDaysVisibleFor(_subPlan: string | null | undefined): number | null {
-  return null;
-}

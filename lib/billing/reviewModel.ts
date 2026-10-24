@@ -12,9 +12,9 @@
 //      de suivi mensuel réellement fait (art. R.4321-98 : honoraires seulement
 //      pour des actes réellement effectués). EasyPhysio n'en prend rien.
 //
-// ATTENTION : la facturation réelle de l'appli (lib/billing/platformFee.ts,
-// app/patient/abonnement) applique encore l'ancien modèle (abonnements patient
-// + 15 %). Ce fichier ne sert qu'à l'affichage tant qu'elle n'est pas refaite.
+// Sert au site ET à la facturation réelle (lib/billing/followUp.ts,
+// lib/billing/platformInvoice.ts) — l'ancien modèle (abonnements patient +
+// 15 %) a été retiré le 2026-10-24.
 // Modèle à faire valider par un avocat en droit de la santé avant le lancement.
 // =============================================================================
 
@@ -47,6 +47,17 @@ export const PATIENT_APP_ONLY_MONTHLY_CENTS = 500;
 
 /** Le premier mois est offert au kiné. */
 export const FREE_FIRST_MONTH = true;
+
+// Frais Stripe estimés pour une carte européenne (1,5 % + 0,25 € par paiement),
+// présentés comme une estimation partout où ils sont affichés.
+export const STRIPE_FEE_RATE = 0.015;
+export const STRIPE_FEE_FIXED_CENTS = 25;
+
+/** Frais Stripe estimés pour UN paiement de ce montant, en centimes. */
+export function estimateStripeFeeCents(priceCents: number): number {
+  if (priceCents <= 0) return 0;
+  return Math.round(priceCents * STRIPE_FEE_RATE + STRIPE_FEE_FIXED_CENTS);
+}
 
 export const eurosFR = (cents: number, decimals = 2) =>
   (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });

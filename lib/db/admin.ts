@@ -30,27 +30,6 @@ export async function setInstructorRppsVerified(instructorId: string, verifiedAt
   }
 }
 
-export async function upsertSubscription(params: {
-  userId: string;
-  plan: string;
-  stripeCustomerId: string | null;
-  stripeSubscriptionId: string | null;
-  status: string;
-  currentPeriodEnd: string | null;
-}): Promise<void> {
-  await getPool().query(
-    "select internal.admin_upsert_subscription($1, $2, $3, $4, $5, $6)",
-    [
-      params.userId,
-      params.plan,
-      params.stripeCustomerId,
-      params.stripeSubscriptionId,
-      params.status,
-      params.currentPeriodEnd,
-    ],
-  );
-}
-
 // Suppression d'un compte (et, en cascade, de toutes ses données). Depuis la
 // migration 0061, app_users n'est plus modifiable via PostgREST : ces deux
 // fonctions passent par internal.delete_app_user_by_* (laissez-passer
@@ -103,21 +82,6 @@ export type AdminInstructorRow = {
 
 export async function listAllInstructors(): Promise<AdminInstructorRow[]> {
   const { rows } = await getPool().query<AdminInstructorRow>("select * from internal.admin_list_instructors()");
-  return rows;
-}
-
-export type InstructorSubscriptionRow = {
-  patient_id: string;
-  stripe_subscription_id: string;
-  status: string | null;
-  connect_account_id: string | null;
-};
-
-export async function listInstructorSubscriptions(instructorId: string): Promise<InstructorSubscriptionRow[]> {
-  const { rows } = await getPool().query<InstructorSubscriptionRow>(
-    "select * from internal.admin_instructor_subscriptions($1)",
-    [instructorId],
-  );
   return rows;
 }
 

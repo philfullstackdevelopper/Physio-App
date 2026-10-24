@@ -7,8 +7,6 @@ import PatientWelcomeGate from "@/components/PatientWelcomeGate";
 import PatientNoRecordGate from "@/components/PatientNoRecordGate";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { getTierBilling } from "@/lib/billing/context";
-import { hasActiveTier } from "@/lib/billing/access";
 
 const ONBOARDING_PATH = "/patient/onboarding";
 // Same treatment as onboarding: the offer choice comes right after it
@@ -64,23 +62,18 @@ export default async function PatientLayout({ children }: { children: React.Reac
 
   const pathname = (await headers()).get("x-pathname") ?? "";
   const onOnboardingPath = pathname.startsWith(ONBOARDING_PATH);
-  const onAccountPath = pathname.startsWith("/patient/compte");
   // Nouveau modèle (2026-10-24) : plus d'offre patient à choisir, le kiné paie
-  // l'appli pour ses patients — plus de renvoi vers /patient/abonnement.
-  void onAccountPath;
-  void kineSuspended;
-  const needsTierCheck = false;
+  // l'appli pour ses patients — plus de renvoi vers une page d'offres.
   const fullBleed = onOnboardingPath || pathname.startsWith(ABONNEMENT_PATH);
 
   // Les trois lectures qui suivent ne dépendent pas l'une de l'autre : en
   // parallèle plutôt qu'à la suite (audit du 2026-10-08 — chaque aller-retour
   // vers PostgREST sur Scalingo se paie). Les décisions restent dans le même
   // ordre qu'avant.
-  const [profileRes, billing, unreadRes] = await Promise.all([
+  const [profileRes, unreadRes] = await Promise.all([
     onOnboardingPath
       ? Promise.resolve(null)
       : supabase.from("patient_profiles").select("health_data_consent_at").eq("id", user.id).maybeSingle(),
-    needsTierCheck ? getTierBilling(supabase, user.id) : Promise.resolve(null),
     fullBleed
       ? Promise.resolve(null)
       : // Messages FROM the instructor this patient hasn't opened yet — mirrors
@@ -99,20 +92,6 @@ export default async function PatientLayout({ children }: { children: React.Reac
     }
   }
 
-  // Same "offre active ?" gate as lib/patient/home-data.ts, but done HERE,
-  // before any nav markup is built, not from inside a nested page. A
-  // redirect() thrown deep inside {children} arrives too late: this layout's
-  // shell (sidebar included) may already have started streaming to the
-  // browser, so the sidebar flashes/sticks around the abonnement page even
-  // though that page is meant to render full-bleed (Philippe, 2026-09-11 —
-  // reported as "la barre latérale ne devrait pas être là").
-  // « Mon compte » reste ouvert SANS offre active (audit du 2026-10-08) :
-  // c'est là que le patient exporte ses données, supprime son compte (droits
-  // RGPD) et gère son abonnement — après une résiliation ou la fin de l'essai,
-  // il doit encore pouvoir s'en servir.
-  if (needsTierCheck && billing && !hasActiveTier(billing)) {
-    redirect(ABONNEMENT_PATH);
-  }
 
   // Onboarding and the offer choice both render full-bleed, their own layout
   // (step wizard / pricing cards, no dashboard chrome) — the real nav only

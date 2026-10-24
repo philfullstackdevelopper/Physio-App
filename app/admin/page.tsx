@@ -16,7 +16,6 @@ const STATUS_LABEL: Record<string, { label: string; tone: string }> = {
   rejected: { label: "Refusé", tone: "bg-slate-100 text-slate-600" },
   suspended: { label: "Suspendu", tone: "bg-red-50 text-red-700" },
 };
-const euros = (cents: number) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 
 const dateFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
@@ -63,10 +62,7 @@ export default async function AdminPage({
       {/* Bilan de la dernière suspension (app/admin/actions.ts). */}
       {sp.suspended === "1" && (
         <p className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
-          Kiné suspendu. {sp.cancelled ?? 0} abonnement(s) résilié(s), {sp.refunds ?? 0} remboursement(s) pour{" "}
-          {euros(Number(sp.cents ?? 0))}.
-          {Number(sp.failures ?? 0) > 0 &&
-            ` ${sp.failures} abonnement(s) n'ont pas pu être traités — relancez « Suspendre » pour réessayer.`}
+          Kiné suspendu : il n&apos;a plus accès à son espace.
         </p>
       )}
       {sp.error && <p className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{sp.error}</p>}
@@ -203,22 +199,19 @@ export default async function AdminPage({
                     {dateFmt.format(new Date(k.created_at))}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {k.patient_count} patient{k.patient_count > 1 ? "s" : ""}, dont {k.paying_count} abonné
-                    {k.paying_count > 1 ? "s" : ""} · Stripe : {k.connect_status === "active" ? "connecté" : k.connect_status ? "inscription en cours" : "non connecté"}
+                    {k.patient_count} patient{k.patient_count > 1 ? "s" : ""} · Stripe : {k.connect_status === "active" ? "connecté" : k.connect_status ? "inscription en cours" : "non connecté"}
                   </p>
                 </div>
                 {k.status === "approved" && (
-                  // Confirmation en deux temps : l'action résilie et rembourse
-                  // les abonnements de tous ses patients.
+                  // Confirmation en deux temps : le kiné perd l'accès à son espace.
                   <details className="group shrink-0 sm:text-right">
                     <summary className="cursor-pointer list-none rounded-xl border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 [&::-webkit-details-marker]:hidden">
                       Suspendre
                     </summary>
                     <div className="mt-2 max-w-xs rounded-xl bg-red-50 p-3 text-left text-xs text-red-800">
                       <p>
-                        Le kiné perd l&apos;accès à son espace. Les abonnements de ses {k.paying_count} patient(s) abonné(s)
-                        sont résiliés tout de suite et la part non utilisée du mois leur est remboursée. Ses patients
-                        gardent l&apos;accès gratuit à leur programme.
+                        Le kiné perd l&apos;accès à son espace. Ses patients gardent leur programme ; plus aucun bilan
+                        ne peut être validé, donc plus aucun prélèvement.
                       </p>
                       <form action={suspendInstructorAction} className="mt-2">
                         <input type="hidden" name="id" value={k.id} />

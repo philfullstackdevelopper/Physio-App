@@ -11,8 +11,10 @@ import { computeAdherence, adherenceLabel, adherenceTone, type Adherence } from 
 import { computeSignal, type Signal } from "./patientSignal.ts";
 import { relativeDay } from "../format/relativeDay.ts";
 import { initials } from "../format/initials.ts";
-import { paymentEligibleForDeletion, subscriptionLapse } from "../patient/paymentStatus.ts";
-import type { LockReason } from "../billing/access.ts";
+import { paymentEligibleForDeletion } from "../patient/paymentStatus.ts";
+
+/** Pourquoi un patient serait « ancien » (plus calculé depuis le 2026-10-24). */
+type LockReason = "payment_failed" | "ended";
 
 export interface PatientRowsInput {
   now?: Date;
@@ -33,7 +35,6 @@ export interface PatientRowsInput {
   feedback: { patient_id: string; pain_score: number | null; difficulty: number | null; created_at: string }[];
   recs: { patient_id: string; workout_id: string; week_start_date: string; week_count?: number | null; times_per_week: number | null }[];
   /** Abonnements Stripe des patients (lisibles par leur kiné, migration 0055). Optionnel pour les anciens tests. */
-  subscriptions?: { user_id: string; status: string | null; current_period_end: string | null }[];
 }
 
 export interface PatientRow {
@@ -72,8 +73,7 @@ export interface PatientRow {
 
 const SIGNAL_RANK: Record<Signal["kind"], number> = { pain: 0, inactive: 1, ok: 2 };
 
-export function buildPatientRows({ now = new Date(), patients, profiles, conditions, logs, feedback, recs, subscriptions = [] }: PatientRowsInput): PatientRow[] {
-  const subOf = new Map(subscriptions.map((sub) => [sub.user_id, sub]));
+export function buildPatientRows({ now = new Date(), patients, profiles, conditions, logs, feedback, recs }: PatientRowsInput): PatientRow[] {
   const conditionName = new Map(conditions.map((c) => [c.id, c.name]));
   const stageOf = new Map(profiles.map((p) => [p.id, (p.injury_stage as InjuryStage | null) ?? null]));
   const healthConsentOf = new Map(profiles.map((p) => [p.id, p.health_data_consent_at ?? null]));
@@ -107,8 +107,8 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
     const sig = signalsBy.get(p.id) ?? { painScores: [], difficulties: [], lastPain: null, lastPainAt: "" };
     const assessment = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties });
     const adherence = computeAdherence({ completedAt: completed, assignments: recsBy.get(p.id) ?? [], now });
-    const sub = subOf.get(p.id);
-    const lapse = subscriptionLapse(sub?.status ?? null, sub?.current_period_end ?? null, now);
+    // Plus d'abonnement patient (2026-10-24) : personne n'est « ancien patient ».
+    const lapse = null as { at: string; reason: LockReason } | null;
     const paymentLapsedAt = lapse?.at ?? null;
     const termsAcceptedAt = p.terms_accepted_at ?? null;
     const onboardingStage: PatientRow["onboardingStage"] = !termsAcceptedAt

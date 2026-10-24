@@ -10,7 +10,6 @@ import { computeSignal } from "./patientSignal.ts";
 import { relativeDay, daysBetween } from "../format/relativeDay.ts";
 import { initials } from "../format/initials.ts";
 import { getInstructor } from "./instructor.ts";
-import { subscriptionLapse } from "../patient/paymentStatus.ts";
 
 export interface DashboardHomeInput {
   now?: Date;
@@ -22,7 +21,6 @@ export interface DashboardHomeInput {
   /** 14 derniers jours. */
   feedback: { patient_id: string; pain_score: number | null; difficulty: number | null; created_at: string }[];
   /** Abonnements Stripe des patients (migration 0055) — pour écarter les anciens patients. Optionnel pour les anciens tests. */
-  subscriptions?: { user_id: string; status: string | null; current_period_end: string | null }[];
 }
 
 export interface Tile { value: number; delta: number | null }
@@ -44,12 +42,13 @@ export interface DashboardHome {
 
 const TODAY_FMT = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
-export function buildDashboardHome({ now = new Date(), patients, profiles, logs, feedback, subscriptions = [] }: DashboardHomeInput): Omit<DashboardHome, "firstName"> {
+export function buildDashboardHome({ now = new Date(), patients, profiles, logs, feedback }: DashboardHomeInput): Omit<DashboardHome, "firstName"> {
   // Anciens patients (abonnement terminé ou carte refusée — même règle que la
   // liste « Mes patients » et que le cadenas côté patient) : ils ne sont plus
   // suivis, donc ni « à suivre » ni comptés dans « Patients suivis »
   // (Philippe, 2026-10-10).
-  const former = new Set(subscriptions.filter((sub) => subscriptionLapse(sub.status, sub.current_period_end, now)).map((sub) => sub.user_id));
+  // Plus d'abonnement patient depuis le 2026-10-24 : plus d'anciens patients.
+  const former = new Set<string>();
   const nameOf = new Map(patients.map((p) => [p.id, p.full_name ?? "Patient"]));
   const isToday = (iso: string) => daysBetween(iso, now) === 0;
   const isYesterday = (iso: string) => daysBetween(iso, now) === 1;

@@ -35,8 +35,7 @@ export async function rejectInstructor(formData: FormData) {
   revalidatePath("/admin");
 }
 
-// Suspension d'un kiné (Philippe, 2026-10-07) : accès coupé, abonnements de
-// ses patients résiliés et période non utilisée remboursée — détail dans
+// Suspension d'un kiné (Philippe, 2026-10-07) : accès coupé — détail dans
 // lib/billing/suspendInstructor.ts. Le bilan revient dans l'URL pour être
 // affiché en haut de /admin.
 export async function suspendInstructorAction(formData: FormData) {
@@ -45,8 +44,8 @@ export async function suspendInstructorAction(formData: FormData) {
   if (!id) return;
   let query: string;
   try {
-    const r = await suspendInstructor(id);
-    query = `suspended=1&cancelled=${r.cancelled}&refunds=${r.refunds}&cents=${r.refundedCents}&failures=${r.failures}`;
+    await suspendInstructor(id);
+    query = "suspended=1";
   } catch (e) {
     console.error("[admin] suspension :", e);
     query = `error=${encodeURIComponent("La suspension a échoué. Réessayez : les étapes déjà faites ne seront pas refaites.")}`;

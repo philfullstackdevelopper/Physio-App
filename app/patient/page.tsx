@@ -3,8 +3,6 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { loadPatientHome } from "@/lib/patient/home-data";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
 import type { SessionDetail } from "@/components/WeekProgramme";
-import { getTierBilling } from "@/lib/billing/context";
-import { historyDaysVisibleFor } from "@/lib/patient/historyWindow";
 import PatientHomeView, { type ProgrammeCard } from "@/components/PatientHomeView";
 
 // Philippe, 2026-09-08: Accueil is now the week-by-week programme browser
@@ -20,10 +18,9 @@ export default async function PatientDashboard() {
   const user = await requireUser(supabase);
 
   // En parallèle (audit du 2026-10-08) : ces trois lectures sont indépendantes.
-  const [home, { data: patientRow }, billing] = await Promise.all([
+  const [home, { data: patientRow }] = await Promise.all([
     loadPatientHome(supabase, user.id),
     supabase.from("patients").select("created_at").eq("id", user.id).maybeSingle(),
-    getTierBilling(supabase, user.id),
   ]);
   // Date du jour sous la salutation, heure de Paris (le serveur peut tourner en UTC).
   const today = new Intl.DateTimeFormat("fr-FR", {
@@ -72,7 +69,8 @@ export default async function PatientDashboard() {
   // frise de l'Accueil le contournait (audit du 2026-10-08) — les jours plus
   // anciens que la fenêtre restent marqués « séance faite », mais sans le
   // ressenti (douleur, difficulté, notes), comme sur la page Historique.
-  const historyDaysVisible = historyDaysVisibleFor(billing.subPlan);
+  // Plus d'offres patient (2026-10-24) : tout l'historique est visible.
+  const historyDaysVisible: number | null = null;
   if (historyDaysVisible !== null) {
     const daysWithSessions = Object.keys(dayDetails).sort().reverse();
     for (const key of daysWithSessions.slice(historyDaysVisible)) {

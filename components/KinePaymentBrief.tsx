@@ -1,5 +1,5 @@
 import { ArrowRight, ArrowDown, Check, FileText, Scale } from "lucide-react";
-import { estimateStripeFeeCents } from "@/lib/billing/platformFee";
+import { estimateStripeFeeCents } from "@/lib/billing/reviewModel";
 import {
   FREE_FIRST_MONTH,
   KINE_FEE_PER_ACTIVE_PATIENT_CENTS,

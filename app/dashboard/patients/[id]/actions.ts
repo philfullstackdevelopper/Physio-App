@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { applyAdjustment, adjustmentMessage } from "@/lib/exercise/adjustPlan";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
-import { cancelPatientSubscription } from "@/lib/billing/cancelSubscription";
 import { deleteClerkUserWithRetry } from "@/lib/auth/deleteClerkUser";
 import { deleteAppUserById } from "@/lib/db/admin";
 import { resolveAppUserId, precreateAppUserId } from "@/lib/auth/user-map";
@@ -76,19 +75,6 @@ export async function deletePatient(formData: FormData) {
   //   3. seulement ensuite, le nettoyage Clerk (toujours en meilleur effort) ;
   //   4. puis la correspondance app_users, via la connexion serveur directe
   //      (lib/db/admin.ts) et non plus via PostgREST, qui n'y a plus accès.
-  try {
-    await cancelPatientSubscription(patientId);
-  } catch (e) {
-    // Résiliation Stripe en échec : on ne supprime RIEN, sinon le patient
-    // continuerait d'être prélevé sans plus avoir de compte.
-    console.error("deletePatient: Stripe cancellation failed", e);
-    redirect(
-      `/dashboard/patients/${patientId}?error=${encodeURIComponent(
-        "Impossible de résilier l'abonnement du patient. Rien n'a été supprimé, réessayez dans un instant.",
-      )}`,
-    );
-  }
-
   const { error } = await supabase.from("patients").delete().eq("id", patientId).eq("instructor_id", user.id);
   if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
 

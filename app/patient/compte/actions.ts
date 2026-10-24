@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { deleteAppUserById } from "@/lib/db/admin";
 import { requireUser, forgetKnownUser } from "@/lib/supabase/require-user";
 import { revokeCurrentSession } from "@/lib/auth/clerk-session";
-import { cancelPatientSubscription, setPatientCancelAtPeriodEnd } from "@/lib/billing/cancelSubscription";
 import { deleteClerkUserWithRetry } from "@/lib/auth/deleteClerkUser";
 
 // RGPD droit à l'effacement: a patient deletes their own account. Every
@@ -32,22 +31,10 @@ export async function deleteMyAccount(formData: FormData) {
     );
   }
 
-  // (Philippe, 2026-10-07 : ordre revu.) 1) Résilier l'abonnement Stripe
-  // chez le kiné AVANT tout le reste — sinon le patient continuerait d'être
-  // prélevé sans plus avoir de compte pour résilier. Si Stripe échoue, on ne
-  // supprime rien : le patient réessaie plus tard.
   // redirect() lève une exception interne à Next : toujours HORS des try.
   let failure: string | null = null;
-  try {
-    await cancelPatientSubscription(user.id);
-  } catch (err) {
-    console.error("deleteMyAccount: résiliation Stripe impossible", err);
-    failure =
-      "Impossible de résilier votre abonnement pour le moment. Rien n'a été supprimé — réessayez dans quelques minutes.";
-  }
-  if (failure) redirect(`/patient/compte?error=${encodeURIComponent(failure)}`);
 
-  // 2) Les données : la ligne d'identité interne (cascade sur toutes les
+  // 1) Les données : la ligne d'identité interne  // 2) Les données : la ligne d'identité interne (cascade sur toutes les
   // tables du patient). Connexion directe, pas le client supabase-js. Si ça
   // échoue, l'identité Clerk existe encore : le patient peut se reconnecter
   // et réessayer.
@@ -70,38 +57,6 @@ export async function deleteMyAccount(formData: FormData) {
   forgetKnownUser(user.clerkId);
   await revokeCurrentSession();
   redirect(identityDeleted ? "/login?deleted=1" : "/login?deleted=partial");
-}
-
-// Résilier / reprendre son abonnement depuis l'appli (Philippe, 2026-10-10 :
-// le patient « doit pouvoir facilement » résilier depuis son compte, et garde
-// l'accès jusqu'à la fin de la période payée). Réservé au titulaire : la RLS
-// ne renvoie la ligne subscriptions qu'à son propre patient.
-async function changeCancellation(cancel: boolean) {
-  const supabase = await createClient();
-  const user = await requireUser(supabase);
-  let failure: string | null = null;
-  let changed = false;
-  try {
-    changed = await setPatientCancelAtPeriodEnd(user.id, cancel);
-  } catch (err) {
-    console.error("changeCancellation: Stripe a refusé", err);
-    failure = cancel
-      ? "Impossible de résilier pour le moment. Rien n'a changé — réessayez dans quelques minutes."
-      : "Impossible d'annuler la résiliation pour le moment. Réessayez dans quelques minutes.";
-  }
-  if (failure) redirect(`/patient/compte?error=${encodeURIComponent(failure)}`);
-  if (!changed) redirect(`/patient/compte?error=${encodeURIComponent("Aucun abonnement en cours à modifier.")}`);
-  // /billing/refresh relit l'abonnement chez Stripe et met la base à jour,
-  // puis revient sur /patient/compte (même chemin que le retour du portail).
-  redirect("/billing/refresh");
-}
-
-export async function cancelMySubscription() {
-  await changeCancellation(true);
-}
-
-export async function resumeMySubscription() {
-  await changeCancellation(false);
 }
 
 // Identifiant de connexion resté sans aucune donnée (compte supprimé par le

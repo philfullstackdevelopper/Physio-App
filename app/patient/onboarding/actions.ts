@@ -5,8 +5,6 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { EQUIPMENT_OPTIONS, type EquipmentId } from "@/lib/exercise/equipment";
-import { hasActiveTier } from "@/lib/billing/access";
-import { getTierBilling } from "@/lib/billing/context";
 import { friendlyDbError } from "@/lib/format/dbError";
 
 // Saves the patient's onboarding profile into `patient_profiles`.
@@ -131,9 +129,7 @@ export async function saveOnboarding(formData: FormData) {
   }
 
   revalidatePath("/patient");
-  // Onboarding done → choose an offer, unless one is already active (a patient
-  // editing their situation later, or a grandfathered account) — Philippe,
-  // 2026-09-10. lib/patient/home-data.ts applies the same rule on /patient.
-  const goesToApp = hasActiveTier(await getTierBilling(supabase, user.id));
-  redirect(goesToApp ? "/patient" : "/patient/abonnement");
+  // Onboarding terminé → directement dans l'appli (plus d'offre à choisir
+  // depuis le 2026-10-24 : le kiné paie l'appli pour ses patients).
+  redirect("/patient");
 }

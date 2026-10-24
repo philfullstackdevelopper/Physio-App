@@ -74,8 +74,7 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
   // Exception : kiné suspendu → accès gratuit (lib/billing/context.ts,
   // hasPatientAppAccess) ; la requête de plus n'a lieu que sans offre active.
   // Nouveau modèle (2026-10-24) : plus d'offre à choisir — le kiné paie
-  // l'appli pour ses patients, l'accès est toujours ouvert (voir
-  // lib/billing/context.ts, hasPatientAppAccess).
+  // l'appli pour ses patients, l'accès est toujours ouvert.
 
   // What the patient SEES is driven by the condition ASSIGNED BY THE PRACTITIONER
   // (patients.condition_id). The patient's self-declaration is intake only.

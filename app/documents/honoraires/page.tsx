@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { loadFeeNote, loadMonthFeeNotes, type FeeNote } from "@/lib/billing/feeNotes";
-import { estimateStripeFeeCents } from "@/lib/billing/platformFee";
+import { estimateStripeFeeCents } from "@/lib/billing/reviewModel";
 import { eurosFR, nextPeriod, periodLabel, periodOf } from "@/lib/billing/reviewModel";
 import FeeNoteSheet from "@/components/FeeNoteSheet";
 import PrintButton from "@/components/PrintButton";

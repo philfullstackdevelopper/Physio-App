@@ -2,8 +2,7 @@ import { redirect } from "next/navigation";
 import HistoriqueDetailView from "./HistoriqueDetailView";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { getTierBilling } from "@/lib/billing/context";
-import { formatHistoryDay, historyDaysVisibleFor } from "@/lib/patient/historyWindow";
+import { formatHistoryDay } from "@/lib/patient/historyWindow";
 
 type LogDetail = {
   id: string;
@@ -39,7 +38,8 @@ export default async function HistoriqueDetailPage({
   // Même fenêtre que la liste (lib/patient/historyWindow.ts) : en Essentiel,
   // une séance au-delà des N derniers jours avec séance est verrouillée — la
   // liste la grisait, mais son URL restait ouvrable ici (Philippe, 2026-10-07).
-  const historyDaysVisible = historyDaysVisibleFor((await getTierBilling(supabase, user.id)).subPlan);
+  // Plus d'offres patient (2026-10-24) : aucune séance n'est verrouillée.
+  const historyDaysVisible: number | null = null;
   if (historyDaysVisible !== null) {
     const { data: newer } = await supabase
       .from("workout_logs")
