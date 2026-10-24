@@ -86,7 +86,7 @@ function PatientOffers() {
             </span>
             <span className="text-xs text-slate-500">/mois</span>
           </p>
-          <p className="mt-1 text-xs text-slate-500">Sans suivi par un kiné, payé à EasyPhysio. Sans engagement.</p>
+          <p className="mt-1 text-xs text-slate-500">Ouvert à tous, sans suivi par un kiné. Payé à EasyPhysio, sans engagement.</p>
           <ul className="mt-5 space-y-2 border-t border-slate-100 pt-5 text-sm text-slate-600 sm:short:mt-3 sm:short:space-y-1.5 sm:short:pt-3">
             {APP_ONLY_POINTS.map((point) => (
               <li key={point} className="flex items-start gap-2">

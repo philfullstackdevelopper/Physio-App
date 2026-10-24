@@ -35,15 +35,15 @@ export const REVIEW_PRICE_MIN_CENTS = 1000;
 export const REVIEW_PRICE_MAX_CENTS = 4000;
 
 /**
- * 3e flux (Philippe, 2026-10-24) : un patient peut aussi payer EasyPhysio
- * directement pour l'accès seul à l'appli, sans suivi par un kiné. Prix à
- * confirmer par Philippe. Fonctions « bien-être » uniquement : bibliothèque,
+ * 3e flux (Philippe, 2026-10-24) : n'importe quel patient peut aussi payer
+ * EasyPhysio directement pour l'accès seul à l'appli, sans suivi par un kiné.
+ * 5 € par mois (Philippe, 2026-10-24). Fonctions « bien-être » uniquement : bibliothèque,
  * séances qu'il compose lui-même, planning, historique, poursuite du programme
  * laissé par son kiné. JAMAIS de programme construit d'après une pathologie
  * déclarée : ce serait très probablement un dispositif médical (règlement UE
  * 2017/745, règle 11), avec marquage CE.
  */
-export const PATIENT_APP_ONLY_MONTHLY_CENTS = 699;
+export const PATIENT_APP_ONLY_MONTHLY_CENTS = 500;
 
 /** Le premier mois est offert au kiné. */
 export const FREE_FIRST_MONTH = true;
