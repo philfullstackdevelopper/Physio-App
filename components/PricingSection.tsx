@@ -126,7 +126,7 @@ const KINE_STEPS = [
   },
   {
     title: "Vous payez EasyPhysio à part",
-    body: `${KINE_FEE_HT} € HT par patient actif et par mois, en une seule facture.${FREE_FIRST_MONTH ? " Premier mois offert." : ""}`,
+    body: `${KINE_FEE_HT} € HT par patient suivi et par mois, en une seule facture.${FREE_FIRST_MONTH ? " Premier mois offert." : ""}`,
   },
 ];
 
@@ -179,20 +179,19 @@ function Slider({
 }
 
 function KineOffer() {
-  const [active, setActive] = useState(30);
-  const [followed, setFollowed] = useState(20);
+  // Un patient sur l'appli = un patient suivi, avec un bilan par mois
+  // (Philippe, 2026-10-25) : un seul curseur.
+  const [patients, setPatients] = useState(20);
   const [priceCents, setPriceCents] = useState(RECOMMENDED_REVIEW_PRICE_CENTS);
 
-  // On ne peut pas suivre plus de patients qu'on n'en a d'actifs.
-  const reviews = Math.min(followed, active);
-  const reviewsCents = reviews * priceCents;
-  const easyphysioCents = active * KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS;
-  const cardFeesCents = reviews * estimateStripeFeeCents(priceCents);
+  const reviewsCents = patients * priceCents;
+  const easyphysioCents = patients * KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS;
+  const cardFeesCents = patients * estimateStripeFeeCents(priceCents);
   const netCents = reviewsCents - easyphysioCents - cardFeesCents;
 
   const rows = [
-    { label: `${reviews} bilan${reviews > 1 ? "s" : ""} × ${euros(priceCents)} €`, value: `+ ${euros(reviewsCents)} €`, tone: "text-slate-900" },
-    { label: `EasyPhysio : ${active} × ${euros(KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS)} € TTC`, value: `− ${euros(easyphysioCents)} €`, tone: "text-blue-600" },
+    { label: `${patients} bilan${patients > 1 ? "s" : ""} × ${euros(priceCents)} €`, value: `+ ${euros(reviewsCents)} €`, tone: "text-slate-900" },
+    { label: `EasyPhysio : ${patients} × ${euros(KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS)} € TTC`, value: `− ${euros(easyphysioCents)} €`, tone: "text-blue-600" },
     { label: "Frais de paiement (estimés)", value: `− ${euros(cardFeesCents)} €`, tone: "text-slate-700" },
   ];
 
@@ -229,27 +228,14 @@ function KineOffer() {
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Simulez votre revenu</p>
 
           <Slider
-            id="sim-active"
-            label="Patients actifs sur l'appli"
-            value={active}
-            display={String(active)}
+            id="sim-patients"
+            label="Patients suivis"
+            value={patients}
+            display={String(patients)}
             min={1}
             max={SIM_ACTIVE_MAX}
-            onChange={(v) => {
-              setActive(v);
-              if (followed > v) setFollowed(v);
-            }}
-            valueText={`${active} patients actifs`}
-          />
-          <Slider
-            id="sim-followed"
-            label="dont en suivi mensuel"
-            value={reviews}
-            display={String(reviews)}
-            min={0}
-            max={active}
-            onChange={setFollowed}
-            valueText={`${reviews} patients en suivi mensuel`}
+            onChange={setPatients}
+            valueText={`${patients} patients suivis`}
           />
           <Slider
             id="sim-price"
@@ -286,7 +272,7 @@ function KineOffer() {
             <Info className="h-5 w-5 shrink-0 text-blue-600" strokeWidth={1.75} />
             <p className="text-xs leading-snug text-slate-500">
               <span className="block text-sm font-medium text-blue-700">Pas de bilan, pas de prélèvement</span>
-              Les patients encore en soins ne paient pas de bilan&nbsp;: l&apos;appli sert alors au suivi de leurs exercices.
+              Un mois sans bilan, votre patient ne paie rien.
             </p>
           </div>
         </div>

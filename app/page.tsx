@@ -273,9 +273,9 @@ export default function Home() {
             «&nbsp;Et moi, comment je suis payé&nbsp;?&nbsp;»
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg sm:short:text-sm">
-            Vos patients vous paient leur suivi mensuel. Vous payez l&apos;appli. <Underlined>Les deux ne se mélangent jamais.</Underlined>
+            Vos patients vous paient. Vous payez l&apos;appli. <Underlined>Les deux ne se mélangent jamais.</Underlined>
           </p>
-          <div className="mt-10 sm:short:mt-6">
+          <div className="mx-auto mt-12 max-w-5xl sm:short:mt-6">
             <KinePaymentBrief />
           </div>
         </section>
