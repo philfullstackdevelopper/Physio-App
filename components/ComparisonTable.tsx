@@ -30,7 +30,6 @@ const ROWS: { label: string; values: [Status, Status, Status] }[] = [
   { label: "Suivi de l'évolution par le kiné", values: ["yes", "no", "no"] },
   { label: "Signalement de douleur en temps réel", values: ["yes", "no", "no"] },
   { label: "Ajustement du programme à distance", values: ["yes", "no", "no"] },
-  { label: "Prix connu avant de s'abonner", values: ["yes", "partial", "yes"] },
 ];
 
 function scoreOf(col: number) {
@@ -113,8 +112,9 @@ export default function ComparisonTable() {
           ))}
         </RevealGroup>
 
-        {/* Score total row */}
-        <div className="mt-1 grid grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-2xl bg-blue-50/70 px-4 py-4 max-sm:gap-1 max-sm:px-2 max-sm:py-3 sm:short:py-2.5 sm:gap-4 sm:px-6">
+        {/* Score total row — masquée sur téléphone (2026-10-26) : une note
+            qu'on s'attribue soi-même fait « IA » et n'apporte rien. */}
+        <div className="mt-1 grid max-sm:hidden grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-2xl bg-blue-50/70 px-4 py-4 max-sm:gap-1 max-sm:px-2 max-sm:py-3 sm:short:py-2.5 sm:gap-4 sm:px-6">
           <p className="text-sm font-semibold text-slate-900 max-sm:text-xs">Score total</p>
           {COLUMNS.map((col, i) => (
             <p

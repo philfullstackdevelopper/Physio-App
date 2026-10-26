@@ -52,7 +52,7 @@ const PAIN_POINTS = [
 const CAPABILITIES = [
   {
     title: "Composez un programme en quelques minutes",
-    body: "Plus de 300 exercices illustrés, classés par zone du corps. Pour chaque patient, ajoutez ou retirez des exercices sans toucher au modèle.",
+    body: "Près de 300 exercices illustrés, classés par zone du corps. Pour chaque patient, ajoutez ou retirez des exercices sans toucher au modèle.",
   },
   {
     title: "Voyez qui fait ses exercices",

@@ -33,13 +33,14 @@ const EXERCISES: ShowcaseExercise[] = [
 
 export default function ExerciseShowcase() {
   return (
-    // Téléphone : DEUX lignes de 3 exercices (Philippe, 2026-10-10 : d'abord
-    // une seule ligne, puis « we can put a second row ») ; dès sm : 4 × 2.
-    <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-4">
+    // Téléphone : 4 grands dessins en 2 × 2 (Philippe, 2026-10-26 : le bloc
+    // ouvre la page sur téléphone, les dessins doivent se voir en grand).
+    // Dès sm : 4 × 2, inchangé.
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
       {EXERCISES.map((ex, i) => (
         <li
           key={ex.drawing}
-          className={`rounded-2xl border border-slate-200 bg-white p-2 sm:p-3 ${i >= 6 ? "max-sm:hidden" : ""}`}
+          className={`rounded-2xl border border-slate-200 bg-white p-2 sm:p-3 ${i >= 4 ? "max-sm:hidden" : ""}`}
         >
           {ex.video ? (
             <video
@@ -48,14 +49,14 @@ export default function ExerciseShowcase() {
               loop
               playsInline
               autoPlay
-              className="h-16 w-full rounded-xl bg-[#f6f8fd] object-cover sm:h-24"
+              className="h-32 w-full rounded-xl bg-[#f6f8fd] object-cover sm:h-24"
             />
           ) : (
-            <ExerciseIllustration name={ex.drawing} animate className="h-16 w-full rounded-xl bg-[#f6f8fd] text-blue-600 sm:h-24" />
+            <ExerciseIllustration name={ex.drawing} animate className="h-32 w-full rounded-xl bg-[#f6f8fd] text-blue-600 sm:h-24" />
           )}
           <div className="mt-2 flex items-baseline justify-between gap-2 max-sm:block max-sm:text-center">
-            <p className="text-sm font-semibold text-slate-900 max-sm:text-xs max-sm:leading-tight sm:truncate">{ex.name}</p>
-            <p className="shrink-0 text-[11px] font-medium text-slate-400 max-sm:mt-0.5 max-sm:text-[10px]">{ex.zone}</p>
+            <p className="text-sm font-semibold text-slate-900 max-sm:text-sm max-sm:leading-tight sm:truncate">{ex.name}</p>
+            <p className="shrink-0 text-[11px] font-medium text-slate-400 max-sm:mt-0.5 max-sm:text-[11px]">{ex.zone}</p>
           </div>
         </li>
       ))}

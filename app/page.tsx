@@ -12,6 +12,7 @@ import PhoneMockup from "@/components/PhoneMockup";
 import FitToBox from "@/components/FitToBox";
 import FitToViewport from "@/components/FitToViewport";
 import KineJourneyDemo from "@/components/KineJourneyDemo";
+import KinePhonePreview from "@/components/KinePhonePreview";
 import ComparisonTable from "@/components/ComparisonTable";
 import PricingSection from "@/components/PricingSection";
 import KinePaymentBrief from "@/components/KinePaymentBrief";
@@ -74,7 +75,7 @@ export default function Home() {
       <div className="relative z-10">
       <SiteHeader />
 
-      <main className="mx-auto max-w-6xl px-6">
+      <main className="mx-auto max-w-6xl px-6 max-sm:flex max-sm:flex-col">
         {/* ── Hero ─────────────────────────────────────────────── */}
         {/* Tout le hero — texte, boutons ET le téléphone en entier — doit
             être visible dès l'arrivée, sans défiler, sur tout écran
@@ -86,13 +87,14 @@ export default function Home() {
             tout l'écran, le téléphone y tombait au tiers de sa taille,
             illisible (Philippe, 2026-10-02) — il passe donc juste en dessous,
             à la hauteur d'un écran.
-            Téléphone, 2026-10-10 (Philippe) : plus que la phrase d'accroche
-            et le téléphone, ensemble sur le premier écran (max-sm:h-svh) —
-            boutons et puces masqués, « Se connecter » est dans l'en-tête. */}
+            Téléphone, 2026-10-26 (Philippe) : plus de faux téléphone ici —
+            accroche, phrase courte et boutons, puis directement les
+            illustrations d'exercices, « Lundi matin » et « Utilisé au
+            cabinet » (ordre changé par max-sm:order-* sur <main>). */}
         {/* phone-land: téléphone à l'horizontale (globals.css) — texte à gauche,
             téléphone à droite comme sur PC, le tout dans la hauteur de l'écran
             (Philippe, 2026-10-04 : « quand on tourne le téléphone, tout bugge »). */}
-        <section className="flex flex-col gap-4 pb-4 pt-20 max-sm:h-svh sm:min-h-dvh lg:grid lg:grid-cols-[minmax(0,41rem)_18rem] lg:items-center lg:justify-center lg:gap-16 lg:pb-6 lg:pt-24 lg:short:pt-20 phone-land:grid phone-land:h-dvh phone-land:min-h-0 phone-land:grid-cols-[minmax(0,1fr)_10rem] phone-land:items-center phone-land:gap-6 phone-land:pb-2 phone-land:pt-16">
+        <section className="flex flex-col gap-4 pb-4 pt-20 max-sm:order-[-4] sm:min-h-dvh lg:grid lg:grid-cols-[minmax(0,41rem)_18rem] lg:items-center lg:justify-center lg:gap-16 lg:pb-6 lg:pt-24 lg:short:pt-20 phone-land:grid phone-land:h-dvh phone-land:min-h-0 phone-land:grid-cols-[minmax(0,1fr)_10rem] phone-land:items-center phone-land:gap-6 phone-land:pb-2 phone-land:pt-16">
           <div className="relative">
             {/* Note manuscrite vers le téléphone de démo — grand écran seulement. */}
             <HandNote className="absolute -right-6 bottom-0 -rotate-3 animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:900ms] max-lg:hidden">
@@ -103,6 +105,11 @@ export default function Home() {
               «&nbsp;Oui oui, j&apos;ai fait mes exercices.&nbsp;»
               <br className="hidden sm:block" /> Maintenant, <Underlined>vous le voyez.</Underlined>
             </h1>
+            {/* Téléphone (2026-10-26) : une phrase courte, la version longue
+                plus bas est masquée sur petit écran. */}
+            <p className="mt-2 text-[15px] leading-snug text-slate-600 sm:hidden phone-land:hidden">
+              Vos patients font leurs exercices guidés chez eux. Vous voyez qui les a faits, et qui a eu mal.
+            </p>
             {/* Téléphone : le hero n'a plus de bouton (2026-10-10) — un simple
                 lien vers la liste d'attente du bas de page (2026-10-12). */}
             {/* Téléphone (Philippe, 2026-10-24) : la démo doit s'essayer aussi
@@ -163,15 +170,16 @@ export default function Home() {
           <FitToBox
             width={280}
             height={620}
-            className="min-h-0 flex-1 phone-land:h-full phone-land:self-stretch animate-[fadeInUp_0.7s_ease-out_both] [animation-delay:250ms] lg:h-full lg:self-stretch"
+            className="min-h-0 flex-1 max-sm:hidden phone-land:block phone-land:h-full phone-land:self-stretch animate-[fadeInUp_0.7s_ease-out_both] [animation-delay:250ms] lg:h-full lg:self-stretch"
           >
             <PhoneMockup />
           </FitToBox>
+
         </section>
 
         {/* ── Côté kiné : tableau de bord → patient → action ─────── */}
-        <Reveal>
-        <section id="cote-kine" className="mt-16 scroll-mt-24 sm:mt-24">
+        <Reveal className="max-sm:order-[-2]">
+        <section id="cote-kine" className="mt-16 max-sm:mt-20 scroll-mt-24 sm:mt-24">
           <div className="mx-auto max-w-2xl text-center sm:short:max-w-5xl">
             <h2 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
               Lundi matin, 8 h : vous savez déjà qui a travaillé.
@@ -184,9 +192,14 @@ export default function Home() {
           {/* La démo déborde de la colonne de texte : pleine largeur jusqu'à 1 200 px.
               Entre 1024 et 1240 px (iPad paysage) elle ne sort que de la marge
               de la page, sinon elle dépassait de l'écran (audit 2026-10-10). */}
-          <FitToViewport stable className="mx-auto mt-4 max-w-7xl sm:mt-12 sm:short:mt-4 lg:-mx-6 min-[1240px]:-mx-16 phone-land:mt-2 phone-land:max-w-[calc((100dvh-10.5rem)*1.65)]">
+          <FitToViewport stable className="mx-auto mt-4 max-w-7xl max-sm:hidden sm:mt-12 sm:short:mt-4 lg:-mx-6 min-[1240px]:-mx-16 phone-land:mt-2 phone-land:block phone-land:max-w-[calc((100dvh-10.5rem)*1.65)]">
             <KineJourneyDemo />
           </FitToViewport>
+          {/* Téléphone : le vrai accueil kiné version téléphone, dans un
+              téléphone (2026-10-26). PC et tablette : la démo ci-dessus. */}
+          <div className="mt-5 sm:hidden phone-land:hidden">
+            <KinePhonePreview />
+          </div>
 
           {/* Lien vers la démo complète, visible partout (2026-10-16). */}
           <p className="mt-4 text-center text-sm sm:mt-6 sm:short:mt-2">
@@ -212,35 +225,36 @@ export default function Home() {
             de hauteur au-dessus du tableau (tenir sur un écran, Philippe
             2026-09-29). */}
         <section id="comparaison" className="mt-24 scroll-mt-24 sm:mt-32 lg:grid lg:grid-cols-[1fr_3fr] lg:items-center lg:gap-10 phone-land:mt-12">
-          {/* Téléphone : le tableau seul, sans titre ni texte (Philippe,
-              2026-10-10). Dès sm : inchangé. */}
-          <div className="flex flex-col gap-6 max-sm:hidden lg:flex-row lg:items-start lg:justify-between">
+          {/* Téléphone : le titre sans le paragraphe (2026-10-26 : sans
+              titre, on ne savait pas à quoi servait le tableau). Dès sm :
+              inchangé. */}
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
                 Une feuille d&apos;exercices finit souvent au fond d&apos;un tiroir.
               </h2>
-              <p className="mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 phone-land:hidden">
+              <p className="mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 max-sm:hidden phone-land:hidden">
                 Elle ne montre pas le mouvement et ne vous dit pas si ça fait mal.{" "}
                 <br className="hidden sm:block lg:hidden" />
                 Sur le téléphone, le patient voit l&apos;exercice et vous signale sa douleur.
               </p>
             </div>
           </div>
-          <FitToViewport className="sm:mt-8 sm:short:mt-4 lg:mt-0 phone-land:mt-2">
+          <FitToViewport className="max-sm:mt-5 sm:mt-8 sm:short:mt-4 lg:mt-0 phone-land:mt-2">
             <ComparisonTable />
           </FitToViewport>
         </section>
         </Reveal>
 
         {/* ── Témoignages ──────────────────────────────────────── */}
-        <Reveal>
-        <section className="mt-24 sm:mt-32 phone-land:mt-12 phone-land:grid phone-land:grid-cols-[1fr_3fr] phone-land:items-center phone-land:gap-5">
+        <Reveal className="max-sm:order-[-3]">
+        <section className="mt-24 max-sm:mt-6 sm:mt-32 phone-land:mt-12 phone-land:grid phone-land:grid-cols-[1fr_3fr] phone-land:items-center phone-land:gap-5">
           <div>
             <h2 className="font-display max-w-2xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
               Des exercices que vos patients comprennent du premier coup.
             </h2>
             <p className="mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 phone-land:hidden">
-              326 mouvements dessinés et animés, du pont fessier au gainage. Les vidéos d&apos;exécution arrivent ici.
+              292 mouvements dessinés et animés, du pont fessier au gainage. Les vidéos d&apos;exécution arrivent ici.
             </p>
           </div>
           <FitToViewport className="mt-8 sm:short:mt-4 phone-land:mt-0">
@@ -250,7 +264,7 @@ export default function Home() {
         </Reveal>
 
         {/* ── Témoignages ──────────────────────────────────────── */}
-        <Reveal>
+        <Reveal className="max-sm:order-[-1]">
         <section className="mt-24 sm:mt-32 phone-land:mt-12 phone-land:grid phone-land:grid-cols-[1fr_3fr] phone-land:items-center phone-land:gap-5">
           <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
             Utilisé au cabinet,
