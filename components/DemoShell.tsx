@@ -20,7 +20,7 @@
 // Aucune donnée réelle, aucune requête vers la base.
 // =============================================================================
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftRight, Check, LogOut, Sparkles, X } from "lucide-react";
@@ -93,6 +93,9 @@ function demoHref(url: URL): string | null {
   return patient ? `/demo/patient?ecran=${patient}` : null;
 }
 
+// « Dans un iframe ? » ne change jamais pendant la visite : rien à écouter.
+const noSubscribe = () => () => {};
+
 const mapHref = (href: string) => {
   if (typeof window === "undefined") return href;
   return demoHref(new URL(href, window.location.href)) ?? href;
@@ -114,6 +117,15 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
       /* stockage indisponible : guide replié */
     }
   }, [side]);
+  // Démo affichée DANS le téléphone de l'accueil (iframe, components/
+  // KinePhonePreview.tsx, Philippe 2026-10-26 : « que la démo se fasse DANS
+  // l'appli ») : pas de pastille Guide (trop petit), et aucun lien ne sort
+  // de la démo.
+  const embedded = useSyncExternalStore(
+    noSubscribe,
+    () => window.self !== window.top,
+    () => false,
+  );
   const steps = TOUR[side];
   const stepIndex = steps.findIndex((s) => s.ecran === current);
   const timer = useRef<number | null>(null);
@@ -141,7 +153,14 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
       const url = new URL(a.href, window.location.href);
       if (url.origin !== window.location.origin) return;
       const inApp = url.pathname.startsWith("/dashboard") || url.pathname.startsWith("/patient");
-      if (!inApp) return;
+      if (!inApp) {
+        if (window.self !== window.top && !url.pathname.startsWith("/demo")) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          show("Cet écran n'est pas disponible dans la démo.");
+        }
+        return;
+      }
       e.preventDefault();
       e.stopImmediatePropagation();
       const target = demoHref(url);
@@ -169,7 +188,7 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
 
       {/* Pastille « Démo » : en bas à droite, au-dessus de la barre d'onglets
           sur téléphone, pour ne rien masquer de l'en-tête. */}
-      <div className="fixed bottom-4 right-4 z-[70] max-sm:bottom-[calc(5.75rem+env(safe-area-inset-bottom))] max-sm:right-3">
+      <div className={`fixed bottom-4 right-4 z-[70] max-sm:bottom-[calc(5.75rem+env(safe-area-inset-bottom))] max-sm:right-3 ${embedded ? "hidden" : ""}`}>
         {menuOpen && (
           <div className="mb-2 max-h-[calc(100dvh-5.5rem)] w-72 overflow-y-auto rounded-2xl bg-surface text-sm shadow-xl ring-1 ring-line max-sm:w-[calc(100vw-1.5rem)]">
             <div className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">
