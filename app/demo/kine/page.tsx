@@ -6,7 +6,11 @@ import KineTelephonePrototype from "@/app/prototypes/kine-telephone/page";
 export const metadata = { title: "Démo · espace kiné" };
 export const dynamic = "force-dynamic";
 
-export default async function DemoKinePage({ searchParams }: { searchParams: Promise<{ ecran?: string; nouvelle?: string }> }) {
+export default async function DemoKinePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ecran?: string; nouvelle?: string; patient?: string; filtre?: string; seance?: string }>;
+}) {
   const screen = await KineTelephonePrototype({ searchParams });
   return <DemoShell side="kine">{screen}</DemoShell>;
 }

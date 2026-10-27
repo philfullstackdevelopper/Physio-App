@@ -47,17 +47,24 @@ const TOUR: Record<Side, { ecran: string; title: string; hint: string }[]> = {
   ],
 };
 
-/** Écran de démo kiné correspondant à une adresse de l'appli, ou null. */
+/** Écran de démo kiné correspondant à une adresse de l'appli, ou null. Garde
+ *  ce qui a été choisi (patient, filtre, séance) : sans ça, cliquer sur un
+ *  autre patient rouvrait toujours la même conversation (Philippe, 2026-10-27). */
 function kineScreen(url: URL): string | null {
   const p = url.pathname.replace(/\/$/, "");
+  const q = (key: string) => {
+    const v = url.searchParams.get(key);
+    return v ? `&${key}=${encodeURIComponent(v)}` : "";
+  };
   if (p === "/dashboard") return "accueil";
-  if (p === "/dashboard/patients") return "patients";
+  if (p === "/dashboard/patients") return `patients${q("filtre")}`;
   if (p === "/dashboard/patients/new") return null;
-  if (p.startsWith("/dashboard/patients/")) return "fiche";
-  if (p === "/dashboard/messages") return url.searchParams.get("patient") ? "conversation" : "messages";
+  if (p.startsWith("/dashboard/patients/")) return `fiche&patient=${encodeURIComponent(p.split("/")[3])}`;
+  if (p === "/dashboard/messages") return url.searchParams.get("patient") ? `conversation${q("patient")}` : "messages";
   if (p === "/dashboard/informations") return "informations";
   if (p === "/dashboard/facturation") return "revenus";
   if (p === "/dashboard/seances") return url.searchParams.get("nouvelle") === "1" ? "seances&nouvelle=1" : "seances";
+  if (p.startsWith("/dashboard/seances/")) return `editeur&seance=${encodeURIComponent(p.split("/")[3])}`;
   if (p === "/dashboard/exercises") return "exercices";
   return null;
 }

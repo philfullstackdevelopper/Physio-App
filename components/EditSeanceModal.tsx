@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import NewSeanceModal from "@/components/NewSeanceModal";
+import { useAppHref } from "@/components/DemoContext";
 
 // « Modifier la séance » (Philippe, 2026-10-12) : la même fenêtre que
 // « Nouvelle séance » et « Ajuster la séance » — exercices de la séance à
@@ -14,5 +15,7 @@ type Props = Omit<React.ComponentProps<typeof NewSeanceModal>, "onClose" | "crea
 
 export default function EditSeanceModal({ saveSeance, ...rest }: Props) {
   const router = useRouter();
-  return <NewSeanceModal {...rest} createSeance={saveSeance} onClose={() => router.push("/dashboard/seances")} />;
+  // Dans la démo publique, « Mes séances » est un écran de démo (DemoContext).
+  const appHref = useAppHref();
+  return <NewSeanceModal {...rest} createSeance={saveSeance} onClose={() => router.push(appHref("/dashboard/seances"))} />;
 }

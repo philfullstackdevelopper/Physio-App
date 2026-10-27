@@ -9,7 +9,8 @@
 
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHomeView from "@/components/DashboardHomeView";
-import PatientsTable from "@/components/PatientsTable";
+import PatientsTable, { type Segment } from "@/components/PatientsTable";
+import EditSeanceModal from "@/components/EditSeanceModal";
 import PatientsPageView from "@/components/PatientsPageView";
 import KineMessagesView from "@/components/KineMessagesView";
 import PatientDetailView from "@/components/PatientDetailView";
@@ -20,7 +21,7 @@ import FacturationView from "@/app/dashboard/facturation/FacturationView";
 import SeancesTabs from "@/components/SeancesTabs";
 import ExerciseLibraryGrid from "@/components/ExerciseLibraryGrid";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
-import { mockData, mockFiche } from "./mock";
+import { DEMO_BODY_PARTS, DEMO_EXERCISES, mockData, mockFiche } from "./mock";
 import { noopResult, noopVoid } from "./actions";
 
 export const metadata = { title: "Aperçu tableau de bord kiné", robots: { index: false } };
@@ -40,17 +41,26 @@ const PATHS: Record<string, string> = {
   exercices: "/dashboard/exercises",
 };
 
-export default async function KineTelephonePrototype({ searchParams }: { searchParams: Promise<{ ecran?: string; nouvelle?: string }> }) {
-  const { ecran = "accueil", nouvelle } = await searchParams;
+export default async function KineTelephonePrototype({
+  searchParams,
+}: {
+  searchParams: Promise<{ ecran?: string; nouvelle?: string; patient?: string; filtre?: string; seance?: string }>;
+}) {
+  // patient / filtre / seance : ce qui a été choisi dans l'écran précédent
+  // (components/DemoShell.tsx les garde en traduisant l'adresse de l'appli).
+  const { ecran = "accueil", nouvelle, patient, filtre, seance } = await searchParams;
   const d = mockData();
 
   let screen: React.ReactNode;
   if (ecran === "patients") {
+    const initialSegment: Segment =
+      filtre === "surveiller" ? "surveiller" : filtre === "jour" ? "jour" : filtre === "resilies" ? "resilies" : "tous";
     screen = (
       <PatientsPageView>
         <PatientsTable
           rows={d.rows}
           conditions={d.conditions}
+          initialSegment={initialSegment}
           getPatientThread={noopResult}
           sendPatientMessage={noopResult}
           reactivatePatient={noopResult}
@@ -59,13 +69,13 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
       </PatientsPageView>
     );
   } else if (ecran === "messages" || ecran === "conversation") {
-    const selected = d.conversations.find((c) => c.patientId === "p2") ?? null;
+    const selected = d.conversations.find((c) => c.patientId === (patient ?? "p2")) ?? d.conversations.find((c) => c.patientId === "p2") ?? null;
     screen = (
       <KineMessagesView
         conversations={d.conversations}
         selected={selected}
         explicitlyOpened={ecran === "conversation"}
-        thread={d.thread}
+        thread={selected ? d.threadFor(selected.patientId) : d.thread}
         tab="all"
         q=""
         markConversationRead={noopVoid}
@@ -101,10 +111,8 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
       />
     );
   } else if (ecran === "seances") {
-    const names = ["Pont fessier (coxarthrose)", "Mini Wall Sit (Shallow)", "Controlled Mini-Squat (Knee Arthritis)", "Light Closed-Chain Quad Strengthening"];
-    const zones = [
-      ["genou", "Genou / jambe"], ["dos", "Dos / lombaires"], ["epaule", "Épaule"],
-    ].map(([slug, label], i) => ({ id: `bp-${slug}`, slug, label, position: i }));
+    const names = DEMO_EXERCISES.slice(0, 4).map((e) => e.name);
+    const zones = DEMO_BODY_PARTS.filter((b) => ["bp-genou", "bp-dos", "bp-epaule"].includes(b.id));
     const item = (id: string, name: string, cond: string, stage: InjuryStage, lead: number) => ({
       id,
       bodyPartIds: [/Genou/.test(name) ? "bp-genou" : /Lomb/.test(name) ? "bp-dos" : "bp-epaule"],
@@ -148,14 +156,7 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
       </main>
     );
   } else if (ecran === "exercices") {
-    const bodyParts = [
-      ["genou", "Genou / jambe"], ["dos", "Dos / lombaires"], ["epaule", "Épaule"], ["hanche", "Hanche / fessiers"],
-      ["cheville", "Cheville / pied"], ["cervicales", "Cervicales / cou"], ["poignet", "Poignet / main"], ["tronc", "Tronc / gainage"],
-    ].map(([slug, label], i) => ({ id: `bp-${slug}`, slug, label, position: i }));
-    const names = [
-      "Pont fessier (coxarthrose)", "Mini Wall Sit (Shallow)", "Controlled Mini-Squat (Knee Arthritis)", "Light Closed-Chain Quad Strengthening",
-      "Assisted Partial Squat", "Isometric Wall Sit (60 Degrees)", "Protected Squat (Quadriceps)",
-    ];
+    const bodyParts = DEMO_BODY_PARTS;
     screen = (
       <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
         <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
@@ -164,14 +165,15 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
           </div>
           <ExerciseLibraryGrid
             bodyParts={bodyParts}
-            exercises={names.map((name, i) => ({
+            exercises={DEMO_EXERCISES.map((e, i) => ({
               id: `ex${i}`,
-              name,
-              instructions: "Allongé sur le dos, genoux fléchis, soulevez le bassin en serrant les fessiers puis redescendez lentement.",
+              name: e.name,
+              instructions: e.instructions,
               media_url: null,
               media_start_seconds: 0,
-              created_by: i === 0 ? "moi" : null,
-              bodyPartIds: ["bp-genou"],
+              created_by: null,
+              bodyPartIds: e.bodyPartIds,
+              equipment: e.equipment,
               search_keywords: [],
               hidden: false,
             }))}
@@ -183,24 +185,65 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
         </div>
       </main>
     );
+  } else if (ecran === "editeur") {
+    // Détail d'une séance de « Mes séances » (s1, s2, s3), dans la même fenêtre
+    // que dans l'appli. Enregistrer ne fait rien en démo.
+    const seances: Record<string, [string, string, InjuryStage]> = {
+      s1: ["Genou, renforcement doux", "c-genou", "acute"],
+      s2: ["Lombaires, mobilité du matin", "c-lomb", "subacute"],
+      s3: ["Épaule, retour au geste", "c-epaule", "recovery"],
+    };
+    const id = seance && seances[seance] ? seance : "s1";
+    const [name, conditionId, stage] = seances[id];
+    const pickable = DEMO_EXERCISES.map((e, i) => ({ id: `demo-ex-${i}`, name: e.name, searchKeywords: null, equipment: e.equipment, bodyPartIds: e.bodyPartIds }));
+    screen = (
+      <main className="min-h-screen max-sm:min-h-0">
+        <EditSeanceModal
+          conditions={d.conditions}
+          stages={Object.entries(STAGE_LABELS) as [InjuryStage, string][]}
+          exercises={pickable}
+          bodyParts={DEMO_BODY_PARTS}
+          saveSeance={noopVoid}
+          edit={{
+            workoutId: id,
+            name,
+            conditionId,
+            stage,
+            durationMinutes: 20,
+            timesPerWeek: 3,
+            // Les exercices de la zone de la séance (genou, dos ou épaule).
+            exerciseIds: pickable
+              .filter((e) => e.bodyPartIds.includes(({ "c-genou": "bp-genou", "c-lomb": "bp-dos", "c-epaule": "bp-epaule" } as Record<string, string>)[conditionId] ?? "bp-genou"))
+              .slice(0, 4)
+              .map((e) => e.id),
+            deleteAction: noopVoid,
+            saved: false,
+            error: null,
+          }}
+        />
+      </main>
+    );
   } else if (ecran === "fiche") {
-    const f = mockFiche();
+    // La fiche du patient choisi (Thomas Bernard par défaut).
+    const p = d.patientInfo(patient ?? "p2");
+    const f = mockFiche(new Date(), p.id === "p2" ? undefined : p);
+    const highPain = f.stats.painLatest !== null && f.stats.painLatest >= 6;
     screen = (
       <PatientDetailView
-        name="Thomas Bernard"
-        warning={{ label: "Douleur élevée", detail: "Douleur 7/10 signalée hier." }}
+        name={p.name}
+        warning={highPain ? { label: "Douleur élevée", detail: `Douleur ${f.stats.painLatest}/10 signalée récemment.` } : null}
         paymentLapsed={false}
         adjusted={false}
         stats={f.stats}
         actionsMenu={
           <PatientActionsMenu
-            patientId="p2"
-            patientName="Thomas"
+            patientId={p.id}
+            patientName={p.firstName}
             paymentLapsedAt={null}
             paymentEligibleForDeletion={false}
             redirectTo="/prototypes/kine-telephone?ecran=fiche"
             deletePatient={noopVoid}
-            messages={{ patient: { id: "p2", name: "Thomas Bernard", initials: "TB" }, unreadCount: 1, getThread: noopResult, sendMessage: noopResult }}
+            messages={{ patient: { id: p.id, name: p.name, initials: p.initials }, unreadCount: p.unread ? 1 : 0, getThread: noopResult, sendMessage: noopResult }}
           />
         }
         programme={
@@ -210,8 +253,8 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
             dayDetails={f.dayDetails}
             assignments={f.assignments}
             workoutsById={f.workoutsById}
-            patientId="p2"
-            patientFirstName="Thomas"
+            patientId={p.id}
+            patientFirstName={p.firstName}
             patientEquipment={["tapis", "chaise", "halteres"]}
             addableExercises={f.addableExercises}
             bodyParts={f.bodyParts}

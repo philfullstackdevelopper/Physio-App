@@ -22,16 +22,18 @@ import CompteView from "@/app/patient/compte/CompteView";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import SignupOnboardingView from "@/app/signup/onboarding/SignupOnboardingView";
 import SeanceDuJourView from "@/app/patient/seance-du-jour/SeanceDuJourView";
+import { DEMO_BODY_PARTS } from "@/app/prototypes/kine-telephone/mock";
 
 export const metadata = { title: "Aperçu écrans patient", robots: { index: false } };
 // Recalculée à chaque visite : la courbe de douleur fictive suit la vraie date.
 export const dynamic = "force-dynamic";
 
 const EXERCISES = [
-  ["Pont fessier (coxarthrose)", "Allongé sur le dos, genoux fléchis, soulevez le bassin en serrant les fessiers puis redescendez lentement."],
-  ["Mini Wall Sit (Shallow)", "Dos contre le mur, descendez légèrement en pliant les genoux, tenez la position puis remontez."],
-  ["Controlled Mini-Squat (Knee Arthritis)", "Debout, pieds écartés largeur du bassin, fléchissez doucement les genoux sans dépasser les orteils."],
-  ["Assisted Partial Squat", "En vous tenant à un appui stable, descendez à mi-hauteur puis remontez en poussant dans les talons."],
+  // Exercices réellement présents dans la banque actuelle (après le tri 0069).
+  ["Glute Bridge", "Allongé sur le dos, genoux fléchis, soulevez le bassin en serrant les fessiers puis redescendez lentement."],
+  ["Wall Sit", "Dos contre le mur, descendez légèrement en pliant les genoux, tenez la position puis remontez."],
+  ["Bodyweight Squat", "Debout, pieds écartés largeur du bassin, fléchissez doucement les genoux sans dépasser les orteils."],
+  ["Sit-to-Stand", "Assis au bord d'une chaise, bras croisés, levez-vous sans l'aide des mains puis rasseyez-vous lentement."],
 ] as const;
 
 // Hors du composant : la règle react-hooks/purity refuse Date.now() dans le rendu.
@@ -74,13 +76,12 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
 
   // L'onboarding s'affiche sans la barre de navigation, comme dans l'appli.
   if (ecran === "onboarding") {
-    const parts = [["genou", "Genou / jambe"], ["dos", "Dos / lombaires"], ["epaule", "Épaule"], ["hanche", "Hanche / fessiers"], ["cheville", "Cheville / pied"], ["cervicales", "Cervicales / cou"], ["poignet", "Poignet / main"], ["tronc", "Tronc / gainage"], ["coude", "Coude / bras"]];
     return (
       <OnboardingView
         needsConsent
         wizard={{
           saveAction: noop,
-          bodyParts: parts.map(([slug, label]) => ({ id: `bp-${slug}`, slug, label })),
+          bodyParts: DEMO_BODY_PARTS,
           stages: Object.entries(STAGE_LABELS) as [InjuryStage, string][],
           profile: null,
           equipmentOptions: EQUIPMENT_OPTIONS,
@@ -152,7 +153,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
             name="Renforcement du genou, niveau 2"
             dateLabel="lundi 28 septembre à 18:15"
             feedback={{ pain_score: 3, notes: "Un peu raide au début, mieux à la fin." }}
-            exercises={[...EXERCISES.map(([name]) => name), "Light Closed-Chain Quad Strengthening", "Isometric Wall Sit (60 Degrees)", "Protected Squat (Quadriceps)"]}
+            exercises={[...EXERCISES.map(([name]) => name), "Quad Set", "Heel Slide", "Clamshell"]}
           />
         ) : ecran === "historique" ? (
           <HistoriqueView
