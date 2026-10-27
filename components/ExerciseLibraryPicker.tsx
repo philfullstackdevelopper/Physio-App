@@ -181,7 +181,7 @@ export default function ExerciseLibraryPicker({
                   aria-pressed={marked}
                   className="flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-xl p-2.5 text-center"
                 >
-                  <ExerciseIllustration name={ex.name} className={`h-16 w-full shrink-0 sm:h-24 ${marked ? "text-ok" : "text-brand"}`} />
+                  <ExerciseIllustration name={ex.name} animate={false} className={`h-16 w-full shrink-0 sm:h-24 ${marked ? "text-ok" : "text-brand"}`} />
                   <span className="line-clamp-2 min-h-[2.5em] text-[13px] leading-tight sm:text-sm sm:leading-tight">{ex.name}</span>
                   {/* Matériel indispensable : orange s'il manque à ce patient. */}
                   {required && (

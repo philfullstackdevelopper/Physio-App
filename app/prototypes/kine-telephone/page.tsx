@@ -20,7 +20,7 @@ import FacturationView from "@/app/dashboard/facturation/FacturationView";
 import SeancesTabs from "@/components/SeancesTabs";
 import ExerciseLibraryGrid from "@/components/ExerciseLibraryGrid";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
-import { DEMO_BODY_PARTS, DEMO_EXERCISES, mockData, mockFiche } from "./mock";
+import { mockData, mockFiche } from "./mock";
 import { noopResult, noopVoid } from "./actions";
 
 export const metadata = { title: "Aperçu tableau de bord kiné", robots: { index: false } };
@@ -101,8 +101,10 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
       />
     );
   } else if (ecran === "seances") {
-    const names = DEMO_EXERCISES.slice(0, 4).map((e) => e.name);
-    const zones = DEMO_BODY_PARTS.filter((b) => ["bp-genou", "bp-dos", "bp-epaule"].includes(b.id));
+    const names = ["Pont fessier (coxarthrose)", "Mini Wall Sit (Shallow)", "Controlled Mini-Squat (Knee Arthritis)", "Light Closed-Chain Quad Strengthening"];
+    const zones = [
+      ["genou", "Genou / jambe"], ["dos", "Dos / lombaires"], ["epaule", "Épaule"],
+    ].map(([slug, label], i) => ({ id: `bp-${slug}`, slug, label, position: i }));
     const item = (id: string, name: string, cond: string, stage: InjuryStage, lead: number) => ({
       id,
       bodyPartIds: [/Genou/.test(name) ? "bp-genou" : /Lomb/.test(name) ? "bp-dos" : "bp-epaule"],
@@ -146,7 +148,14 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
       </main>
     );
   } else if (ecran === "exercices") {
-    const bodyParts = DEMO_BODY_PARTS;
+    const bodyParts = [
+      ["genou", "Genou / jambe"], ["dos", "Dos / lombaires"], ["epaule", "Épaule"], ["hanche", "Hanche / fessiers"],
+      ["cheville", "Cheville / pied"], ["cervicales", "Cervicales / cou"], ["poignet", "Poignet / main"], ["tronc", "Tronc / gainage"],
+    ].map(([slug, label], i) => ({ id: `bp-${slug}`, slug, label, position: i }));
+    const names = [
+      "Pont fessier (coxarthrose)", "Mini Wall Sit (Shallow)", "Controlled Mini-Squat (Knee Arthritis)", "Light Closed-Chain Quad Strengthening",
+      "Assisted Partial Squat", "Isometric Wall Sit (60 Degrees)", "Protected Squat (Quadriceps)",
+    ];
     screen = (
       <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
         <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
@@ -155,15 +164,14 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
           </div>
           <ExerciseLibraryGrid
             bodyParts={bodyParts}
-            exercises={DEMO_EXERCISES.map((e, i) => ({
+            exercises={names.map((name, i) => ({
               id: `ex${i}`,
-              name: e.name,
-              instructions: e.instructions,
+              name,
+              instructions: "Allongé sur le dos, genoux fléchis, soulevez le bassin en serrant les fessiers puis redescendez lentement.",
               media_url: null,
               media_start_seconds: 0,
-              created_by: null,
-              bodyPartIds: e.bodyPartIds,
-              equipment: e.equipment,
+              created_by: i === 0 ? "moi" : null,
+              bodyPartIds: ["bp-genou"],
               search_keywords: [],
               hidden: false,
             }))}

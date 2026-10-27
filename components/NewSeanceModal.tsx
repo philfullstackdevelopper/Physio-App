@@ -198,7 +198,7 @@ export default function NewSeanceModal({
                         className="group relative flex h-full w-full flex-col items-center gap-1.5 rounded-xl border border-line bg-surface p-2.5 text-center text-sm text-ink transition-colors hover:border-danger/30"
                       >
                         <span className="absolute left-2 top-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-app-bg text-xs font-semibold text-muted">{i + 1}</span>
-                        <ExerciseIllustration name={ex.name} className="h-16 w-full shrink-0 text-brand md:h-20" />
+                        <ExerciseIllustration name={ex.name} animate={false} className="h-16 w-full shrink-0 text-brand md:h-20" />
                         <span className="line-clamp-2 min-h-[2.5em] text-[13px] leading-tight">{ex.name}</span>
                         <X className="absolute right-2 top-2 h-4 w-4 shrink-0 text-muted group-hover:text-danger" strokeWidth={2} />
                       </button>

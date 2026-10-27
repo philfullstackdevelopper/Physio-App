@@ -390,7 +390,7 @@ export default function AdjustWorkoutModal({
                                 marked ? "border-danger/30 bg-danger-soft text-danger line-through" : "border-line bg-surface text-ink hover:border-danger/30"
                               }`}
                             >
-                              <ExerciseIllustration name={ex.name} className={`h-16 w-full shrink-0 md:h-20 ${marked ? "text-danger" : "text-brand"}`} />
+                              <ExerciseIllustration name={ex.name} animate={false} className={`h-16 w-full shrink-0 md:h-20 ${marked ? "text-danger" : "text-brand"}`} />
                               <span className="line-clamp-2 min-h-[2.5em] text-[13px] leading-tight">{ex.name}</span>
                               {!marked && <MissingEquipmentPill required={ex.equipment} owned={patientEquipment} firstName={patientFirstName} />}
                               {marked ? (
@@ -412,7 +412,7 @@ export default function AdjustWorkoutModal({
                               onClick={() => setAddIds((s) => toggle(s, id))}
                               className="flex h-full w-full flex-col items-center gap-1.5 rounded-xl border border-ok/30 bg-ok-soft p-2.5 text-center text-sm text-ok transition-colors"
                             >
-                              <ExerciseIllustration name={ex.name} className="h-16 w-full shrink-0 text-ok md:h-20" />
+                              <ExerciseIllustration name={ex.name} animate={false} className="h-16 w-full shrink-0 text-ok md:h-20" />
                               <span className="line-clamp-2 min-h-[2.5em] text-[13px] leading-tight">{ex.name}</span>
                               <MissingEquipmentPill required={ex.equipment} owned={patientEquipment} firstName={patientFirstName} />
                               <span className="text-xs font-medium">Ajouté</span>
