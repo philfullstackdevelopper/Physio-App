@@ -28,7 +28,7 @@ export default function SuiviView({ sp, kineName, kineReady, status, currentPric
         </Link>
         <h1 className="mt-2 text-2xl font-semibold text-ink">Suivi mensuel</h1>
         <p className="mt-1 text-sm text-muted">
-          Une fois par mois, {kineName} regarde vos séances et vos douleurs, ajuste votre programme et vous écrit.
+          Une fois par mois, {kineName} regarde vos séances et vos douleurs, et ajuste votre programme.
         </p>
 
         {sp.error && <p className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger">{sp.error}</p>}
@@ -49,7 +49,7 @@ export default function SuiviView({ sp, kineName, kineReady, status, currentPric
             <p className="text-2xl font-semibold tabular-nums text-ink">{eurosFR(price)} €</p>
           </div>
           <ul className="mt-4 space-y-2 border-t border-line pt-4 text-sm text-muted">
-            <li className="flex gap-2"><ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />Un bilan par mois : analyse de vos séances et ressentis, programme ajusté, retour écrit de votre kiné.</li>
+            <li className="flex gap-2"><ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />Un bilan par mois : votre kiné analyse vos séances et vos ressentis, et ajuste votre programme.</li>
             <li className="flex gap-2"><CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />Prélevé seulement le mois où le bilan est fait. Pas de bilan, pas de prélèvement.</li>
             <li className="flex gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />Payé directement à votre kiné, par Stripe. Acte non remboursé par l&apos;Assurance Maladie. Arrêt à tout moment.</li>
           </ul>
@@ -134,7 +134,6 @@ export default function SuiviView({ sp, kineName, kineReady, status, currentPric
                 </li>
               ))}
             </ul>
-            <p className="mt-2 text-xs text-muted">Le retour écrit de chaque bilan est aussi dans votre messagerie.</p>
           </section>
         )}
       </div>

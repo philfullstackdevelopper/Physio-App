@@ -4,7 +4,7 @@
 // 1. Le patient accepte le tarif de son kiné et enregistre sa carte : Stripe
 //    Checkout en mode « setup » (aucun prélèvement), créé SUR le compte
 //    Connect du kiné (Direct charge, comme avant) — la carte vit chez le kiné.
-// 2. Quand le kiné valide le bilan du mois, le serveur prélève la carte
+// 2. Quand le bilan du mois se valide (lib/billing/autoReview.ts), le serveur prélève la carte
 //    (PaymentIntent hors session) sur le compte du kiné, SANS frais de
 //    plateforme : 100 % des honoraires au kiné, rien pour EasyPhysio
 //    (art. R.4321-72 CSP — c'est ce qui sépare les deux flux d'argent).

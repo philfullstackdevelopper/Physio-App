@@ -113,8 +113,8 @@ export default function FacturationView({
               <div className="mt-4 rounded-xl border border-dashed border-line px-4 py-6 text-center">
                 <p className="text-sm font-medium text-ink">Aucun patient en suivi mensuel pour l&apos;instant.</p>
                 <p className="mx-auto mt-1 max-w-md text-sm text-muted">
-                  Après les soins, proposez le suivi à un patient depuis sa fiche : il accepte votre tarif et enregistre
-                  sa carte dans son appli. Vous faites ensuite un bilan par mois.
+                  Le patient l&apos;active dans son appli (Compte, puis Suivi mensuel). Ensuite, le bilan du mois se
+                  valide tout seul dès que vous ajustez son programme.
                 </p>
               </div>
             ) : (
@@ -122,7 +122,7 @@ export default function FacturationView({
                 {[...todo, ...waitingCard, ...done].map((f) => (
                   <li key={f.patientId}>
                     <Link
-                      href={`/dashboard/patients/${f.patientId}#bilan`}
+                      href={`/dashboard/patients/${f.patientId}`}
                       className="flex items-center gap-3 py-2.5 transition hover:bg-app-bg max-sm:-mx-1 max-sm:px-1"
                     >
                       <span className="min-w-0 flex-1">
@@ -145,8 +145,8 @@ export default function FacturationView({
 
             {data.notInFollowUp > 0 && (
               <p className="mt-3 text-xs text-muted">
-                {data.notInFollowUp} patient{data.notInFollowUp > 1 ? "s" : ""} sans suivi mensuel. Proposez-le depuis
-                leur fiche quand leurs séances prescrites sont terminées.
+                {data.notInFollowUp} patient{data.notInFollowUp > 1 ? "s" : ""} sans suivi mensuel. Ils peuvent
+                l&apos;activer dans leur appli (Compte, puis Suivi mensuel).
               </p>
             )}
           </section>

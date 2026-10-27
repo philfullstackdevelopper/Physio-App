@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { friendlyDbError } from "@/lib/format/dbError";
+import { recordMonthlyReviewIfDue } from "@/lib/billing/autoReview";
 
 // Ensure the caller is an approved instructor; returns their user id.
 // (Philippe, 2026-10-07 : délègue à la garde commune, qui vérifie aussi que
@@ -69,7 +70,7 @@ export async function saveSeance(formData: FormData) {
   if (!id) redirect("/dashboard/seances");
 
   // Only the owning instructor can edit (platform séances are read-only).
-  const { data: wk } = await supabase.from("workouts").select("created_by").eq("id", id).maybeSingle();
+  const { data: wk } = await supabase.from("workouts").select("created_by, patient_id").eq("id", id).maybeSingle();
   if (!wk || wk.created_by !== userId) {
     redirect(`/dashboard/seances?error=${encodeURIComponent("Séance non modifiable.")}`);
   }
@@ -122,6 +123,13 @@ export async function saveSeance(formData: FormData) {
       if (newIds.length) await supabase.from("workout_exercises").delete().in("id", newIds);
       fail("Impossible de mettre à jour les exercices : " + deleteError.message);
     }
+  }
+
+  // Séance personnelle d'un patient en suivi mensuel : l'enregistrer valide
+  // son bilan du mois. Une séance partagée par plusieurs patients ne facture personne.
+  if (wk?.patient_id) {
+    await recordMonthlyReviewIfDue({ supabase, instructorId: userId, patientId: wk.patient_id as string, note: `Séance enregistrée : ${name}` });
+    revalidatePath("/dashboard/facturation");
   }
 
   revalidatePath(`/dashboard/seances/${id}`);

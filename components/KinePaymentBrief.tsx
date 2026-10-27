@@ -32,11 +32,11 @@ type Item = { q: string; a: React.ReactNode };
 const ITEMS: Item[] = [
   {
     q: "Qu'est-ce que je facture ?",
-    a: <p>Un bilan de suivi à distance par mois : vous regardez les séances et les douleurs, ajustez le programme, écrivez au patient. Acte non remboursé, à votre tarif.</p>,
+    a: <p>Le suivi à distance du mois : vous regardez les séances et les douleurs, puis ajustez le programme. Acte non remboursé, à votre tarif.</p>,
   },
   {
     q: "Quand le patient est-il prélevé ?",
-    a: <p>Seulement le mois où vous validez le bilan. Il accepte votre tarif une fois et peut arrêter quand il veut.</p>,
+    a: <p>Seulement le mois où vous ajustez son programme. Il accepte votre tarif une fois et peut arrêter quand il veut.</p>,
   },
   {
     q: "Combien coûte EasyPhysio ?",

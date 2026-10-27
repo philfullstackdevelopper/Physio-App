@@ -20,9 +20,8 @@ import FacturationView from "@/app/dashboard/facturation/FacturationView";
 import SeancesTabs from "@/components/SeancesTabs";
 import ExerciseLibraryGrid from "@/components/ExerciseLibraryGrid";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
-import { mockData, mockFiche } from "./mock";
+import { DEMO_BODY_PARTS, DEMO_EXERCISES, mockData, mockFiche } from "./mock";
 import { noopResult, noopVoid } from "./actions";
-import MonthlyReviewBar from "@/components/MonthlyReviewBar";
 
 export const metadata = { title: "Aperçu tableau de bord kiné", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -102,10 +101,8 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
       />
     );
   } else if (ecran === "seances") {
-    const names = ["Pont fessier (coxarthrose)", "Mini Wall Sit (Shallow)", "Controlled Mini-Squat (Knee Arthritis)", "Light Closed-Chain Quad Strengthening"];
-    const zones = [
-      ["genou", "Genou / jambe"], ["dos", "Dos / lombaires"], ["epaule", "Épaule"],
-    ].map(([slug, label], i) => ({ id: `bp-${slug}`, slug, label, position: i }));
+    const names = DEMO_EXERCISES.slice(0, 4).map((e) => e.name);
+    const zones = DEMO_BODY_PARTS.filter((b) => ["bp-genou", "bp-dos", "bp-epaule"].includes(b.id));
     const item = (id: string, name: string, cond: string, stage: InjuryStage, lead: number) => ({
       id,
       bodyPartIds: [/Genou/.test(name) ? "bp-genou" : /Lomb/.test(name) ? "bp-dos" : "bp-epaule"],
@@ -149,14 +146,7 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
       </main>
     );
   } else if (ecran === "exercices") {
-    const bodyParts = [
-      ["genou", "Genou / jambe"], ["dos", "Dos / lombaires"], ["epaule", "Épaule"], ["hanche", "Hanche / fessiers"],
-      ["cheville", "Cheville / pied"], ["cervicales", "Cervicales / cou"], ["poignet", "Poignet / main"], ["tronc", "Tronc / gainage"],
-    ].map(([slug, label], i) => ({ id: `bp-${slug}`, slug, label, position: i }));
-    const names = [
-      "Pont fessier (coxarthrose)", "Mini Wall Sit (Shallow)", "Controlled Mini-Squat (Knee Arthritis)", "Light Closed-Chain Quad Strengthening",
-      "Assisted Partial Squat", "Isometric Wall Sit (60 Degrees)", "Protected Squat (Quadriceps)",
-    ];
+    const bodyParts = DEMO_BODY_PARTS;
     screen = (
       <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
         <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
@@ -165,14 +155,15 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
           </div>
           <ExerciseLibraryGrid
             bodyParts={bodyParts}
-            exercises={names.map((name, i) => ({
+            exercises={DEMO_EXERCISES.map((e, i) => ({
               id: `ex${i}`,
-              name,
-              instructions: "Allongé sur le dos, genoux fléchis, soulevez le bassin en serrant les fessiers puis redescendez lentement.",
+              name: e.name,
+              instructions: e.instructions,
               media_url: null,
               media_start_seconds: 0,
-              created_by: i === 0 ? "moi" : null,
-              bodyPartIds: ["bp-genou"],
+              created_by: null,
+              bodyPartIds: e.bodyPartIds,
+              equipment: e.equipment,
               search_keywords: [],
               hidden: false,
             }))}
@@ -193,26 +184,6 @@ export default async function KineTelephonePrototype({ searchParams }: { searchP
         paymentLapsed={false}
         adjusted={false}
         stats={f.stats}
-        monthlyReview={
-          <MonthlyReviewBar
-            state={{
-              patientId: "p2",
-              firstName: "Thomas",
-              monthLabel: "octobre 2026",
-              followUp: "active",
-              priceCents: 2000,
-              review: null,
-              draft: `Bonjour Thomas,
-
-Ce mois-ci : 9 séances faites, assiduité 82 %, dernière douleur notée 7/10.
-
-La douleur d'hier vient sûrement de la montée en charge des squats : je les remplace cette semaine par des demi-squats. Continuez la marche quotidienne. On refait le point dans deux semaines.`,
-              connectActive: true,
-            }}
-            validateAction={noopVoid}
-            proposeAction={noopVoid}
-          />
-        }
         actionsMenu={
           <PatientActionsMenu
             patientId="p2"

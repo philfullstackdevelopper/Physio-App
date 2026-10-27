@@ -16,9 +16,6 @@ import KineWeekProgramme, { type KineWorkoutSummary } from "@/components/KineWee
 import PatientActionsMenu from "@/components/PatientActionsMenu";
 import ConditionSelect from "@/components/ConditionSelect";
 import PatientDetailView from "@/components/PatientDetailView";
-import MonthlyReviewBar from "@/components/MonthlyReviewBar";
-import { validateMonthlyReview, proposeFollowUp } from "./reviewActions";
-import { effectiveReviewPrice, periodLabel, periodOf } from "@/lib/billing/reviewModel";
 import type { SessionDetail } from "@/components/WeekProgramme";
 import {
   assignCondition,
@@ -41,9 +38,9 @@ type Workout = {
 };
 
 const ACTIVITY_LABELS: Record<string, string> = { sedentary: "Sédentaire", moderate: "Modérée", active: "Active" };
-export default async function PatientDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; adjusted?: string; bilan?: string; bilan_erreur?: string }> }) {
+export default async function PatientDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; adjusted?: string }> }) {
   const { id } = await params;
-  const { error, adjusted, bilan, bilan_erreur: bilanError } = await searchParams;
+  const { error, adjusted } = await searchParams;
   const supabase = await createClient();
   // Validation du compte vérifiée ICI aussi (audit du 2026-10-08) : le
   // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
@@ -56,15 +53,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   // calculé d'après un abonnement.
   const lapse = null as { at: string; reason: "payment_failed" | "ended" } | null;
   const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || "ce patient";
-
-  // Suivi mensuel (nouveau modèle, 2026-10-24) : état du suivi, bilan du mois, tarif.
-  const period = periodOf(now);
-  const [{ data: followUp }, { data: monthReview }, { data: kineRow }, { data: connectRow }] = await Promise.all([
-    supabase.from("patient_follow_ups").select("status, price_cents").eq("patient_id", id).maybeSingle(),
-    supabase.from("monthly_reviews").select("id, payment_status, amount_cents").eq("patient_id", id).eq("period", period).maybeSingle(),
-    supabase.from("instructors").select("review_price_cents").eq("id", user.id).maybeSingle(),
-    supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", user.id).maybeSingle(),
-  ]);
 
   const WORKOUT_FIELDS =
     "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, patient_id, workout_exercises ( position, exercises ( id, name, equipment, exercise_body_parts ( body_part_id ) ) )";
@@ -234,50 +222,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
 
   const lastWorkoutExercises = lastWorkout?.workout_exercises.length ?? 0;
 
-  // Brouillon du bilan : les chiffres du mois, que le kiné complète.
-  const monthStart = new Date(`${period}T00:00:00`);
-  const sessionsThisMonth = (allLogs ?? []).filter((l) => new Date(l.completed_at as string) >= monthStart).length;
-  const draft =
-    `Bonjour ${firstName},\n\n` +
-    `Ce mois-ci : ${sessionsThisMonth} séance${sessionsThisMonth > 1 ? "s" : ""} faite${sessionsThisMonth > 1 ? "s" : ""}` +
-    `${adherence.pct !== null ? `, assiduité ${adherence.pct} %` : ""}` +
-    `${pain.latest !== null ? `, dernière douleur notée ${pain.latest}/10` : ""}.\n\n`;
-  const reviewNotice =
-    bilan === "paid"
-      ? { kind: "ok" as const, text: "Bilan validé et payé. Le retour a été envoyé au patient." }
-      : bilan === "pending"
-        ? { kind: "warn" as const, text: "Bilan validé. Le paiement est en cours de traitement par la banque." }
-        : bilan === "failed"
-          ? { kind: "error" as const, text: "Bilan validé, mais la carte du patient a été refusée. Il doit mettre à jour sa carte ; vous le verrez dans Suivi & facturation." }
-          : bilan === "propose"
-            ? { kind: "ok" as const, text: "Proposition envoyée dans la messagerie du patient." }
-            : bilanError
-              ? { kind: "error" as const, text: bilanError }
-              : null;
-  const followUpStatus = (followUp?.status as "pending_card" | "active" | "stopped" | undefined) ?? "none";
-  const monthlyReview = (
-    <MonthlyReviewBar
-      state={{
-        patientId: patient.id,
-        firstName,
-        monthLabel: periodLabel(period),
-        followUp: followUpStatus,
-        priceCents: (followUp?.price_cents as number | undefined) ?? effectiveReviewPrice((kineRow?.review_price_cents as number | null) ?? null),
-        review: monthReview
-          ? {
-              id: monthReview.id as string,
-              paymentStatus: monthReview.payment_status as "pending" | "paid" | "failed",
-              amountCents: monthReview.amount_cents as number,
-            }
-          : null,
-        draft,
-        connectActive: connectRow?.status === "active",
-      }}
-      validateAction={validateMonthlyReview}
-      proposeAction={proposeFollowUp}
-      notice={reviewNotice}
-    />
-  );
 
   return (
     <PatientDetailView
@@ -286,7 +230,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       paymentLapsed={!!lapse}
       error={error}
       adjusted={adjusted === "1"}
-      monthlyReview={monthlyReview}
       stats={{
         painLatest: pain.latest,
         painPrevious: pain.previous,

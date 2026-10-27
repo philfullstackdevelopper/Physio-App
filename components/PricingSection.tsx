@@ -38,7 +38,7 @@ const KINE_FEE_HT = eurosRound(KINE_FEE_PER_ACTIVE_PATIENT_CENTS);
 // (payé à EasyPhysio). La 2e offre reste « bien-être » : jamais de programme
 // construit d'après une pathologie (voir lib/billing/reviewModel.ts).
 const FOLLOW_UP_POINTS = [
-  "Une fois par mois, votre kiné regarde vos séances et vos douleurs, ajuste votre programme et vous écrit",
+  "Chaque mois, votre kiné regarde vos séances et vos douleurs et ajuste votre programme",
   "Prélevé seulement le mois où le bilan est fait",
   "Carte enregistrée une seule fois, arrêt à tout moment",
   "Pendant vos soins au cabinet, l'appli vous est offerte par votre kiné",
@@ -118,11 +118,11 @@ function PatientOffers() {
 const KINE_STEPS = [
   {
     title: "Vous fixez votre tarif de suivi",
-    body: `Chaque mois, vous regardez les séances et les douleurs du patient, ajustez son programme et lui écrivez. Tarif conseillé : ${REVIEW_PRICE} € le bilan.`,
+    body: `Chaque mois, vous regardez les séances et les douleurs du patient et ajustez son programme. Tarif conseillé : ${REVIEW_PRICE} € le bilan.`,
   },
   {
     title: "Votre patient vous paie directement",
-    body: "Il accepte votre tarif une fois. Il n'est prélevé que le mois où vous faites le bilan, et la note d'honoraires part toute seule.",
+    body: "Il accepte votre tarif une fois. Il n'est prélevé que le mois où vous ajustez son programme, et la note d'honoraires part toute seule.",
   },
   {
     title: "Vous payez EasyPhysio à part",

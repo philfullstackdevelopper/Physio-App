@@ -56,8 +56,8 @@ export default function CguPage() {
             <h2 className="font-display font-semibold text-slate-900">4. Suivi mensuel par le kinésithérapeute</h2>
             <p className="mt-1">
               Le kinésithérapeute peut proposer un suivi mensuel à distance : une fois par mois, il
-              analyse les séances et les ressentis du patient, ajuste son programme et lui adresse un
-              retour écrit (« bilan de suivi »). Ce bilan est un acte du kinésithérapeute, non
+              analyse les séances et les ressentis du patient, ajuste son programme (« bilan de
+              suivi »). Ce bilan est un acte du kinésithérapeute, non
               remboursé par l&apos;Assurance Maladie, au tarif qu&apos;il fixe et que le patient
               accepte par écrit avant le premier bilan.
             </p>

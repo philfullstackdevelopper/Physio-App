@@ -1,5 +1,6 @@
 "use server";
 
+import { recordMonthlyReviewIfDue } from "@/lib/billing/autoReview";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
@@ -164,7 +165,7 @@ export async function assignCondition(formData: FormData) {
 // them correctly.
 export async function addRecommendedWorkout(formData: FormData) {
   const supabase = await createClient();
-  await requireApprovedInstructor(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   const patientId = String(formData.get("patient_id") ?? "");
   const workoutId = String(formData.get("workout_id") ?? "");
@@ -184,7 +185,7 @@ export async function addRecommendedWorkout(formData: FormData) {
   // La séance doit être visible par ce kiné (sa bibliothèque ou celle de la
   // plateforme) et ne pas être la copie personnelle d'un AUTRE patient
   // (audit du 2026-10-08 : un formulaire modifié pouvait l'attribuer).
-  const { data: workout } = await supabase.from("workouts").select("id, patient_id, times_per_week").eq("id", workoutId).maybeSingle();
+  const { data: workout } = await supabase.from("workouts").select("id, name, patient_id, times_per_week").eq("id", workoutId).maybeSingle();
   if (!workout || (workout.patient_id !== null && workout.patient_id !== patientId)) {
     redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Cette séance ne peut pas être attribuée à ce patient.")}`);
   }
@@ -202,7 +203,11 @@ export async function addRecommendedWorkout(formData: FormData) {
     );
   if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
 
+  // Patient en suivi mensuel : attribuer une séance valide le bilan du mois.
+  await recordMonthlyReviewIfDue({ supabase, instructorId: user.id, patientId, note: `Séance attribuée : ${workout!.name as string}` });
+
   revalidatePath(`/dashboard/patients/${patientId}`);
+  revalidatePath("/dashboard/facturation");
   redirect(`/dashboard/patients/${patientId}`);
 }
 
@@ -352,6 +357,9 @@ export async function adjustPatientWorkout(formData: FormData) {
       sender: "instructor",
       body: adjustmentMessage(workout.name, removedCount, addedCount),
     });
+    // Patient en suivi mensuel : ajuster la séance valide le bilan du mois.
+    await recordMonthlyReviewIfDue({ supabase, instructorId: user.id, patientId, note: adjustmentMessage(workout.name, removedCount, addedCount) });
+    revalidatePath("/dashboard/facturation");
   }
 
   revalidatePath(`/dashboard/patients/${patientId}`);

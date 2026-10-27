@@ -36,9 +36,9 @@ export default function FeeNoteSheet({ note }: { note: FeeNote }) {
         <tbody>
           <tr className="border-b border-line align-top">
             <td className="py-3 pr-4">
-              Bilan de suivi à distance — {periodLabel(note.period)}
+              Bilan de suivi à distance, {periodLabel(note.period)}
               <span className="block text-xs text-muted">
-                Analyse des séances et ressentis, ajustement du programme, retour écrit.
+                Analyse des séances et ressentis, ajustement du programme.
               </span>
             </td>
             <td className="py-3 text-right tabular-nums">{eurosFR(note.amountCents)} €</td>
