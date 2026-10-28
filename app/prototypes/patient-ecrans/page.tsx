@@ -47,6 +47,8 @@ const NAV_PATH: Record<string, string> = {
   "changer-offre": "/patient/compte",
   historique: "/patient/progres",
   "historique-detail": "/patient/progres",
+  // « Suivi mensuel » s'ouvre depuis les Paramètres (lien retour « Paramètres »).
+  suivi: "/patient/compte",
 };
 
 async function noop() {
