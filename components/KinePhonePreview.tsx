@@ -19,11 +19,16 @@ import { Wifi, BatteryFull, Signal } from "lucide-react";
 const SCREEN_W = 360; // écran simulé : proportions d'un vrai téléphone
 const SCREEN_H = 740;
 const STATUS_H = 28; // barre d'état (heure, réseau, batterie), avant réduction
-// Place prise autour du téléphone : en-tête du site, titre et texte de la
-// section, cadre, phrase d'aide (mesuré sur un écran de 375 × 812).
-const AROUND = 275;
+// Taille (Philippe, 2026-10-28 : « l'écran pourrait être plus grand ») : le
+// téléphone prend toute la largeur disponible, dans la limite de la hauteur de
+// l'écran, au lieu de rester à 80 % pour faire tenir le titre de la section
+// avec lui. Le titre défile simplement au-dessus.
+// Place à garder autour : marges de la page et cadre (largeur) ; en-tête du
+// site, cadre, marges et phrase d'aide (hauteur).
+const AROUND_W = 48;
+const AROUND_H = 136;
 const MIN_SCALE = 0.62;
-const MAX_SCALE = 0.8;
+const MAX_SCALE = 1.05;
 
 const subscribeResize = (cb: () => void) => {
   window.addEventListener("resize", cb);
@@ -32,7 +37,10 @@ const subscribeResize = (cb: () => void) => {
 
 export default function KinePhonePreview() {
   const viewportH = useSyncExternalStore(subscribeResize, () => window.innerHeight, () => 812);
-  const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, (viewportH - AROUND) / (SCREEN_H + STATUS_H)));
+  const viewportW = useSyncExternalStore(subscribeResize, () => window.innerWidth, () => 375);
+  const fitW = (viewportW - AROUND_W) / SCREEN_W;
+  const fitH = (viewportH - AROUND_H) / (SCREEN_H + STATUS_H);
+  const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(fitW, fitH)));
 
   const boxRef = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);

@@ -13,6 +13,10 @@ export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // Démo intégrée dans le téléphone de l'accueil (KinePhonePreview, iframe) :
+    // la page qui l'entoure affiche déjà le bandeau — pas de deuxième bandeau
+    // qui couvrirait l'écran du téléphone (2026-10-28).
+    if (window.self !== window.top) return;
     if (localStorage.getItem(STORAGE_KEY)) return;
     const id = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(id);
