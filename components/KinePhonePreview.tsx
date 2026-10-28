@@ -13,7 +13,7 @@
 // navigateur ne se déclenchait pas toujours), avec un filet à 3 s.
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Wifi, BatteryFull, Signal } from "lucide-react";
 
 const SCREEN_W = 360; // écran simulé : proportions d'un vrai téléphone
@@ -30,16 +30,29 @@ const AROUND_H = 136;
 const MIN_SCALE = 0.62;
 const MAX_SCALE = 1.05;
 
-const subscribeResize = (cb: () => void) => {
-  window.addEventListener("resize", cb);
-  return () => window.removeEventListener("resize", cb);
-};
-
 export default function KinePhonePreview() {
-  const viewportH = useSyncExternalStore(subscribeResize, () => window.innerHeight, () => 812);
-  const viewportW = useSyncExternalStore(subscribeResize, () => window.innerWidth, () => 375);
-  const fitW = (viewportW - AROUND_W) / SCREEN_W;
-  const fitH = (viewportH - AROUND_H) / (SCREEN_H + STATUS_H);
+  // Hauteur STABLE de l'écran (2026-10-28, Philippe : « la taille du téléphone
+  // change quand on défile vers le haut ou le bas ») : sur téléphone, la barre
+  // d'adresse se cache et réapparaît en défilant, ce qui change
+  // window.innerHeight à chaque fois. On mesure donc la petite hauteur
+  // d'écran (100svh, barre d'adresse visible), qui ne bouge pas en défilant,
+  // et on ne recalcule que si la LARGEUR change (rotation du téléphone).
+  const probeRef = useRef<HTMLDivElement>(null);
+  const [viewport, setViewport] = useState({ w: 375, h: 812 });
+  useEffect(() => {
+    let lastW = -1;
+    const measure = () => {
+      const w = window.innerWidth;
+      if (w === lastW) return; // barre d'adresse qui bouge : on ignore
+      lastW = w;
+      setViewport({ w, h: probeRef.current?.offsetHeight || window.innerHeight });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+  const fitW = (viewport.w - AROUND_W) / SCREEN_W;
+  const fitH = (viewport.h - AROUND_H) / (SCREEN_H + STATUS_H);
   const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(fitW, fitH)));
 
   const boxRef = useRef<HTMLDivElement>(null);
@@ -69,6 +82,8 @@ export default function KinePhonePreview() {
 
   return (
     <div ref={boxRef}>
+      {/* Sonde invisible : hauteur d'écran stable (100svh), voir plus haut. */}
+      <div ref={probeRef} aria-hidden className="pointer-events-none invisible fixed left-0 top-0 h-svh w-0" />
       <div className="relative mx-auto w-fit rounded-[2.6rem] border-[5px] border-slate-900 bg-slate-900 p-[3px] shadow-2xl shadow-blue-900/15">
         <span aria-hidden className="absolute -left-[7px] top-24 h-8 w-1 rounded-l-full bg-slate-900" />
         <span aria-hidden className="absolute -left-[7px] top-36 h-12 w-1 rounded-l-full bg-slate-900" />
