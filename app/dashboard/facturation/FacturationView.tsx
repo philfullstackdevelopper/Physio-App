@@ -14,6 +14,7 @@ import {
   Tag,
 } from "lucide-react";
 import SubmitButton from "@/components/SubmitButton";
+import PhoneFold from "@/components/PhoneFold";
 import type { KineBillingData } from "@/lib/billing/kineBillingData";
 import {
   KINE_FEE_PER_ACTIVE_PATIENT_CENTS,
@@ -69,7 +70,7 @@ export default function FacturationView({
       <div className="mx-auto max-w-7xl p-3 max-sm:p-4 max-sm:pt-2 sm:p-5 short:sm:py-3">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
           <h1 className="text-xl font-semibold text-ink max-sm:text-2xl">Suivi &amp; facturation</h1>
-          <p className="text-sm text-muted">Vos bilans et ce que vous encaissez, puis votre facture EasyPhysio : deux paiements séparés.</p>
+          <p className="text-sm text-muted max-sm:text-xs">Vos bilans et ce que vous encaissez, puis votre facture EasyPhysio : deux paiements séparés.</p>
         </div>
 
         {error && <p className="mt-2 rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger">{error}</p>}
@@ -85,7 +86,7 @@ export default function FacturationView({
           </p>
         )}
 
-        <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-3 max-sm:mt-2 max-sm:gap-2 md:grid-cols-2 lg:grid-cols-3">
           {/* ── Colonne 1 : bilans du mois ─────────────────────────── */}
           <section className={`${CARD} flex min-h-0 flex-col md:row-span-2 lg:row-span-1`}>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -121,7 +122,7 @@ export default function FacturationView({
               </div>
             ) : (
               // La liste défile dans la carte si elle est longue : la page, elle, ne défile pas.
-              <ul className="mt-3 min-h-0 divide-y divide-line overflow-y-auto sm:max-h-[calc(100dvh-17rem)]">
+              <ul className="mt-3 min-h-0 divide-y divide-line overflow-y-auto max-sm:max-h-28 sm:max-h-[calc(100dvh-17rem)]">
                 {[...todo, ...waitingCard, ...done].map((f) => (
                   <li key={f.patientId}>
                     <Link
@@ -146,21 +147,29 @@ export default function FacturationView({
               </ul>
             )}
 
-            {data.notInFollowUp > 0 && (
+            {/* Décision du 2026-10-28 : un patient qui ne paie pas ne coûte
+                rien au kiné — c'est ce qu'il doit lire ici, pas l'inverse. */}
+            {data.notPaying > 0 && (
               <p className="mt-2 text-[11px] text-muted">
-                {data.notInFollowUp} patient{data.notInFollowUp > 1 ? "s" : ""} sans suivi mensuel : ils peuvent l&apos;activer dans
-                leur appli (Compte, puis Suivi mensuel).
+                {data.notPaying} patient{data.notPaying > 1 ? "s" : ""} n&apos;
+                {data.notPaying > 1 ? "ont" : "a"} pas payé son suivi ce mois : ne vous coûte
+                {data.notPaying > 1 ? "nt" : ""} rien sur votre facture EasyPhysio.
               </p>
             )}
           </section>
 
           {/* ── Colonne 2 : vos honoraires — tarif et encaissement ── */}
           <div className="flex min-w-0 flex-col gap-3">
-            <section className={CARD}>
-              <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
-                <Tag className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
-                Mon tarif de suivi
-              </h2>
+            <PhoneFold
+              className={CARD}
+              title={
+                <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+                  <Tag className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
+                  Mon tarif de suivi
+                </h2>
+              }
+              summary={eur(data.priceCents)}
+            >
               <form action={setReviewPrice} className="mt-2 flex items-end gap-2">
                 <label className="min-w-0 flex-1">
                   <span className="text-xs font-medium text-muted">Tarif du bilan mensuel (€)</span>
@@ -185,22 +194,27 @@ export default function FacturationView({
                 {eurosFR(RECOMMENDED_REVIEW_PRICE_CENTS, 0)} €). Un patient déjà en suivi garde le tarif accepté. 100 % pour vous :
                 EasyPhysio ne prend rien sur vos honoraires.
               </p>
-            </section>
+            </PhoneFold>
 
             <ConnectCard status={connectStatus} />
           </div>
 
           {/* ── Colonne 3 : votre facture EasyPhysio et vos documents ── */}
           <div className="flex min-w-0 flex-col gap-3">
-            <section className={CARD}>
-              <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
-                <Receipt className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
-                Ma facture EasyPhysio
-              </h2>
+            <PhoneFold
+              className={CARD}
+              title={
+                <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+                  <Receipt className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
+                  Ma facture EasyPhysio
+                </h2>
+              }
+              summary={data.monthEstimate.free ? "offert" : "≈ " + eur(data.monthEstimate.ttcCents)}
+            >
               <div className="mt-2 rounded-xl bg-app-bg px-3 py-2">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-sm text-ink">
-                    {periodLabel(data.period)} : {data.activePatients} patient{data.activePatients > 1 ? "s" : ""} actif
+                    {periodLabel(data.period)} : {data.activePatients} patient{data.activePatients > 1 ? "s" : ""} payant
                     {data.activePatients > 1 ? "s" : ""}
                   </span>
                   <span className="text-sm font-semibold tabular-nums text-ink">
@@ -209,10 +223,10 @@ export default function FacturationView({
                 </div>
                 <p
                   className="mt-0.5 text-[11px] leading-snug text-muted"
-                  title="Actif = invitation acceptée et, dans le mois, une séance faite, un ressenti noté ou un bilan validé."
+                  title="Seuls les patients qui vous ont payé leur suivi ce mois sont comptés. Un patient qui ne paie pas ne vous coûte rien."
                 >
-                  {eurosFR(KINE_FEE_PER_ACTIVE_PATIENT_CENTS, 0)} € HT ({eur(KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS)} TTC) par patient actif
-                  et par mois, sans lien avec vos honoraires.{data.firstBilledMonth ? " Premier mois offert." : ""}
+                  {eurosFR(KINE_FEE_PER_ACTIVE_PATIENT_CENTS, 0)} € HT ({eur(KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS)} TTC) par patient qui
+                  vous a payé son suivi ce mois. Pas de paiement, rien à payer.{data.firstBilledMonth ? " Premier mois offert." : ""}
                 </p>
               </div>
 
@@ -243,13 +257,18 @@ export default function FacturationView({
                   ))}
                 </ul>
               )}
-            </section>
+            </PhoneFold>
 
-            <section className={CARD}>
-              <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
-                <FileText className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
-                Mes documents
-              </h2>
+            <PhoneFold
+              className={CARD}
+              title={
+                <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+                  <FileText className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
+                  Mes documents
+                </h2>
+              }
+              summary="Récap · CSV · Notes"
+            >
               <form method="get" action="/documents/honoraires" target="_blank" className="mt-2 space-y-2">
                 <select
                   name="period"
@@ -296,7 +315,7 @@ export default function FacturationView({
               <p className="mt-2 text-[11px] leading-snug text-muted">
                 Pour votre déclaration et votre comptable : récapitulatif des recettes, tableur et notes d&apos;honoraires du mois.
               </p>
-            </section>
+            </PhoneFold>
           </div>
         </div>
       </div>
@@ -370,8 +389,11 @@ function ConnectCard({ status }: { status: ConnectStatus }) {
     },
   }[status];
   return (
-    <section className={CARD}>
-      <h2 className="text-base font-semibold text-ink">Encaisser vos bilans</h2>
+    <PhoneFold
+      className={CARD}
+      title={<h2 className="text-base font-semibold text-ink">Encaisser vos bilans</h2>}
+      summary={<span className={s.titleClass}>{status === "active" ? "Activés" : status === "onboarding" ? "En cours" : "À activer"}</span>}
+    >
       <div className={`mt-2 flex items-start gap-3 rounded-xl border px-3 py-2 ${s.box}`}>
         {s.icon}
         <div>
@@ -398,6 +420,6 @@ function ConnectCard({ status }: { status: ConnectStatus }) {
           </form>
         )}
       </div>
-    </section>
+    </PhoneFold>
   );
 }
