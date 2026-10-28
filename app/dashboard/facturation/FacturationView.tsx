@@ -147,13 +147,10 @@ export default function FacturationView({
               </ul>
             )}
 
-            {/* Décision du 2026-10-28 : un patient qui ne paie pas ne coûte
-                rien au kiné — c'est ce qu'il doit lire ici, pas l'inverse. */}
-            {data.notPaying > 0 && (
+            {data.notInFollowUp > 0 && (
               <p className="mt-2 text-[11px] text-muted">
-                {data.notPaying} patient{data.notPaying > 1 ? "s" : ""} n&apos;
-                {data.notPaying > 1 ? "ont" : "a"} pas payé son suivi ce mois : ne vous coûte
-                {data.notPaying > 1 ? "nt" : ""} rien sur votre facture EasyPhysio.
+                {data.notInFollowUp} patient{data.notInFollowUp > 1 ? "s" : ""} sans suivi mensuel : ils peuvent l&apos;activer dans
+                leur appli (Compte, puis Suivi mensuel).
               </p>
             )}
           </section>
@@ -214,7 +211,7 @@ export default function FacturationView({
               <div className="mt-2 rounded-xl bg-app-bg px-3 py-2">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-sm text-ink">
-                    {periodLabel(data.period)} : {data.activePatients} patient{data.activePatients > 1 ? "s" : ""} payant
+                    {periodLabel(data.period)} : {data.activePatients} patient{data.activePatients > 1 ? "s" : ""} actif
                     {data.activePatients > 1 ? "s" : ""}
                   </span>
                   <span className="text-sm font-semibold tabular-nums text-ink">
@@ -223,10 +220,10 @@ export default function FacturationView({
                 </div>
                 <p
                   className="mt-0.5 text-[11px] leading-snug text-muted"
-                  title="Seuls les patients qui vous ont payé leur suivi ce mois sont comptés. Un patient qui ne paie pas ne vous coûte rien."
+                  title="Actif = invitation acceptée et, dans le mois, une séance faite, un ressenti noté ou un bilan validé."
                 >
-                  {eurosFR(KINE_FEE_PER_ACTIVE_PATIENT_CENTS, 0)} € HT ({eur(KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS)} TTC) par patient qui
-                  vous a payé son suivi ce mois. Pas de paiement, rien à payer.{data.firstBilledMonth ? " Premier mois offert." : ""}
+                  {eurosFR(KINE_FEE_PER_ACTIVE_PATIENT_CENTS, 0)} € HT ({eur(KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS)} TTC) par patient actif
+                  et par mois, sans lien avec vos honoraires.{data.firstBilledMonth ? " Premier mois offert." : ""}
                 </p>
               </div>
 
