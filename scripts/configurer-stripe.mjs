@@ -45,7 +45,7 @@ console.log("Configuration de Stripe (mode test)…");
 const CONNECT_DESC = "EasyPhysio — comptes Connect des kinés (suivi, bilans, activation)";
 const isConnect = (h) => h.description === CONNECT_DESC;
 const hooks = (await stripe.webhookEndpoints.list({ limit: 100 })).data.filter((h) => h.url === URL_WEBHOOK);
-const platform = hooks.find((h) => !h.application && !isConnect(h));
+const platform = hooks.find((h) => !isConnect(h));
 let connect = hooks.find(isConnect);
 if (platform) {
   await stripe.webhookEndpoints.update(platform.id, { enabled_events: PLATFORM, description: "EasyPhysio — compte plateforme (factures des kinés)" });
