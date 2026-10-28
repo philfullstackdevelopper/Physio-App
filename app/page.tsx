@@ -15,7 +15,6 @@ import KineJourneyDemo from "@/components/KineJourneyDemo";
 import KinePhonePreview from "@/components/KinePhonePreview";
 import ComparisonTable from "@/components/ComparisonTable";
 import PricingSection from "@/components/PricingSection";
-import KinePaymentBrief from "@/components/KinePaymentBrief";
 import ExerciseShowcase from "@/components/ExerciseShowcase";
 import Testimonials from "@/components/Testimonials";
 import { HandNote, Underlined } from "@/components/HandDrawn";
@@ -28,7 +27,7 @@ import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 // trop « IA ») : des phrases qu'un kiné dirait, des faits vérifiables, plus de
 // formules lisses. « Gratuit pour les patients » a été retiré : c'était faux
 // (le patient paie son suivi mensuel à son kiné, ou l'appli seule à
-// EasyPhysio, voir #remuneration et #tarifs).
+// EasyPhysio, voir #tarifs).
 const HERO_CHIPS = [
   { icon: BadgeCheck, label: "Kinés vérifiés dans l'Annuaire Santé (RPPS)" },
   { icon: ListChecks, label: "Guidé pas à pas, sans caméra ni capteur" },
@@ -277,24 +276,6 @@ export default function Home() {
         </section>
         </Reveal>
 
-        {/* ── Rémunération du kiné ─────────────────────────────── */}
-        {/* « Et moi, comment je suis payé ? » est la première question d'un
-            kiné (Philippe, 2026-10-24) : le circuit de l'argent et les six
-            réponses courtes, juste avant les tarifs. */}
-        <Reveal>
-        <section id="remuneration" className="mt-24 scroll-mt-24 text-center sm:mt-32">
-          <h2 className="font-display mx-auto max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-            «&nbsp;Et moi, comment je suis payé&nbsp;?&nbsp;»
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg sm:short:text-sm">
-            Vos patients vous paient. Vous payez l&apos;appli. <Underlined>Les deux ne se mélangent jamais.</Underlined>
-          </p>
-          <div className="mx-auto mt-12 max-w-5xl sm:short:mt-6">
-            <KinePaymentBrief />
-          </div>
-        </section>
-        </Reveal>
-
         {/* ── Tarifs ───────────────────────────────────────────── */}
         {/* Bascule "Côté kiné" / "Côté patient" (Philippe, 2026-09-13) : un
             seul prix parle à chaque audience. Nouveau modèle (2026-10-24) :
@@ -303,8 +284,11 @@ export default function Home() {
             lib/billing/reviewModel.ts. */}
         <Reveal>
         <section id="tarifs" className="mt-24 scroll-mt-24 text-center sm:mt-32">
+          {/* Titre repris de l'ancienne section « Rémunération », supprimée le
+              2026-10-28 (Philippe) : les tarifs juste en dessous donnaient déjà
+              toutes ses informations ; seule sa question d'accroche est gardée. */}
           <h2 className="font-display mx-auto max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-            Ce que chacun paie, simplement.
+            «&nbsp;Et moi, comment je suis payé&nbsp;?&nbsp;»
           </h2>
 
           <FitToViewport className="mt-10 text-left sm:short:mt-5 phone-land:mt-2">

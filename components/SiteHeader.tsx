@@ -15,7 +15,7 @@ const NAV_LINKS = [
   { href: "/#comment-ca-marche", label: "Comment ça marche" },
   { href: "/#cote-kine", label: "Praticiens" },
   { href: "/#comparaison", label: "Comparaison" },
-  { href: "/#remuneration", label: "Tarifs" },
+  { href: "/#tarifs", label: "Tarifs" },
   { href: "/#faq", label: "FAQ" },
 ];
 
