@@ -23,10 +23,14 @@ const STATUS_H = 28; // barre d'état (heure, réseau, batterie), avant réducti
 // téléphone prend toute la largeur disponible, dans la limite de la hauteur de
 // l'écran, au lieu de rester à 80 % pour faire tenir le titre de la section
 // avec lui. Le titre défile simplement au-dessus.
-// Place à garder autour : marges de la page et cadre (largeur) ; en-tête du
-// site, cadre, marges et phrase d'aide (hauteur).
-const AROUND_W = 48;
-const AROUND_H = 136;
+// Encore plus grand (Philippe, 2026-10-28, « on pourrait le faire plus grand ») :
+// le téléphone sort des marges de la page (presque bord à bord) et prend toute
+// la hauteur de l'écran barres du navigateur cachées ; l'en-tête du site et la
+// phrase d'aide ne sont plus comptés (ils défilent autour).
+// Place gardée : cadre du téléphone + 8 px de chaque côté (largeur) ; 24 px
+// de marge (hauteur).
+const AROUND_W = 32;
+const AROUND_H = 24;
 const MIN_SCALE = 0.62;
 const MAX_SCALE = 1.05;
 
@@ -34,9 +38,9 @@ export default function KinePhonePreview() {
   // Hauteur STABLE de l'écran (2026-10-28, Philippe : « la taille du téléphone
   // change quand on défile vers le haut ou le bas ») : sur téléphone, la barre
   // d'adresse se cache et réapparaît en défilant, ce qui change
-  // window.innerHeight à chaque fois. On mesure donc la petite hauteur
-  // d'écran (100svh, barre d'adresse visible), qui ne bouge pas en défilant,
-  // et on ne recalcule que si la LARGEUR change (rotation du téléphone).
+  // window.innerHeight à chaque fois. On mesure donc la grande hauteur
+  // d'écran (100lvh, barres du navigateur cachées), qui ne bouge pas en
+  // défilant, et on ne recalcule que si la LARGEUR change (rotation).
   const probeRef = useRef<HTMLDivElement>(null);
   const [viewport, setViewport] = useState({ w: 375, h: 812 });
   useEffect(() => {
@@ -81,9 +85,10 @@ export default function KinePhonePreview() {
   }, []);
 
   return (
-    <div ref={boxRef}>
-      {/* Sonde invisible : hauteur d'écran stable (100svh), voir plus haut. */}
-      <div ref={probeRef} aria-hidden className="pointer-events-none invisible fixed left-0 top-0 h-svh w-0" />
+    // -mx-6 : sort des marges de la page (px-6) pour aller presque bord à bord.
+    <div ref={boxRef} className="-mx-6">
+      {/* Sonde invisible : hauteur d'écran stable (100lvh), voir plus haut. */}
+      <div ref={probeRef} aria-hidden className="pointer-events-none invisible fixed left-0 top-0 h-lvh w-0" />
       <div className="relative mx-auto w-fit rounded-[2.6rem] border-[5px] border-slate-900 bg-slate-900 p-[3px] shadow-2xl shadow-blue-900/15">
         <span aria-hidden className="absolute -left-[7px] top-24 h-8 w-1 rounded-l-full bg-slate-900" />
         <span aria-hidden className="absolute -left-[7px] top-36 h-12 w-1 rounded-l-full bg-slate-900" />
