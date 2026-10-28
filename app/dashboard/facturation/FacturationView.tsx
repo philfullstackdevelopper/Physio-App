@@ -33,7 +33,7 @@ export type ConnectStatus = "active" | "onboarding" | "not_started";
 const eur = (cents: number) => `${eurosFR(cents)} €`;
 
 // Carte façon appli téléphone : blanche, sans bordure, ombre douce.
-const CARD = "rounded-2xl border border-line bg-surface p-4 sm:p-5 max-sm:border-0 max-sm:shadow-soft";
+const CARD = "rounded-2xl border border-line bg-surface p-4 sm:p-5 max-sm:border-0 max-sm:shadow-soft max-sm:short:p-3";
 
 // Page « Suivi & facturation » du kiné (nouveau modèle, 2026-10-24). Un seul
 // endroit pour tout ce qui touche à l'argent, sur ordinateur comme sur
@@ -70,7 +70,7 @@ export default function FacturationView({
       <div className="mx-auto max-w-7xl p-3 max-sm:p-4 max-sm:pt-2 sm:p-5 short:sm:py-3">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
           <h1 className="text-xl font-semibold text-ink max-sm:text-2xl">Suivi &amp; facturation</h1>
-          <p className="text-sm text-muted max-sm:text-xs">Vos bilans et ce que vous encaissez, puis votre facture EasyPhysio : deux paiements séparés.</p>
+          <p className="text-sm text-muted max-sm:text-xs max-sm:short:hidden">Vos bilans et ce que vous encaissez, puis votre facture EasyPhysio : deux paiements séparés.</p>
         </div>
 
         {error && <p className="mt-2 rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger">{error}</p>}
@@ -88,7 +88,7 @@ export default function FacturationView({
 
         <div className="mt-3 grid grid-cols-1 gap-3 max-sm:mt-2 max-sm:gap-2 md:grid-cols-2 lg:grid-cols-3">
           {/* ── Colonne 1 : bilans du mois ─────────────────────────── */}
-          <section className={`${CARD} flex min-h-0 flex-col md:row-span-2 lg:row-span-1`}>
+          <section className={`${CARD} flex min-h-0 flex-col md:col-span-2 lg:col-span-1`}>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
                 <ClipboardCheck className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
@@ -122,7 +122,7 @@ export default function FacturationView({
               </div>
             ) : (
               // La liste défile dans la carte si elle est longue : la page, elle, ne défile pas.
-              <ul className="mt-3 min-h-0 divide-y divide-line overflow-y-auto max-sm:max-h-28 sm:max-h-[calc(100dvh-17rem)]">
+              <ul className="mt-3 min-h-0 divide-y divide-line overflow-y-auto max-sm:max-h-28 max-sm:short:max-h-20 sm:max-h-[calc(100dvh-17rem)]">
                 {[...todo, ...waitingCard, ...done].map((f) => (
                   <li key={f.patientId}>
                     <Link
@@ -148,7 +148,7 @@ export default function FacturationView({
             )}
 
             {data.notInFollowUp > 0 && (
-              <p className="mt-2 text-[11px] text-muted">
+              <p className="mt-2 text-[11px] text-muted max-sm:short:hidden">
                 {data.notInFollowUp} patient{data.notInFollowUp > 1 ? "s" : ""} sans suivi mensuel : ils peuvent l&apos;activer dans
                 leur appli (Compte, puis Suivi mensuel).
               </p>
