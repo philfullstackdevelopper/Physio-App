@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react";
 import Link from "next/link";
 import { AlertCircle, LogOut, X } from "lucide-react";
-import { SignOutButton } from "@clerk/nextjs";
+import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 import OnboardingWizard from "@/components/OnboardingWizard";
 
@@ -29,15 +29,10 @@ export default function OnboardingView({
           app/patient/layout.tsx has no nav to escape from otherwise, and a
           patient who wants out (wrong account, second thoughts) needs a way
           that isn't "close the tab" (Philippe, 2026-09-09). */}
-      <SignOutButton redirectUrl="/login">
-        <button
-          type="button"
-          className="absolute bottom-4 left-4 z-10 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-slate-600 lg:bottom-6 lg:left-6"
-        >
-          <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-          Se déconnecter
-        </button>
-      </SignOutButton>
+      <SignOutOrExitDemo
+        className="absolute bottom-4 left-4 z-10 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-slate-600 lg:bottom-6 lg:left-6"
+        before={<LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />}
+      />
 
       {/* Modification d'un profil existant (depuis « Modifier ma situation ») :
           une porte de sortie sans enregistrer, retour au compte. Le premier

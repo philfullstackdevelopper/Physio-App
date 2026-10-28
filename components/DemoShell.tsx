@@ -24,7 +24,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftRight, Check, LogOut, Sparkles, X } from "lucide-react";
-import { DemoHrefContext } from "@/components/DemoContext";
+import { DemoHrefContext, DemoModeContext } from "@/components/DemoContext";
 
 type Side = "kine" | "patient";
 
@@ -157,6 +157,8 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!a || a.target === "_blank") return;
+      // « Quitter la démo » (SignOutOrExitDemo) : on laisse partir vers l'accueil.
+      if (a.hasAttribute("data-demo-exit")) return;
       const url = new URL(a.href, window.location.href);
       if (url.origin !== window.location.origin) return;
       const inApp = url.pathname.startsWith("/dashboard") || url.pathname.startsWith("/patient");
@@ -191,7 +193,7 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
 
   return (
     <DemoHrefContext.Provider value={mapHref}>
-      {children}
+      <DemoModeContext.Provider value={true}>{children}</DemoModeContext.Provider>
 
       {/* Pastille « Démo » : en bas à droite, au-dessus de la barre d'onglets
           sur téléphone, pour ne rien masquer de l'en-tête. */}

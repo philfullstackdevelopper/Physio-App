@@ -11,3 +11,11 @@ export const DemoHrefContext = createContext<(href: string) => string>((href) =>
 export function useAppHref() {
   return useContext(DemoHrefContext);
 }
+
+// Vrai seulement à l'intérieur de la démo publique (DemoShell). Sert à
+// remplacer « Se déconnecter » par « Quitter la démo » (Philippe, 2026-10-28).
+export const DemoModeContext = createContext(false);
+
+export function useIsDemo() {
+  return useContext(DemoModeContext);
+}

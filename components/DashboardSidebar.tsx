@@ -1,9 +1,9 @@
 "use client";
 
+import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import { useEffect, useRef, useState } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { SignOutButton } from "@clerk/nextjs";
 import { LayoutDashboard, UsersRound, MessageCircle, Dumbbell, ListChecks, Wallet, LogOut, CircleUserRound, ChevronLeft } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import { initials } from "@/lib/format/initials";
@@ -78,14 +78,14 @@ function AccountMenu({ instructorName }: { instructorName: string | null }) {
             <p className="truncate text-sm font-semibold text-ink">{instructorName ?? "Praticien"}</p>
             <p className="text-xs text-muted">Kinésithérapeute</p>
           </div>
-          <SignOutButton redirectUrl="/login">
-            <button type="button" className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-danger">
+          <SignOutOrExitDemo
+            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-danger"
+            before={
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-danger-soft">
                 <LogOut className="h-4 w-4" strokeWidth={1.75} />
               </span>
-              Se déconnecter
-            </button>
-          </SignOutButton>
+            }
+          />
         </div>
       )}
     </div>
@@ -198,12 +198,7 @@ export default function DashboardSidebar({
             <p className="text-xs text-white/60">Kinésithérapeute</p>
           </div>
         </div>
-        <SignOutButton redirectUrl="/login">
-          <button type="button" className={`mt-2 w-full ${linkClass(false)}`}>
-            <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-            Se déconnecter
-          </button>
-        </SignOutButton>
+        <SignOutOrExitDemo className={`mt-2 w-full ${linkClass(false)}`} before={<LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />} />
       </aside>
 
       {/* Téléphone : même coquille que l'appli patient (PatientNav) — en-tête

@@ -1,8 +1,8 @@
 "use client";
 
+import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SignOutButton } from "@clerk/nextjs";
 import { Home, CalendarDays, TrendingUp, MessageCircle, Settings, LogOut } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import { initials } from "@/lib/format/initials";
@@ -112,12 +112,7 @@ export default function PatientNav({
             <p className="text-xs text-white/60">Patient</p>
           </div>
         </div>
-        <SignOutButton redirectUrl="/login">
-          <button type="button" className={`mt-2 w-full ${linkClass(false)}`}>
-            <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-            Se déconnecter
-          </button>
-        </SignOutButton>
+        <SignOutOrExitDemo className={`mt-2 w-full ${linkClass(false)}`} before={<LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />} />
       </aside>
 
       {/* Mobile: fixed bottom tab bar, thumb-reachable, safe-area aware.
@@ -153,12 +148,7 @@ export default function PatientNav({
             );
           })}
         {onOnboarding && (
-          <SignOutButton redirectUrl="/login">
-            <button type="button" className="flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted">
-              <LogOut className="h-5 w-5" strokeWidth={1.75} />
-              Se déconnecter
-            </button>
-          </SignOutButton>
+          <SignOutOrExitDemo className="flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted" before={<LogOut className="h-5 w-5" strokeWidth={1.75} />} />
         )}
       </nav>
     </>

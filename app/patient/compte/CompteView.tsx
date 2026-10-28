@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight, CreditCard, Download, LogOut, ShieldCheck, Trash2, User } from "lucide-react";
-import { SignOutButton } from "@clerk/nextjs";
+import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import { deleteMyAccount } from "./actions";
 
 // Affichage seul de « Paramètres » du patient (les données viennent de
@@ -149,11 +149,7 @@ export default function CompteView({
             <span className="sm:hidden">Confidentialité</span>
             <span className="hidden sm:inline">Politique de confidentialité</span>
           </Link>
-          <SignOutButton redirectUrl="/login">
-            <button type="button" className="hover:text-ink">
-              Se déconnecter
-            </button>
-          </SignOutButton>
+          <SignOutOrExitDemo className="hover:text-ink" />
         </div>
       </div>
     </main>
@@ -241,15 +237,16 @@ function PhoneSettings({
       </section>
 
       <div className="divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-soft">
-        <SignOutButton redirectUrl="/login">
-          <button type="button" className={ROW}>
+        <SignOutOrExitDemo
+          className={ROW}
+          labelClassName="flex-1 text-sm font-medium text-ink"
+          before={
             <span className={ROW_ICON}>
               <LogOut className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </span>
-            <span className="flex-1 text-sm font-medium text-ink">Se déconnecter</span>
-            <ChevronRight className="h-4 w-4 text-muted" strokeWidth={2} />
-          </button>
-        </SignOutButton>
+          }
+          after={<ChevronRight className="h-4 w-4 text-muted" strokeWidth={2} />}
+        />
         <details className="group">
           <summary className={`${ROW} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger-soft text-danger">

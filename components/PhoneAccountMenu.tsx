@@ -1,7 +1,7 @@
 "use client";
 
+import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import { useEffect, useRef, useState } from "react";
-import { SignOutButton } from "@clerk/nextjs";
 import { LogOut } from "lucide-react";
 import { initials } from "@/lib/format/initials";
 
@@ -52,14 +52,14 @@ export default function PhoneAccountMenu({ name, role }: { name: string | null; 
             <p className="truncate text-sm font-semibold text-ink">{name ?? role}</p>
             <p className="text-xs text-muted">{role}</p>
           </div>
-          <SignOutButton redirectUrl="/login">
-            <button type="button" className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-danger">
+          <SignOutOrExitDemo
+            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-danger"
+            before={
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-danger-soft">
                 <LogOut className="h-4 w-4" strokeWidth={1.75} />
               </span>
-              Se déconnecter
-            </button>
-          </SignOutButton>
+            }
+          />
         </div>
       )}
     </div>

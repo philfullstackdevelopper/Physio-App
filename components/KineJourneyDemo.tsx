@@ -163,7 +163,7 @@ function SidebarMock() {
       </div>
       <span className="mt-1.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-white/70">
         <LogOut className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-        Se déconnecter
+        Quitter la démo
       </span>
     </aside>
   );
