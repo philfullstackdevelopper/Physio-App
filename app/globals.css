@@ -250,6 +250,15 @@ body {
 .ei8l-6 { animation: ei8l-6 2.4s step-end infinite; }
 .ei8l-7 { animation: ei8l-7 2.4s step-end infinite; }
 .ei8l-8 { animation: ei8l-8 2.4s step-end infinite; }
+/* Enchaînements lents (EIGHT_FRAME_SLOW_SLUGS) : même aller-retour, deux fois moins vite. */
+.ei8s-1 { animation: ei8-1 7.2s step-end infinite; }
+.ei8s-2 { animation: ei8-2 7.2s step-end infinite; }
+.ei8s-3 { animation: ei8-3 7.2s step-end infinite; }
+.ei8s-4 { animation: ei8-4 7.2s step-end infinite; }
+.ei8s-5 { animation: ei8-5 7.2s step-end infinite; }
+.ei8s-6 { animation: ei8-6 7.2s step-end infinite; }
+.ei8s-7 { animation: ei8-7 7.2s step-end infinite; }
+.ei8s-8 { animation: ei8-8 7.2s step-end infinite; }
 
 
 /* Motion-sensitive users: entrance/pulse/cross-fade animations are decorative

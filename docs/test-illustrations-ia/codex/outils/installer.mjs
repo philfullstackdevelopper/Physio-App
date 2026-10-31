@@ -18,7 +18,7 @@ const LIST = path.join(ROOT, "lib/exercise/illustrationFrames.ts");
 const PREFERER_NOUVEAUX = new Set(["knee-to-wall", "codman-pendulum"]);
 
 function source(slug) {
-  const dirs = PREFERER_NOUVEAUX.has(slug) ? ["out-nouveaux", "out"] : ["out", "out-nouveaux"];
+  const dirs = PREFERER_NOUVEAUX.has(slug) ? ["out-nouveaux", "out"] : ["out", "out-nouveaux", "out-jules"];
   for (const d of dirs) {
     const p = path.join(HERE, "..", d, slug, "svg");
     if (fs.existsSync(path.join(p, "frame-8.svg"))) return p;

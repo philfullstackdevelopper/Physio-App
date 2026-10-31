@@ -10,6 +10,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { NOUVEAUX } from "./nouveaux.mjs";
+import { NOUVEAUX_JULES } from "./nouveaux-jules.mjs";
 import { REFAIRE } from "./refaire.mjs";
 import { CORRECTIONS as C1 } from "./corrections.mjs";
 import { CORRECTIONS2 } from "./corrections2.mjs";
@@ -50,8 +51,13 @@ async function one(e) {
     .png()
     .toFile(ref);
   const t0 = Date.now();
-  const run = spawnSync("codex", ["exec", "--skip-git-repo-check", "--ephemeral", "-i", ref, "-"], {
-    input: prompt(e),
+  // Photos du vrai mouvement (exercices filmés avec Jules) : poses de référence.
+  const photoArgs = (e.photos || []).flatMap((p) => ["-i", `"${p}"`]);
+  const photoNote = e.photos?.length
+    ? `\nImages 2 to ${e.photos.length + 1} are photos of the real movement, from start to end: copy the body positions exactly, but keep the drawing style of image 1 (blue line art, faceless man, shorts). Do not copy the room, the clothes or the person's face.`
+    : "";
+  const run = spawnSync("codex", ["exec", "--skip-git-repo-check", "--ephemeral", "-i", `"${ref}"`, ...photoArgs, "-"], {
+    input: prompt(e) + photoNote,
     encoding: "utf8",
     shell: true,
     maxBuffer: 1 << 26,
@@ -75,9 +81,11 @@ async function one(e) {
 const argv = process.argv.slice(2);
 const refaire = argv[0] === "--refaire";
 const corrections = argv[0] === "--corrections";
-const source = corrections ? CORRECTIONS : refaire ? REFAIRE : NOUVEAUX;
+const jules = argv[0] === "--jules";
+const source = jules ? NOUVEAUX_JULES : corrections ? CORRECTIONS : refaire ? REFAIRE : NOUVEAUX;
 if (refaire) OUT = path.join(HERE, "..", "out");
-const want = refaire || corrections ? argv.slice(1) : argv;
+if (jules) OUT = path.join(HERE, "..", "out-jules");
+const want = refaire || corrections || jules ? argv.slice(1) : argv;
 const list = want.length ? source.filter((e) => want.includes(e.slug)) : source;
 for (const e of list) {
   try {

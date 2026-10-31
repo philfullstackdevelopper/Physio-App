@@ -108,6 +108,22 @@ const SAUT = process.argv.includes("--saut");
 const DX = [-1, -1, -0.66, -0.22, 0.22, 0.66, 1, 1].map((v) => v * 0.2);
 const DY = [0, 0, -0.07, -0.1, -0.1, -0.07, 0, 0];
 const FILL = SAUT ? 0.52 : 0.76;
+// --ancre-bas : même idée, mais on recale sur le milieu de ce qui est le plus bas
+// (un step posé au centre, sous le personnage).
+const ANCRE_BAS = process.argv.includes("--ancre-bas");
+const ANCRE = ANCRE_BAS || process.argv.includes("--ancre-droite");
+const anchors = [];
+if (ANCRE) {
+  for (const c of cells) {
+    const { data, info } = await sharp(c.buf).greyscale().raw().toBuffer({ resolveWithObject: true });
+    const yMin = Math.round(c.y1 - (c.y1 - c.y0) * 0.03);
+    let ax = c.x0, minX = c.x1, maxX = c.x0;
+    for (let y = yMin; y <= c.y1; y++)
+      for (let x = c.x0; x <= c.x1; x++)
+        if (data[y * info.width + x] < 150) { if (x > ax) ax = x; if (x < minX) minX = x; if (x > maxX) maxX = x; }
+    anchors.push(ANCRE_BAS ? (minX + maxX) / 2 : ax);
+  }
+}
 const scale = (OUT * FILL) / Math.max(maxH, SAUT ? Math.max(...cells.map((c) => c.x1 - c.x0 + 1)) : unionW);
 const LEFT0 = (OUT - unionW * scale) / 2;
 const GROUND = Math.round(OUT * (0.5 + FILL / 2)); // ligne de sol commune
@@ -124,9 +140,12 @@ for (const [i, c] of cells.entries()) {
   const bw = c.x1 - c.x0 + 1, bh = c.y1 - c.y0 + 1;
   const sw = Math.max(1, Math.round(bw * scale)), sh = Math.max(1, Math.round(bh * scale));
   const fig = await sharp(c.buf).extract({ left: c.x0, top: c.y0, width: bw, height: bh }).resize(sw, sh).png().toBuffer();
+  // --ancre-droite : un objet posé au sol à droite (step, banc) doit rester fixe.
+  // On recale chaque dessin sur le bord droit de ce qui touche le sol.
+  const shift = ANCRE ? Math.round((anchors[0] - anchors[i]) * scale) : 0;
   const left = SAUT
     ? Math.round((OUT - sw) / 2 + DX[i] * OUT)
-    : Math.max(0, Math.min(OUT - sw, Math.round(LEFT0 + (c.x0 - ux0) * scale)));
+    : Math.max(0, Math.min(OUT - sw, Math.round(LEFT0 + (c.x0 - ux0) * scale) + shift));
   const top = HAUT ? TOP : Math.max(0, GROUND - sh + (SAUT ? Math.round(DY[i] * OUT) : 0));
   const placed = await sharp({ create: { width: OUT, height: OUT, channels: 3, background: "#fff" } })
     .composite([{ input: fig, left, top }])
@@ -147,8 +166,10 @@ for (const [i, c] of cells.entries()) {
 // 3. Aperçu animé : 1 → 8 puis retour 7 → 2 ; mouvements circulaires
 //    (--boucle) : 1 → 8 puis on recommence à 1, sans retour en arrière.
 const boucle = process.argv.includes("--boucle");
+// --lent : animation deux fois plus lente (enchaînements, Philippe 2026-10-31).
+const LENT = process.argv.includes("--lent");
 const seq = boucle ? previews : [...previews, ...previews.slice(1, 7).reverse()];
 await sharp(seq, { join: { animated: true } })
-  .gif({ delay: seq.map((_, k) => (!boucle && (k === 0 || k === 7) ? 400 : 130)), loop: 0 })
+  .gif({ delay: seq.map((_, k) => (LENT ? 2 : 1) * (!boucle && (k === 0 || k === 7) ? 400 : 130)), loop: 0 })
   .toFile(path.join(dir, "apercu.gif"));
 console.log("ok", dir);

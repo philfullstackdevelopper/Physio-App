@@ -17,7 +17,7 @@
 
 import { ImageOff } from "lucide-react";
 import { EXERCISE_ILLUSTRATION_MAP } from "@/lib/exercise/illustrationMap";
-import { EIGHT_FRAME_LOOP_SLUGS, EIGHT_FRAME_SLUGS } from "@/lib/exercise/illustrationFrames";
+import { EIGHT_FRAME_LOOP_SLUGS, EIGHT_FRAME_SLOW_SLUGS, EIGHT_FRAME_SLUGS } from "@/lib/exercise/illustrationFrames";
 
 /** Real 3-frame vendored illustration for exercises matched in EXERCISE_ILLUSTRATION_MAP.
  *  The cross-fade keyframes (.ei-frame-*) live once in app/globals.css rather
@@ -57,7 +57,7 @@ function VendoredIllustration({
   const eight = EIGHT_FRAME_SLUGS.has(slug);
   const frames = eight ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3];
   const file = eight ? "anim" : "frame";
-  const cls = eight ? (EIGHT_FRAME_LOOP_SLUGS.has(slug) ? "ei8l" : "ei8") : "ei-frame";
+  const cls = eight ? (EIGHT_FRAME_LOOP_SLUGS.has(slug) ? "ei8l" : EIGHT_FRAME_SLOW_SLUGS.has(slug) ? "ei8s" : "ei8") : "ei-frame";
   return (
     <div className={`relative ${className}`} role="img" aria-label={`Démonstration : ${name}`}>
       {frames.map((frame) => (

@@ -516,4 +516,18 @@ export const EXERCISE_ILLUSTRATION_MAP: Record<string, string> = {
   "Floor to Stand": "floor-to-stand",
   "Diaphragmatic Breathing": "diaphragmatic-breathing",
   "Pursed-Lip Breathing": "pursed-lip-breathing",
+  // Exercices filmés avec Jules (migration 0073, 2026-10-31) — animations 8 images.
+  "Kneeling Calf and Hip Flexor Wall Stretch": "kneeling-calf-hip-flexor-wall-stretch",
+  "Wall Lunge Hip Flexor Stretch": "wall-lunge-hip-flexor-stretch",
+  "Child's Pose to Press-Up Flow": "childs-pose-to-press-up",
+  "Seated Spinal Roll-Down": "seated-spinal-roll-down",
+  "Standing Bent-Leg Hamstring Stretch (Table)": "standing-bent-leg-hamstring-stretch-table",
+  "Standing Lateral Pelvic Shift": "standing-lateral-pelvic-shift",
+  "Prone T Arm Raise (Floor)": "prone-arm-raise-t",
+  "Prone Back Extension (Hands Behind Head)": "prone-back-extension-hands-head",
+  "Lateral Step-Over Hop": "step-straddle-jump",
+  "Step Drop Landing (Two Feet)": "step-drop-landing",
+  "Step Drop Landing (Single Leg)": "step-drop-single-leg-landing",
+  "Seated External Rotation (Elbow on Knee)": "seated-external-rotation-elbow-on-knee",
+  "Wall Tibialis Raise": "wall-tibialis-raise",
 };
