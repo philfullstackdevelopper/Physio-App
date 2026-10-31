@@ -8,7 +8,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Flame, CheckCircle2, Check, Play, Pause } from "lucide-react";
+import { Flame, CheckCircle2, Check, Play } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { goalTextFor, type Prescription } from "@/lib/exercise/prescription";
 import { fetchStreak } from "@/lib/exercise/streak";
@@ -26,68 +26,67 @@ export interface SessionExercise {
 
 type Phase = "exercise" | "celebrate" | "finished";
 
-/** A self-hosted demo clip: loops automatically so the movement is always
- *  visible, with one custom play/pause control (Physitrack-style) instead of
- *  the raw browser control bar. Autoplay requires the clip to start muted.
- *  Skips straight to `startSeconds` (past any intro) and loops that segment
- *  — native `loop` would replay from 0, so looping is handled by hand. */
+/** A self-hosted demo clip of the kiné doing the exercise (Philippe,
+ *  2026-10-01): the box first shows the exercise drawing with a big play
+ *  button in the middle; the patient taps it and the clip plays — WITHOUT sound
+ *  for now (Philippe, 2026-10-31), no autoplay, no endless loop. Tapping the video pauses it;
+ *  at the end the play button comes back to watch again. Clips are filmed
+ *  upright on a phone, so they're shown whole (object-contain) on black.
+ *  `startSeconds` skips any intro. */
 function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string; startSeconds?: number }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [playing, setPlaying] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [playing, setPlaying] = useState(false);
   // A clip that fails to load (mislink, deleted file) must degrade to the
   // illustration rather than sit as a black unplayable player.
   const [failed, setFailed] = useState(false);
-
-  const seekToStart = () => {
-    const v = videoRef.current;
-    if (v && startSeconds > 0) v.currentTime = startSeconds;
-  };
-
-  const toggle = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    if (v.paused) {
-      v.play();
-      setPlaying(true);
-    } else {
-      v.pause();
-      setPlaying(false);
-    }
-  };
 
   if (failed) {
     return <IllustrationDemo name={name} />;
   }
 
+  const play = () => {
+    setStarted(true);
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.ended || v.currentTime < startSeconds) v.currentTime = startSeconds;
+    v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+  };
+  const pause = () => {
+    videoRef.current?.pause();
+    setPlaying(false);
+  };
+
   return (
-    <div className="relative">
+    <div className="relative aspect-video w-full overflow-hidden rounded-xl short:aspect-auto short:h-36">
       <video
         ref={videoRef}
-        autoPlay
-        muted
         playsInline
+        muted
+        preload="metadata"
         onError={() => setFailed(true)}
-        onLoadedMetadata={seekToStart}
-        onEnded={(e) => {
-          const v = e.currentTarget;
-          v.currentTime = startSeconds;
-          v.play();
-        }}
-        className="aspect-video w-full rounded-xl bg-black object-cover short:aspect-auto short:h-36 short:object-contain"
-        src={url}
+        onClick={pause}
+        onEnded={() => setPlaying(false)}
+        className={`absolute inset-0 h-full w-full bg-black object-contain ${started ? "" : "invisible"}`}
+        src={startSeconds > 0 ? `${url}#t=${startSeconds}` : url}
       />
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label={playing ? "Mettre en pause" : "Lire la vidéo"}
-        className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white shadow-sm transition hover:bg-black/75"
-      >
-        {playing ? (
-          <Pause className="h-4 w-4" strokeWidth={2} fill="currentColor" />
-        ) : (
-          <Play className="ml-0.5 h-4 w-4" strokeWidth={2} fill="currentColor" />
-        )}
-      </button>
+      {!started && (
+        <div className="absolute inset-0 flex items-center justify-center border border-slate-200 bg-slate-50">
+          <ExerciseIllustration name={name} className="h-40 w-56 text-blue-600 short:h-32" />
+        </div>
+      )}
+      {!playing && (
+        <button
+          type="button"
+          onClick={play}
+          aria-label={started ? "Reprendre la vidéo" : `Voir la vidéo : ${name}`}
+          className="absolute inset-0 flex items-center justify-center bg-black/10 transition hover:bg-black/20"
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg">
+            <Play className="ml-1 h-7 w-7" strokeWidth={2} fill="currentColor" />
+          </span>
+        </button>
+      )}
     </div>
   );
 }
