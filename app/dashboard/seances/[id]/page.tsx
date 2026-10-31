@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { isPickableExercise } from "@/lib/exercise/filmedExercises";
 import { createClient } from "@/lib/supabase/server";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import EditSeanceModal from "@/components/EditSeanceModal";
@@ -36,7 +37,7 @@ export default async function SeanceEditorPage({
   const { data: bodyParts } = await supabase.from("body_parts").select("id, slug, label, position").order("position");
   const { data: exercises } = await supabase
     .from("exercises")
-    .select("id, name, instructions, equipment, search_keywords, exercise_body_parts(body_part_id)")
+    .select("id, name, created_by, instructions, equipment, search_keywords, exercise_body_parts(body_part_id)")
     .order("name");
 
   const { data: current } = await supabase
@@ -57,7 +58,7 @@ export default async function SeanceEditorPage({
     .eq("instructor_id", user.id);
   const hiddenIds = new Set((hiddenRows ?? []).map((r) => r.exercise_id as string));
   const pickerExercises = (exercises ?? [])
-    .filter((ex) => !hiddenIds.has(ex.id) || selected.has(ex.id))
+    .filter((ex) => (!hiddenIds.has(ex.id) && isPickableExercise(ex)) || selected.has(ex.id))
     .map((ex) => ({
       id: ex.id,
       name: ex.name,

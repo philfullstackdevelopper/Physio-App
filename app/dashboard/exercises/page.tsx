@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { isPickableExercise } from "@/lib/exercise/filmedExercises";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
 import ExerciseLibraryGrid, { type LibraryExercise } from "@/components/ExerciseLibraryGrid";
@@ -35,7 +36,7 @@ export default async function ExercisesPage({
     .eq("instructor_id", user.id);
   const hiddenIds = new Set((hiddenRows ?? []).map((r) => r.exercise_id as string));
 
-  const libraryExercises: LibraryExercise[] = (allExercises ?? []).map((ex) => ({
+  const libraryExercises: LibraryExercise[] = (allExercises ?? []).filter(isPickableExercise).map((ex) => ({
     id: ex.id,
     name: ex.name,
     instructions: ex.instructions,

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isPickableExercise, isPickableSeance } from "@/lib/exercise/filmedExercises";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import SeancesTabs from "@/components/SeancesTabs";
 import { type BodyPart } from "@/lib/exercise/category";
@@ -57,12 +58,12 @@ export default async function SeancesPage({
   // l'éditeur de séance), sans les exercices que ce kiné a masqués.
   const [{ data: bodyParts }, { data: exerciseRows }, { data: hiddenExerciseRows }] = await Promise.all([
     supabase.from("body_parts").select("id, slug, label, position").order("position"),
-    supabase.from("exercises").select("id, name, equipment, search_keywords, exercise_body_parts(body_part_id)").order("name"),
+    supabase.from("exercises").select("id, name, created_by, equipment, search_keywords, exercise_body_parts(body_part_id)").order("name"),
     supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
   ]);
   const hiddenExerciseIds = new Set((hiddenExerciseRows ?? []).map((r) => r.exercise_id as string));
   const pickerExercises = (exerciseRows ?? [])
-    .filter((ex) => !hiddenExerciseIds.has(ex.id as string))
+    .filter((ex) => !hiddenExerciseIds.has(ex.id as string) && isPickableExercise(ex))
     .map((ex) => ({
       id: ex.id as string,
       name: ex.name as string,
@@ -142,7 +143,7 @@ export default async function SeancesPage({
     .select("id, name, stage, condition_id, workout_exercises(position, exercise:exercises(id, name))")
     .is("created_by", null)
     .order("name");
-  const rawTemplates = (templatesData ?? []) as unknown as OwnSeance[];
+  const rawTemplates = ((templatesData ?? []) as unknown as OwnSeance[]).filter((t) => isPickableSeance(t));
 
   // Templates this instructor has personally hidden from their own list —
   // a filter on the shared library, never a deletion (migration 0046).

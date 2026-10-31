@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { isPickableExercise, isPickableSeance } from "@/lib/exercise/filmedExercises";
 import { createClient } from "@/lib/supabase/server";
 import { resolveWorkoutForWeek } from "@/lib/exercise/activeRecommendation";
 import { buildWeeks, currentWeekNumber, localDateKey, thisWeekStartDateKey } from "@/lib/patient/weeks";
@@ -75,7 +76,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     supabase.from("workouts").select(WORKOUT_FIELDS).eq("created_by", user.id),
     supabase.from("workouts").select(WORKOUT_FIELDS).is("created_by", null),
     supabase.from("patient_recommended_workouts").select("id, week_start_date, week_count, workout_id, created_at").eq("patient_id", id).order("week_start_date", { ascending: false }),
-    supabase.from("exercises").select("id, name, equipment, exercise_body_parts(body_part_id)").order("name"),
+    supabase.from("exercises").select("id, name, created_by, equipment, exercise_body_parts(body_part_id)").order("name"),
     supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
     supabase.from("body_parts").select("id, slug, label, position").order("position"),
     supabase.from("patient_messages").select("id", { count: "exact", head: true }).eq("patient_id", id).eq("sender", "patient").is("read_by_instructor_at", null),
@@ -173,7 +174,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const hiddenIds = new Set((hiddenRows ?? []).map((r) => r.exercise_id as string));
   const inActive = new Set(activeExercises.map((e) => e.id));
   const addableExercises = (allExercises ?? [])
-    .filter((e) => !hiddenIds.has(e.id) && !inActive.has(e.id))
+    .filter((e) => !hiddenIds.has(e.id) && !inActive.has(e.id) && isPickableExercise(e))
     .map((e) => ({
       id: e.id as string,
       name: e.name as string,
@@ -191,6 +192,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const stageOrder = new Map(Object.keys(STAGE_LABELS).map((s, i) => [s, i]));
   const patientConditionName = conditionName(patient.condition_id) ?? null;
   const addableWorkouts: AddableWorkout[] = pool
+    .filter((w) => isPickableSeance(w))
     .sort((a, b) => {
       const ca = conditionName(a.condition_id) ?? "";
       const cb = conditionName(b.condition_id) ?? "";

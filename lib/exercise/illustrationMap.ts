@@ -530,4 +530,7 @@ export const EXERCISE_ILLUSTRATION_MAP: Record<string, string> = {
   "Step Drop Landing (Single Leg)": "step-drop-single-leg-landing",
   "Seated External Rotation (Elbow on Knee)": "seated-external-rotation-elbow-on-knee",
   "Wall Tibialis Raise": "wall-tibialis-raise",
+  // Exercices filmés avec Jules (migration 0074, 2026-10-31) — animations 8 images.
+  "Lunge to Step-Up with Knee Drive": "reverse-lunge-to-step-up",
+  "Rotational Step-Up": "rotational-step-up",
 };

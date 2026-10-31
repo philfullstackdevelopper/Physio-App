@@ -25,3 +25,9 @@ export const PATIENT_INVITATIONS_OPEN = false;
 
 /** Où mènent les boutons d'inscription tant que SIGNUPS_OPEN est faux. */
 export const WAITLIST_HREF = "/#liste-attente";
+
+// Bibliothèque d'exercices réduite aux exercices filmés (Philippe, 2026-10-31,
+// « pour le moment ») : liste dans lib/exercise/filmedExercises.ts. Les autres
+// exercices de la plateforme sont cachés aux kinés, pas supprimés. Passer à
+// false pour tout réafficher.
+export const ONLY_FILMED_EXERCISES = true;
