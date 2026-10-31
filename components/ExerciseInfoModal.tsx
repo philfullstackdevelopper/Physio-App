@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
+import { signExerciseVideo } from "@/lib/storage/video-actions";
 
 // Fenêtre « démo d'un exercice » ouverte par le petit (i) des listes
 // d'exercices du kiné (Philippe, 2026-10-10) : avant d'ajouter un exercice à
@@ -37,12 +38,16 @@ export default function ExerciseInfoModal({
       .select("instructions, media_url, media_start_seconds")
       .eq("id", exercise.id)
       .maybeSingle()
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (cancelled) return;
         if (error || !data) return setDetails(null);
+        // Vidéo chez Cloudflare R2 (« r2:… ») : le serveur fournit un lien signé.
+        const raw = (data.media_url as string | null) ?? null;
+        const mediaUrl = raw?.startsWith("r2:") ? await signExerciseVideo(raw).catch(() => null) : raw;
+        if (cancelled) return;
         setDetails({
           instructions: (data.instructions as string | null) ?? null,
-          mediaUrl: (data.media_url as string | null) ?? null,
+          mediaUrl,
           startSeconds: (data.media_start_seconds as number | null) ?? 0,
         });
       });

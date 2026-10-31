@@ -11,10 +11,12 @@ export function getYoutubeEmbedId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+// The extension is read before any "?…" / "#…" — signed links to the R2 video
+// bucket (lib/storage/r2-videos.ts) end with a long query string.
 export function isVideoFileUrl(url: string): boolean {
-  return /\.(mp4|webm|mov|m4v|ogg)$/i.test(url);
+  return /\.(mp4|webm|mov|m4v|ogg)$/i.test(url.split(/[?#]/)[0]);
 }
 
 export function isImageFileUrl(url: string): boolean {
-  return /\.(png|jpe?g|gif|webp)$/i.test(url);
+  return /\.(png|jpe?g|gif|webp)$/i.test(url.split(/[?#]/)[0]);
 }

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { recommendPrescription } from "@/lib/exercise/prescription";
@@ -82,14 +83,17 @@ export default async function SeancePage({
     workout_exercises: WorkoutExerciseRow[];
   };
 
-  const exercises: SessionExercise[] = [...(workout.workout_exercises ?? [])]
-    .sort((a, b) => a.position - b.position)
-    .map((we) => ({
-      name: we.exercises?.name ?? "Exercice",
-      instructions: we.exercises?.instructions ?? null,
-      mediaUrl: we.exercises?.media_url ?? null,
-      mediaStartSeconds: we.exercises?.media_start_seconds ?? 0,
-    }));
+  const exercises: SessionExercise[] = await Promise.all(
+    [...(workout.workout_exercises ?? [])]
+      .sort((a, b) => a.position - b.position)
+      .map(async (we) => ({
+        name: we.exercises?.name ?? "Exercice",
+        instructions: we.exercises?.instructions ?? null,
+        // Vidéo chez Cloudflare R2 : lien signé fabriqué ici, côté serveur.
+        mediaUrl: await resolveMediaUrl(we.exercises?.media_url ?? null),
+        mediaStartSeconds: we.exercises?.media_start_seconds ?? 0,
+      })),
+  );
 
   const prescription = recommendPrescription(profileToContext(profile!));
 

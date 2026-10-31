@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import { isPickableExercise } from "@/lib/exercise/filmedExercises";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
@@ -36,17 +37,17 @@ export default async function ExercisesPage({
     .eq("instructor_id", user.id);
   const hiddenIds = new Set((hiddenRows ?? []).map((r) => r.exercise_id as string));
 
-  const libraryExercises: LibraryExercise[] = (allExercises ?? []).filter(isPickableExercise).map((ex) => ({
+  const libraryExercises: LibraryExercise[] = await Promise.all((allExercises ?? []).filter(isPickableExercise).map(async (ex) => ({
     id: ex.id,
     name: ex.name,
     instructions: ex.instructions,
-    media_url: ex.media_url,
+    media_url: await resolveMediaUrl(ex.media_url),
     media_start_seconds: ex.media_start_seconds,
     created_by: ex.created_by,
     search_keywords: ex.search_keywords ?? [],
     bodyPartIds: (ex.exercise_body_parts ?? []).map((t) => t.body_part_id),
     hidden: hiddenIds.has(ex.id),
-  }));
+  })));
 
   return (
     // Une page = un écran : seule la grille d'exercices défile (audit 2026-10-10).
