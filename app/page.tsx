@@ -86,8 +86,10 @@ export default function Home() {
             (Philippe, 2026-10-04 : « quand on tourne le téléphone, tout bugge »). */}
         <section className="flex flex-col gap-4 pb-4 pt-20 max-sm:order-[-4] sm:min-h-dvh lg:grid lg:grid-cols-[minmax(0,41rem)_18rem] lg:items-center lg:justify-center lg:gap-16 lg:pb-6 lg:pt-24 lg:short:pt-20 phone-land:grid phone-land:h-dvh phone-land:min-h-0 phone-land:grid-cols-[minmax(0,1fr)_10rem] phone-land:items-center phone-land:gap-6 phone-land:pb-2 phone-land:pt-16">
           <div className="relative">
-            {/* Note manuscrite vers le téléphone de démo — grand écran seulement. */}
-            <HandNote className="absolute -right-6 bottom-0 -rotate-3 animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:900ms] max-lg:hidden">
+            {/* Note manuscrite vers le téléphone de démo — grand écran seulement.
+                Sous les boutons (top-full) : depuis le retrait des 3 puces
+                (2026-10-31), bottom-0 la posait sur « J'ai déjà un programme ». */}
+            <HandNote className="absolute -right-6 top-full mt-4 -rotate-3 animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:900ms] max-lg:hidden">
               ce que voit votre patient
             </HandNote>
             <h1 className="font-display animate-[fadeInUp_0.6s_ease-out_both] text-3xl font-semibold leading-[1.1] tracking-tight text-slate-900 sm:text-[2.6rem] lg:text-[2.75rem] lg:short:text-[2.3rem] phone-land:text-[1.6rem]">
