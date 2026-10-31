@@ -1,62 +1,49 @@
-import ExerciseIllustration from "@/components/ExerciseIllustration";
+import LoopVideo from "@/components/LoopVideo";
 
-// Vitrine d'exercices de la landing (Philippe, 2026-10-10) : montrer de vrais
-// exercices de la bibliothèque, avec leur dessin animé ET leur nom — ce que
-// le patient verra chez lui. Remplace le bloc « preuves » essayé le même jour.
-//
-// À TERME : chaque case montrera l'EXÉCUTION filmée de l'exercice (vidéos à
-// tourner avec le kiné, voir CLAUDE.md §8). Le jour où une vidéo existe pour
-// un exercice, renseigner `video` ci-dessous : la case l'affichera à la place
-// du dessin. Tant qu'il n'y en a pas, on ne promet rien de plus que
-// « les vidéos arrivent » dans le sous-titre de la section.
+// Vitrine d'exercices de la landing. D'abord les dessins animés (Philippe,
+// 2026-10-10) ; depuis le 2026-10-31, les EXÉCUTIONS FILMÉES par Jules
+// (Philippe : « show the actual videos filmed », 3 par ligne, plus grandes).
+// Extraits courts tirés des vidéos de videos-tournage/web/ (exercices filmés
+// à l'horizontale, donc bien cadrés dans une case large) et rangés dans
+// public/videos-demo/ — ils partent avec le code, sans stockage externe.
 type ShowcaseExercise = {
-  /** Clé de lib/exercise/illustrationMap.ts (nom anglais de la bibliothèque). */
-  drawing: string;
-  /** Nom affiché au patient. */
+  /** Nom du fichier dans public/videos-demo/ (sans extension). */
+  clip: string;
+  /** Nom affiché. */
   name: string;
   /** Zone travaillée. */
   zone: string;
-  /** URL de la vidéo d'exécution, quand elle existera. */
-  video?: string;
+  /** Cadrage quand la case coupe le haut et le bas (par défaut : centré). */
+  focus?: string;
 };
 
 const EXERCISES: ShowcaseExercise[] = [
-  { drawing: "Glute Bridge", name: "Pont fessier", zone: "Lombaires" },
-  { drawing: "Shoulder Circles", name: "Cercles d'épaules", zone: "Épaule" },
-  { drawing: "Assisted Partial Squat", name: "Squat assisté", zone: "Genou" },
-  { drawing: "Lying Torso Rotation", name: "Rotation du tronc", zone: "Dos" },
-  { drawing: "Slow Bilateral Calf Raise", name: "Montées sur pointes", zone: "Cheville" },
-  { drawing: "Progressive Clamshell", name: "Coquillage", zone: "Hanche" },
-  { drawing: "Postural Core Bracing", name: "Gainage postural", zone: "Tronc" },
-  { drawing: "Gentle Supine Hamstring Stretch", name: "Étirement ischio-jambiers", zone: "Cuisse" },
+  { clip: "glute-bridge", name: "Pont fessier", zone: "Lombaires" },
+  { clip: "banded-clamshell", name: "Coquillage avec élastique", zone: "Hanche" },
+  { clip: "straight-leg-raise", name: "Élévation jambe tendue", zone: "Genou" },
+  { clip: "bird-dog", name: "Bird dog", zone: "Dos" },
+  { clip: "dead-bug", name: "Dead bug", zone: "Tronc", focus: "object-top" },
+  { clip: "cat-cow-stretch", name: "Chat-vache", zone: "Colonne" },
 ];
 
 export default function ExerciseShowcase() {
   return (
-    // Téléphone : 4 grands dessins en 2 × 2 (Philippe, 2026-10-26 : le bloc
-    // ouvre la page sur téléphone, les dessins doivent se voir en grand).
-    // Dès sm : 4 × 2, inchangé.
-    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+    // Téléphone : 4 vidéos en 2 × 2. Dès sm : 3 par ligne, sur 2 lignes.
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
       {EXERCISES.map((ex, i) => (
         <li
-          key={ex.drawing}
+          key={ex.clip}
           className={`rounded-2xl border border-slate-200 bg-white p-2 sm:p-3 ${i >= 4 ? "max-sm:hidden" : ""}`}
         >
-          {ex.video ? (
-            <video
-              src={ex.video}
-              muted
-              loop
-              playsInline
-              autoPlay
-              className="h-32 w-full rounded-xl bg-[#f6f8fd] object-cover sm:h-24"
-            />
-          ) : (
-            <ExerciseIllustration name={ex.drawing} animate className="h-32 w-full rounded-xl bg-[#f6f8fd] text-blue-600 sm:h-24" />
-          )}
+          <LoopVideo
+            src={`/videos-demo/${ex.clip}.mp4`}
+            poster={`/videos-demo/${ex.clip}.jpg`}
+            label={`Démonstration filmée : ${ex.name}`}
+            className={`aspect-video w-full rounded-xl bg-slate-100 object-cover sm:aspect-[2/1] sm:short:aspect-[7/3] ${ex.focus ?? ""}`}
+          />
           <div className="mt-2 flex items-baseline justify-between gap-2 max-sm:block max-sm:text-center">
-            <p className="text-sm font-semibold text-slate-900 max-sm:text-sm max-sm:leading-tight sm:truncate">{ex.name}</p>
-            <p className="shrink-0 text-[11px] font-medium text-slate-400 max-sm:mt-0.5 max-sm:text-[11px]">{ex.zone}</p>
+            <p className="text-sm font-semibold text-slate-900 max-sm:leading-tight sm:truncate">{ex.name}</p>
+            <p className="shrink-0 text-[11px] font-medium text-slate-400 max-sm:mt-0.5">{ex.zone}</p>
           </div>
         </li>
       ))}

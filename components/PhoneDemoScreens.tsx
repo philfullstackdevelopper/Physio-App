@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, CalendarDays, Check, Home, MessageCircle, Settings, TrendingUp, Play, CheckCircle2 } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
-import ExerciseIllustration from "@/components/ExerciseIllustration";
+import LoopVideo from "@/components/LoopVideo";
 import MountainScene from "@/components/MountainScene";
 import WavingHand from "@/components/WavingHand";
 
@@ -225,11 +225,12 @@ export function HomeScreen({ tap }: { tap: boolean }) {
   );
 }
 
+// Exécutions filmées par Jules (2026-10-31), extraits dans public/videos-demo/.
 const PROGRAMME = [
-  { name: "Glute Bridge", label: "Pont fessier" },
-  { name: "Postural Core Bracing", label: "Gainage postural" },
-  { name: "Lying Torso Rotation", label: "Rotation du tronc" },
-  { name: "Quadruped Scapular Stability", label: "Quadrupédie" },
+  { clip: "tel-glute-bridge", label: "Pont fessier" },
+  { clip: "tel-plank", label: "Gainage" },
+  { clip: "tel-cat-cow-stretch", label: "Chat-vache" },
+  { clip: "tel-bird-dog", label: "Bird dog" },
 ];
 
 export function ProgrammeScreen({ tap }: { tap: boolean }) {
@@ -265,8 +266,13 @@ export function ProgrammeScreen({ tap }: { tap: boolean }) {
           </p>
           <div className="mt-1.5 grid grid-cols-2 gap-1.5">
             {PROGRAMME.map((ex) => (
-              <div key={ex.name} className="flex flex-col items-center gap-1 rounded-lg bg-[#f5f7fb] p-1.5">
-                <ExerciseIllustration name={ex.name} animate className="h-14 w-full rounded-md bg-white text-blue-600" />
+              <div key={ex.clip} className="flex flex-col items-center gap-1 rounded-lg bg-[#f5f7fb] p-1.5">
+                <LoopVideo
+                  src={`/videos-demo/${ex.clip}.mp4`}
+                  poster={`/videos-demo/${ex.clip}.jpg`}
+                  label={ex.label}
+                  className="h-14 w-full rounded-md bg-slate-100 object-cover"
+                />
                 <span className="text-[8px] font-medium text-slate-700">{ex.label}</span>
               </div>
             ))}
@@ -282,6 +288,30 @@ export function ProgrammeScreen({ tap }: { tap: boolean }) {
         </div>
       </div>
     </>
+  );
+}
+
+function SessionVideo({ playing }: { playing: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    if (playing) {
+      v.currentTime = 0;
+      v.play().catch(() => {});
+    } else v.pause();
+  }, [playing]);
+  return (
+    <video
+      ref={ref}
+      src="/videos-demo/tel-glute-bridge.mp4"
+      poster="/videos-demo/tel-glute-bridge.jpg"
+      muted
+      playsInline
+      preload="none"
+      aria-label="Démonstration filmée : pont fessier"
+      className="h-full w-full object-cover"
+    />
   );
 }
 
@@ -308,8 +338,9 @@ export function SessionScreen({ tap, playing }: { tap: boolean; playing: boolean
         <p className="font-display mt-0.5 text-[15px] font-semibold text-slate-900">Pont fessier</p>
         {/* La vidéo de démonstration, dans la case de l'illustration : bouton
             lecture centré, puis lecture avec sa barre de progression. */}
-        <div className="relative mt-2 flex h-[128px] items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white">
-          <ExerciseIllustration key={playing ? "on" : "off"} name="Glute Bridge" animate={playing} className="h-[112px] w-[150px] text-blue-600" />
+        <div className="relative mt-2 flex h-[128px] items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-slate-100">
+          {/* Démonstration filmée par Jules : image fixe, puis la vidéo joue. */}
+          <SessionVideo playing={playing} />
           {!playing && (
             <span
               className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-600 shadow-lg shadow-blue-600/30 transition-transform duration-150"
