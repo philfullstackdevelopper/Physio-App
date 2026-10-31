@@ -4,7 +4,9 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, CalendarDays, Check, Home, MessageCircle, Settings, TrendingUp, Play, CheckCircle2 } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
-import LoopVideo from "@/components/LoopVideo";
+import ExerciseIllustration from "@/components/ExerciseIllustration";
+import { EXERCISE_ILLUSTRATION_MAP } from "@/lib/exercise/illustrationMap";
+import { EIGHT_FRAME_SLUGS } from "@/lib/exercise/illustrationFrames";
 import MountainScene from "@/components/MountainScene";
 import WavingHand from "@/components/WavingHand";
 
@@ -39,7 +41,7 @@ export const STEPS: Step[] = [
   // et on s'arrête là »).
   { screen: 2, duration: 1100, title: "Un exercice à la fois, en vidéo." },
   { screen: 2, duration: 600, title: "Un exercice à la fois, en vidéo.", tap: true },
-  { screen: 2, duration: 3800, title: "Un exercice à la fois, en vidéo.", playing: true },
+  { screen: 2, duration: 6000, title: "Un exercice à la fois, en vidéo.", playing: true },
 ];
 
 // Respect prefers-reduced-motion: freeze on the first frame instead of
@@ -121,6 +123,17 @@ function Tap({ on }: { on: boolean }) {
 // (PhoneMockup / PhoneShowcase), below the status bar.
 export function PhoneDemoBody({ step, reducedMotion }: { step: Step; stepIndex?: number; reducedMotion: boolean }) {
   const tap = !!step.tap && !reducedMotion;
+  // Charge à l'avance les dessins de « Mon programme » : sinon ils ne
+  // commencent à charger qu'à l'apparition de l'écran et les cases restent
+  // blanches un instant (vu par Philippe, 2026-10-31).
+  useEffect(() => {
+    for (const { name } of PROGRAMME) {
+      const slug = EXERCISE_ILLUSTRATION_MAP[name];
+      if (!slug) continue;
+      const files = EIGHT_FRAME_SLUGS.has(slug) ? [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `anim-${n}`) : ["frame-1", "frame-2", "frame-3"];
+      for (const file of files) new Image().src = `/exercise-illustrations/${slug}/${file}.svg`;
+    }
+  }, []);
   return (
     <div className="relative h-[calc(540px-32px)]">
       <AnimatePresence mode="wait">
@@ -171,7 +184,7 @@ export function HomeScreen({ tap }: { tap: boolean }) {
           <MountainScene variant="goal" progress={1 / 3} className="pointer-events-none absolute -bottom-0.5 left-0 h-12 w-[4.5rem] text-white/90" />
           <div className="relative pl-14">
             <p className="text-[7.5px] font-semibold uppercase tracking-wide text-white/75">Semaine 5</p>
-            <p className="mt-0.5 text-[10.5px] font-semibold leading-tight text-white">Renforcement lombaire, niveau 2</p>
+            <p className="mt-0.5 text-[10.5px] font-semibold leading-tight text-white">Renforcement global, niveau 2</p>
             <p className="mt-0.5 text-[8px] text-white/85">2 séances à réaliser · 20 minutes environ</p>
             <div className="mt-1.5 flex items-center gap-1.5">
               <div className="flex flex-1 gap-1">
@@ -225,12 +238,14 @@ export function HomeScreen({ tap }: { tap: boolean }) {
   );
 }
 
-// Exécutions filmées par Jules (2026-10-31), extraits dans public/videos-demo/.
+// Les dessins bleus (Philippe, 2026-10-31 : garder les illustrations ici, la
+// vidéo de Jules se voit en grand sur l'écran suivant). Le 1er exercice est
+// celui de l'écran de séance.
 const PROGRAMME = [
-  { clip: "tel-glute-bridge", label: "Pont fessier" },
-  { clip: "tel-plank", label: "Gainage" },
-  { clip: "tel-cat-cow-stretch", label: "Chat-vache" },
-  { clip: "tel-bird-dog", label: "Bird dog" },
+  { name: "Single-Leg Calf Raise", label: "Montée sur pointe" },
+  { name: "Glute Bridge", label: "Pont fessier" },
+  { name: "Postural Core Bracing", label: "Gainage postural" },
+  { name: "Quadruped Scapular Stability", label: "Quadrupédie" },
 ];
 
 export function ProgrammeScreen({ tap }: { tap: boolean }) {
@@ -256,7 +271,7 @@ export function ProgrammeScreen({ tap }: { tap: boolean }) {
               <span className="inline-flex rounded-full bg-blue-600/15 px-1.5 py-px text-[6.5px] font-semibold uppercase tracking-wide text-blue-600">
                 Séance en cours
               </span>
-              <p className="mt-0.5 truncate text-[10.5px] font-semibold leading-tight text-slate-900">Renforcement lombaire, niv. 2</p>
+              <p className="mt-0.5 truncate text-[10.5px] font-semibold leading-tight text-slate-900">Renforcement global, niv. 2</p>
               <p className="text-[8px] text-slate-500">1 / 3 cette semaine · 20 min</p>
             </div>
           </div>
@@ -266,13 +281,8 @@ export function ProgrammeScreen({ tap }: { tap: boolean }) {
           </p>
           <div className="mt-1.5 grid grid-cols-2 gap-1.5">
             {PROGRAMME.map((ex) => (
-              <div key={ex.clip} className="flex flex-col items-center gap-1 rounded-lg bg-[#f5f7fb] p-1.5">
-                <LoopVideo
-                  src={`/videos-demo/${ex.clip}.mp4`}
-                  poster={`/videos-demo/${ex.clip}.jpg`}
-                  label={ex.label}
-                  className="h-14 w-full rounded-md bg-slate-100 object-cover"
-                />
+              <div key={ex.name} className="flex flex-col items-center gap-1 rounded-lg bg-[#f5f7fb] p-1.5">
+                <ExerciseIllustration name={ex.name} animate className="h-14 w-full rounded-md bg-white text-blue-600" />
                 <span className="text-[8px] font-medium text-slate-700">{ex.label}</span>
               </div>
             ))}
@@ -296,7 +306,8 @@ function SessionVideo({ playing }: { playing: boolean }) {
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
-    if (playing) {
+    // « Réduire les animations » : on garde l'image fixe.
+    if (playing && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       v.currentTime = 0;
       v.play().catch(() => {});
     } else v.pause();
@@ -304,12 +315,12 @@ function SessionVideo({ playing }: { playing: boolean }) {
   return (
     <video
       ref={ref}
-      src="/videos-demo/tel-glute-bridge.mp4"
-      poster="/videos-demo/tel-glute-bridge.jpg"
+      src="/videos-demo/tel-mollet.mp4"
+      poster="/videos-demo/tel-mollet.jpg"
       muted
       playsInline
       preload="none"
-      aria-label="Démonstration filmée : pont fessier"
+      aria-label="Démonstration filmée : montée sur pointe"
       className="h-full w-full object-cover"
     />
   );
@@ -335,11 +346,11 @@ export function SessionScreen({ tap, playing }: { tap: boolean; playing: boolean
       <SessionHeader />
       <div className={`${CARD} mx-3.5 mt-3 p-3`}>
         <p className="text-[7.5px] font-medium uppercase tracking-wide text-blue-600">Exercice 1</p>
-        <p className="font-display mt-0.5 text-[15px] font-semibold text-slate-900">Pont fessier</p>
-        {/* La vidéo de démonstration, dans la case de l'illustration : bouton
-            lecture centré, puis lecture avec sa barre de progression. */}
-        <div className="relative mt-2 flex h-[128px] items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-slate-100">
-          {/* Démonstration filmée par Jules : image fixe, puis la vidéo joue. */}
+        <p className="font-display mt-0.5 text-[15px] font-semibold text-slate-900">Montée sur pointe</p>
+        {/* La vidéo de démonstration de Jules, en grand (Philippe, 2026-10-31) :
+            exercice filmé à la verticale devant un mur nu (la vidéo la plus
+            épurée du tournage), donc il remplit une case haute sans être recadré. Bouton lecture centré, puis lecture avec sa barre. */}
+        <div className="relative mt-2 flex h-[270px] items-center justify-center overflow-hidden rounded-xl bg-slate-100">
           <SessionVideo playing={playing} />
           {!playing && (
             <span
@@ -356,15 +367,15 @@ export function SessionScreen({ tap, playing }: { tap: boolean; playing: boolean
                 className="block h-full rounded-full bg-blue-600"
                 initial={{ width: "0%" }}
                 animate={{ width: "100%" }}
-                transition={{ duration: 3.8, ease: "linear" }}
+                transition={{ duration: 6, ease: "linear" }}
               />
             </span>
           )}
         </div>
         <p className="mt-2.5 text-[8.5px] leading-relaxed text-slate-600">
-          Allongé sur le dos, genoux fléchis : montez le bassin en serrant les fessiers, tenez 3 secondes, puis redescendez doucement.
+          Debout sur une jambe, mains sur les hanches : montez sur la pointe du pied, puis redescendez lentement.
         </p>
-        <p className="mt-2 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[8px] font-medium text-blue-700">3 séries · 10 répétitions</p>
+        <p className="mt-2 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[8px] font-medium text-blue-700">3 séries · 12 répétitions</p>
         <span className="mt-3 flex items-center justify-center gap-1 rounded-lg bg-blue-600 py-2.5 text-[10.5px] font-semibold text-white">
           <Check className="h-3.5 w-3.5" strokeWidth={2} /> J&apos;ai terminé cet exercice
         </span>

@@ -1,10 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  BadgeCheck,
-  ListChecks,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import FaqSection from "@/components/FaqSection";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -27,12 +22,8 @@ import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 // trop « IA ») : des phrases qu'un kiné dirait, des faits vérifiables, plus de
 // formules lisses. « Gratuit pour les patients » a été retiré : c'était faux
 // (le patient paie son suivi mensuel à son kiné, ou l'appli seule à
-// EasyPhysio, voir #tarifs).
-const HERO_CHIPS = [
-  { icon: BadgeCheck, label: "Kinés vérifiés dans l'Annuaire Santé (RPPS)" },
-  { icon: ListChecks, label: "Guidé pas à pas, sans caméra ni capteur" },
-  { icon: ShieldCheck, label: "C'est vous qui composez le programme" },
-];
+// EasyPhysio, voir #tarifs). La liste de 3 puces sous les boutons du haut a été
+// retirée le 2026-10-31 (Philippe : « serves no use »).
 
 function PrimaryCta({
   href = "/signup/kine",
@@ -154,14 +145,6 @@ export default function Home() {
               </Link>
             </div>
 
-            <ul className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:280ms] mt-5 flex flex-col gap-1.5 max-sm:hidden sm:mt-8 sm:gap-2.5 lg:short:mt-5 lg:short:gap-1.5 phone-land:mt-3 phone-land:gap-1">
-              {HERO_CHIPS.map((chip) => (
-                <li key={chip.label} className="flex items-center gap-2">
-                  <chip.icon className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={1.75} />
-                  <span className="text-xs font-medium text-slate-600 sm:text-sm">{chip.label}</span>
-                </li>
-              ))}
-            </ul>
           </div>
 
           {/* 280 × 620 : taille naturelle du PhoneMockup (cadre 260 px + écran
