@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 // Prépare les vidéos du tournage avec Jules (2026-10-30) pour l'appli :
-// une version LÉGÈRE de chaque vidéo finale (pour le téléphone), nommée d'après
+// une version de chaque vidéo finale prête à héberger, en qualité maximale, nommée d'après
 // le dessin de l'exercice (slug de lib/exercise/illustrationMap.ts).
 //
 //   node scripts/videos-preparer.mjs            → encode dans videos-tournage/web/
 //   node scripts/videos-preparer.mjs --liste    → affiche seulement la correspondance
 //
 // Entrée  : videos-tournage/final/IMG_xxxx-n_<nom>.mp4 (masters 1080×1920, ~1,4 Go)
-// Sortie  : videos-tournage/web/<slug>.mp4 (720×1280, H.264, SANS SON — Philippe,
+// Sortie  : videos-tournage/web/<slug>.mp4 (QUALITÉ MAXIMALE validée par Philippe le
+//           2026-10-31 : 1080×1920 comme l'iPhone, H.264 quasi sans perte (CRF 16,
+//           veryslow), léger débruitage + netteté, SANS SON — Philippe,
 //           2026-10-31 : « for now, I don't want any sound » —, lecture
 //           immédiate « faststart »), + videos-tournage/web/correspondance.json
 // Ces fichiers restent hors de git (videos-tournage/ est exclu).
@@ -79,7 +81,7 @@ for (const [i, p] of plan.entries()) {
   if (!fs.existsSync(dst)) {
     execFileSync(ffmpeg, [
       "-y", "-loglevel", "error", "-i", path.join(SRC, p.file),
-      "-vf", "scale=720:-2", "-c:v", "libx264", "-preset", "slow", "-crf", "26", "-profile:v", "high", "-pix_fmt", "yuv420p",
+      "-vf", "hqdn3d=1.5:1.5:4:4,unsharp=5:5:0.45:5:5:0", "-c:v", "libx264", "-preset", "veryslow", "-tune", "film", "-crf", "16", "-profile:v", "high", "-pix_fmt", "yuv420p",
       "-an", "-movflags", "+faststart", dst,
     ]);
   }
