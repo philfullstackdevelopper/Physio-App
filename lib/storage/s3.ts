@@ -20,6 +20,15 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 let cachedClient: S3Client | null = null;
 
+// Le code parle de « buckets » logiques (exercise-media). Chez Outscale, un
+// nom de bucket doit être unique pour TOUS les clients de la région : le nom
+// réel est donc réglable par variable d'environnement (ex.
+// S3_BUCKET_EXERCISE_MEDIA=easyphysio-exercise-media), sans toucher au code.
+function physicalBucket(bucket: string): string {
+  const envName = `S3_BUCKET_${bucket.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`;
+  return process.env[envName] || bucket;
+}
+
 function s3Client(): S3Client {
   if (cachedClient) return cachedClient;
   const endpoint = process.env.S3_ENDPOINT;
@@ -45,31 +54,31 @@ function s3Client(): S3Client {
 
 /** A short-lived URL the browser can PUT the file's bytes to directly. */
 export async function s3UploadUrl(bucket: string, path: string, contentType: string, expiresSeconds = 300): Promise<string> {
-  const cmd = new PutObjectCommand({ Bucket: bucket, Key: path, ContentType: contentType });
+  const cmd = new PutObjectCommand({ Bucket: physicalBucket(bucket), Key: path, ContentType: contentType });
   return getSignedUrl(s3Client(), cmd, { expiresIn: expiresSeconds });
 }
 
 /** For a public bucket — a deterministic URL, no signing needed. */
 export function s3PublicUrl(bucket: string, path: string): string {
   const endpoint = (process.env.S3_ENDPOINT ?? "").replace(/\/$/, "");
-  return `${endpoint}/${bucket}/${path}`;
+  return `${endpoint}/${physicalBucket(bucket)}/${path}`;
 }
 
 /** For a private bucket — a time-limited read URL (mirrors Supabase's createSignedUrl). */
 export async function s3SignedReadUrl(bucket: string, path: string, expiresSeconds: number): Promise<string> {
-  const cmd = new GetObjectCommand({ Bucket: bucket, Key: path });
+  const cmd = new GetObjectCommand({ Bucket: physicalBucket(bucket), Key: path });
   return getSignedUrl(s3Client(), cmd, { expiresIn: expiresSeconds });
 }
 
 export async function s3Remove(bucket: string, paths: string[]): Promise<void> {
   if (paths.length === 0) return;
   await s3Client().send(
-    new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: paths.map((Key) => ({ Key })) } }),
+    new DeleteObjectsCommand({ Bucket: physicalBucket(bucket), Delete: { Objects: paths.map((Key) => ({ Key })) } }),
   );
 }
 
 /** Lists object keys under a prefix (mirrors Supabase's storage.list()'s file names). */
 export async function s3List(bucket: string, prefix: string): Promise<string[]> {
-  const res = await s3Client().send(new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix }));
+  const res = await s3Client().send(new ListObjectsV2Command({ Bucket: physicalBucket(bucket), Prefix: prefix }));
   return (res.Contents ?? []).map((o) => o.Key!).filter(Boolean);
 }
