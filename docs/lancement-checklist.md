@@ -17,7 +17,7 @@
 | Étape | Qui |
 |---|---|
 | Relecture par Jules des consignes, du matériel et des dessins (banque de 292 + 13 exercices) | Jules |
-| Vidéos : version légère prête (`scripts/videos-preparer.mjs`), envoi et liaison (`scripts/videos-envoyer.mjs`) | Claude, dès que le stockage Outscale existe |
+| Vidéos : 61 vidéos prêtes en qualité maximale, 1,6 Go (`scripts/videos-preparer.mjs`), envoi et liaison (`scripts/videos-envoyer.mjs`) | Claude, dès que le stockage Outscale existe |
 | 2 exercices de step filmés sans dessin validé | Philippe valide → Claude |
 
 ## 3. Comptes et paiements
