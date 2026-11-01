@@ -41,7 +41,7 @@ export const STEPS: Step[] = [
   // et on s'arrête là »).
   { screen: 2, duration: 1100, title: "Un exercice à la fois, en vidéo." },
   { screen: 2, duration: 600, title: "Un exercice à la fois, en vidéo.", tap: true },
-  { screen: 2, duration: 6000, title: "Un exercice à la fois, en vidéo.", playing: true },
+  { screen: 2, duration: 7500, title: "Un exercice à la fois, en vidéo.", playing: true },
 ];
 
 // Respect prefers-reduced-motion: freeze on the first frame instead of
@@ -242,7 +242,7 @@ export function HomeScreen({ tap }: { tap: boolean }) {
 // vidéo de Jules se voit en grand sur l'écran suivant). Le 1er exercice est
 // celui de l'écran de séance.
 const PROGRAMME = [
-  { name: "Single-Leg Calf Raise", label: "Montée sur pointe" },
+  { name: "Pallof Press", label: "Pallof press" },
   { name: "Glute Bridge", label: "Pont fessier" },
   { name: "Postural Core Bracing", label: "Gainage postural" },
   { name: "Quadruped Scapular Stability", label: "Quadrupédie" },
@@ -315,12 +315,12 @@ function SessionVideo({ playing }: { playing: boolean }) {
   return (
     <video
       ref={ref}
-      src="/videos-demo/tel-mollet.mp4"
-      poster="/videos-demo/tel-mollet.jpg"
+      src="/videos-demo/tel-pallof.mp4"
+      poster="/videos-demo/tel-pallof.jpg"
       muted
       playsInline
       preload="none"
-      aria-label="Démonstration filmée : montée sur pointe"
+      aria-label="Démonstration filmée : Pallof press"
       className="h-full w-full object-cover"
     />
   );
@@ -346,10 +346,10 @@ export function SessionScreen({ tap, playing }: { tap: boolean; playing: boolean
       <SessionHeader />
       <div className={`${CARD} mx-3.5 mt-3 p-3`}>
         <p className="text-[7.5px] font-medium uppercase tracking-wide text-blue-600">Exercice 1</p>
-        <p className="font-display mt-0.5 text-[15px] font-semibold text-slate-900">Montée sur pointe</p>
+        <p className="font-display mt-0.5 text-[15px] font-semibold text-slate-900">Pallof press</p>
         {/* La vidéo de démonstration de Jules, en grand (Philippe, 2026-10-31) :
-            exercice filmé à la verticale devant un mur nu (la vidéo la plus
-            épurée du tournage), donc il remplit une case haute sans être recadré. Bouton lecture centré, puis lecture avec sa barre. */}
+            Pallof press, choisi par Philippe (2026-11-01) : salle lumineuse, joli
+            fond, filmé à la verticale, donc il remplit une case haute sans être recadré. Bouton lecture centré, puis lecture avec sa barre. */}
         <div className="relative mt-2 flex h-[270px] items-center justify-center overflow-hidden rounded-xl bg-slate-100">
           <SessionVideo playing={playing} />
           {!playing && (
@@ -367,13 +367,13 @@ export function SessionScreen({ tap, playing }: { tap: boolean; playing: boolean
                 className="block h-full rounded-full bg-blue-600"
                 initial={{ width: "0%" }}
                 animate={{ width: "100%" }}
-                transition={{ duration: 6, ease: "linear" }}
+                transition={{ duration: 7.5, ease: "linear" }}
               />
             </span>
           )}
         </div>
         <p className="mt-2.5 text-[8.5px] leading-relaxed text-slate-600">
-          Debout sur une jambe, mains sur les hanches : montez sur la pointe du pied, puis redescendez lentement.
+          Élastique attaché sur le côté : poussez les mains devant vous sans laisser le buste tourner, puis ramenez.
         </p>
         <p className="mt-2 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[8px] font-medium text-blue-700">3 séries · 12 répétitions</p>
         <span className="mt-3 flex items-center justify-center gap-1 rounded-lg bg-blue-600 py-2.5 text-[10.5px] font-semibold text-white">
