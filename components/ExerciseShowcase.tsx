@@ -21,9 +21,11 @@ const EXERCISES: ShowcaseExercise[] = [
   { clip: "glute-bridge", name: "Pont fessier", zone: "Lombaires" },
   { clip: "banded-clamshell", name: "Coquillage avec élastique", zone: "Hanche" },
   { clip: "straight-leg-raise", name: "Élévation jambe tendue", zone: "Genou" },
-  { clip: "bird-dog", name: "Bird dog", zone: "Dos" },
-  { clip: "dead-bug", name: "Dead bug", zone: "Tronc", focus: "object-top" },
-  { clip: "cat-cow-stretch", name: "Chat-vache", zone: "Colonne" },
+  // 2e ligne : en salle (Philippe, 2026-11-01). Filmés à la verticale, donc
+  // recadrés en bande large autour du buste (élastique / sangles + sacs).
+  { clip: "salle-pallof-press", name: "Pallof press", zone: "Tronc" },
+  { clip: "salle-towel-row", name: "Tirage aux sangles", zone: "Dos" },
+  { clip: "salle-seated-external-rotation-elbow-on-knee", name: "Rotation externe d'épaule", zone: "Épaule" },
 ];
 
 export default function ExerciseShowcase() {
