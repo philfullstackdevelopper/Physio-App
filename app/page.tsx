@@ -245,9 +245,11 @@ export default function Home() {
               292 mouvements dessinés et animés, et les exercices clés filmés par un kiné.
             </p>
           </div>
-          <FitToViewport className="mt-8 sm:short:mt-4 phone-land:mt-0">
+          {/* Pas de FitToViewport : le bandeau a déjà une hauteur qui tient
+              sur un écran, et la réduction le rendait plus étroit que la page. */}
+          <div className="mt-8 sm:short:mt-4 phone-land:mt-0">
             <ExerciseShowcase />
-          </FitToViewport>
+          </div>
         </section>
         </Reveal>
 

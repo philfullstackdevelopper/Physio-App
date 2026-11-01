@@ -4,12 +4,12 @@ import LoopVideo from "@/components/LoopVideo";
 // (Philippe, 2026-10-31), extraits courts dans public/videos-demo/ — ils
 // partent avec le code, sans stockage externe.
 //
-// Deux sortes de vidéos (Philippe, 2026-11-01 : les vidéos en salle doivent
-// se voir en entier, pas recadrées) :
-//   - au cabinet, exercices au sol filmés à l'horizontale → cases larges ;
-//   - en salle, filmées à la verticale → cases hautes, de la tête aux pieds.
-// Ordinateur : les 3 larges empilées à gauche, les 3 hautes côte à côte à
-// droite. Tablette : deux lignes. Téléphone : 2 + 2.
+// Bandeau qui défile de gauche à droite (Philippe, 2026-11-01 : « comme sur
+// la page de connexion, mais de gauche à droite »). Toutes les vidéos à la
+// même hauteur, chacune dans son vrai format : au cabinet, filmées à
+// l'horizontale (cases larges) ; en salle, filmées à la verticale (cases
+// hautes, de la tête aux pieds). Le bandeau s'arrête au survol pour qu'on
+// puisse regarder une vidéo ; immobile si « réduire les animations ».
 type ShowcaseExercise = {
   /** Nom du fichier dans public/videos-demo/ (sans extension). */
   clip: string;
@@ -17,69 +17,51 @@ type ShowcaseExercise = {
   name: string;
   /** Zone travaillée. */
   zone: string;
+  /** Filmée à la verticale (en salle). */
+  tall?: boolean;
 };
 
-const CABINET: ShowcaseExercise[] = [
+// Alternance large / haute : le bandeau garde un rythme régulier.
+const EXERCISES: ShowcaseExercise[] = [
   { clip: "glute-bridge", name: "Pont fessier", zone: "Lombaires" },
+  { clip: "salle-v-pallof-press", name: "Pallof press", zone: "Tronc", tall: true },
   { clip: "banded-clamshell", name: "Coquillage avec élastique", zone: "Hanche" },
+  { clip: "salle-v-towel-row", name: "Tirage aux sangles", zone: "Dos", tall: true },
   { clip: "straight-leg-raise", name: "Élévation jambe tendue", zone: "Genou" },
+  { clip: "salle-v-seated-external-rotation-elbow-on-knee", name: "Rotation externe d'épaule", zone: "Épaule", tall: true },
 ];
 
-const SALLE: ShowcaseExercise[] = [
-  { clip: "salle-v-pallof-press", name: "Pallof press", zone: "Tronc" },
-  { clip: "salle-v-towel-row", name: "Tirage aux sangles", zone: "Dos" },
-  { clip: "salle-v-seated-external-rotation-elbow-on-knee", name: "Rotation externe d'épaule", zone: "Épaule" },
-];
-
-function Tile({ ex, className, videoClass, compact = false }: { ex: ShowcaseExercise; className: string; videoClass: string; compact?: boolean }) {
+function Tile({ ex, copy }: { ex: ShowcaseExercise; copy: boolean }) {
   return (
-    <li className={`relative overflow-hidden rounded-2xl bg-slate-200 ${className}`}>
-      <LoopVideo
-        src={`/videos-demo/${ex.clip}.mp4`}
-        poster={`/videos-demo/${ex.clip}.jpg`}
-        label={`Démonstration filmée : ${ex.name}`}
-        className={`block object-cover ${videoClass}`}
-      />
-      {/* Nom posé sur la vidéo : pas de bandeau blanc qui prendrait de la hauteur.
-          Cases larges (compact) : une seule ligne fine, pour ne pas cacher Jules. */}
-      {compact ? (
-        <div className="absolute inset-x-0 bottom-0 flex items-baseline justify-between gap-2 bg-gradient-to-t from-black/60 to-transparent px-2.5 pb-1.5 pt-4 text-white">
-          <p className="truncate text-xs font-semibold">{ex.name}</p>
-          <p className="shrink-0 text-[10px] font-medium text-white/75">{ex.zone}</p>
-        </div>
-      ) : (
+    // pr-4 plutôt qu'un gap : les deux moitiés du bandeau ont ainsi
+    // exactement la même largeur, et la boucle ne saute pas.
+    <li className="h-full shrink-0 pr-3 sm:pr-4" aria-hidden={copy || undefined}>
+      <div className="relative h-full overflow-hidden rounded-2xl bg-slate-200">
+        <LoopVideo
+          src={`/videos-demo/${ex.clip}.mp4`}
+          poster={`/videos-demo/${ex.clip}.jpg`}
+          label={`Démonstration filmée : ${ex.name}`}
+          className={`block h-full object-cover ${ex.tall ? "aspect-[9/16]" : "aspect-video"}`}
+        />
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2 pt-6 text-white">
           <p className="text-sm font-semibold leading-tight">{ex.name}</p>
           <p className="text-[11px] font-medium text-white/75">{ex.zone}</p>
         </div>
-      )}
+      </div>
     </li>
   );
 }
 
 export default function ExerciseShowcase() {
   return (
-    <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:justify-center">
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:flex lg:w-[16rem] lg:shrink-0 lg:flex-col lg:gap-3">
-        {CABINET.map((ex, i) => (
-          <Tile
-            key={ex.clip}
-            ex={ex}
-            compact
-            className={i === 2 ? "max-sm:hidden" : ""}
-            videoClass="aspect-[2/1] w-full lg:aspect-auto lg:h-[calc((24rem-1.5rem)/3)]"
-          />
-        ))}
-      </ul>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:flex lg:gap-4">
-        {SALLE.map((ex, i) => (
-          <Tile
-            key={ex.clip}
-            ex={ex}
-            className={i === 2 ? "max-sm:hidden" : ""}
-            videoClass="aspect-[9/16] w-full lg:h-[24rem] lg:w-auto"
-          />
-        ))}
+    <div className="group overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+      <style>{`@keyframes vitrine-defile{from{transform:translateX(-50%)}to{transform:translateX(0)}}`}</style>
+      {/* La liste est écrite deux fois : quand la 1re moitié est sortie à
+          droite, la 2e est exactement à sa place de départ. */}
+      <ul className="flex h-64 w-max [animation:vitrine-defile_70s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:[animation:none] sm:h-80 lg:h-[22rem] lg:short:h-[19rem]">
+        {[false, true].map((copy) =>
+          EXERCISES.map((ex) => <Tile key={`${ex.clip}-${copy}`} ex={ex} copy={copy} />),
+        )}
       </ul>
     </div>
   );
