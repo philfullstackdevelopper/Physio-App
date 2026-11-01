@@ -23,9 +23,9 @@ import {
 // utilisée, patient de test rattaché à un kiné de test uniquement, suppression
 // limitée aux comptes de test.
 //
-// Adresses « …+clerk_test@example.com » : format reconnu par Clerk, qui
-// n'envoie jamais d'e-mail à ces adresses — et si Clerk demande un code de
-// vérification à la connexion, c'est toujours 424242.
+// Adresses : alias de l'adresse de l'administrateur (voir testEmail plus bas).
+// L'ancien format « …+clerk_test@example.com » (code toujours 424242) ne
+// marche que sur le Clerk de développement.
 
 export type TestAccountResult =
   | { ok: true; kind: "kine" | "patient"; fullName: string; email: string; password: string }
@@ -49,8 +49,18 @@ function slug(name: string): string {
   );
 }
 
+// Adresse des comptes de test. Sur le Clerk de production, une connexion peut
+// demander un code envoyé par e-mail (nouvel appareil) : une fausse adresse
+// @example.com bloquerait le compte. On utilise donc un alias de l'adresse de
+// l'administrateur (« prenom+test-kine-…@gmail.com ») — les codes arrivent dans
+// sa boîte (Philippe, 2026-11-01). Repli sur l'ancienne adresse de test si
+// ADMIN_EMAILS est vide.
 function testEmail(kind: "kine" | "patient", name: string): string {
-  return `test-${kind}-${slug(name)}-${randomBytes(2).toString("hex")}+clerk_test@example.com`;
+  const tag = `test-${kind}-${slug(name)}-${randomBytes(2).toString("hex")}`;
+  const admin = (process.env.ADMIN_EMAILS ?? "").split(",")[0]?.trim().toLowerCase() ?? "";
+  const at = admin.indexOf("@");
+  if (at > 0) return `${admin.slice(0, at).split("+")[0]}+${tag}${admin.slice(at)}`;
+  return `${tag}+clerk_test@example.com`;
 }
 
 // 16 caractères tirés au hasard : assez long pour Clerk, jamais réutilisé.
