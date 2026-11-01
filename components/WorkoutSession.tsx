@@ -40,6 +40,19 @@ function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string;
   // A clip that fails to load (mislink, deleted file) must degrade to the
   // illustration rather than sit as a black unplayable player.
   const [failed, setFailed] = useState(false);
+  // Forme de la vidéo (largeur / hauteur), connue au chargement du fichier ;
+  // en attendant, 16/9 (même cadre que le dessin).
+  const [ratio, setRatio] = useState(16 / 9);
+  // Le fichier peut avoir fini de charger ses dimensions AVANT que la page
+  // devienne interactive : l'événement « loadedmetadata » est alors manqué.
+  // On relit donc les dimensions dès que l'élément vidéo est rattaché.
+  const attachVideo = (el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (el && el.readyState >= 1 && el.videoWidth > 0 && el.videoHeight > 0) {
+      const r = el.videoWidth / el.videoHeight;
+      if (Math.abs(r - ratio) > 0.01) setRatio(r);
+    }
+  };
 
   if (failed) {
     return <IllustrationDemo name={name} />;
@@ -58,17 +71,24 @@ function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string;
   };
 
   return (
-    // Les vidéos du tournage sont filmées en hauteur (1080×1920) : cadre plus
-    // haut que l'ancien 16/9, pour que la vidéo remplisse l'écran au lieu
-    // d'être coincée entre deux bandes noires (Philippe, 2026-11-01 : « que le
-    // patient voie bien ses exercices »). Téléphone : cadre vertical, sans
-    // dépasser la moitié de l'écran ; ordinateur : jusqu'à 55 % de la hauteur.
-    <div className="relative aspect-[4/5] max-h-[40vh] w-full overflow-hidden rounded-xl bg-black sm:aspect-auto sm:h-[min(55vh,560px)] sm:max-h-none short:aspect-auto short:h-36">
+    // Le cadre prend la forme de la vidéo elle-même (Philippe, 2026-11-01 :
+    // « filmée à l'horizontale → affichée à l'horizontale, filmée à la
+    // verticale → à la verticale ») : largeur/hauteur lues sur le fichier dès
+    // qu'il est chargé. La hauteur reste plafonnée (--mh) pour que tout tienne
+    // sur un écran ; une vidéo verticale devient alors moins large et se centre.
+    <div
+      className="relative mx-auto overflow-hidden rounded-xl bg-black [--mh:40vh] sm:[--mh:min(55vh,560px)] short:[--mh:9rem]"
+      style={{ aspectRatio: ratio, width: `min(100%, calc(var(--mh) * ${ratio}))` }}
+    >
       <video
-        ref={videoRef}
+        ref={attachVideo}
         playsInline
         muted
         preload="metadata"
+        onLoadedMetadata={(e) => {
+          const v = e.currentTarget;
+          if (v.videoWidth > 0 && v.videoHeight > 0) setRatio(v.videoWidth / v.videoHeight);
+        }}
         onError={() => setFailed(true)}
         onClick={pause}
         onEnded={() => setPlaying(false)}

@@ -113,7 +113,9 @@ export default function ExerciseInfoModal({
                 loop
                 playsInline
                 onError={() => setVideoFailed(true)}
-                className="max-h-72 w-full bg-black object-contain"
+                // Forme d'origine de la vidéo (verticale ou horizontale), sans
+                // bandes noires : largeur et hauteur suivent le fichier.
+                className="h-auto max-h-72 w-auto max-w-full rounded-xl"
               >
                 <track kind="captions" />
               </video>
