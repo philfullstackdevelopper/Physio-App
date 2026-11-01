@@ -59,7 +59,7 @@ export default function ExerciseShowcase() {
       <style>{`@keyframes vitrine-defile{from{transform:translateX(-50%)}to{transform:translateX(0)}}`}</style>
       {/* La liste est écrite deux fois : quand la 1re moitié est sortie à
           droite, la 2e est exactement à sa place de départ. */}
-      <ul className="flex h-64 w-max [animation:vitrine-defile_40s_linear_infinite] motion-reduce:[animation:none] sm:h-80 lg:h-[22rem] lg:short:h-[19rem]">
+      <ul data-loop-group className="flex h-64 w-max [animation:vitrine-defile_40s_linear_infinite] motion-reduce:[animation:none] sm:h-80 lg:h-[22rem] lg:short:h-[19rem]">
         {[false, true].map((copy) =>
           EXERCISES.map((ex) => <Tile key={`${ex.clip}-${copy}`} ex={ex} copy={copy} />),
         )}
