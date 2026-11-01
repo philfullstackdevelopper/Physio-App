@@ -4,12 +4,30 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { isPhoneFormat } from "@/lib/phoneFormat";
 import Link from "next/link";
-import { CalendarRange, Check, ChevronLeft, Dumbbell, Plus, Repeat, Search, Trash2, X } from "lucide-react";
+import { CalendarRange, Check, ChevronLeft, Dumbbell, Info, Plus, Repeat, Search, Trash2, X } from "lucide-react";
 import { type BodyPart } from "@/lib/exercise/category";
 import SubmitButton from "@/components/SubmitButton";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 import ExerciseLibraryPicker from "@/components/ExerciseLibraryPicker";
+import ExerciseInfoModal from "@/components/ExerciseInfoModal";
+
+/** Le petit (i) d'une carte d'exercice : ouvre sa vidéo et ses consignes
+ *  (Philippe, 2026-11-01). Posé À CÔTÉ du bouton de la carte (un bouton ne
+ *  peut pas en contenir un autre), en haut à droite. */
+function InfoButton({ name, onOpen }: { name: string; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Voir la démonstration : ${name}`}
+      title="Voir la démonstration"
+      className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-surface/80 text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+    >
+      <Info className="h-4 w-4" strokeWidth={1.75} />
+    </button>
+  );
+}
 import { equipmentListLabel, missingEquipment } from "@/lib/exercise/equipment";
 import { addWeeksToKey } from "@/lib/exercise/activeRecommendation";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
@@ -83,6 +101,8 @@ export default function AdjustWorkoutModal({
   removeAction: (formData: FormData) => void;
 }) {
   const [open, setOpen] = useState(false);
+  // Exercice dont la démonstration est ouverte par le (i).
+  const [info, setInfo] = useState<{ id: string; name: string } | null>(null);
   const [view, setView] = useState<"exercises" | "template">(workout ? "exercises" : "template");
   const [removeIds, setRemoveIds] = useState<Set<string>>(new Set());
   const [addIds, setAddIds] = useState<Set<string>>(new Set());
@@ -382,7 +402,8 @@ export default function AdjustWorkoutModal({
                       {workout.exercises.map((ex) => {
                         const marked = removeIds.has(ex.id);
                         return (
-                          <li key={ex.id}>
+                          <li key={ex.id} className="relative">
+                            <InfoButton name={ex.name} onOpen={() => setInfo({ id: ex.id, name: ex.name })} />
                             <button
                               type="button"
                               onClick={() => setRemoveIds((s) => toggle(s, ex.id))}
@@ -406,7 +427,8 @@ export default function AdjustWorkoutModal({
                         const ex = addableExercises.find((e) => e.id === id);
                         if (!ex) return null;
                         return (
-                          <li key={`new-${id}`}>
+                          <li key={`new-${id}`} className="relative">
+                            <InfoButton name={ex.name} onOpen={() => setInfo({ id: ex.id, name: ex.name })} />
                             <button
                               type="button"
                               onClick={() => setAddIds((s) => toggle(s, id))}
@@ -787,6 +809,7 @@ export default function AdjustWorkoutModal({
           </div>
         </div>
       , document.body)}
+      {info && <ExerciseInfoModal exercise={info} onClose={() => setInfo(null)} />}
     </>
   );
 }

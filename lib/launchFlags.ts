@@ -20,7 +20,7 @@
 //       (sauf pour l'administrateur — voir lib/launch.ts).
 //
 // LE JOUR DU LANCEMENT : passer les deux à `true`, et c'est tout.
-export const SIGNUPS_OPEN = false;
+export const SIGNUPS_OPEN = true;
 export const PATIENT_INVITATIONS_OPEN = false;
 
 /** Où mènent les boutons d'inscription tant que SIGNUPS_OPEN est faux. */
