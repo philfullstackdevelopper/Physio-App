@@ -25,11 +25,15 @@ import { getPool } from "@/lib/db/pool";
 //  2. email known (migrated Supabase account, or invited patient) → attach the
 //     Clerk id to that existing row and return its uuid.
 //  3. brand-new person → mint a new row + uuid.
-export async function resolveAppUserId(clerkId: string, email: string): Promise<string> {
+// emailVerified : e-mail vérifié par Clerk. Dans ce cas seulement, un compte
+// déjà lié à un AUTRE identifiant Clerk (passage du Clerk de test au Clerk de
+// production) est rattaché au nouvel identifiant — migration 0076.
+export async function resolveAppUserId(clerkId: string, email: string, emailVerified = false): Promise<string> {
   try {
-    const { rows } = await getPool().query<{ id: string }>("select internal.resolve_app_user($1, $2) as id", [
+    const { rows } = await getPool().query<{ id: string }>("select internal.resolve_app_user($1, $2, $3) as id", [
       clerkId,
       email.trim().toLowerCase(),
+      emailVerified,
     ]);
     if (!rows[0]?.id) throw new Error("ligne absente");
     return String(rows[0].id);

@@ -146,7 +146,7 @@ const loadUser = cache(async (): Promise<AppUser> => {
     redirect("/connection-error?next=/login");
   }
 
-  const id = await resolveAppUserId(user.id, email);
+  const id = await resolveAppUserId(user.id, email, user.primaryEmailAddress?.verification?.status === "verified");
 
   knownUsers.set(user.id, { id, email, at: Date.now() });
   return { id, email, clerkId: user.id };

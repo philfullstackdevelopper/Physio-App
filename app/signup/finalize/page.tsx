@@ -59,7 +59,7 @@ export default async function SignupFinalizePage() {
   const email = user.primaryEmailAddress?.emailAddress ?? "";
   if (!email) redirect("/login");
 
-  const appId = await resolveAppUserId(user.id, email);
+  const appId = await resolveAppUserId(user.id, email, user.primaryEmailAddress?.verification?.status === "verified");
   const supabase = await createClient();
 
   // Cabinet details filled in BEFORE the Clerk account existed (see
