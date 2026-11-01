@@ -27,9 +27,9 @@ const EXERCISES: ShowcaseExercise[] = [
   { clip: "glute-bridge", name: "Pont fessier", zone: "Lombaires" },
   { clip: "salle-v-pallof-press", name: "Pallof press", zone: "Tronc", tall: true },
   { clip: "banded-clamshell", name: "Coquillage avec élastique", zone: "Hanche" },
-  { clip: "salle-v-towel-row", name: "Tirage aux sangles", zone: "Dos", tall: true },
+  { clip: "salle-v-band-shoulder-external-rotation", name: "Rotation externe d'épaule", zone: "Épaule", tall: true },
   { clip: "straight-leg-raise", name: "Élévation jambe tendue", zone: "Genou" },
-  { clip: "salle-v-seated-external-rotation-elbow-on-knee", name: "Rotation externe d'épaule", zone: "Épaule", tall: true },
+  { clip: "salle-v-y-balance", name: "Équilibre en Y", zone: "Genou / cheville", tall: true },
 ];
 
 function Tile({ ex, copy }: { ex: ShowcaseExercise; copy: boolean }) {
