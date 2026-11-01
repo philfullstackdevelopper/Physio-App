@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -22,9 +22,12 @@ type Details = { instructions: string | null; mediaUrl: string | null; startSeco
 export default function ExerciseInfoModal({
   exercise,
   onClose,
+  footer,
 }: {
   exercise: { id: string; name: string };
   onClose: () => void;
+  /** Contenu en bas de la fenêtre, ex. « Ajouter / Remplacer la vidéo » dans « Mes exercices ». */
+  footer?: ReactNode;
 }) {
   // undefined = en cours de chargement ; null = lecture impossible.
   const [details, setDetails] = useState<Details | null | undefined>(undefined);
@@ -119,7 +122,12 @@ export default function ExerciseInfoModal({
               >
                 <track kind="captions" />
               </video>
+            ) : details === undefined ? (
+              // Pendant le chargement : pas de dessin qui clignote avant la vidéo
+              // (Philippe, 2026-11-01 : le (i) doit montrer la vidéo).
+              <div className="flex h-56 w-full items-center justify-center text-sm text-muted">Chargement de la vidéo…</div>
             ) : (
+              // Pas (encore) de vidéo pour cet exercice : le dessin, en secours.
               <ExerciseIllustration name={exercise.name} className="h-56 w-full p-4 text-brand" />
             )}
           </div>
@@ -138,6 +146,7 @@ export default function ExerciseInfoModal({
               <p className="text-muted">Pas de consignes écrites pour cet exercice.</p>
             )}
           </div>
+          {footer && <div className="mt-4 border-t border-line pt-4">{footer}</div>}
         </div>
       </div>
     </div>,

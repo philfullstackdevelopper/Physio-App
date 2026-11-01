@@ -11,7 +11,8 @@
 
 import { useMemo, useState } from "react";
 import { EXERCISE_EQUIPMENT_LABELS, EXERCISE_EQUIPMENT_OPTIONS } from "@/lib/exercise/equipment";
-import { MoreVertical, EyeOff, Eye, Search } from "lucide-react";
+import { MoreVertical, EyeOff, Eye, Info, Search } from "lucide-react";
+import ExerciseInfoModal from "@/components/ExerciseInfoModal";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 import ExerciseVideoUpload from "@/components/ExerciseVideoUpload";
@@ -118,6 +119,8 @@ export default function ExerciseLibraryGrid({
   const [selectedId, setSelectedId] = useState<string | null>(bodyParts[0]?.id ?? null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
+  // Exercice ouvert par le (i) : vidéo + consignes (Philippe, 2026-11-01).
+  const [info, setInfo] = useState<LibraryExercise | null>(null);
   const [query, setQuery] = useState("");
 
   const runAction = (action: (formData: FormData) => void | Promise<void>, exerciseId: string) => {
@@ -333,7 +336,16 @@ export default function ExerciseLibraryGrid({
                   name={ex.name}
                   className="h-24 w-full text-brand max-sm:h-16"
                 />
-                <span className="max-sm:absolute max-sm:right-1 max-sm:top-1 sm:contents">
+                <span className="flex shrink-0 items-center max-sm:absolute max-sm:right-1 max-sm:top-1">
+                  <button
+                    type="button"
+                    onClick={() => setInfo(ex)}
+                    aria-label={`Voir la démonstration : ${ex.name}`}
+                    title="Voir la démonstration"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                  >
+                    <Info className="h-4 w-4" strokeWidth={1.75} />
+                  </button>
                   <ExerciseCardMenu
                     hidden={ex.hidden}
                     onHide={() => runAction(hideExercise, ex.id)}
@@ -346,29 +358,26 @@ export default function ExerciseLibraryGrid({
                 {ex.created_by === currentUserId && (
                   <span className="mt-1 inline-block text-xs text-brand max-sm:mt-0.5 max-sm:text-[11px]">Votre exercice</span>
                 )}
-                {ex.instructions && (
-                  <p className="mt-1 line-clamp-2 text-sm text-muted max-sm:hidden">{ex.instructions}</p>
-                )}
               </div>
-              {/* (Philippe, 2026-10-07 : l'envoi de vidéo n'apparaît plus que
-                  sur les exercices du kiné connecté — les exercices plateforme
-                  et ceux des autres kinés sont en lecture seule, CLAUDE.md §3.
-                  Exception : l'administrateur gère les vidéos des exercices
-                  plateforme, via une Server Action vérifiée côté serveur.) */}
-              {(ex.created_by === currentUserId || (isAdmin && ex.created_by === null)) && (
-                <div className="max-sm:mt-1.5 sm:contents">
-                  <ExerciseVideoUpload
-                    exerciseId={ex.id}
-                    initialUrl={ex.media_url}
-                    initialStartSeconds={ex.media_start_seconds}
-                    viaAdmin={ex.created_by === null}
-                  />
-                </div>
-              )}
             </div>
           ))
         )}
       </div>
+
+      {/* Fenêtre du (i) : la vidéo (sinon le dessin) et les consignes ; l'envoi
+          de vidéo seulement sur les exercices du kiné connecté, et pour
+          l'administrateur sur ceux de la plateforme (Philippe, 2026-10-07). */}
+      {info && (
+        <ExerciseInfoModal
+          exercise={info}
+          onClose={() => setInfo(null)}
+          footer={
+            info.created_by === currentUserId || (isAdmin && info.created_by === null) ? (
+              <ExerciseVideoUpload exerciseId={info.id} initialUrl={info.media_url} viaAdmin={info.created_by === null} />
+            ) : undefined
+          }
+        />
+      )}
 
       {hiddenCount > 0 && (
         <div className="mt-6 border-t border-line pt-4">

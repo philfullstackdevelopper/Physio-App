@@ -47,7 +47,6 @@ export const FILMED_EXERCISE_NAMES: ReadonlySet<string> = new Set<string>([
   "Terminal Knee Extension (Band)",
   "Pallof Press",
   "Y-Balance Reach",
-  "Towel Row",
   "Single-Leg Romanian Deadlift",
   "Romanian Deadlift",
   "Prone T Arm Raise (Floor)",

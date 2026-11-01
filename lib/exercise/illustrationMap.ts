@@ -330,7 +330,6 @@ export const EXERCISE_ILLUSTRATION_MAP: Record<string, string> = {
   "Handstand Push-up": "handstand-push-up",
   "Chair Dip": "chair-dip",
   "Doorway Row": "doorway-row",
-  "Towel Row": "towel-row",
   "Prone Y Raise": "prone-y-raise",
   "Prone T Raise": "prone-t-raise",
   "Superman": "superman",

@@ -12,12 +12,17 @@
 // composant, avec viaAdmin : l'URL et le point de départ passent alors par la
 // Server Action adminSetExerciseMedia, qui revérifie le statut admin côté
 // serveur. L'envoi du fichier vers le stockage, lui, ne change pas.)
+//
+// (Philippe, 2026-11-01 : plus d'aperçu vidéo ni de « définir l'instant
+// actuel comme départ » ici — jugé encombrant. Ce composant n'est plus qu'un
+// bouton « Ajouter / Remplacer la vidéo » ; la vidéo se regarde dans la
+// fenêtre qui s'ouvre au clic sur la carte (ExerciseLibraryGrid). Un nouvel
+// envoi repart du début de la vidéo, départ = 0 s.)
 // =============================================================================
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadFile } from "@/lib/storage/client";
-import { getYoutubeEmbedId, isVideoFileUrl } from "@/lib/exercise/media";
 import { adminSetExerciseMedia } from "@/app/dashboard/exercises/actions";
 
 const BUCKET = "exercise-media";
@@ -26,13 +31,14 @@ const MAX_MB = 100;
 export default function ExerciseVideoUpload({
   exerciseId,
   initialUrl,
-  initialStartSeconds = 0,
   viaAdmin = false,
+  onUploaded,
 }: {
   exerciseId: string;
   initialUrl: string | null;
-  initialStartSeconds?: number;
   viaAdmin?: boolean;
+  /** Prévient la fenêtre de l'exercice qu'une nouvelle vidéo est en ligne. */
+  onUploaded?: (url: string) => void;
 }) {
   const supabase = createClient();
 
@@ -59,12 +65,9 @@ export default function ExerciseVideoUpload({
     const msg = (e as { message?: unknown } | null)?.message;
     return typeof msg === "string" && msg ? msg : fallback;
   };
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [url, setUrl] = useState(initialUrl);
-  const [startSeconds, setStartSeconds] = useState(initialStartSeconds);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedStart, setSavedStart] = useState(false);
 
   const upload = async (file: File) => {
     setError(null);
@@ -83,7 +86,7 @@ export default function ExerciseVideoUpload({
       await saveMedia(publicUrl, 0);
 
       setUrl(publicUrl);
-      setStartSeconds(0);
+      onUploaded?.(publicUrl);
     } catch (e) {
       setError(errorMessage(e, "Échec de l'envoi de la vidéo."));
     } finally {
@@ -91,76 +94,9 @@ export default function ExerciseVideoUpload({
     }
   };
 
-  const useCurrentTimeAsStart = async () => {
-    const v = videoRef.current;
-    if (!v || !url) return;
-    const seconds = Math.floor(v.currentTime);
-    setError(null);
-    try {
-      await saveMedia(url, seconds);
-      setStartSeconds(seconds);
-      setSavedStart(true);
-      setTimeout(() => setSavedStart(false), 2000);
-    } catch (e) {
-      setError(errorMessage(e, "Échec de l'enregistrement du point de départ."));
-    }
-  };
-
-  const ytId = url ? getYoutubeEmbedId(url) : null;
-  const isFile = url ? isVideoFileUrl(url) : false;
-
   return (
     <div>
-      {url && ytId && (
-        <iframe
-          className="mt-2 aspect-video w-full max-w-xs rounded-lg"
-          src={`https://www.youtube.com/embed/${ytId}`}
-          title="Aperçu de la démonstration"
-          allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-      )}
-
-      {url && !ytId && !isFile && (
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 inline-block text-sm font-medium text-brand hover:underline"
-        >
-          Voir la vidéo actuelle
-        </a>
-      )}
-
-      {url && isFile && (
-        <>
-          <video
-            ref={videoRef}
-            controls
-            preload="metadata"
-            src={url}
-            className="mt-2 w-full max-w-xs rounded-lg"
-          />
-          <div className="mt-1.5 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={useCurrentTimeAsStart}
-              className="rounded-md border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink hover:bg-app-bg"
-            >
-              Définir l&apos;instant actuel comme départ
-            </button>
-            <span className="text-xs text-muted">
-              {savedStart ? "Enregistré ✓" : `Départ actuel : ${startSeconds}s`}
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-muted">
-            Avancez la vidéo jusqu&apos;au moment où le mouvement commence, puis cliquez ci-dessus —
-            la séance patient démarrera et bouclera pile à cet instant.
-          </p>
-        </>
-      )}
-
-      <label className="mt-2 inline-block cursor-pointer rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink hover:bg-app-bg">
+      <label className="inline-block cursor-pointer rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink hover:bg-app-bg">
         {busy ? "Envoi…" : url ? "Remplacer la vidéo" : "Ajouter une vidéo"}
         <input
           type="file"
