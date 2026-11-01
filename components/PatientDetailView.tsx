@@ -42,7 +42,6 @@ const STAT_CELL = "flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2.5 max
 export default function PatientDetailView({
   name,
   warning,
-  paymentLapsed,
   actionsMenu,
   error,
   adjusted,
@@ -51,7 +50,6 @@ export default function PatientDetailView({
 }: {
   name: string;
   warning: { label: string; detail: string } | null;
-  paymentLapsed: boolean;
   /** Le bouton « Gérer » (PatientActionsMenu), construit par la page. */
   actionsMenu: React.ReactNode;
   error?: string;
@@ -84,9 +82,6 @@ export default function PatientDetailView({
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
                 {warning.label}
               </span>
-            )}
-            {paymentLapsed && (
-              <span className="rounded-full bg-warn-soft px-3 py-1 text-xs font-medium text-warn max-sm:px-2 max-sm:py-0.5 max-sm:text-[11px]">Ancien patient · accès verrouillé</span>
             )}
           </div>
           <div className="max-sm:shrink-0 sm:contents">{actionsMenu}</div>

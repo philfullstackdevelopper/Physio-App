@@ -8,7 +8,7 @@ import { listAllInstructors, listTestAccounts, listWaitlist, type TestAccountRow
 import Waitlist from "./Waitlist";
 import TestAccounts from "./TestAccounts";
 import { approveInstructor, invoiceLastMonth, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
-import { periodLabel, periodOf, previousPeriod } from "@/lib/billing/reviewModel";
+import { KINE_SUBSCRIPTION_TTC_CENTS, eurosFR, periodLabel, periodOf } from "@/lib/billing/reviewModel";
 
 const STATUS_LABEL: Record<string, { label: string; tone: string }> = {
   approved: { label: "Actif", tone: "bg-emerald-50 text-emerald-700" },
@@ -66,7 +66,7 @@ export default async function AdminPage({
         </p>
       )}
       {sp.error && <p className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{sp.error}</p>}
-      {/* Bilan de la dernière facturation mensuelle (nouveau modèle, 2026-10-24). */}
+      {/* Bilan de la dernière facturation mensuelle. */}
       {sp.facture && (
         <p className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
           Facturation de {periodLabel(sp.facture)} : {sp.factures ?? 0} facture(s) envoyée(s), {sp.offerts ?? 0} premier(s) mois offert(s)
@@ -76,13 +76,13 @@ export default async function AdminPage({
         </p>
       )}
 
-      {/* Facture EasyPhysio des kinés (forfait par patient actif). */}
+      {/* Abonnement EasyPhysio des kinés (secours de la tâche automatique du 1er). */}
       <form action={invoiceLastMonth} className="mb-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Facturer les kinés — {periodLabel(previousPeriod(periodOf(new Date())))}</p>
-          <p className="text-xs text-slate-500">3 € HT par patient actif + TVA, prélevé automatiquement. Premier mois offert. Un mois n&apos;est jamais facturé deux fois.</p>
+          <p className="text-sm font-semibold text-slate-900">Facturer les kinés — {periodLabel(periodOf(new Date()))}</p>
+          <p className="text-xs text-slate-500">Abonnement de {eurosFR(KINE_SUBSCRIPTION_TTC_CENTS)} € TTC par kiné, d&apos;avance, prélevé automatiquement. Premier mois offert. Se fait tout seul le 1er du mois ; un mois n&apos;est jamais facturé deux fois.</p>
         </div>
-        <input type="hidden" name="period" value={previousPeriod(periodOf(new Date()))} />
+        <input type="hidden" name="period" value={periodOf(new Date())} />
         <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Lancer la facturation</button>
       </form>
 
@@ -210,8 +210,8 @@ export default async function AdminPage({
                     </summary>
                     <div className="mt-2 max-w-xs rounded-xl bg-red-50 p-3 text-left text-xs text-red-800">
                       <p>
-                        Le kiné perd l&apos;accès à son espace. Ses patients gardent leur programme ; plus aucun bilan
-                        ne peut être validé, donc plus aucun prélèvement.
+                        Le kiné perd l&apos;accès à son espace. Ses patients gardent leur programme ; plus aucun mois
+                        ne peut être facturé, donc plus aucun prélèvement.
                       </p>
                       <form action={suspendInstructorAction} className="mt-2">
                         <input type="hidden" name="id" value={k.id} />

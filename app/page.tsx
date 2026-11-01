@@ -20,9 +20,8 @@ import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 // Textes de la landing réécrits le 2026-10-10 (Philippe : le site faisait
 // trop « IA ») : des phrases qu'un kiné dirait, des faits vérifiables, plus de
-// formules lisses. « Gratuit pour les patients » a été retiré : c'était faux
-// (le patient paie son suivi mensuel à son kiné, ou l'appli seule à
-// EasyPhysio, voir #tarifs). La liste de 3 puces sous les boutons du haut a été
+// formules lisses. « Gratuit pour les patients » a été retiré : le patient
+// paie son kiné quand celui-ci fixe un tarif (voir #tarifs). La liste de 3 puces sous les boutons du haut a été
 // retirée le 2026-10-31 (Philippe : « serves no use »).
 
 function PrimaryCta({
@@ -269,10 +268,9 @@ export default function Home() {
 
         {/* ── Tarifs ───────────────────────────────────────────── */}
         {/* Bascule "Côté kiné" / "Côté patient" (Philippe, 2026-09-13) : un
-            seul prix parle à chaque audience. Nouveau modèle (2026-10-24) :
-            côté kiné, le circuit en 3 étapes + un simulateur ; côté patient,
-            le suivi par son kiné ou l'appli seule. Montants :
-            lib/billing/reviewModel.ts. */}
+            seul prix parle à chaque audience. Côté kiné, le circuit en 3
+            étapes + un simulateur ; côté patient, le programme mensuel de son
+            kiné. Montants : lib/billing/reviewModel.ts. */}
         <Reveal>
         <section id="tarifs" className="mt-24 scroll-mt-24 text-center sm:mt-32">
           {/* Titre repris de l'ancienne section « Rémunération », supprimée le

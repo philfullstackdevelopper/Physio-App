@@ -43,12 +43,6 @@ export interface DashboardHome {
 const TODAY_FMT = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
 export function buildDashboardHome({ now = new Date(), patients, profiles, logs, feedback }: DashboardHomeInput): Omit<DashboardHome, "firstName"> {
-  // Anciens patients (abonnement terminé ou carte refusée — même règle que la
-  // liste « Mes patients » et que le cadenas côté patient) : ils ne sont plus
-  // suivis, donc ni « à suivre » ni comptés dans « Patients suivis »
-  // (Philippe, 2026-10-10).
-  // Plus d'abonnement patient depuis le 2026-10-24 : plus d'anciens patients.
-  const former = new Set<string>();
   const nameOf = new Map(patients.map((p) => [p.id, p.full_name ?? "Patient"]));
   const isToday = (iso: string) => daysBetween(iso, now) === 0;
   const isYesterday = (iso: string) => daysBetween(iso, now) === 1;
@@ -82,7 +76,7 @@ export function buildDashboardHome({ now = new Date(), patients, profiles, logs,
 
   const toTreat: ToTreatRow[] = [];
   for (const p of patients) {
-    if (isOnboarding(p) || former.has(p.id)) continue;
+    if (isOnboarding(p)) continue;
     const sig = signalsBy.get(p.id) ?? { painScores: [], difficulties: [], lastPain: null, lastPainAt: "" };
     const a = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties });
     const s = computeSignal({ concerning: a.concerning, severe: a.severe, lastPain: sig.lastPain, lastSessionAt: lastSession.get(p.id) ?? null, createdAt: p.created_at, now });
@@ -113,7 +107,7 @@ export function buildDashboardHome({ now = new Date(), patients, profiles, logs,
     sessionsToday: { value: sessionsToday, delta: sessionsToday - sessionsYesterday },
     painToday: { value: painToday, delta: painToday - painYesterday },
     inactiveCount: toTreat.filter((r) => r.kind === "inactive").length,
-    patientCount: patients.filter((p) => !former.has(p.id)).length,
+    patientCount: patients.length,
     toTreat,
     surveillerCount: toTreat.length,
     recent,

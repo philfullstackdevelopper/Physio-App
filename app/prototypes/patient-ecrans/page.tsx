@@ -4,7 +4,7 @@
 // composants (ProgrammeView, WorkoutSession) dans la même coquille que
 // app/patient/layout.tsx. Aucune donnée réelle, aucune requête. Pas lié
 // depuis l'appli.
-//   ?ecran=programme | seance | historique | seance-du-jour | changer-offre | informations | historique-detail | onboarding | progres | compte | abonnement | cadenas | cabinet (formulaire kiné de secours)
+//   ?ecran=programme | seance | historique | seance-du-jour | informations | historique-detail | onboarding | progres | compte | suivi | cabinet (formulaire kiné de secours)
 
 import SuiviView from "@/app/patient/suivi/SuiviView";
 import PatientNav from "@/components/PatientNav";
@@ -44,7 +44,6 @@ const NAV_PATH: Record<string, string> = {
   progres: "/patient/progres",
   compte: "/patient/compte",
   informations: "/patient/compte",
-  "changer-offre": "/patient/compte",
   historique: "/patient/progres",
   "historique-detail": "/patient/progres",
   // « Suivi mensuel » s'ouvre depuis les Paramètres (lien retour « Paramètres »).
@@ -71,7 +70,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
     },
   ];
 
-  // Choix d'offre et écran cadenas : plein écran, sans la barre de navigation.
+  // Formulaire kiné de secours : plein écran, sans la barre de navigation.
   if (ecran === "cabinet") {
     return <SignupOnboardingView defaults={{ cabinet_name: null, cabinet_address: null, phone: null, rpps_number: null, siret: null }} action={noop} />;
   }
@@ -163,7 +162,6 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
               day: `jour ${i + 1} — ${["lundi", "mercredi", "vendredi"][i % 3]} ${28 - i * 2} septembre`,
               logs: [{ id: `log${i}`, name: "Renforcement du genou, niveau 2", time: "18:15" }],
             }))}
-            lockedDays={["mardi 2 septembre", "dimanche 31 août"]}
           />
         ) : ecran === "seance-du-jour" ? (
           <SeanceDuJourView

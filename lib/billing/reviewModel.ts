@@ -1,49 +1,39 @@
 // =============================================================================
-// Nouveau modèle économique (Philippe, 2026-10-24) — chiffres affichés sur le
-// site (page d'accueil, /praticiens, FAQ). Source unique : ne jamais réécrire
-// ces montants en dur dans une page.
+// Modèle économique (Philippe, 2026-11-01, sur le modèle d'Andrew) — chiffres
+// affichés sur le site (page d'accueil, /praticiens, FAQ) et utilisés par la
+// facturation réelle. Source unique : ne jamais réécrire ces montants en dur.
 //
-// Deux flux d'argent complètement séparés :
-//   1. Le kiné paie EasyPhysio : un forfait fixe par patient actif et par mois,
-//      une seule facture en fin de mois. Ce prix ne dépend JAMAIS du tarif que
-//      le kiné pratique ni du fait que le patient le paie (sinon il redevient
-//      une commission, interdite par l'art. R.4321-72 CSP).
-//   2. Le patient paie son kiné : un tarif fixé par le kiné pour chaque bilan
-//      de suivi mensuel réellement fait (art. R.4321-98 : honoraires seulement
-//      pour des actes réellement effectués). EasyPhysio n'en prend rien.
-//
-// Sert au site ET à la facturation réelle (lib/billing/followUp.ts,
-// lib/billing/platformInvoice.ts) — l'ancien modèle (abonnements patient +
-// 15 %) a été retiré le 2026-10-24.
-// Modèle à faire valider par un avocat en droit de la santé avant le lancement.
+// Deux flux d'argent séparés :
+//   1. Le kiné paie EasyPhysio un abonnement mensuel FIXE, d'avance, patients
+//      illimités (lib/billing/platformInvoice.ts). Premier mois offert.
+//   2. Le patient paie son kiné un programme mensuel « hors nomenclature », au
+//      tarif que le kiné fixe librement (0 € = accès gratuit). EasyPhysio ne
+//      prend rien. La carte n'est prélevée que le mois où le kiné ajuste
+//      réellement le programme (honoraires seulement pour un acte réalisé,
+//      lib/billing/autoReview.ts). Le patient accepte le tarif par écrit avant.
 // =============================================================================
 
-/** Ce que paie le kiné à EasyPhysio, par patient actif et par mois, hors TVA. */
-export const KINE_FEE_PER_ACTIVE_PATIENT_CENTS = 300;
+/**
+ * Abonnement mensuel du kiné à EasyPhysio, TVA comprise. PRIX À CONFIRMER PAR
+ * PHILIPPE (proposition : 39 €, comparable à Andrew, 34,90 à 49,90 €).
+ */
+export const KINE_SUBSCRIPTION_TTC_CENTS = 3900;
 
 /** TVA française sur l'abonnement EasyPhysio (le kiné ne la récupère pas). */
 export const VAT_RATE = 0.2;
 
-/** Le même forfait, TVA comprise : ce que le kiné paie vraiment. */
-export const KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS = Math.round(KINE_FEE_PER_ACTIVE_PATIENT_CENTS * (1 + VAT_RATE));
+/** Le même abonnement, hors TVA (ligne de la facture Stripe). */
+export const KINE_SUBSCRIPTION_HT_CENTS = Math.round(KINE_SUBSCRIPTION_TTC_CENTS / (1 + VAT_RATE));
 
-/** Tarif conseillé pour un bilan de suivi mensuel — le kiné fixe le sien. */
+/** Tarif conseillé pour le programme mensuel — le kiné fixe librement le sien. */
 export const RECOMMENDED_REVIEW_PRICE_CENTS = 2000;
 
-/** Bornes du tarif qu'un kiné peut fixer (évite les fautes de frappe). */
-export const REVIEW_PRICE_MIN_CENTS = 1000;
-export const REVIEW_PRICE_MAX_CENTS = 4000;
+/** 0 € = suivi gratuit : le patient entre dans l'appli sans payer (Philippe, 2026-11-01). */
+export const FREE_REVIEW_PRICE_CENTS = 0;
 
-/**
- * 3e flux (Philippe, 2026-10-24) : n'importe quel patient peut aussi payer
- * EasyPhysio directement pour l'accès seul à l'appli, sans suivi par un kiné.
- * 5 € par mois (Philippe, 2026-10-24). Fonctions « bien-être » uniquement : bibliothèque,
- * séances qu'il compose lui-même, planning, historique, poursuite du programme
- * laissé par son kiné. JAMAIS de programme construit d'après une pathologie
- * déclarée : ce serait très probablement un dispositif médical (règlement UE
- * 2017/745, règle 11), avec marquage CE.
- */
-export const PATIENT_APP_ONLY_MONTHLY_CENTS = 500;
+/** Bornes d'un tarif payant (évite les fautes de frappe) ; 0 € reste permis. */
+export const REVIEW_PRICE_MIN_CENTS = 100;
+export const REVIEW_PRICE_MAX_CENTS = 50000;
 
 /** Le premier mois est offert au kiné. */
 export const FREE_FIRST_MONTH = true;
@@ -75,9 +65,25 @@ export function isValidReviewPrice(cents: unknown): boolean {
   return (
     typeof cents === "number" &&
     Number.isInteger(cents) &&
-    cents >= REVIEW_PRICE_MIN_CENTS &&
-    cents <= REVIEW_PRICE_MAX_CENTS
+    (cents === FREE_REVIEW_PRICE_CENTS || (cents >= REVIEW_PRICE_MIN_CENTS && cents <= REVIEW_PRICE_MAX_CENTS))
   );
+}
+
+/**
+ * Accès patient selon le tarif du kiné (Philippe, 2026-11-01) : à 0 €, le
+ * patient entre directement dans l'appli ; au-dessus, il accepte le suivi
+ * (tarif par écrit + carte enregistrée) avant d'y accéder. Pas d'écran de
+ * paiement tant que le kiné n'a pas activé ses paiements Stripe : le patient
+ * ne pourrait pas payer et resterait bloqué.
+ */
+export function patientMustAcceptFollowUp(input: {
+  kinePriceCents: number | null | undefined;
+  kineCanCharge: boolean;
+  followUpStatus: string | null | undefined;
+}): boolean {
+  if (!input.kineCanCharge) return false;
+  if (effectiveReviewPrice(input.kinePriceCents) === FREE_REVIEW_PRICE_CENTS) return false;
+  return input.followUpStatus !== "active";
 }
 
 /** Le mois (heure de Paris) sous forme « AAAA-MM-01 » — la clé d'un bilan. */
@@ -114,27 +120,12 @@ export function feeNoteNumber(year: number, seq: number): string {
 }
 
 /**
- * Patient actif sur un mois : il a accepté l'invitation (CGU) et, dans le
- * mois, a fait au moins une séance, noté un ressenti, ou reçu un bilan validé.
- * Même règle que internal.admin_month_active_patients (migration 0071).
+ * Abonnement EasyPhysio d'un mois, hors TVA et TVA comprise. Le premier mois
+ * d'un kiné est offert (FREE_FIRST_MONTH).
  */
-export function isActivePatient(input: {
-  termsAccepted: boolean;
-  sessionsThisMonth: number;
-  feedbackThisMonth: number;
-  reviewThisMonth: boolean;
-}): boolean {
-  if (!input.termsAccepted) return false;
-  return input.sessionsThisMonth > 0 || input.feedbackThisMonth > 0 || input.reviewThisMonth;
-}
-
-/**
- * Facture EasyPhysio d'un mois, hors TVA et TVA comprise. Le premier mois
- * facturable d'un kiné est offert (FREE_FIRST_MONTH).
- */
-export function platformFeeForMonth(activePatients: number, isFirstBilledMonth: boolean) {
+export function platformFeeForMonth(isFirstBilledMonth: boolean) {
   const free = FREE_FIRST_MONTH && isFirstBilledMonth;
-  const htCents = free ? 0 : Math.max(0, activePatients) * KINE_FEE_PER_ACTIVE_PATIENT_CENTS;
+  const htCents = free ? 0 : KINE_SUBSCRIPTION_HT_CENTS;
   const vatCents = Math.round(htCents * VAT_RATE);
   return { free, htCents, vatCents, ttcCents: htCents + vatCents };
 }

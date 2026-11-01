@@ -11,10 +11,6 @@ import { computeAdherence, adherenceLabel, adherenceTone, type Adherence } from 
 import { computeSignal, type Signal } from "./patientSignal.ts";
 import { relativeDay } from "../format/relativeDay.ts";
 import { initials } from "../format/initials.ts";
-import { paymentEligibleForDeletion } from "../patient/paymentStatus.ts";
-
-/** Pourquoi un patient serait « ancien » (plus calculé depuis le 2026-10-24). */
-type LockReason = "payment_failed" | "ended";
 
 export interface PatientRowsInput {
   now?: Date;
@@ -23,8 +19,6 @@ export interface PatientRowsInput {
     full_name: string | null;
     condition_id: string | null;
     created_at: string;
-    /** Ancienne étiquette manuelle (migration 0049) — plus lue depuis le 2026-10-10, voir `subscriptions`. */
-    payment_lapsed_at?: string | null;
     /** CGU acceptance (app/patient/layout.tsx's gate). Optional for old test fixtures — see `onboardingStage`. */
     terms_accepted_at?: string | null;
   }[];
@@ -34,7 +28,6 @@ export interface PatientRowsInput {
   /** 14 derniers jours. */
   feedback: { patient_id: string; pain_score: number | null; difficulty: number | null; created_at: string }[];
   recs: { patient_id: string; workout_id: string; week_start_date: string; week_count?: number | null; times_per_week: number | null }[];
-  /** Abonnements Stripe des patients (lisibles par leur kiné, migration 0055). Optionnel pour les anciens tests. */
 }
 
 export interface PatientRow {
@@ -52,15 +45,6 @@ export interface PatientRow {
   adherenceLabel: "Bonne" | "Moyenne" | "Faible" | null;
   adherenceTone: "ok" | "warn" | "danger" | "muted";
   signal: Signal;
-  /**
-   * « Ancien patient » : date à laquelle son abonnement a cessé de lui donner
-   * accès (carte refusée ou abonnement terminé), sinon null. Calculé d'après
-   * Stripe depuis le 2026-10-10 — avant, une étiquette posée à la main.
-   */
-  paymentLapsedAt: string | null;
-  /** Pourquoi il n'a plus accès (même règle que l'écran cadenas du patient). */
-  lapseReason: LockReason | null;
-  paymentEligibleForDeletion: boolean;
   /**
    * `null` = onboarding terminé. `"invite"` = n'a jamais accepté les CGU (a
    * peut-être même jamais ouvert son invitation Clerk) — on peut renvoyer
@@ -107,9 +91,6 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
     const sig = signalsBy.get(p.id) ?? { painScores: [], difficulties: [], lastPain: null, lastPainAt: "" };
     const assessment = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties });
     const adherence = computeAdherence({ completedAt: completed, assignments: recsBy.get(p.id) ?? [], now });
-    // Plus d'abonnement patient (2026-10-24) : personne n'est « ancien patient ».
-    const lapse = null as { at: string; reason: LockReason } | null;
-    const paymentLapsedAt = lapse?.at ?? null;
     const termsAcceptedAt = p.terms_accepted_at ?? null;
     const onboardingStage: PatientRow["onboardingStage"] = !termsAcceptedAt
       ? "invite"
@@ -138,9 +119,6 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
         createdAt: p.created_at,
         now,
       }),
-      paymentLapsedAt,
-      lapseReason: lapse?.reason ?? null,
-      paymentEligibleForDeletion: paymentEligibleForDeletion(paymentLapsedAt, now),
       onboardingStage,
       createdAt: p.created_at,
     };
@@ -151,12 +129,6 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
     // le signal (Philippe, 2026-09-09 — un compte tout neuf sans donnée
     // ressortait sinon comme « À jour », ce qui laissait croire à tort que
     // le patient était opérationnel).
-    // Anciens patients (abonnement terminé ou paiement refusé) : tout en bas,
-    // SOUS les inscriptions en attente (Philippe, 2026-10-10).
-    const aFormer = a.paymentLapsedAt !== null;
-    const bFormer = b.paymentLapsedAt !== null;
-    if (aFormer !== bFormer) return aFormer ? 1 : -1;
-    if (aFormer && bFormer) return (b.paymentLapsedAt ?? "").localeCompare(a.paymentLapsedAt ?? "") || a.name.localeCompare(b.name, "fr");
     const aPending = a.onboardingStage !== null;
     const bPending = b.onboardingStage !== null;
     if (aPending !== bPending) return aPending ? 1 : -1;

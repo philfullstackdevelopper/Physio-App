@@ -11,7 +11,6 @@ import { initials } from "@/lib/format/initials";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { ageFromDob } from "@/lib/exercise/patientProfile";
 import { EQUIPMENT_LABELS, type EquipmentId } from "@/lib/exercise/equipment";
-import { paymentEligibleForDeletion } from "@/lib/patient/paymentStatus";
 import { type AddableWorkout } from "@/components/AdjustWorkoutModal";
 import KineWeekProgramme, { type KineWorkoutSummary } from "@/components/KineWeekProgramme";
 import PatientActionsMenu from "@/components/PatientActionsMenu";
@@ -50,9 +49,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
 
   const { data: patient } = await supabase.from("patients").select("id, full_name, email, condition_id, created_at").eq("id", id).maybeSingle();
   if (!patient) redirect("/dashboard/patients");
-  // Plus d'abonnement patient depuis le 2026-10-24 : plus d'« ancien patient »
-  // calculé d'après un abonnement.
-  const lapse = null as { at: string; reason: "payment_failed" | "ended" } | null;
   const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || "ce patient";
 
   const WORKOUT_FIELDS =
@@ -229,7 +225,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     <PatientDetailView
       name={(patient.full_name as string | null) ?? "Patient"}
       warning={warning}
-      paymentLapsed={!!lapse}
       error={error}
       adjusted={adjusted === "1"}
       stats={{
@@ -247,9 +242,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       <PatientActionsMenu
         patientId={patient.id}
         patientName={firstName}
-        paymentLapsedAt={lapse?.at ?? null}
-        paymentEligibleForDeletion={paymentEligibleForDeletion(lapse?.at ?? null, now)}
-        lapseReason={lapse?.reason ?? null}
         redirectTo={`/dashboard/patients/${patient.id}`}
         deletePatient={deletePatient}
         messages={{

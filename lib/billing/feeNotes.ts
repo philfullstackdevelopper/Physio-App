@@ -1,9 +1,8 @@
-// Notes d'honoraires et récapitulatif mensuel (nouveau modèle, 2026-10-24).
-// Lecture par la session de la personne connectée : le kiné voit les bilans
-// de SES patients, le patient ne voit que les siens (RLS, migration 0071).
+// Notes d'honoraires et récapitulatif mensuel des programmes facturés.
+// Lecture par la session de la personne connectée : le kiné voit les notes
+// de SES patients, le patient ne voit que les siennes (RLS, migration 0071).
 // Mentions de la note : identité et RPPS du kiné, patient, date, acte non
-// remboursable, exonération de TVA des soins (art. 261-4-1° CGI) — à faire
-// relire par l'avocat / le comptable avant le lancement.
+// remboursable, exonération de TVA des soins (art. 261-4-1° CGI).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { feeNoteNumber, nextPeriod } from "./reviewModel";
 

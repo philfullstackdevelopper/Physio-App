@@ -8,12 +8,8 @@ import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 import { estimateStripeFeeCents } from "@/lib/billing/reviewModel";
 import {
   FREE_FIRST_MONTH,
-  KINE_FEE_PER_ACTIVE_PATIENT_CENTS,
-  KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS,
-  PATIENT_APP_ONLY_MONTHLY_CENTS,
+  KINE_SUBSCRIPTION_TTC_CENTS,
   RECOMMENDED_REVIEW_PRICE_CENTS,
-  REVIEW_PRICE_MAX_CENTS,
-  REVIEW_PRICE_MIN_CENTS,
   eurosFR,
 } from "@/lib/billing/reviewModel";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
@@ -21,40 +17,31 @@ import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 // Section "Tarifs" de la landing, avec un choix "Côté kiné" / "Côté patient"
 // (Philippe, 2026-09-13 : chacun ne se reconnaît que dans son propre prix).
 //
-// Réécrite pour le nouveau modèle (Philippe, 2026-10-24) — deux flux séparés :
-// le patient paie son kiné pour chaque bilan de suivi mensuel fait (100 % pour
-// le kiné), et le kiné paie EasyPhysio un forfait par patient actif. Les
-// montants viennent tous de lib/billing/reviewModel.ts. Ne jamais parler de
-// « commission » ni d'« abonnement » côté kiné : c'est la séparation des deux
-// paiements qui rend le modèle conforme au code de déontologie.
+// Modèle du 2026-11-01 (voir lib/billing/reviewModel.ts) : le kiné paie à
+// EasyPhysio un abonnement fixe, patients illimités ; ses patients lui paient
+// directement un programme mensuel hors nomenclature, au tarif qu'il fixe
+// (ou 0 € pour l'offrir). Tous les montants viennent de reviewModel.ts.
 
 const euros = (cents: number) => eurosFR(cents);
 const eurosRound = (cents: number) => eurosFR(cents, 0);
+// Simulateur : de 10 à 200 € par mois (le kiné fixe librement son tarif ; ces
+// bornes ne servent qu'au curseur).
+const SIM_PRICE_MIN_CENTS = 1000;
+const SIM_PRICE_MAX_CENTS = 20000;
 const REVIEW_PRICE = eurosRound(RECOMMENDED_REVIEW_PRICE_CENTS);
-const KINE_FEE_HT = eurosRound(KINE_FEE_PER_ACTIVE_PATIENT_CENTS);
+const KINE_SUB = eurosRound(KINE_SUBSCRIPTION_TTC_CENTS);
 
-// Deux façons d'utiliser EasyPhysio côté patient (Philippe, 2026-10-24) :
-// le suivi mensuel avec son kiné (payé au kiné), ou l'accès seul à l'appli
-// (payé à EasyPhysio). La 2e offre reste « bien-être » : jamais de programme
-// construit d'après une pathologie (voir lib/billing/reviewModel.ts).
 const FOLLOW_UP_POINTS = [
   "Chaque mois, votre kiné regarde vos séances et vos douleurs et ajuste votre programme",
-  "Prélevé seulement le mois où le bilan est fait",
+  "Prélevé seulement le mois où votre kiné ajuste réellement votre programme",
   "Carte enregistrée une seule fois, arrêt à tout moment",
-  "Pendant vos soins au cabinet, l'appli vous est offerte par votre kiné",
-];
-
-const APP_ONLY_POINTS = [
-  "Toute la bibliothèque d'exercices, dessinés et animés",
-  "Vos propres séances, composées et enregistrées",
-  "Le planning et l'historique de vos séances",
-  "Continuer le programme laissé par votre kiné",
+  "Si votre kiné vous offre le suivi, l'appli est gratuite",
 ];
 
 function PatientOffers() {
   return (
     <div className="mx-auto max-w-3xl">
-      <RevealGroup className="grid gap-4 sm:grid-cols-2">
+      <RevealGroup className="mx-auto grid max-w-sm gap-4">
         <RevealItem className="relative rounded-2xl bg-blue-600 p-6 text-white shadow-lg shadow-blue-900/20 ring-1 ring-blue-700 max-sm:p-5 sm:short:p-5">
           <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
             Avec votre kiné
@@ -63,34 +50,13 @@ function PatientOffers() {
           <p className="mt-3 flex items-baseline gap-1.5 sm:short:mt-2">
             <span className="text-xs text-blue-100">environ</span>
             <span className="font-display text-3xl font-semibold tracking-tight text-white">{REVIEW_PRICE}&nbsp;€</span>
-            <span className="text-xs text-blue-100">par bilan</span>
+            <span className="text-xs text-blue-100">par mois</span>
           </p>
-          <p className="mt-1 text-xs text-blue-100">Tarif fixé par votre kiné, payé à votre kiné. Non remboursé.</p>
+          <p className="mt-1 text-xs text-blue-100">Tarif fixé par votre kiné, payé à votre kiné. Programme hors nomenclature, non remboursé.</p>
           <ul className="mt-5 space-y-2 border-t border-blue-500 pt-5 text-sm text-blue-50 sm:short:mt-3 sm:short:space-y-1.5 sm:short:pt-3">
             {FOLLOW_UP_POINTS.map((point) => (
               <li key={point} className="flex items-start gap-2">
                 <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white" strokeWidth={2.5} />
-                {point}
-              </li>
-            ))}
-          </ul>
-        </RevealItem>
-        <RevealItem className="relative rounded-2xl border border-slate-200/70 bg-white/70 p-6 max-sm:p-5 sm:short:p-5">
-          <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200">
-            En autonomie
-          </span>
-          <p className="text-sm font-medium text-slate-500">L&apos;appli seule</p>
-          <p className="mt-3 flex items-baseline gap-1.5 sm:short:mt-2">
-            <span className="font-display text-3xl font-semibold tracking-tight text-slate-900">
-              {euros(PATIENT_APP_ONLY_MONTHLY_CENTS)}&nbsp;€
-            </span>
-            <span className="text-xs text-slate-500">/mois</span>
-          </p>
-          <p className="mt-1 text-xs text-slate-500">Ouvert à tous, sans suivi par un kiné. Payé à EasyPhysio, sans engagement.</p>
-          <ul className="mt-5 space-y-2 border-t border-slate-100 pt-5 text-sm text-slate-600 sm:short:mt-3 sm:short:space-y-1.5 sm:short:pt-3">
-            {APP_ONLY_POINTS.map((point) => (
-              <li key={point} className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" strokeWidth={2.5} />
                 {point}
               </li>
             ))}
@@ -114,19 +80,19 @@ function PatientOffers() {
 }
 
 // Côté kiné : à gauche, comment l'argent circule en trois étapes ; à droite,
-// un simulateur (patients actifs, patients en suivi mensuel, tarif du bilan).
+// un simulateur (patients suivis, tarif mensuel).
 const KINE_STEPS = [
   {
     title: "Vous fixez votre tarif de suivi",
-    body: `Chaque mois, vous regardez les séances et les douleurs du patient et ajustez son programme. Tarif conseillé : ${REVIEW_PRICE} € le bilan.`,
+    body: `Un programme mensuel hors nomenclature : chaque mois, vous regardez les séances et les douleurs du patient et ajustez son programme. Conseillé : ${REVIEW_PRICE} € par mois, ou 0 € pour l'offrir.`,
   },
   {
     title: "Votre patient vous paie directement",
-    body: "Il accepte votre tarif une fois. Il n'est prélevé que le mois où vous ajustez son programme, et la note d'honoraires part toute seule.",
+    body: "Il accepte votre tarif et enregistre sa carte en rejoignant l'appli. Il n'est prélevé que le mois où vous ajustez son programme ; la note d'honoraires part toute seule.",
   },
   {
     title: "Vous payez EasyPhysio à part",
-    body: `${KINE_FEE_HT} € HT par patient suivi et par mois, en une seule facture.${FREE_FIRST_MONTH ? " Premier mois offert." : ""}`,
+    body: `Un abonnement de ${KINE_SUB} € TTC par mois, patients illimités, sans engagement.${FREE_FIRST_MONTH ? " Premier mois offert." : ""}`,
   },
 ];
 
@@ -179,19 +145,18 @@ function Slider({
 }
 
 function KineOffer() {
-  // Un patient sur l'appli = un patient suivi, avec un bilan par mois
-  // (Philippe, 2026-10-25) : un seul curseur.
+  // Un patient sur l'appli = un patient suivi, un programme par mois.
   const [patients, setPatients] = useState(20);
   const [priceCents, setPriceCents] = useState(RECOMMENDED_REVIEW_PRICE_CENTS);
 
   const reviewsCents = patients * priceCents;
-  const easyphysioCents = patients * KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS;
+  const easyphysioCents = KINE_SUBSCRIPTION_TTC_CENTS;
   const cardFeesCents = patients * estimateStripeFeeCents(priceCents);
   const netCents = reviewsCents - easyphysioCents - cardFeesCents;
 
   const rows = [
-    { label: `${patients} bilan${patients > 1 ? "s" : ""} × ${euros(priceCents)} €`, value: `+ ${euros(reviewsCents)} €`, tone: "text-slate-900" },
-    { label: `EasyPhysio : ${patients} × ${euros(KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS)} € TTC`, value: `− ${euros(easyphysioCents)} €`, tone: "text-blue-600" },
+    { label: `${patients} patient${patients > 1 ? "s" : ""} × ${euros(priceCents)} €`, value: `+ ${euros(reviewsCents)} €`, tone: "text-slate-900" },
+    { label: "Abonnement EasyPhysio (TTC)", value: `− ${euros(easyphysioCents)} €`, tone: "text-blue-600" },
     { label: "Frais de paiement (estimés)", value: `− ${euros(cardFeesCents)} €`, tone: "text-slate-700" },
   ];
 
@@ -215,7 +180,7 @@ function KineOffer() {
             ))}
           </ol>
           <p className="mt-4 text-sm leading-relaxed text-slate-600 max-sm:hidden sm:short:mt-3">
-            Les deux paiements ne se mélangent jamais&nbsp;: <Underlined>vos honoraires restent à 100&nbsp;% à vous.</Underlined>
+            Un abonnement fixe, patients illimités&nbsp;: <Underlined>vos honoraires restent à 100&nbsp;% à vous.</Underlined>
           </p>
         </div>
 
@@ -239,14 +204,14 @@ function KineOffer() {
           />
           <Slider
             id="sim-price"
-            label="Votre tarif du bilan"
+            label="Votre tarif mensuel"
             value={priceCents}
             display={`${eurosRound(priceCents)} €`}
-            min={REVIEW_PRICE_MIN_CENTS}
-            max={REVIEW_PRICE_MAX_CENTS}
+            min={SIM_PRICE_MIN_CENTS}
+            max={SIM_PRICE_MAX_CENTS}
             step={100}
             onChange={setPriceCents}
-            valueText={`${eurosRound(priceCents)} euros par bilan`}
+            valueText={`${eurosRound(priceCents)} euros par mois`}
           />
 
           <div className="mt-3 rounded-xl bg-slate-50 px-4 py-3 max-sm:px-3 sm:short:mt-2 sm:short:py-2">
@@ -271,8 +236,8 @@ function KineOffer() {
           <div className="mt-3 flex items-center gap-3 rounded-xl bg-blue-50/70 px-3.5 py-2.5 max-sm:hidden sm:short:hidden">
             <Info className="h-5 w-5 shrink-0 text-blue-600" strokeWidth={1.75} />
             <p className="text-xs leading-snug text-slate-500">
-              <span className="block text-sm font-medium text-blue-700">Pas de bilan, pas de prélèvement</span>
-              Un mois sans bilan, votre patient ne paie rien.
+              <span className="block text-sm font-medium text-blue-700">Pas de programme ajusté, pas de prélèvement</span>
+              Un mois où vous n&apos;ajustez rien, votre patient ne paie rien.
             </p>
           </div>
         </div>

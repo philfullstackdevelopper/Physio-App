@@ -7,11 +7,11 @@ import PatientWelcomeGate from "@/components/PatientWelcomeGate";
 import PatientNoRecordGate from "@/components/PatientNoRecordGate";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { patientMustAcceptFollowUp } from "@/lib/billing/reviewModel";
 
 const ONBOARDING_PATH = "/patient/onboarding";
-// Same treatment as onboarding: the offer choice comes right after it
-// (Philippe, 2026-09-10) and there is no app to navigate until it's done.
-const ABONNEMENT_PATH = "/patient/abonnement";
+// Suivi mensuel à accepter quand le kiné a fixé un tarif au-dessus de 0 €.
+const SUIVI_PATH = "/patient/suivi";
 
 // The one shared gate for every /patient/* route, mirroring how
 // app/dashboard/layout.tsx gates instructors on approval status: a freshly
@@ -33,7 +33,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
   // calls it — same pattern as the dashboard layout.
   const { data: patient } = await supabase
     .from("patients")
-    .select("full_name, terms_accepted_at, instructors ( full_name, status )")
+    .select("full_name, instructor_id, terms_accepted_at, instructors ( full_name, status, review_price_cents )")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -53,18 +53,16 @@ export default async function PatientLayout({ children }: { children: React.Reac
   }
 
   // Kiné suspendu par l'administrateur (lib/billing/suspendInstructor.ts) :
-  // ses abonnements sont résiliés et remboursés, et ses patients gardent
-  // l'accès GRATUIT à leur programme, historique et données — pas de renvoi
-  // vers le choix d'une offre (Philippe, 2026-10-07 : « I don't want it to be
-  // a problem for the clients »). Seule la messagerie est coupée.
+  // ses patients gardent l'accès GRATUIT à leur programme, historique et
+  // données, sans écran de paiement (Philippe, 2026-10-07 : « I don't want it
+  // to be a problem for the clients »). Plus aucun prélèvement : seul le kiné
+  // déclenche un prélèvement, et il n'a plus accès.
   const kine = patient.instructors as unknown as { full_name: string | null; status: string | null } | null;
   const kineSuspended = kine?.status === "suspended";
 
   const pathname = (await headers()).get("x-pathname") ?? "";
   const onOnboardingPath = pathname.startsWith(ONBOARDING_PATH);
-  // Nouveau modèle (2026-10-24) : plus d'offre patient à choisir, le kiné paie
-  // l'appli pour ses patients — plus de renvoi vers une page d'offres.
-  const fullBleed = onOnboardingPath || pathname.startsWith(ABONNEMENT_PATH);
+  const fullBleed = onOnboardingPath;
 
   // Les trois lectures qui suivent ne dépendent pas l'une de l'autre : en
   // parallèle plutôt qu'à la suite (audit du 2026-10-08 — chaque aller-retour
@@ -92,12 +90,38 @@ export default async function PatientLayout({ children }: { children: React.Reac
     }
   }
 
+  // Accès selon le tarif du kiné (Philippe, 2026-11-01) : à 0 €, entrée
+  // directe ; au-dessus, le patient accepte le suivi mensuel (tarif par écrit +
+  // carte) sur /patient/suivi avant d'accéder au reste. Pas d'écran de paiement
+  // si le kiné n'a pas activé Stripe, ni si son compte est suspendu.
+  const onSuiviPath = pathname.startsWith(SUIVI_PATH);
+  let mustAcceptFollowUp = false;
+  if (!onOnboardingPath && !kineSuspended) {
+    const instructorId = (patient.instructor_id as string | null) ?? null;
+    const [connectRes, followUpRes] = await Promise.all([
+      instructorId
+        ? supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", instructorId).maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabase.from("patient_follow_ups").select("status").eq("patient_id", user.id).maybeSingle(),
+    ]);
+    const kineRow = patient.instructors as unknown as { review_price_cents: number | null } | null;
+    mustAcceptFollowUp = patientMustAcceptFollowUp({
+      kinePriceCents: kineRow?.review_price_cents ?? null,
+      kineCanCharge: connectRes.data?.status === "active",
+      followUpStatus: (followUpRes.data?.status as string | undefined) ?? null,
+    });
+  }
+  // Le compte reste ouvert (RGPD) : exporter ou supprimer ses données ne
+  // dépend jamais d'un paiement.
+  const onAccountPage = pathname === "/patient/compte";
+  if (mustAcceptFollowUp && !onSuiviPath && !onAccountPage) redirect(SUIVI_PATH);
+  // Écran de suivi à accepter : plein écran, sans la barre d'onglets.
+  if (mustAcceptFollowUp) return <>{children}</>;
 
-  // Onboarding and the offer choice both render full-bleed, their own layout
-  // (step wizard / pricing cards, no dashboard chrome) — the real nav only
-  // makes sense once there's a real profile AND an active offer to navigate
-  // around (Philippe, 2026-09-09: "sans les trucs sur la barre latérale pour
-  // le début").
+
+  // Onboarding renders full-bleed, its own step-wizard layout — the real nav
+  // only makes sense once there's a real profile to navigate around
+  // (Philippe, 2026-09-09: "sans les trucs sur la barre latérale pour le début").
   if (fullBleed) return <>{children}</>;
   const unreadCount = unreadRes?.count ?? 0;
 
@@ -122,8 +146,8 @@ export default async function PatientLayout({ children }: { children: React.Reac
           <p className="m-4 mb-0 flex items-start gap-2 rounded-2xl border border-warn/30 bg-warn-soft p-3 text-sm text-warn sm:mx-8 sm:mt-6">
             <Info className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} />
             <span>
-              {kine?.full_name ?? "Votre kiné"} n&apos;exerce plus sur EasyPhysio. Votre abonnement a été arrêté et la
-              part non utilisée vous est remboursée. Vous gardez l&apos;accès gratuit à votre programme et à vos données.
+              {kine?.full_name ?? "Votre kiné"} n&apos;exerce plus sur EasyPhysio. Plus aucun prélèvement : vous gardez
+              l&apos;accès gratuit à votre programme et à vos données.
             </span>
           </p>
         )}

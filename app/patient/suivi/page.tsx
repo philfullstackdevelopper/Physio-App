@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { effectiveReviewPrice } from "@/lib/billing/reviewModel";
+import { effectiveReviewPrice, patientMustAcceptFollowUp } from "@/lib/billing/reviewModel";
 import SuiviView, { type SuiviViewProps } from "./SuiviView";
 
 // « Suivi mensuel » côté patient (nouveau modèle, 2026-10-24). Le patient y
 // accepte le tarif de son kiné (information préalable, art. R.4321-98 CSP),
 // enregistre sa carte, l'arrête quand il veut, et retrouve ses bilans et
-// notes d'honoraires. L'appli elle-même reste ouverte sans ce suivi.
+// notes d'honoraires. Tarif du kiné au-dessus de 0 € : ce suivi est la
+// condition d'accès à l'appli (app/patient/layout.tsx) ; à 0 €, appli ouverte.
 export default async function SuiviPage({
   searchParams,
 }: {
@@ -34,6 +35,14 @@ export default async function SuiviPage({
       .limit(24),
   ]);
 
+  const kineSuspended = (kine?.status as string | null) === "suspended";
+  const required =
+    !kineSuspended &&
+    patientMustAcceptFollowUp({
+      kinePriceCents: (kine?.review_price_cents as number | null) ?? null,
+      kineCanCharge: connect?.status === "active",
+      followUpStatus: (followUp?.status as string | undefined) ?? null,
+    });
   const kineName = (kine?.full_name as string | null) ?? "votre kiné";
   const kineReady = ((kine?.status as string | null) ?? "approved") === "approved" && connect?.status === "active";
   const status = (followUp?.status as "pending_card" | "active" | "stopped" | undefined) ?? "none";
@@ -51,6 +60,7 @@ export default async function SuiviPage({
       acceptedPrice={acceptedPrice}
       price={price}
       cardLabel={(followUp?.card_label as string | null) ?? null}
+      required={required}
       reviews={(reviews ?? []) as SuiviViewProps["reviews"]}
     />
   );

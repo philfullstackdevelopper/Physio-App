@@ -11,6 +11,8 @@ import { deleteMyAccount } from "./actions";
 export type FollowUpSummary = {
   status: "none" | "pending_card" | "active" | "stopped";
   priceCents: number;
+  /** Le kiné a fixé son tarif à 0 € : suivi offert, rien à payer. */
+  free?: boolean;
   cardLabel: string | null;
   kineName: string | null;
 };
@@ -26,11 +28,14 @@ const euros = (cents: number) => (cents / 100).toLocaleString("fr-FR", { minimum
 
 // Nouveau modèle (2026-10-24) : plus d'abonnement patient — l'appli est
 // offerte par le kiné. La carte « Suivi mensuel » résume le suivi payé au
-// kiné (bilan mensuel) et mène à /patient/suivi pour le gérer.
+// kiné (programme mensuel) et mène à /patient/suivi pour le gérer.
 function followUpText(f: FollowUpSummary): { title: string; line: string; badge: string; badgeClass: string; cta: string } {
   const kine = f.kineName ?? "votre kiné";
+  if (f.free && f.status !== "active") {
+    return { title: "Suivi mensuel", line: `Offert par ${kine} : rien à payer`, badge: "Offert", badgeClass: "bg-ok-soft text-ok", cta: "Voir" };
+  }
   if (f.status === "active") {
-    return { title: "Suivi mensuel actif", line: `${euros(f.priceCents)} € par bilan · ${f.cardLabel ?? "carte enregistrée"}`, badge: "Actif", badgeClass: "bg-ok-soft text-ok", cta: "Gérer mon suivi" };
+    return { title: "Suivi mensuel actif", line: `${euros(f.priceCents)} € par mois · ${f.cardLabel ?? "carte enregistrée"}`, badge: "Actif", badgeClass: "bg-ok-soft text-ok", cta: "Gérer mon suivi" };
   }
   if (f.status === "pending_card") {
     return { title: "Suivi mensuel", line: "Carte pas encore enregistrée", badge: "À terminer", badgeClass: "bg-warn-soft text-warn", cta: "Terminer" };
@@ -38,7 +43,7 @@ function followUpText(f: FollowUpSummary): { title: string; line: string; badge:
   if (f.status === "stopped") {
     return { title: "Suivi mensuel arrêté", line: `Vous pouvez le reprendre avec ${kine}`, badge: "Arrêté", badgeClass: "bg-app-bg text-muted", cta: "Reprendre" };
   }
-  return { title: "Suivi mensuel", line: `Un bilan par mois avec ${kine}, ${euros(f.priceCents)} € (non remboursé)`, badge: "Non activé", badgeClass: "bg-app-bg text-muted", cta: "Découvrir" };
+  return { title: "Suivi mensuel", line: `Programme mensuel avec ${kine}, ${euros(f.priceCents)} € par mois (non remboursé)`, badge: "Non activé", badgeClass: "bg-app-bg text-muted", cta: "Découvrir" };
 }
 
 export default function CompteView({
@@ -78,8 +83,9 @@ export default function CompteView({
             </div>
             <p className="mt-3 text-sm text-muted sm:mt-4">{f.line}</p>
             <p className="mt-2 text-sm text-muted">
-              Votre programme et l&apos;appli vous sont offerts par votre kiné. Le suivi mensuel est une option : un bilan par
-              mois, payé directement à votre kiné, seulement le mois où il est fait.
+              {followUp.free
+                ? "Votre programme et l'appli vous sont offerts par votre kiné."
+                : "Un programme mensuel avec votre kiné, payé directement à lui, seulement le mois où il ajuste votre programme. EasyPhysio ne prend rien."}
             </p>
             <Link
               href="/patient/suivi"

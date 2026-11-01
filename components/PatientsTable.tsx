@@ -11,7 +11,7 @@ import PatientMessagesModal from "@/components/PatientMessagesModal";
 import PatientActionsMenu from "@/components/PatientActionsMenu";
 import type { ThreadMessage } from "@/components/MessageThread";
 
-export type Segment = "tous" | "surveiller" | "jour" | "resilies";
+export type Segment = "tous" | "surveiller" | "jour";
 
 const TONE_TEXT = { ok: "text-ok", warn: "text-warn", danger: "text-danger", muted: "text-muted" } as const;
 const TONE_BAR = { ok: "bg-ok", warn: "bg-warn", danger: "bg-danger", muted: "bg-line" } as const;
@@ -25,15 +25,7 @@ const ONBOARDING_LABEL: Record<NonNullable<PatientRow["onboardingStage"]>, strin
 /** Patient qui n'a encore rien démarré : inscription non terminée, ou aucune
  *  séance prévue ni faite — séparé des patients suivis dans la liste mobile. */
 function notStarted(row: PatientRow) {
-  if (isFormer(row)) return false; // les anciens patients ont leur propre groupe, tout en bas
   return row.onboardingStage !== null || (row.adherence.expected === 0 && !row.lastSessionAt);
-}
-
-/** Ancien patient : son abonnement ne lui donne plus accès (calculé d'après
- *  Stripe, lib/patient/paymentStatus.ts) — groupe à part, tout en bas de la
- *  liste, sous les inscriptions en attente (Philippe, 2026-10-10). */
-function isFormer(row: PatientRow) {
-  return row.paymentLapsedAt !== null;
 }
 
 function SignalCell({ row, compact = false }: { row: PatientRow; compact?: boolean }) {
@@ -54,11 +46,6 @@ function SignalCell({ row, compact = false }: { row: PatientRow; compact?: boole
         {s.kind === "pain" && s.severe && <span className="h-1.5 w-1.5 rounded-full bg-danger animate-[gentlePulse_2.4s_ease-in-out_infinite]" />}
         {s.label}
       </span>
-      {row.paymentLapsedAt && (
-        <span className="rounded-full bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">
-          {row.lapseReason === "payment_failed" ? "Paiement refusé" : "Abonnement terminé"}
-        </span>
-      )}
     </span>
   );
 }
@@ -130,11 +117,9 @@ export default function PatientsTable({
     () => ({
       tous: rows.length,
       // Une inscription en attente n'a pas encore de signal clinique réel —
-      // elle ne doit apparaître ni « à surveiller » ni « à jour ». Un ancien
-      // patient (accès verrouillé) non plus : il n'est plus suivi.
-      surveiller: rows.filter((r) => !r.onboardingStage && !isFormer(r) && r.signal.kind !== "ok").length,
-      jour: rows.filter((r) => !r.onboardingStage && !isFormer(r) && r.signal.kind === "ok").length,
-      resilies: rows.filter((r) => r.paymentLapsedAt !== null).length,
+      // elle ne doit apparaître ni « à surveiller » ni « à jour ».
+      surveiller: rows.filter((r) => !r.onboardingStage && r.signal.kind !== "ok").length,
+      jour: rows.filter((r) => !r.onboardingStage && r.signal.kind === "ok").length,
     }),
     [rows],
   );
@@ -142,9 +127,8 @@ export default function PatientsTable({
   const visible = useMemo(() => {
     const query = q.trim().toLowerCase();
     return rows.filter((r) => {
-      if (segment === "surveiller" && (r.onboardingStage || isFormer(r) || r.signal.kind === "ok")) return false;
-      if (segment === "jour" && (r.onboardingStage || isFormer(r) || r.signal.kind !== "ok")) return false;
-      if (segment === "resilies" && r.paymentLapsedAt === null) return false;
+      if (segment === "surveiller" && (r.onboardingStage || r.signal.kind === "ok")) return false;
+      if (segment === "jour" && (r.onboardingStage || r.signal.kind !== "ok")) return false;
       if (conditionId && r.conditionId !== conditionId) return false;
       if (stage && r.stage !== stage) return false;
       if (query && !r.name.toLowerCase().includes(query)) return false;
@@ -154,16 +138,12 @@ export default function PatientsTable({
 
   // Liste mobile : les patients suivis d'abord, puis ceux qui n'ont rien
   // démarré — l'ordre d'origine est conservé à l'intérieur de chaque groupe.
-  // Puis, tout en bas, les anciens patients (abonnement terminé / carte refusée).
   const mobileOrdered = useMemo(
-    () => [...visible.filter((r) => !notStarted(r) && !isFormer(r)), ...visible.filter(notStarted), ...visible.filter(isFormer)],
+    () => [...visible.filter((r) => !notStarted(r)), ...visible.filter(notStarted)],
     [visible],
   );
-  const formerCount = visible.filter(isFormer).length;
-  const followedCount = mobileOrdered.filter((r) => !notStarted(r) && !isFormer(r)).length;
-  const notStartedCount = mobileOrdered.length - followedCount - formerCount;
-  // Ordinateur : `visible` garde l'ordre de patientRows (anciens patients en dernier).
-  const firstFormerIndex = visible.findIndex(isFormer);
+  const followedCount = mobileOrdered.filter((r) => !notStarted(r)).length;
+  const notStartedCount = mobileOrdered.length - followedCount;
 
   if (rows.length === 0) {
     return (
@@ -213,7 +193,6 @@ export default function PatientsTable({
           {segBtn("tous", "Tous")}
           {segBtn("surveiller", "À surveiller")}
           {segBtn("jour", "À jour")}
-          {segBtn("resilies", "Anciens patients")}
         </div>
         <button
           type="button"
@@ -268,15 +247,8 @@ export default function PatientsTable({
                 </tr>
               </thead>
               <tbody>
-                {visible.map((r, i) => (
+                {visible.map((r) => (
                   <Fragment key={r.id}>
-                  {i === firstFormerIndex && segment !== "resilies" && (
-                    <tr className="border-b border-line bg-app-bg">
-                      <td colSpan={6} className="px-4 pb-2 pt-4 text-xs font-semibold uppercase tracking-wide text-muted">
-                        Anciens patients · {formerCount}
-                      </td>
-                    </tr>
-                  )}
                   {/* Toute la ligne navigue vers la fiche patient (Philippe,
                   // 2026-09-09 : le survol de toute la ligne laissait croire
                   // qu'elle était cliquable partout, alors que seuls le nom et
@@ -285,7 +257,7 @@ export default function PatientsTable({
                   // qu'un <Link> englobant, invalide en HTML autour de <td>. */}
                   <tr
                     onClick={() => router.push(appHref(`/dashboard/patients/${r.id}`))}
-                    className={`group cursor-pointer border-b border-line last:border-b-0 hover:bg-app-bg ${r.onboardingStage || isFormer(r) ? "bg-app-bg/60" : ""}`}
+                    className={`group cursor-pointer border-b border-line last:border-b-0 hover:bg-app-bg ${r.onboardingStage ? "bg-app-bg/60" : ""}`}
                   >
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-3">
@@ -351,10 +323,7 @@ export default function PatientsTable({
                             trigger="icon"
                             patientId={r.id}
                             patientName={r.name}
-                            paymentLapsedAt={r.paymentLapsedAt}
-                            paymentEligibleForDeletion={r.paymentEligibleForDeletion}
                             redirectTo="/dashboard/patients"
-                            lapseReason={r.lapseReason}
                             deletePatient={deletePatient}
                           />
                         </span>
@@ -381,16 +350,11 @@ export default function PatientsTable({
                     Pas encore démarré · {notStartedCount}
                   </li>
                 )}
-                {i === followedCount + notStartedCount && formerCount > 0 && segment !== "resilies" && (
-                  <li className="bg-app-bg px-4 pb-2 pt-5 text-xs font-semibold uppercase tracking-wide text-muted max-sm:bg-phone-bg">
-                    Anciens patients · {formerCount}
-                  </li>
-                )}
-                <li className={`flex items-center gap-1 px-4 py-3 transition-colors max-sm:active:bg-app-bg ${notStarted(r) || isFormer(r) ? "bg-app-bg/60" : ""}`}>
+                <li className={`flex items-center gap-1 px-4 py-3 transition-colors max-sm:active:bg-app-bg ${notStarted(r) ? "bg-app-bg/60" : ""}`}>
                   <Link href={`/dashboard/patients/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
                     <span
                       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                        notStarted(r) || isFormer(r) ? "bg-line text-muted" : "bg-brand-soft text-brand"
+                        notStarted(r) ? "bg-line text-muted" : "bg-brand-soft text-brand"
                       }`}
                     >
                       {r.initials}
@@ -442,10 +406,7 @@ export default function PatientsTable({
                     trigger="icon"
                     patientId={r.id}
                     patientName={r.name}
-                    paymentLapsedAt={r.paymentLapsedAt}
-                    paymentEligibleForDeletion={r.paymentEligibleForDeletion}
                     redirectTo="/dashboard/patients"
-                    lapseReason={r.lapseReason}
                     deletePatient={deletePatient}
                   />
                 </li>

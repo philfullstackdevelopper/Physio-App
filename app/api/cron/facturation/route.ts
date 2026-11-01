@@ -1,11 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
-import { periodOf, previousPeriod } from "@/lib/billing/reviewModel";
+import { periodOf } from "@/lib/billing/reviewModel";
 import { runMonthlyInvoicing } from "@/lib/billing/platformInvoice";
 
-// Facturation automatique des kinés (Philippe, 2026-10-28 : « la facturation
-// du kiné doit être automatique »). Appelée le 1er de chaque mois par la
+// Facturation automatique des kinés. Appelée le 1er de chaque mois par la
 // tâche planifiée Scalingo (cron.json → scripts/cron-facturation.mjs), elle
-// facture le mois qui vient de se terminer — exactement comme le bouton
+// facture d'avance l'abonnement du mois qui commence — exactement comme le bouton
 // « Lancer la facturation » de /admin, qui reste en secours. runMonthlyInvoicing
 // ne facture jamais deux fois le même mois : un double appel est sans risque.
 //
@@ -26,7 +25,7 @@ function authorized(req: Request): boolean {
 export async function POST(req: Request) {
   if (!authorized(req)) return Response.json({ error: "Non autorisé." }, { status: 401 });
 
-  const period = previousPeriod(periodOf(new Date()));
+  const period = periodOf(new Date());
   try {
     const r = await runMonthlyInvoicing(period);
     const summary = {

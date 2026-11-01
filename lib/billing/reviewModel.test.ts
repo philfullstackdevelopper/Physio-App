@@ -1,12 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  KINE_SUBSCRIPTION_TTC_CENTS,
   RECOMMENDED_REVIEW_PRICE_CENTS,
   csvCell,
   effectiveReviewPrice,
   feeNoteNumber,
-  isActivePatient,
   isValidReviewPrice,
+  patientMustAcceptFollowUp,
   nextPeriod,
   periodLabel,
   periodOf,
@@ -17,10 +18,16 @@ import {
 test("tarif du bilan : celui du kiné s'il est valide, sinon le tarif conseillé", () => {
   assert.equal(effectiveReviewPrice(2500), 2500);
   assert.equal(effectiveReviewPrice(null), RECOMMENDED_REVIEW_PRICE_CENTS);
-  assert.equal(effectiveReviewPrice(500), RECOMMENDED_REVIEW_PRICE_CENTS);
-  assert.equal(effectiveReviewPrice(5000), RECOMMENDED_REVIEW_PRICE_CENTS);
+  assert.equal(effectiveReviewPrice(50), RECOMMENDED_REVIEW_PRICE_CENTS);
+  assert.equal(effectiveReviewPrice(15000), 15000);
+  assert.equal(effectiveReviewPrice(60000), RECOMMENDED_REVIEW_PRICE_CENTS);
   assert.equal(isValidReviewPrice(1000), true);
   assert.equal(isValidReviewPrice(4000), true);
+  assert.equal(isValidReviewPrice(0), true);
+  assert.equal(isValidReviewPrice(50), false);
+  assert.equal(isValidReviewPrice(50000), true);
+  assert.equal(isValidReviewPrice(50100), false);
+  assert.equal(effectiveReviewPrice(0), 0);
   assert.equal(isValidReviewPrice(1999.5), false);
   assert.equal(isValidReviewPrice("2000"), false);
 });
@@ -40,19 +47,11 @@ test("numéro de note d'honoraires", () => {
   assert.equal(feeNoteNumber(2027, 1234), "2027-1234");
 });
 
-test("patient actif : invitation acceptée + une activité dans le mois", () => {
-  const base = { termsAccepted: true, sessionsThisMonth: 0, feedbackThisMonth: 0, reviewThisMonth: false };
-  assert.equal(isActivePatient(base), false);
-  assert.equal(isActivePatient({ ...base, sessionsThisMonth: 1 }), true);
-  assert.equal(isActivePatient({ ...base, feedbackThisMonth: 2 }), true);
-  assert.equal(isActivePatient({ ...base, reviewThisMonth: true }), true);
-  assert.equal(isActivePatient({ ...base, termsAccepted: false, sessionsThisMonth: 5 }), false);
-});
-
-test("facture EasyPhysio : 3 € HT par patient actif, premier mois offert", () => {
-  assert.deepEqual(platformFeeForMonth(3, false), { free: false, htCents: 900, vatCents: 180, ttcCents: 1080 });
-  assert.deepEqual(platformFeeForMonth(30, true), { free: true, htCents: 0, vatCents: 0, ttcCents: 0 });
-  assert.equal(platformFeeForMonth(0, false).ttcCents, 0);
+test("abonnement EasyPhysio : forfait fixe, premier mois offert", () => {
+  assert.deepEqual(platformFeeForMonth(true), { free: true, htCents: 0, vatCents: 0, ttcCents: 0 });
+  const paid = platformFeeForMonth(false);
+  assert.equal(paid.free, false);
+  assert.equal(paid.ttcCents, KINE_SUBSCRIPTION_TTC_CENTS);
 });
 
 test("CSV : guillemets seulement quand il le faut", () => {
@@ -60,4 +59,12 @@ test("CSV : guillemets seulement quand il le faut", () => {
   assert.equal(csvCell('Bilan ; "ok"'), '"Bilan ; ""ok"""');
   assert.equal(csvCell(null), "");
   assert.equal(csvCell(20), "20");
+});
+
+test("accès patient : gratuit à 0 €, suivi à accepter au-dessus (si le kiné encaisse en ligne)", () => {
+  assert.equal(patientMustAcceptFollowUp({ kinePriceCents: 0, kineCanCharge: true, followUpStatus: null }), false);
+  assert.equal(patientMustAcceptFollowUp({ kinePriceCents: 2000, kineCanCharge: true, followUpStatus: null }), true);
+  assert.equal(patientMustAcceptFollowUp({ kinePriceCents: null, kineCanCharge: true, followUpStatus: "pending_card" }), true);
+  assert.equal(patientMustAcceptFollowUp({ kinePriceCents: 2000, kineCanCharge: true, followUpStatus: "active" }), false);
+  assert.equal(patientMustAcceptFollowUp({ kinePriceCents: 2000, kineCanCharge: false, followUpStatus: null }), false);
 });

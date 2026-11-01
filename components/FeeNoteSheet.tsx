@@ -1,8 +1,8 @@
 import { eurosFR, periodLabel } from "@/lib/billing/reviewModel";
 import { paymentLabel, type FeeNote } from "@/lib/billing/feeNotes";
 
-// Une note d'honoraires imprimable (une page A4). Mentions : à faire relire
-// par l'avocat / le comptable avant le lancement (voir lib/billing/feeNotes.ts).
+// Une note d'honoraires imprimable (une page A4). Mentions : voir
+// lib/billing/feeNotes.ts.
 export default function FeeNoteSheet({ note }: { note: FeeNote }) {
   return (
     <article className="mx-auto w-full max-w-[720px] break-after-page rounded-2xl border border-line bg-white p-8 text-ink shadow-sm print:rounded-none print:border-0 print:p-0 print:shadow-none max-sm:p-5">
@@ -36,7 +36,7 @@ export default function FeeNoteSheet({ note }: { note: FeeNote }) {
         <tbody>
           <tr className="border-b border-line align-top">
             <td className="py-3 pr-4">
-              Bilan de suivi à distance, {periodLabel(note.period)}
+              Programme mensuel hors nomenclature, {periodLabel(note.period)}
               <span className="block text-xs text-muted">
                 Analyse des séances et ressentis, ajustement du programme.
               </span>

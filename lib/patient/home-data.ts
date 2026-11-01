@@ -68,13 +68,8 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
       .limit(400),
   ]);
   if (!isProfileComplete(profile)) redirect("/patient/onboarding");
-  // Then the offer (Philippe, 2026-09-10: onboarding → offre → app). Same
-  // pure rule as app/patient/abonnement/page.tsx and the séance page, so the
-  // three surfaces can never disagree on who is let in.
-  // Exception : kiné suspendu → accès gratuit (lib/billing/context.ts,
-  // hasPatientAppAccess) ; la requête de plus n'a lieu que sans offre active.
-  // Nouveau modèle (2026-10-24) : plus d'offre à choisir — le kiné paie
-  // l'appli pour ses patients, l'accès est toujours ouvert.
+  // L'éventuel suivi à accepter (tarif du kiné au-dessus de 0 €) est vérifié
+  // plus haut, dans app/patient/layout.tsx.
 
   // What the patient SEES is driven by the condition ASSIGNED BY THE PRACTITIONER
   // (patients.condition_id). The patient's self-declaration is intake only.

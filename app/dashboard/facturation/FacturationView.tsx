@@ -17,8 +17,7 @@ import SubmitButton from "@/components/SubmitButton";
 import PhoneFold from "@/components/PhoneFold";
 import type { KineBillingData } from "@/lib/billing/kineBillingData";
 import {
-  KINE_FEE_PER_ACTIVE_PATIENT_CENTS,
-  KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS,
+  KINE_SUBSCRIPTION_TTC_CENTS,
   RECOMMENDED_REVIEW_PRICE_CENTS,
   REVIEW_PRICE_MAX_CENTS,
   REVIEW_PRICE_MIN_CENTS,
@@ -70,7 +69,7 @@ export default function FacturationView({
       <div className="mx-auto max-w-7xl p-3 max-sm:p-4 max-sm:pt-2 sm:p-5 short:sm:py-3">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
           <h1 className="text-xl font-semibold text-ink max-sm:text-2xl">Suivi &amp; facturation</h1>
-          <p className="text-sm text-muted max-sm:text-xs max-sm:short:hidden">Vos bilans et ce que vous encaissez, puis votre facture EasyPhysio : deux paiements séparés.</p>
+          <p className="text-sm text-muted max-sm:text-xs max-sm:short:hidden">Vos programmes mensuels et ce que vous encaissez, puis votre abonnement EasyPhysio : deux paiements séparés.</p>
         </div>
 
         {error && <p className="mt-2 rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger">{error}</p>}
@@ -92,9 +91,9 @@ export default function FacturationView({
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
                 <ClipboardCheck className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
-                Bilans de {periodLabel(data.period)}
+                Suivis de {periodLabel(data.period)}
               </h2>
-              <p className="text-xs text-muted">{eur(data.priceCents)} le bilan</p>
+              <p className="text-xs text-muted">{data.priceCents === 0 ? "Accès gratuit pour vos patients" : `${eur(data.priceCents)} par mois`}</p>
             </div>
 
             <div className="mt-3 grid grid-cols-3 gap-2">
@@ -116,7 +115,7 @@ export default function FacturationView({
               <div className="mt-3 rounded-xl border border-dashed border-line px-4 py-4 text-center">
                 <p className="text-sm font-medium text-ink">Aucun patient en suivi mensuel pour l&apos;instant.</p>
                 <p className="mx-auto mt-1 max-w-md text-xs text-muted">
-                  Le patient l&apos;active dans son appli (Compte, puis Suivi mensuel). Le bilan du mois se valide ensuite
+                  Le patient l&apos;active dans son appli (Compte, puis Suivi mensuel). Le mois est facturé
                   tout seul dès que vous ajustez son programme.
                 </p>
               </div>
@@ -133,7 +132,7 @@ export default function FacturationView({
                         <span className="block truncate text-sm font-medium text-ink">{f.name}</span>
                         <span className="block truncate text-xs text-muted">
                           {f.review
-                            ? `Bilan validé le ${new Date(f.review.validatedAt).toLocaleDateString("fr-FR")} · ${eur(f.review.amountCents)}`
+                            ? `Facturé le ${new Date(f.review.validatedAt).toLocaleDateString("fr-FR")} · ${eur(f.review.amountCents)}`
                             : f.status === "pending_card"
                               ? "A accepté le suivi, carte pas encore enregistrée"
                               : `${eur(f.priceCents)} · ${f.cardLabel ?? "carte enregistrée"}`}
@@ -147,12 +146,6 @@ export default function FacturationView({
               </ul>
             )}
 
-            {data.notInFollowUp > 0 && (
-              <p className="mt-2 text-[11px] text-muted max-sm:short:hidden">
-                {data.notInFollowUp} patient{data.notInFollowUp > 1 ? "s" : ""} sans suivi mensuel : ils peuvent l&apos;activer dans
-                leur appli (Compte, puis Suivi mensuel).
-              </p>
-            )}
           </section>
 
           {/* ── Colonne 2 : vos honoraires — tarif et encaissement ── */}
@@ -165,16 +158,16 @@ export default function FacturationView({
                   Mon tarif de suivi
                 </h2>
               }
-              summary={eur(data.priceCents)}
+              summary={data.priceCents === 0 ? "Gratuit" : eur(data.priceCents)}
             >
               <form action={setReviewPrice} className="mt-2 flex items-end gap-2">
                 <label className="min-w-0 flex-1">
-                  <span className="text-xs font-medium text-muted">Tarif du bilan mensuel (€)</span>
+                  <span className="text-xs font-medium text-muted">Programme mensuel hors nomenclature (€)</span>
                   <input
                     name="price_euros"
                     type="number"
                     inputMode="decimal"
-                    min={REVIEW_PRICE_MIN_CENTS / 100}
+                    min={0}
                     max={REVIEW_PRICE_MAX_CENTS / 100}
                     step="1"
                     defaultValue={data.priceCents / 100}
@@ -187,13 +180,13 @@ export default function FacturationView({
                 </SubmitButton>
               </form>
               <p className="mt-2 text-[11px] leading-snug text-muted">
-                Acte non remboursé, entre {eurosFR(REVIEW_PRICE_MIN_CENTS, 0)} et {eurosFR(REVIEW_PRICE_MAX_CENTS, 0)} € (conseillé :{" "}
-                {eurosFR(RECOMMENDED_REVIEW_PRICE_CENTS, 0)} €). Un patient déjà en suivi garde le tarif accepté. 100 % pour vous :
+                0 € : vos patients entrent gratuitement dans l&apos;appli. Au-dessus (entre {eurosFR(REVIEW_PRICE_MIN_CENTS, 0)} et {eurosFR(REVIEW_PRICE_MAX_CENTS, 0)} €, conseillé :{" "}
+                {eurosFR(RECOMMENDED_REVIEW_PRICE_CENTS, 0)} €), chaque patient accepte ce tarif et enregistre sa carte avant d&apos;accéder à l&apos;appli. Acte non remboursé. Un patient déjà en suivi garde le tarif accepté. 100 % pour vous :
                 EasyPhysio ne prend rien sur vos honoraires.
               </p>
             </PhoneFold>
 
-            <ConnectCard status={connectStatus} />
+            <ConnectCard status={connectStatus} free={data.priceCents === 0} />
           </div>
 
           {/* ── Colonne 3 : votre facture EasyPhysio et vos documents ── */}
@@ -203,27 +196,23 @@ export default function FacturationView({
               title={
                 <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
                   <Receipt className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
-                  Ma facture EasyPhysio
+                  Mon abonnement EasyPhysio
                 </h2>
               }
-              summary={data.monthEstimate.free ? "offert" : "≈ " + eur(data.monthEstimate.ttcCents)}
+              summary={data.monthEstimate.free ? "offert" : eur(data.monthEstimate.ttcCents)}
             >
               <div className="mt-2 rounded-xl bg-app-bg px-3 py-2">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-sm text-ink">
-                    {periodLabel(data.period)} : {data.activePatients} patient{data.activePatients > 1 ? "s" : ""} actif
-                    {data.activePatients > 1 ? "s" : ""}
+                    {periodLabel(data.period)}
                   </span>
                   <span className="text-sm font-semibold tabular-nums text-ink">
-                    {data.monthEstimate.free ? "offert" : `≈ ${eur(data.monthEstimate.ttcCents)} TTC`}
+                    {data.monthEstimate.free ? "offert" : `${eur(data.monthEstimate.ttcCents)} TTC`}
                   </span>
                 </div>
-                <p
-                  className="mt-0.5 text-[11px] leading-snug text-muted"
-                  title="Actif = invitation acceptée et, dans le mois, une séance faite, un ressenti noté ou un bilan validé."
-                >
-                  {eurosFR(KINE_FEE_PER_ACTIVE_PATIENT_CENTS, 0)} € HT ({eur(KINE_FEE_PER_ACTIVE_PATIENT_TTC_CENTS)} TTC) par patient actif
-                  et par mois, sans lien avec vos honoraires.{data.firstBilledMonth ? " Premier mois offert." : ""}
+                <p className="mt-0.5 text-[11px] leading-snug text-muted">
+                  {eur(KINE_SUBSCRIPTION_TTC_CENTS)} TTC par mois, patients illimités, prélevé d&apos;avance le 1er du mois.
+                  {data.firstBilledMonth ? " Premier mois offert." : ""}
                 </p>
               </div>
 
@@ -361,34 +350,34 @@ function InvoiceBadge({ status }: { status: string }) {
   return <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}>{label}</span>;
 }
 
-function ConnectCard({ status }: { status: ConnectStatus }) {
+function ConnectCard({ status, free }: { status: ConnectStatus; free: boolean }) {
   const s = {
     active: {
       box: "border-ok/30 bg-ok-soft",
       icon: <CheckCircle2 className="h-5 w-5 shrink-0 text-ok" strokeWidth={1.75} />,
       title: "Paiements activés",
       titleClass: "text-ok",
-      text: "Vos patients vous paient leurs bilans directement, sur votre compte.",
+      text: "Vos patients vous paient leur programme mensuel directement, sur votre compte.",
     },
     onboarding: {
       box: "border-warn/30 bg-warn-soft",
       icon: <Circle className="h-5 w-5 shrink-0 text-warn" strokeWidth={1.75} />,
       title: "Inscription en cours",
       titleClass: "text-warn",
-      text: "Terminez l'inscription Stripe pour commencer à encaisser vos bilans.",
+      text: "Terminez l'inscription Stripe pour commencer à encaisser vos programmes.",
     },
     not_started: {
       box: "border-line bg-app-bg",
       icon: <Circle className="h-5 w-5 shrink-0 text-muted" strokeWidth={1.75} />,
       title: "Paiements non activés",
       titleClass: "text-ink",
-      text: "Activez votre compte de paiement (Stripe) pour que vos patients puissent régler leurs bilans en ligne.",
+      text: "Activez votre compte de paiement (Stripe) pour que vos patients puissent régler leur programme en ligne.",
     },
   }[status];
   return (
     <PhoneFold
       className={CARD}
-      title={<h2 className="text-base font-semibold text-ink">Encaisser vos bilans</h2>}
+      title={<h2 className="text-base font-semibold text-ink">Encaisser vos programmes</h2>}
       summary={<span className={s.titleClass}>{status === "active" ? "Activés" : status === "onboarding" ? "En cours" : "À activer"}</span>}
     >
       <div className={`mt-2 flex items-start gap-3 rounded-xl border px-3 py-2 ${s.box}`}>
@@ -396,6 +385,13 @@ function ConnectCard({ status }: { status: ConnectStatus }) {
         <div>
           <p className={`text-sm font-medium ${s.titleClass}`}>{s.title}</p>
           <p className="text-xs text-muted">{s.text}</p>
+          {status !== "active" && (
+            <p className="mt-1 text-xs text-muted">
+              {free
+                ? "Votre tarif est à 0 € : rien à encaisser, vos patients entrent gratuitement."
+                : "En attendant, vos patients entrent dans l'appli sans payer."}
+            </p>
+          )}
         </div>
       </div>
       <div className="mt-2">

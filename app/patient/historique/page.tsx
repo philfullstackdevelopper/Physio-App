@@ -34,15 +34,10 @@ export default async function HistoriquePage() {
     else groups.push({ day, logs: [log] });
   }
 
-  // Plus d'offres patient (2026-10-24) : tout l'historique est visible.
-  const historyDaysVisible: number | null = null;
-  const visibleGroups = historyDaysVisible === null ? groups : groups.slice(0, historyDaysVisible);
-  const lockedGroups = historyDaysVisible === null ? [] : groups.slice(historyDaysVisible);
-
   const toView = (g: { day: string; logs: LogRow[] }) => ({
     day: g.day,
     logs: g.logs.map((log) => ({ id: log.id, name: log.workouts?.name ?? "Séance", time: formatTime(log.completed_at) })),
   });
 
-  return <HistoriqueView groups={visibleGroups.map(toView)} lockedDays={lockedGroups.map((g) => g.day)} />;
+  return <HistoriqueView groups={groups.map(toView)} />;
 }

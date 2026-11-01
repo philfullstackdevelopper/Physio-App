@@ -5,16 +5,14 @@ import { ChevronDown } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 import {
   FREE_FIRST_MONTH,
-  KINE_FEE_PER_ACTIVE_PATIENT_CENTS,
-  PATIENT_APP_ONLY_MONTHLY_CENTS,
+  KINE_SUBSCRIPTION_TTC_CENTS,
   RECOMMENDED_REVIEW_PRICE_CENTS,
   eurosFR,
 } from "@/lib/billing/reviewModel";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 const REVIEW_PRICE = eurosFR(RECOMMENDED_REVIEW_PRICE_CENTS, 0);
-const KINE_FEE_HT = eurosFR(KINE_FEE_PER_ACTIVE_PATIENT_CENTS, 0);
-const APP_ONLY = eurosFR(PATIENT_APP_ONLY_MONTHLY_CENTS);
+const KINE_SUB = eurosFR(KINE_SUBSCRIPTION_TTC_CENTS, 0);
 
 const QUESTIONS = [
   {
@@ -44,12 +42,11 @@ const QUESTIONS = [
   },
   {
     question: "Combien coûte l'application pour moi, patient ?",
-    // Nouveau modèle (Philippe, 2026-10-24) : deux façons de l'utiliser.
-    answer: `Pendant vos soins au cabinet, l'appli vous est offerte par votre kiné. Ensuite, deux possibilités : le suivi mensuel par votre kiné (environ ${REVIEW_PRICE} € par bilan, tarif fixé et encaissé par votre kiné, prélevé seulement le mois où le bilan est fait), ou l'appli seule, sans suivi, à ${APP_ONLY} € par mois payés à EasyPhysio. Sans engagement dans les deux cas.`,
+    answer: `C'est votre kiné qui fixe son tarif. S'il vous offre le suivi, l'appli est gratuite. Sinon, vous acceptez son tarif mensuel (programme hors nomenclature, non remboursé) et enregistrez votre carte : vous n'êtes prélevé que le mois où il ajuste réellement votre programme, et vous pouvez arrêter à tout moment. Le paiement va directement à votre kiné.`,
   },
   {
     question: "Je suis kiné : combien ça me coûte, et combien ça me rapporte ?",
-    answer: `${KINE_FEE_HT} € HT par patient actif et par mois, en une seule facture${FREE_FIRST_MONTH ? ", premier mois offert" : ""}. Vos patients en suivi mensuel vous paient directement chaque bilan fait, au tarif que vous fixez : EasyPhysio ne prend rien sur vos honoraires. Avec 20 patients suivis à ${REVIEW_PRICE} €, c'est ${eurosFR(20 * RECOMMENDED_REVIEW_PRICE_CENTS, 0)} € de bilans par mois.`,
+    answer: `Un abonnement de ${KINE_SUB} € TTC par mois, patients illimités${FREE_FIRST_MONTH ? ", premier mois offert" : ""}, sans engagement. Vous fixez librement le tarif de votre programme mensuel hors nomenclature (ou 0 € pour l'offrir) ; vos patients vous paient directement et EasyPhysio ne prend rien. Avec 20 patients suivis à ${REVIEW_PRICE} €, c'est ${eurosFR(20 * RECOMMENDED_REVIEW_PRICE_CENTS, 0)} € d'honoraires par mois.`,
   },
   {
     question: "Je suis praticien : comment essayer avec mes patients ?",

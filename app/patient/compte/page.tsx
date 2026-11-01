@@ -27,6 +27,7 @@ export default async function CompteePage({
     priceCents: (followUp?.price_cents as number | undefined) ?? effectiveReviewPrice(kine?.review_price_cents ?? null),
     cardLabel: (followUp?.card_label as string | null | undefined) ?? null,
     kineName: kine?.full_name ?? null,
+    free: kine?.review_price_cents === 0,
   };
 
   return <CompteView fullName={(patient?.full_name as string | null) ?? null} error={error} followUp={summary} />;

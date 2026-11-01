@@ -90,11 +90,3 @@ test("tri : les inscriptions en attente restent en bas, même en présence d'une
   });
   assert.deepEqual(rows.map((r) => r.id), ["p1", "p2", "p3", "p4"]);
 });
-
-test("sans abonnement connu, personne n'est « ancien patient » (l'ancienne étiquette manuelle n'est plus lue)", () => {
-  const rows = buildPatientRows({
-    ...input,
-    patients: input.patients.map((p) => ({ ...p, payment_lapsed_at: daysAgo(10) })),
-  });
-  assert.ok(rows.every((r) => r.paymentLapsedAt === null && r.lapseReason === null));
-});

@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import HistoriqueDetailView from "./HistoriqueDetailView";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { formatHistoryDay } from "@/lib/patient/historyWindow";
 
 type LogDetail = {
   id: string;
@@ -34,27 +33,6 @@ export default async function HistoriqueDetailPage({
     .maybeSingle();
   if (!logData) redirect("/patient/historique");
   const log = logData as unknown as LogDetail;
-
-  // Même fenêtre que la liste (lib/patient/historyWindow.ts) : en Essentiel,
-  // une séance au-delà des N derniers jours avec séance est verrouillée — la
-  // liste la grisait, mais son URL restait ouvrable ici (Philippe, 2026-10-07).
-  // Plus d'offres patient (2026-10-24) : aucune séance n'est verrouillée.
-  const historyDaysVisible: number | null = null;
-  if (historyDaysVisible !== null) {
-    const { data: newer } = await supabase
-      .from("workout_logs")
-      .select("completed_at")
-      .eq("patient_id", user.id)
-      .gte("completed_at", log.completed_at)
-      .order("completed_at", { ascending: false })
-      .limit(200);
-    const thisDay = formatHistoryDay(log.completed_at);
-    const daysBefore = new Set((newer ?? []).map((l) => formatHistoryDay(l.completed_at as string)));
-    daysBefore.delete(thisDay);
-    // Liste tronquée (200 séances, comme la page Historique) : le jour est
-    // forcément hors fenêtre.
-    if ((newer?.length ?? 0) >= 200 || daysBefore.size >= historyDaysVisible) redirect("/patient/historique");
-  }
 
   // Feedback recorded for THIS specific session, not just "around that time" —
   // linked by workout_log_id (older sessions predating that link show none).

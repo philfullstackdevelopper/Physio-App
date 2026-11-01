@@ -23,10 +23,6 @@ function ownRedirect(formData: FormData, fallback: string): string {
   return raw.startsWith("/dashboard/patients") ? raw : fallback;
 }
 
-// (2026-10-10) Les actions « marquer comme ne payant plus / payant à nouveau »
-// ont été retirées : le statut vient désormais de l'abonnement Stripe du
-// patient, automatiquement (lib/patient/paymentStatus.ts).
-
 // Permanently removes a patient: all their data (workout logs, profile,
 // messages, documents, recommendations — every table with an
 // `on delete cascade` FK to patients.id, see migration 0001 onward) plus the
@@ -68,13 +64,11 @@ export async function deletePatient(formData: FormData) {
   // app_users étaient supprimées AVANT la ligne patients — si cette dernière
   // échouait, il restait un patient sans compte de connexion, impossible à
   // réinviter proprement. Désormais :
-  //   1. on arrête l'abonnement Stripe du patient (sinon il continuerait
-  //      d'être prélevé après la suppression — ne lève pas d'erreur s'il n'y
-  //      a pas d'abonnement) ;
-  //   2. on supprime la ligne patients (la donnée que le kiné a demandé de
-  //      retirer) et on s'arrête net en cas d'échec ;
-  //   3. seulement ensuite, le nettoyage Clerk (toujours en meilleur effort) ;
-  //   4. puis la correspondance app_users, via la connexion serveur directe
+  //   1. on supprime la ligne patients (la donnée que le kiné a demandé de
+  //      retirer ; son suivi et sa carte enregistrée partent avec) et on
+  //      s'arrête net en cas d'échec ;
+  //   2. seulement ensuite, le nettoyage Clerk (toujours en meilleur effort) ;
+  //   3. puis la correspondance app_users, via la connexion serveur directe
   //      (lib/db/admin.ts) et non plus via PostgREST, qui n'y a plus accès.
   const { error } = await supabase.from("patients").delete().eq("id", patientId).eq("instructor_id", user.id);
   if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);

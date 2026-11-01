@@ -32,9 +32,6 @@ const MENU_WIDTH = 320;
 export default function PatientActionsMenu({
   patientId,
   patientName,
-  paymentLapsedAt,
-  paymentEligibleForDeletion,
-  lapseReason = null,
   deletePatient,
   trigger = "button",
   messages,
@@ -44,13 +41,6 @@ export default function PatientActionsMenu({
 }: {
   patientId: string;
   patientName: string;
-  /** Depuis quand son abonnement ne lui donne plus accès (calculé d'après
-   *  Stripe, lib/patient/paymentStatus.ts) — null = pas un ancien patient. */
-  paymentLapsedAt: string | null;
-  /** `paymentLapsedAt` + 3 mois est déjà passé — calculé côté serveur. */
-  paymentEligibleForDeletion: boolean;
-  /** Carte refusée ou abonnement terminé (même règle que le cadenas patient). */
-  lapseReason?: "payment_failed" | "ended" | null;
   redirectTo: string;
   deletePatient: (formData: FormData) => Promise<void>;
   /** "button" (default) = la pill « Gérer » de la fiche patient. "icon" = un
@@ -137,11 +127,6 @@ export default function PatientActionsMenu({
     navigator.vibrate?.([60, 40, 60]);
   }, [open, conditionMissing, conditionSlot]);
 
-  const lapsedDate = paymentLapsedAt ? new Date(paymentLapsedAt) : null;
-  const eligibleDate = lapsedDate ? new Date(lapsedDate) : null;
-  if (eligibleDate) eligibleDate.setMonth(eligibleDate.getMonth() + 3);
-  const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-
   const itemClass =
     "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-app-bg focus-visible:bg-app-bg focus-visible:outline-none";
 
@@ -160,15 +145,7 @@ export default function PatientActionsMenu({
       <div className="flex items-center justify-between gap-3 px-3 pb-2 pt-1.5">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-ink">{patientName}</p>
-          <p className="text-xs text-muted">
-            {lapsedDate ? (
-              <span className="text-warn">
-                {lapseReason === "payment_failed" ? "Paiement refusé" : "Abonnement terminé"} depuis le {fmt(lapsedDate)} — accès verrouillé
-              </span>
-            ) : (
-              "Suivi actif"
-            )}
-          </p>
+          <p className="text-xs text-muted">Suivi actif</p>
         </div>
         {layout.sheet && (
           <button type="button" onClick={() => setOpen(false)} aria-label="Fermer" className="rounded-lg p-1.5 text-muted hover:bg-app-bg hover:text-ink">
@@ -249,11 +226,7 @@ export default function PatientActionsMenu({
           <span>
             <span className="block text-sm font-medium text-danger">Supprimer ce patient</span>
             <span className="block text-xs text-muted">
-              {lapsedDate
-                ? paymentEligibleForDeletion
-                  ? `Possible depuis le ${fmt(eligibleDate!)}.`
-                  : `Conseillé à partir du ${fmt(eligibleDate!)}.`
-                : "Efface définitivement son historique, ses messages et son identifiant de connexion."}
+              Efface définitivement son historique, ses messages et son identifiant de connexion.
             </span>
           </span>
         </button>

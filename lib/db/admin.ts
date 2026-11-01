@@ -281,15 +281,6 @@ export async function upsertPlatformInvoice(params: {
 }
 
 /** Réservé à l'administrateur (isAdminEmail vérifié par l'appelant). */
-export async function monthActivePatients(periodStart: string, periodEnd: string): Promise<{ instructor_id: string; active_count: number }[]> {
-  const { rows } = await getPool().query<{ instructor_id: string; active_count: number }>(
-    "select * from internal.admin_month_active_patients($1, $2)",
-    [periodStart, periodEnd],
-  );
-  return rows;
-}
-
-/** Réservé à l'administrateur (isAdminEmail vérifié par l'appelant). */
 export async function platformBillingList(): Promise<
   { instructor_id: string; stripe_customer_id: string; stripe_payment_method_id: string | null }[]
 > {

@@ -158,8 +158,9 @@ export async function createTestPatientAction(_prev: TestAccountResult, formData
 }
 
 // Supprime un compte de test (et, pour un kiné, ses patients de test) :
-// identités Clerk d'abord, données ensuite. Refusé tant qu'un abonnement
-// Stripe est en cours ou que le kiné a des patients hors comptes de test.
+// identités Clerk d'abord, données ensuite. Refusé tant que le kiné a des
+// patients hors comptes de test (ou, cas hérité de l'ancien modèle, un
+// abonnement patient encore enregistré).
 export async function deleteTestAccountAction(formData: FormData) {
   await requireAdmin();
   const appId = String(formData.get("id") ?? "");

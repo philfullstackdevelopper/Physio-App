@@ -1,13 +1,10 @@
-// Données de la page « Suivi & facturation » du kiné (nouveau modèle,
-// 2026-10-24). Tout passe par la session du kiné (RLS) : il ne lit que SES
+// Données de la page « Suivi & facturation » du kiné. Tout passe par la session du kiné (RLS) : il ne lit que SES
 // patients, SES bilans, SA facture EasyPhysio. Si la migration 0071 n'est pas
 // encore appliquée, les nouvelles tables manquent : chaque lecture renvoie
 // alors une liste vide plutôt que de casser la page.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   effectiveReviewPrice,
-  isActivePatient,
-  nextPeriod,
   periodOf,
   platformFeeForMonth,
 } from "./reviewModel";
@@ -26,8 +23,7 @@ export type KineBillingData = {
   kinePriceCents: number | null;
   priceCents: number;
   followUps: FollowUpRow[];
-  notInFollowUp: number;
-  activePatients: number;
+  /** Abonnement EasyPhysio du mois (forfait fixe, premier mois offert). */
   monthEstimate: ReturnType<typeof platformFeeForMonth>;
   firstBilledMonth: boolean;
   platformPaymentLabel: string | null;
@@ -39,15 +35,12 @@ export type KineBillingData = {
 
 export async function loadKineBillingData(supabase: SupabaseClient, instructorId: string, now = new Date()): Promise<KineBillingData> {
   const period = periodOf(now);
-  const periodEnd = nextPeriod(period);
 
   const [
     { data: kine },
     { data: patients },
     { data: followUps },
     { data: reviews },
-    { data: logs },
-    { data: feedback },
     { data: platformBilling },
     { data: invoices },
     { data: allReviewPeriods },
@@ -56,8 +49,6 @@ export async function loadKineBillingData(supabase: SupabaseClient, instructorId
     supabase.from("patients").select("id, full_name, terms_accepted_at").eq("instructor_id", instructorId),
     supabase.from("patient_follow_ups").select("patient_id, status, price_cents, card_label").eq("instructor_id", instructorId),
     supabase.from("monthly_reviews").select("id, patient_id, payment_status, amount_cents, validated_at").eq("instructor_id", instructorId).eq("period", period),
-    supabase.from("workout_logs").select("patient_id").gte("completed_at", period).lt("completed_at", periodEnd),
-    supabase.from("patient_feedback").select("patient_id").gte("created_at", period).lt("created_at", periodEnd),
     supabase.from("instructor_platform_billing").select("stripe_customer_id, payment_method_label").eq("instructor_id", instructorId).maybeSingle(),
     supabase.from("platform_invoices").select("period_start, amount_cents, status, patient_count").eq("instructor_id", instructorId).order("period_start", { ascending: false }).limit(12),
     supabase.from("monthly_reviews").select("period").eq("instructor_id", instructorId),
@@ -89,23 +80,8 @@ export async function loadKineBillingData(supabase: SupabaseClient, instructorId
     // À faire d'abord, puis par nom.
     .sort((a, b) => Number(!!a.review) - Number(!!b.review) || a.name.localeCompare(b.name, "fr"));
 
-  const sessions = new Map<string, number>();
-  for (const l of logs ?? []) sessions.set(l.patient_id as string, (sessions.get(l.patient_id as string) ?? 0) + 1);
-  const feedbackCount = new Map<string, number>();
-  for (const f of feedback ?? []) feedbackCount.set(f.patient_id as string, (feedbackCount.get(f.patient_id as string) ?? 0) + 1);
-
-  const activePatients = (patients ?? []).filter((p) =>
-    isActivePatient({
-      termsAccepted: !!p.terms_accepted_at,
-      sessionsThisMonth: sessions.get(p.id as string) ?? 0,
-      feedbackThisMonth: feedbackCount.get(p.id as string) ?? 0,
-      reviewThisMonth: reviewOf.has(p.id as string),
-    }),
-  ).length;
-
   const pastInvoices = (invoices ?? []).filter((i) => (i.status as string) !== "draft" && (i.period_start as string) < period);
   const firstBilledMonth = pastInvoices.length === 0;
-  const followed = new Set((followUps ?? []).filter((f) => f.status !== "stopped").map((f) => f.patient_id as string));
   const kinePrice = (kine?.review_price_cents as number | null) ?? null;
 
   return {
@@ -113,9 +89,7 @@ export async function loadKineBillingData(supabase: SupabaseClient, instructorId
     kinePriceCents: kinePrice,
     priceCents: effectiveReviewPrice(kinePrice),
     followUps: rows,
-    notInFollowUp: (patients ?? []).filter((p) => p.terms_accepted_at && !followed.has(p.id as string)).length,
-    activePatients,
-    monthEstimate: platformFeeForMonth(activePatients, firstBilledMonth),
+    monthEstimate: platformFeeForMonth(firstBilledMonth),
     firstBilledMonth,
     platformPaymentLabel: (platformBilling?.payment_method_label as string | null) ?? null,
     platformCustomerId: (platformBilling?.stripe_customer_id as string | null) ?? null,

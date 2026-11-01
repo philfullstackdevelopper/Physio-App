@@ -83,7 +83,7 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
 function Empty({ period }: { period: string }) {
   return (
     <p className="mx-auto max-w-[720px] rounded-2xl border border-line bg-white p-8 text-center text-sm text-muted">
-      Aucun bilan validé en {periodLabel(period)}.
+      Aucun programme facturé en {periodLabel(period)}.
     </p>
   );
 }
@@ -117,13 +117,13 @@ function Recap({
           </p>
         )}
         <p className="mt-1 text-xs text-muted">
-          Bilans de suivi à distance (actes non remboursables), du 1er {periodLabel(period)} au{" "}
+          Programmes mensuels hors nomenclature (actes non remboursables), du 1er {periodLabel(period)} au{" "}
           {new Date(new Date(`${nextPeriod(period)}T00:00:00Z`).getTime() - 86_400_000).toLocaleDateString("fr-FR", { timeZone: "UTC" })}.
         </p>
       </header>
 
       {notes.length === 0 ? (
-        <p className="mt-6 text-sm text-muted">Aucun bilan validé ce mois-ci.</p>
+        <p className="mt-6 text-sm text-muted">Aucun programme facturé ce mois-ci.</p>
       ) : (
         <table className="mt-6 w-full text-sm">
           <thead>

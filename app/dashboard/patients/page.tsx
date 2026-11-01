@@ -16,7 +16,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
     supabase.from("conditions").select("id, name").order("name"),
   ]);
   const initialSegment: Segment =
-    filtre === "surveiller" ? "surveiller" : filtre === "jour" ? "jour" : filtre === "resilies" ? "resilies" : "tous";
+    filtre === "surveiller" ? "surveiller" : filtre === "jour" ? "jour" : "tous";
 
   return (
     <PatientsPageView>

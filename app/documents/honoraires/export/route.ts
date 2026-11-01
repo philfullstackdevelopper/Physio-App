@@ -24,7 +24,7 @@ export async function GET(req: Request) {
       new Date(n.validatedAt).toLocaleDateString("fr-FR"),
       n.number,
       n.patientName,
-      "Bilan de suivi à distance (acte non remboursable)",
+      "Programme mensuel hors nomenclature (acte non remboursable)",
       amount(n.amountCents),
       n.paymentStatus === "paid" ? "Encaissé" : n.paymentStatus === "pending" ? "En cours" : "Refusé",
       n.paidAt ? new Date(n.paidAt).toLocaleDateString("fr-FR") : "",

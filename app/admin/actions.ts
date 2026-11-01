@@ -54,8 +54,7 @@ export async function suspendInstructorAction(formData: FormData) {
   redirect(`/admin?${query}`);
 }
 
-// Réactiver un kiné suspendu : il retrouve son dashboard. Les abonnements
-// résiliés ne reviennent pas — ses patients choisiront à nouveau une offre.
+// Réactiver un kiné suspendu : il retrouve son dashboard.
 export async function reactivateInstructor(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
@@ -64,10 +63,10 @@ export async function reactivateInstructor(formData: FormData) {
   revalidatePath("/admin");
 }
 
-// Facture EasyPhysio du mois écoulé à chaque kiné (nouveau modèle,
-// 2026-10-24) : patients actifs × 3 € HT + TVA, premier mois offert, jamais
-// deux fois le même mois (lib/billing/platformInvoice.ts). À lancer en début
-// de mois depuis /admin ; le bilan revient dans l'URL.
+// Secours de la facturation automatique (tâche planifiée du 1er du mois) :
+// abonnement fixe du mois en cours à chaque kiné validé, premier mois offert,
+// jamais deux fois le même mois (lib/billing/platformInvoice.ts). Le bilan
+// revient dans l'URL.
 export async function invoiceLastMonth(formData: FormData) {
   await requireAdmin();
   const period = String(formData.get("period") ?? "");

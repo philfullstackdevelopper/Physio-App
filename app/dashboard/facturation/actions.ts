@@ -10,7 +10,7 @@ import { createPlatformBillingSetupUrl } from "@/lib/billing/platformInvoice";
 // Page « Suivi & facturation » du kiné (nouveau modèle, 2026-10-24).
 
 /**
- * Le kiné fixe son tarif de bilan mensuel (entre 10 et 40 €). Le nouveau tarif
+ * Le kiné fixe son tarif de bilan mensuel (0 € = accès gratuit, sinon entre 10 et 40 €). Le nouveau tarif
  * vaut pour les patients qui acceptent le suivi à partir de maintenant : un
  * patient déjà inscrit garde le tarif qu'il a accepté par écrit
  * (art. R.4321-98 CSP — information préalable sur le montant).
@@ -19,11 +19,12 @@ export async function setReviewPrice(formData: FormData) {
   const supabase = await createClient();
   const { user } = await requireApprovedInstructor(supabase);
   const raw = String(formData.get("price_euros") ?? "").replace(",", ".").trim();
-  const cents = Math.round(Number(raw) * 100);
+  // Case vide : refusée (Number("") vaudrait 0, soit « gratuit » par erreur).
+  const cents = raw === "" ? Number.NaN : Math.round(Number(raw) * 100);
   if (!isValidReviewPrice(cents)) {
     redirect(
       `/dashboard/facturation?error=${encodeURIComponent(
-        `Le tarif doit être compris entre ${eurosFR(REVIEW_PRICE_MIN_CENTS, 0)} € et ${eurosFR(REVIEW_PRICE_MAX_CENTS, 0)} €.`,
+        `Le tarif doit être 0 € (accès gratuit) ou compris entre ${eurosFR(REVIEW_PRICE_MIN_CENTS, 0)} € et ${eurosFR(REVIEW_PRICE_MAX_CENTS, 0)} €.`,
       )}`,
     );
   }

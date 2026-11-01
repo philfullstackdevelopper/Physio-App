@@ -54,7 +54,7 @@ export default async function KineTelephonePrototype({
   let screen: React.ReactNode;
   if (ecran === "patients") {
     const initialSegment: Segment =
-      filtre === "surveiller" ? "surveiller" : filtre === "jour" ? "jour" : filtre === "resilies" ? "resilies" : "tous";
+      filtre === "surveiller" ? "surveiller" : filtre === "jour" ? "jour" : "tous";
     screen = (
       <PatientsPageView>
         <PatientsTable
@@ -98,13 +98,11 @@ export default async function KineTelephonePrototype({
             { patientId: "p2", name: "Hugo Bernard", status: "pending_card", priceCents: 2000, cardLabel: null, review: null },
             { patientId: "p3", name: "Léa Petit", status: "active", priceCents: 2000, cardLabel: "VISA •••• 1881", review: { id: "r1", paymentStatus: "paid", amountCents: 2000, validatedAt: "2026-10-12T09:00:00Z" } },
           ],
-          notInFollowUp: 4,
-          activePatients: 7,
-          monthEstimate: { free: false, htCents: 2100, vatCents: 420, ttcCents: 2520 },
+          monthEstimate: { free: false, htCents: 3250, vatCents: 650, ttcCents: 3900 },
           firstBilledMonth: false,
           platformPaymentLabel: "Prélèvement SEPA •••• 3201",
           platformCustomerId: "cus_demo",
-          invoices: [{ periodStart: "2026-09-01", amountCents: 2160, status: "paid", patientCount: 6 }],
+          invoices: [{ periodStart: "2026-09-01", amountCents: 3900, status: "paid", patientCount: 0 }],
           reviewMonths: ["2026-10-01", "2026-09-01"],
           collectedCents: 2000,
         }}
@@ -232,15 +230,12 @@ export default async function KineTelephonePrototype({
       <PatientDetailView
         name={p.name}
         warning={highPain ? { label: "Douleur élevée", detail: `Douleur ${f.stats.painLatest}/10 signalée récemment.` } : null}
-        paymentLapsed={false}
         adjusted={false}
         stats={f.stats}
         actionsMenu={
           <PatientActionsMenu
             patientId={p.id}
             patientName={p.firstName}
-            paymentLapsedAt={null}
-            paymentEligibleForDeletion={false}
             redirectTo="/prototypes/kine-telephone?ecran=fiche"
             deletePatient={noopVoid}
             messages={{ patient: { id: p.id, name: p.name, initials: p.initials }, unreadCount: p.unread ? 1 : 0, getThread: noopResult, sendMessage: noopResult }}

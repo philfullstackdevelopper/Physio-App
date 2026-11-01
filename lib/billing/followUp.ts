@@ -1,18 +1,17 @@
 // =============================================================================
-// Suivi mensuel payé au kiné (nouveau modèle, 2026-10-24) — côté serveur.
+// Programme mensuel payé au kiné — côté serveur.
 //
 // 1. Le patient accepte le tarif de son kiné et enregistre sa carte : Stripe
 //    Checkout en mode « setup » (aucun prélèvement), créé SUR le compte
 //    Connect du kiné (Direct charge, comme avant) — la carte vit chez le kiné.
-// 2. Quand le bilan du mois se valide (lib/billing/autoReview.ts), le serveur prélève la carte
-//    (PaymentIntent hors session) sur le compte du kiné, SANS frais de
-//    plateforme : 100 % des honoraires au kiné, rien pour EasyPhysio
-//    (art. R.4321-72 CSP — c'est ce qui sépare les deux flux d'argent).
+// 2. Le premier ajustement du programme dans le mois (lib/billing/autoReview.ts)
+//    déclenche le prélèvement de la carte (PaymentIntent hors session) sur le
+//    compte du kiné, SANS frais de plateforme : 100 % des honoraires au kiné.
 //
 // Signatures HMAC (clé = STRIPE_SECRET_KEY, que le kiné ne connaît pas) :
 // les comptes des kinés sont « Standard », un kiné pourrait créer à la main
 // une session ou un paiement portant de fausses metadata. Le webhook n'accepte
-// que ce qu'EasyPhysio a signé (même principe que subscriptionSignature.ts).
+// que ce qu'EasyPhysio a signé.
 // =============================================================================
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type Stripe from "stripe";

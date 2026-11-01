@@ -65,19 +65,6 @@ export default async function PatientDashboard() {
     (dayDetails[key] ??= []).push(entry);
   }
 
-  // Offre Essentiel : historique limité (lib/patient/historyWindow.ts). La
-  // frise de l'Accueil le contournait (audit du 2026-10-08) — les jours plus
-  // anciens que la fenêtre restent marqués « séance faite », mais sans le
-  // ressenti (douleur, difficulté, notes), comme sur la page Historique.
-  // Plus d'offres patient (2026-10-24) : tout l'historique est visible.
-  const historyDaysVisible: number | null = null;
-  if (historyDaysVisible !== null) {
-    const daysWithSessions = Object.keys(dayDetails).sort().reverse();
-    for (const key of daysWithSessions.slice(historyDaysVisible)) {
-      dayDetails[key] = dayDetails[key].map((s) => ({ ...s, painScore: null, difficulty: null, notes: null }));
-    }
-  }
-
   // "Mon programme" summary card, top right of Accueil since 2026-10-01
   // (was at the bottom, Philippe 2026-09-08): a quick "what's left this week" recap that links through to
   // the full /patient/programme page, same numbers loadPatientHome already

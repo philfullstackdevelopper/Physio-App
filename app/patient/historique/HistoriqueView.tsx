@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Lock } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 export type HistoryGroup = { day: string; logs: { id: string; name: string; time: string }[] };
 
@@ -12,14 +12,11 @@ export type HistoryGroup = { day: string; logs: { id: string; name: string; time
 // s'allongeait avec l'historique.
 export default function HistoriqueView({
   groups,
-  lockedDays,
 }: {
-  /** Jours visibles en clair, du plus récent au plus ancien. */
+  /** Jours avec séance, du plus récent au plus ancien. */
   groups: HistoryGroup[];
-  /** Jours plus anciens verrouillés par l'offre du patient. */
-  lockedDays: string[];
 }) {
-  const empty = groups.length === 0 && lockedDays.length === 0;
+  const empty = groups.length === 0;
   return (
     <main className="flex flex-col p-6 max-sm:h-[calc(100dvh-var(--phone-chrome))] max-sm:p-4 sm:h-dvh sm:p-8 short:sm:py-4">
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col">
@@ -53,34 +50,6 @@ export default function HistoriqueView({
               </div>
             ))}
 
-            {lockedDays.length > 0 && (
-              <div>
-                <h2 className="text-sm font-medium capitalize text-slate-400">
-                  {lockedDays.length} jour{lockedDays.length > 1 ? "s" : ""} plus ancien
-                  {lockedDays.length > 1 ? "s" : ""}
-                </h2>
-                <div className="mt-2 space-y-2">
-                  {lockedDays.map((day) => (
-                    <div
-                      key={day}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3.5"
-                    >
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200/70 text-slate-400">
-                          <Lock className="h-3.5 w-3.5" strokeWidth={2} />
-                        </span>
-                        <p className="truncate text-sm font-medium capitalize text-slate-400">{day}</p>
-                      </div>
-                      {/* Téléphone : texte court, sinon le lien écrasait le jour. */}
-                      <Link href="/patient/compte" className="shrink-0 text-xs font-semibold text-brand hover:underline">
-                        <span className="max-sm:hidden">Passez à Standard pour avoir accès à cette partie !</span>
-                        <span className="sm:hidden">Passer à Standard</span>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

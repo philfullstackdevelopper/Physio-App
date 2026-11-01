@@ -35,6 +35,7 @@ export async function startFollowUp(formData: FormData) {
 
   // Le tarif accepté est celui affiché sur la page, relu ici côté serveur.
   const priceCents = effectiveReviewPrice((kine?.review_price_cents as number | null) ?? null);
+  if (priceCents === 0) redirect("/patient");
   if (Number(formData.get("price_cents")) !== priceCents) fail("Le tarif de votre kiné vient de changer : vérifiez-le et recommencez.");
 
   const stripe = getStripe();

@@ -1,10 +1,10 @@
-// Bilan du mois validé AUTOMATIQUEMENT (Philippe, 2026-10-27) : pour un patient
-// en suivi mensuel, le bilan compte comme « fait » la première fois dans le
-// mois que le kiné travaille sur son programme : séance attribuée, séance
-// ajustée, ou séance personnelle du patient enregistrée. Plus de bouton
-// « Faire le bilan ».
+// Mois facturé AUTOMATIQUEMENT (Philippe, 2026-10-27) : pour un patient en
+// suivi mensuel, le programme du mois compte comme « fait » la première fois
+// dans le mois que le kiné travaille dessus : séance attribuée, séance
+// ajustée, ou séance personnelle du patient enregistrée. Aucun bouton.
+// (Dans le code et la base, ce mois facturé s'appelle encore « review ».)
 //
-// Ce qui se passe alors (une seule fois par patient et par mois) : le bilan est
+// Ce qui se passe alors (une seule fois par patient et par mois) : le mois est
 // enregistré avec son numéro de note d'honoraires, puis la carte du patient est
 // prélevée du tarif qu'il a accepté, sur le compte Stripe du kiné, sans frais
 // EasyPhysio (lib/billing/followUp.ts).
@@ -50,6 +50,14 @@ export async function recordMonthlyReviewIfDue(p: {
       .eq("instructor_id", p.instructorId)
       .maybeSingle();
     if (connect?.status !== "active" || connect.stripe_connect_account_id !== followUp.connect_account_id) return;
+    // Le kiné est passé à 0 € (accès gratuit) : plus aucun prélèvement, même
+    // pour un patient qui avait accepté un tarif payant.
+    const { data: kine } = await p.supabase
+      .from("instructors")
+      .select("review_price_cents")
+      .eq("id", p.instructorId)
+      .maybeSingle();
+    if ((kine?.review_price_cents as number | null | undefined) === 0) return;
 
     let review: { review_id: string; fee_note_year: number; fee_note_seq: number };
     try {
@@ -72,7 +80,7 @@ export async function recordMonthlyReviewIfDue(p: {
       accountId: followUp.connect_account_id,
       customerId: followUp.stripe_customer_id,
       paymentMethodId: followUp.stripe_payment_method_id,
-      description: `Bilan de suivi à distance - ${periodLabel(period)} - note n° ${feeNoteNumber(review.fee_note_year, review.fee_note_seq)} (${eurosFR(followUp.price_cents)} €)`,
+      description: `Programme mensuel hors nomenclature - ${periodLabel(period)} - note n° ${feeNoteNumber(review.fee_note_year, review.fee_note_seq)} (${eurosFR(followUp.price_cents)} €)`,
     });
   } catch (e) {
     console.error("[autoReview] bilan automatique impossible", e);
