@@ -5,14 +5,18 @@ import { ChevronDown } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 import {
   FREE_FIRST_MONTH,
+  KINE_PLANS,
   KINE_SUBSCRIPTION_TTC_CENTS,
+  subscriptionPrice,
   RECOMMENDED_REVIEW_PRICE_CENTS,
   eurosFR,
 } from "@/lib/billing/reviewModel";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 const REVIEW_PRICE = eurosFR(RECOMMENDED_REVIEW_PRICE_CENTS, 0);
-const KINE_SUB = eurosFR(KINE_SUBSCRIPTION_TTC_CENTS, 0);
+const KINE_SUB = eurosFR(KINE_SUBSCRIPTION_TTC_CENTS);
+// Prix par mois le plus bas d'un kiné seul (abonnement le plus long).
+const KINE_SUB_FROM = eurosFR(subscriptionPrice(KINE_PLANS[KINE_PLANS.length - 1].months).perKinePerMonthCents, 0);
 
 const QUESTIONS = [
   {
@@ -46,7 +50,7 @@ const QUESTIONS = [
   },
   {
     question: "Je suis kiné : combien ça me coûte, et combien ça me rapporte ?",
-    answer: `Un abonnement de ${KINE_SUB} € TTC par mois, patients illimités${FREE_FIRST_MONTH ? ", premier mois offert" : ""}, sans engagement. Vous fixez librement le tarif de votre programme mensuel hors nomenclature (ou 0 € pour l'offrir) ; vos patients vous paient directement et EasyPhysio ne prend rien. Avec 20 patients suivis à ${REVIEW_PRICE} €, c'est ${eurosFR(20 * RECOMMENDED_REVIEW_PRICE_CENTS, 0)} € d'honoraires par mois.`,
+    answer: `Un abonnement de ${KINE_SUB} € TTC par mois, ou dès ${KINE_SUB_FROM} € par mois en payant 3, 6 ou 12 mois d'avance, patients illimités${FREE_FIRST_MONTH ? " (premier mois offert sur la formule au mois)" : ""}. En cabinet, chaque kiné en plus coûte moins cher. Vous fixez librement le tarif de votre programme mensuel hors nomenclature (ou 0 € pour l'offrir) ; vos patients vous paient directement et EasyPhysio ne prend rien. Avec 20 patients suivis à ${REVIEW_PRICE} €, c'est ${eurosFR(20 * RECOMMENDED_REVIEW_PRICE_CENTS, 0)} € d'honoraires par mois.`,
   },
   {
     question: "Je suis praticien : comment essayer avec mes patients ?",

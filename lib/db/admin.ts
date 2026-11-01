@@ -293,3 +293,60 @@ export async function platformInvoicesList(): Promise<{ instructor_id: string; p
   const { rows } = await getPool().query("select instructor_id, to_char(period_start, 'YYYY-MM-DD') as period_start, status, amount_cents from internal.admin_platform_invoices_list()");
   return rows;
 }
+
+// ---------------------------------------------------------------------------
+// Abonnement du kiné : durées et cabinets (migration 0078). Les fonctions
+// « cabinet » reçoivent l'identifiant du kiné connecté, vérifié par l'appelant
+// (requireApprovedInstructor) ; les règles (accord du collègue, un seul
+// cabinet, un seul niveau) sont dans la base.
+// ---------------------------------------------------------------------------
+
+export type CabinetLink = {
+  member_id: string;
+  member_name: string | null;
+  member_email: string | null;
+  payer_id: string;
+  payer_name: string | null;
+  status: "pending" | "active";
+};
+
+export async function cabinetView(actorId: string): Promise<CabinetLink[]> {
+  const { rows } = await getPool().query<CabinetLink>("select * from internal.cabinet_view($1)", [actorId]);
+  return rows;
+}
+
+export async function cabinetInvite(payerId: string, email: string): Promise<string> {
+  const { rows } = await getPool().query<{ r: string }>("select internal.cabinet_invite($1, $2) as r", [payerId, email]);
+  return rows[0]?.r ?? "ERROR";
+}
+
+export async function cabinetRespond(memberId: string, accept: boolean): Promise<string> {
+  const { rows } = await getPool().query<{ r: string }>("select internal.cabinet_respond($1, $2) as r", [memberId, accept]);
+  return rows[0]?.r ?? "ERROR";
+}
+
+export async function cabinetRemove(actorId: string, memberId: string): Promise<void> {
+  await getPool().query("select internal.cabinet_remove($1, $2)", [actorId, memberId]);
+}
+
+/** Réservé à l'administrateur / à la facturation. */
+export async function cabinetList(): Promise<{ member_instructor_id: string; payer_instructor_id: string; status: string }[]> {
+  const { rows } = await getPool().query("select * from internal.admin_cabinet_list()");
+  return rows;
+}
+
+/** Réservé à l'administrateur / à la facturation. */
+export async function platformPlans(): Promise<{ instructor_id: string; plan_months: number }[]> {
+  const { rows } = await getPool().query("select * from internal.admin_platform_plans()");
+  return rows;
+}
+
+/** Réservé à l'administrateur / à la facturation : factures avec leur date de fin. */
+export async function platformInvoicesWithEnd(): Promise<
+  { instructor_id: string; period_start: string; period_end: string; status: string; amount_cents: number }[]
+> {
+  const { rows } = await getPool().query(
+    "select instructor_id, to_char(period_start, 'YYYY-MM-DD') as period_start, to_char(period_end, 'YYYY-MM-DD') as period_end, status, amount_cents from internal.admin_platform_invoices_list_v2()",
+  );
+  return rows;
+}

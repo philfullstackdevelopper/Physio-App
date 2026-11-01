@@ -6,9 +6,11 @@
 //   - Le kiné enregistre une carte ou un mandat de prélèvement SEPA
 //     (Checkout « setup », aucun débit).
 //   - Le 1er de chaque mois (tâche planifiée, ou bouton de secours sur
-//     /admin), chaque kiné validé reçoit la facture du mois qui commence :
-//     l'abonnement fixe (KINE_SUBSCRIPTION_*), payé d'avance, patients
-//     illimités, prélevé automatiquement. Premier mois offert.
+//     /admin), chaque kiné validé dont la période payée est terminée reçoit
+//     la facture de la durée qu'il a choisie (1, 3, 6 ou 12 mois), payée
+//     d'avance, patients illimités, prélevée automatiquement. Premier mois
+//     offert. En cabinet (migration 0078), le payeur règle pour lui et ses
+//     collègues, à tarif dégressif ; les collègues ne reçoivent rien.
 // =============================================================================
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type Stripe from "stripe";
@@ -17,11 +19,13 @@ import {
   listAllInstructors,
   listTestAccounts,
   platformBillingList,
-  platformInvoicesList,
+  cabinetList,
+  platformInvoicesWithEnd,
+  platformPlans,
   upsertPlatformBilling,
   upsertPlatformInvoice,
 } from "@/lib/db/admin";
-import { KINE_SUBSCRIPTION_HT_CENTS, VAT_RATE, nextPeriod, periodLabel, platformFeeForMonth } from "./reviewModel";
+import { VAT_RATE, periodCovered, periodLabel, periodLastDay, planMonthsOf, platformFeeForPeriod } from "./reviewModel";
 
 function sig(instructorId: string): string {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -129,49 +133,68 @@ async function platformProductId(stripe: Stripe): Promise<string> {
 
 export type MonthlyInvoicingReport = {
   period: string;
-  invoiced: { instructorId: string; ttcCents: number; free: boolean }[];
+  invoiced: { instructorId: string; ttcCents: number; free: boolean; months: number; kines: number }[];
   missingPaymentMethod: { instructorId: string }[];
+  /** Mois déjà payé (d'avance ou facture déjà émise). */
   alreadyDone: string[];
+  /** Collègues d'un cabinet : réglés par leur payeur. */
+  coveredByCabinet: string[];
   errors: { instructorId: string; message: string }[];
 };
 
 /**
- * Facture le mois `period` (« AAAA-MM-01 », le mois qui commence) à chaque
- * kiné validé, hors comptes de test : l'abonnement fixe, d'avance. Ne
- * facture jamais deux fois un même mois (table platform_invoices, unique par
- * kiné et par mois). L'appelant doit avoir vérifié que c'est
- * l'administrateur (ou la tâche planifiée).
+ * Facture, au 1er du mois `period` (« AAAA-MM-01 »), chaque kiné validé hors
+ * comptes de test dont ce mois n'est pas déjà payé : la durée qu'il a choisie,
+ * d'avance. Le payeur d'un cabinet règle pour lui + ses collègues actifs ;
+ * les collègues sont sautés. Ne facture jamais deux fois une même période
+ * (table platform_invoices, unique par kiné et par mois de début). L'appelant
+ * doit avoir vérifié que c'est l'administrateur (ou la tâche planifiée).
  */
 export async function runMonthlyInvoicing(period: string): Promise<MonthlyInvoicingReport> {
   const stripe = getStripe();
-  const periodEnd = nextPeriod(period);
-  const [kines, testAccounts, billing, invoices] = await Promise.all([
+  const [kines, testAccounts, billing, invoices, plans, cabinets] = await Promise.all([
     listAllInstructors(),
     listTestAccounts(),
     platformBillingList(),
-    platformInvoicesList(),
+    platformInvoicesWithEnd(),
+    platformPlans(),
+    cabinetList(),
   ]);
   const testIds = new Set(testAccounts.filter((t) => t.kind === "kine").map((t) => t.app_id));
-  const report: MonthlyInvoicingReport = { period, invoiced: [], missingPaymentMethod: [], alreadyDone: [], errors: [] };
+  const billable = new Set(kines.filter((k) => k.status === "approved" && !testIds.has(k.id)).map((k) => k.id));
+  const report: MonthlyInvoicingReport = { period, invoiced: [], missingPaymentMethod: [], alreadyDone: [], coveredByCabinet: [], errors: [] };
   const billingByKine = new Map(billing.map((b) => [b.instructor_id, b]));
-  const lastDay = new Date(Date.UTC(Number(periodEnd.slice(0, 4)), Number(periodEnd.slice(5, 7)) - 1, 0)).toISOString().slice(0, 10);
+  const planOf = new Map(plans.map((p) => [p.instructor_id, planMonthsOf(p.plan_months)]));
+  const paidUp = (kineId: string) =>
+    invoices.some((i) => i.instructor_id === kineId && i.status !== "draft" && periodCovered(period, i.period_start, i.period_end));
+  // Collègues actifs d'un cabinet dont le payeur est lui-même facturable.
+  const activeLinks = cabinets.filter(
+    (c) => c.status === "active" && billable.has(c.member_instructor_id) && billable.has(c.payer_instructor_id),
+  );
+  const payerOf = new Map(activeLinks.map((c) => [c.member_instructor_id, c.payer_instructor_id]));
   let taxRate: string | null = null;
 
-  for (const kine of kines) {
-    if (kine.status !== "approved" || testIds.has(kine.id)) continue;
-    const kineId = kine.id;
-    const pastInvoices = invoices.filter((i) => i.instructor_id === kineId);
-    if (pastInvoices.some((i) => i.period_start === period && i.status !== "draft")) {
+  for (const kineId of billable) {
+    if (payerOf.has(kineId)) {
+      report.coveredByCabinet.push(kineId);
+      continue;
+    }
+    if (paidUp(kineId)) {
       report.alreadyDone.push(kineId);
       continue;
     }
+    // Le payeur + ses collègues qui ne sont plus couverts par leur propre
+    // période payée (un nouveau collègue finit d'abord la sienne).
+    const members = activeLinks.filter((c) => c.payer_instructor_id === kineId && !paidUp(c.member_instructor_id)).length;
+    const pastInvoices = invoices.filter((i) => i.instructor_id === kineId);
     // Premier mois = aucune facture plus ancienne (même offerte).
     const firstMonth = !pastInvoices.some((i) => i.period_start < period && i.status !== "draft");
-    const fee = platformFeeForMonth(firstMonth);
+    const fee = platformFeeForPeriod({ months: planOf.get(kineId) ?? 1, kines: 1 + members, isFirstBilledMonth: firstMonth, day: period });
+    const lastDay = periodLastDay(period, fee.months);
 
     if (fee.free) {
       await upsertPlatformInvoice({ instructorId: kineId, periodStart: period, periodEnd: lastDay, patientCount: 0, amountCents: 0, stripeInvoiceId: null, status: "paid" });
-      report.invoiced.push({ instructorId: kineId, ttcCents: 0, free: true });
+      report.invoiced.push({ instructorId: kineId, ttcCents: 0, free: true, months: 1, kines: fee.kines });
       continue;
     }
 
@@ -183,6 +206,8 @@ export async function runMonthlyInvoicing(period: string): Promise<MonthlyInvoic
       continue;
     }
 
+    const what = `${fee.months} mois à partir de ${periodLabel(period)}${fee.kines > 1 ? `, cabinet de ${fee.kines} kinés` : ""}`;
+    const key = `${kineId}-${period}-${fee.months}m-${fee.kines}k`;
     try {
       taxRate ??= await vatTaxRateId(stripe);
       const invoice = await stripe.invoices.create(
@@ -192,20 +217,20 @@ export async function runMonthlyInvoicing(period: string): Promise<MonthlyInvoic
           auto_advance: true,
           default_tax_rates: [taxRate],
           pending_invoice_items_behavior: "exclude",
-          description: `EasyPhysio — abonnement de ${periodLabel(period)}`,
-          metadata: { instructor_id: kineId, period },
+          description: `EasyPhysio — abonnement, ${what}`,
+          metadata: { instructor_id: kineId, period, months: String(fee.months), kines: String(fee.kines) },
         },
-        { idempotencyKey: `platform-invoice-${kineId}-${period}` },
+        { idempotencyKey: `platform-invoice-${key}` },
       );
       await stripe.invoiceItems.create(
         {
           customer: b.stripe_customer_id,
           invoice: invoice.id,
           quantity: 1,
-          price_data: { currency: "eur", product: await platformProductId(stripe), unit_amount: KINE_SUBSCRIPTION_HT_CENTS },
-          description: `Abonnement EasyPhysio — ${periodLabel(period)} (patients illimités)`,
+          price_data: { currency: "eur", product: await platformProductId(stripe), unit_amount: fee.htCents },
+          description: `Abonnement EasyPhysio — ${what} (patients illimités)`,
         },
-        { idempotencyKey: `platform-invoice-item-${kineId}-${period}` },
+        { idempotencyKey: `platform-invoice-item-${key}` },
       );
       const finalized = await stripe.invoices.finalizeInvoice(invoice.id!);
       let status: "open" | "paid" = finalized.status === "paid" ? "paid" : "open";
@@ -216,7 +241,7 @@ export async function runMonthlyInvoicing(period: string): Promise<MonthlyInvoic
         // Prélèvement SEPA en cours (quelques jours) ou carte refusée : la facture reste « open ».
       }
       await upsertPlatformInvoice({ instructorId: kineId, periodStart: period, periodEnd: lastDay, patientCount: 0, amountCents: fee.ttcCents, stripeInvoiceId: invoice.id!, status });
-      report.invoiced.push({ instructorId: kineId, ttcCents: fee.ttcCents, free: false });
+      report.invoiced.push({ instructorId: kineId, ttcCents: fee.ttcCents, free: false, months: fee.months, kines: fee.kines });
     } catch (e) {
       report.errors.push({ instructorId: kineId, message: e instanceof Error ? e.message : String(e) });
     }
@@ -229,8 +254,8 @@ export async function syncPlatformInvoice(invoice: Stripe.Invoice): Promise<void
   const kineId = invoice.metadata?.instructor_id;
   const period = invoice.metadata?.period;
   if (!kineId || !period || !invoice.id) return;
-  const periodEnd = nextPeriod(period);
-  const lastDay = new Date(Date.UTC(Number(periodEnd.slice(0, 4)), Number(periodEnd.slice(5, 7)) - 1, 0)).toISOString().slice(0, 10);
+  // Durée payée d'avance (métadonnée posée par runMonthlyInvoicing ; 1 mois pour les anciennes factures).
+  const lastDay = periodLastDay(period, planMonthsOf(Number(invoice.metadata?.months ?? 1)));
   const status = invoice.status === "paid" ? "paid" : invoice.status === "uncollectible" ? "uncollectible" : invoice.status === "void" ? "void" : "open";
   await upsertPlatformInvoice({ instructorId: kineId, periodStart: period, periodEnd: lastDay, patientCount: 0, amountCents: invoice.total, stripeInvoiceId: invoice.id, status });
 }

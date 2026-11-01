@@ -10,6 +10,7 @@ import KineJourneyDemo from "@/components/KineJourneyDemo";
 import KinePhonePreview from "@/components/KinePhonePreview";
 import ComparisonTable from "@/components/ComparisonTable";
 import PricingSection from "@/components/PricingSection";
+import KinePlans from "@/components/KinePlans";
 import ExerciseShowcase from "@/components/ExerciseShowcase";
 import Testimonials from "@/components/Testimonials";
 import { HandNote, Underlined } from "@/components/HandDrawn";
@@ -282,6 +283,24 @@ export default function Home() {
 
           <FitToViewport className="mt-10 text-left sm:short:mt-5 phone-land:mt-2">
             <PricingSection />
+          </FitToViewport>
+        </section>
+        </Reveal>
+
+        {/* ── Formules d'abonnement du kiné ────────────────────── */}
+        {/* Philippe, 2026-11-01 : 3 bulles (mensuel, 6 mois, 12 mois) avec la
+            remise de chaque durée, et « Cabinet ++ » pour tout le cabinet.
+            Le lien « Tarifs » du haut de page mène ici. */}
+        <Reveal>
+        <section id="formules" className="mt-24 scroll-mt-24 text-center sm:mt-32 phone-land:mt-12">
+          <h2 className="font-display mx-auto max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
+            Un abonnement, patients illimités
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 max-sm:hidden">
+            Plus vous vous engagez longtemps, moins vous payez par mois.
+          </p>
+          <FitToViewport className="mt-10 sm:short:mt-5 phone-land:mt-2">
+            <KinePlans />
           </FitToViewport>
         </section>
         </Reveal>

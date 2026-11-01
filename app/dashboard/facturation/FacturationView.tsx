@@ -12,24 +12,56 @@ import {
   Hourglass,
   Receipt,
   Tag,
+  Users,
 } from "lucide-react";
 import SubmitButton from "@/components/SubmitButton";
 import PhoneFold from "@/components/PhoneFold";
 import type { KineBillingData } from "@/lib/billing/kineBillingData";
+import type { CabinetLink } from "@/lib/db/admin";
 import {
-  KINE_SUBSCRIPTION_TTC_CENTS,
+  CABINET_SHARES,
+  KINE_PLANS,
   RECOMMENDED_REVIEW_PRICE_CENTS,
   REVIEW_PRICE_MAX_CENTS,
   REVIEW_PRICE_MIN_CENTS,
   eurosFR,
   periodLabel,
+  subscriptionPrice,
 } from "@/lib/billing/reviewModel";
 import { startConnectOnboarding } from "../connect/actions";
-import { setReviewPrice, startPlatformBillingSetup } from "./actions";
+import {
+  inviteToCabinet,
+  removeFromCabinet,
+  respondToCabinet,
+  setPlanMonths,
+  setReviewPrice,
+  startPlatformBillingSetup,
+} from "./actions";
 
 export type ConnectStatus = "active" | "onboarding" | "not_started";
 
 const eur = (cents: number) => `${eurosFR(cents)} €`;
+const longDate = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+// « 2027-01-31 » → « janvier 2027 ».
+const monthOf = (iso: string) => periodLabel(`${iso.slice(0, 8)}01`);
+const pct = (share: number) => `−${Math.round((1 - share) * 100)} %`;
+
+export type CabinetInfo = {
+  /** false tant que la migration 0078 n'est pas appliquée : section cachée. */
+  ready: boolean;
+  meId: string;
+  links: CabinetLink[];
+};
+
+const SAVED: Record<string, string> = {
+  prix: "Tarif enregistré.",
+  moyen: "Moyen de paiement enregistré.",
+  duree: "Durée enregistrée : elle vaudra pour votre prochaine échéance.",
+  cabinet: "Invitation envoyée : votre collègue la verra sur sa page « Suivi & facturation ».",
+  "cabinet-rejoint": "Vous avez rejoint le cabinet : votre abonnement est désormais réglé par son payeur.",
+  "cabinet-refuse": "Invitation refusée.",
+  "cabinet-retire": "Le lien avec le cabinet est défait.",
+};
 
 // Carte façon appli téléphone : blanche, sans bordure, ombre douce.
 const CARD = "rounded-2xl border border-line bg-surface p-4 sm:p-5 max-sm:border-0 max-sm:shadow-soft max-sm:short:p-3";
@@ -47,13 +79,23 @@ export default function FacturationView({
   error,
   saved,
   notice,
+  cabinet = { ready: false, meId: "", links: [] },
 }: {
   data: KineBillingData;
   connectStatus: ConnectStatus;
   error?: string;
   saved?: string;
   notice?: string;
+  cabinet?: CabinetInfo;
 }) {
+  // Cabinet : suis-je un collègue (réglé par un payeur, ou invité), ou le payeur ?
+  const asMember = cabinet.links.find((l) => l.member_id === cabinet.meId) ?? null;
+  const invitation = asMember?.status === "pending" ? asMember : null;
+  const paidByCabinet = asMember?.status === "active" ? asMember : null;
+  const myMembers = cabinet.links.filter((l) => l.payer_id === cabinet.meId);
+  const cabinetKines = 1 + myMembers.filter((l) => l.status === "active").length;
+  const next = data.monthEstimate;
+  const nextPrice = subscriptionPrice(data.planMonths, cabinetKines);
   const todo = data.followUps.filter((f) => !f.review && f.status === "active");
   const done = data.followUps.filter((f) => f.review);
   const waitingCard = data.followUps.filter((f) => !f.review && f.status === "pending_card");
@@ -76,7 +118,7 @@ export default function FacturationView({
         {saved && (
           <p className="mt-2 flex items-center gap-1.5 rounded-xl bg-ok-soft px-4 py-2 text-sm text-ok">
             <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-            {saved === "prix" ? "Tarif enregistré." : saved === "moyen" ? "Moyen de paiement enregistré." : "Enregistré."}
+            {SAVED[saved] ?? "Enregistré."}
           </p>
         )}
         {notice === "attente" && (
@@ -199,22 +241,84 @@ export default function FacturationView({
                   Mon abonnement EasyPhysio
                 </h2>
               }
-              summary={data.monthEstimate.free ? "offert" : eur(data.monthEstimate.ttcCents)}
+              summary={
+                paidByCabinet ? "réglé par le cabinet" : data.paidUntil ? `réglé → ${monthOf(data.paidUntil)}` : next.free ? "offert" : eur(next.ttcCents)
+              }
             >
-              <div className="mt-2 rounded-xl bg-app-bg px-3 py-2">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-sm text-ink">
-                    {periodLabel(data.period)}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums text-ink">
-                    {data.monthEstimate.free ? "offert" : `${eur(data.monthEstimate.ttcCents)} TTC`}
-                  </span>
+              {invitation && (
+                <div className="mt-2 rounded-xl border border-brand/30 bg-brand-soft px-3 py-2">
+                  <p className="text-sm text-ink">
+                    <span className="font-medium">{invitation.payer_name ?? "Un collègue"}</span> vous invite dans son cabinet : il
+                    réglera votre abonnement EasyPhysio. Vous gardez vos patients, il ne les voit pas.
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <form action={respondToCabinet}>
+                      <input type="hidden" name="accept" value="1" />
+                      <SubmitButton pendingText="…" className="rounded-xl bg-brand px-3 py-1 text-sm font-medium text-white hover:bg-brand-dark">
+                        Accepter
+                      </SubmitButton>
+                    </form>
+                    <form action={respondToCabinet}>
+                      <input type="hidden" name="accept" value="0" />
+                      <SubmitButton pendingText="…" className="rounded-xl border border-line px-3 py-1 text-sm font-medium text-muted hover:text-ink">
+                        Refuser
+                      </SubmitButton>
+                    </form>
+                  </div>
                 </div>
-                <p className="mt-0.5 text-[11px] leading-snug text-muted">
-                  {eur(KINE_SUBSCRIPTION_TTC_CENTS)} TTC par mois, patients illimités, prélevé d&apos;avance le 1er du mois.
-                  {data.firstBilledMonth ? " Premier mois offert." : ""}
-                </p>
-              </div>
+              )}
+
+              {paidByCabinet ? (
+                <div className="mt-2 rounded-xl bg-app-bg px-3 py-2">
+                  <p className="text-sm text-ink">
+                    Réglé par le cabinet de <span className="font-medium">{paidByCabinet.payer_name ?? "votre collègue"}</span>.
+                  </p>
+                  <form action={removeFromCabinet} className="mt-1">
+                    <input type="hidden" name="member_id" value={cabinet.meId} />
+                    <SubmitButton pendingText="…" className="text-xs font-medium text-muted underline hover:text-danger">
+                      Quitter le cabinet
+                    </SubmitButton>
+                  </form>
+                </div>
+              ) : (
+                <div className="mt-2 rounded-xl bg-app-bg px-3 py-2">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-sm text-ink">
+                      {data.paidUntil ? `Réglé jusqu'au ${longDate(data.paidUntil)}` : periodLabel(data.period)}
+                    </span>
+                    {!data.paidUntil && (
+                      <span className="text-sm font-semibold tabular-nums text-ink">{next.free ? "offert" : `${eur(next.ttcCents)} TTC`}</span>
+                    )}
+                  </div>
+                  <form action={setPlanMonths} className="mt-1.5 flex items-center gap-2">
+                    <label className="min-w-0 flex-1">
+                      <span className="sr-only">Durée de l&apos;abonnement</span>
+                      <select
+                        name="months"
+                        defaultValue={data.planMonths}
+                        className="w-full rounded-lg border border-line bg-surface px-2 py-1 text-xs text-ink focus:border-brand focus:outline-none"
+                      >
+                        {KINE_PLANS.map((p) => {
+                          const price = subscriptionPrice(p.months, cabinetKines);
+                          return (
+                            <option key={p.months} value={p.months}>
+                              {p.months} mois : {eur(price.ttcCents)} ({eur(price.perKinePerMonthCents)} / mois{cabinetKines > 1 ? " par kiné" : ""})
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </label>
+                    <SubmitButton pendingText="…" className="shrink-0 rounded-lg border border-brand px-2.5 py-1 text-xs font-medium text-brand hover:bg-brand-soft">
+                      Choisir
+                    </SubmitButton>
+                  </form>
+                  <p className="mt-1 text-[11px] leading-snug text-muted">
+                    Prochaine échéance : {data.planMonths} mois{cabinetKines > 1 ? `, ${cabinetKines} kinés` : ""},{" "}
+                    {eur(nextPrice.ttcCents)} TTC payés d&apos;avance. Patients illimités.
+                    {data.firstBilledMonth && data.planMonths === 1 ? " Premier mois offert." : ""}
+                  </p>
+                </div>
+              )}
 
               <div className="mt-2 flex items-center justify-between gap-3">
                 <span className="flex min-w-0 items-center gap-2 text-sm">
@@ -234,7 +338,10 @@ export default function FacturationView({
                 <ul className="mt-2 divide-y divide-line border-t border-line">
                   {data.invoices.slice(0, 3).map((i) => (
                     <li key={i.periodStart} className="flex items-center justify-between gap-3 py-1 text-sm">
-                      <span className="text-ink">{periodLabel(i.periodStart)}</span>
+                      <span className="text-ink">
+                        {periodLabel(i.periodStart)}
+                        {i.periodEnd && monthOf(i.periodEnd) !== periodLabel(i.periodStart) ? ` → ${monthOf(i.periodEnd)}` : ""}
+                      </span>
                       <span className="flex items-center gap-2">
                         <span className="tabular-nums text-muted">{i.amountCents === 0 ? "offert" : eur(i.amountCents)}</span>
                         <InvoiceBadge status={i.status} />
@@ -242,6 +349,54 @@ export default function FacturationView({
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {/* Cabinet (migration 0078) : un payeur règle l'abonnement de
+                  collègues kinés, à tarif dégressif. Chacun garde ses patients. */}
+              {cabinet.ready && !asMember && (
+                <details className="group mt-2 border-t border-line pt-2">
+                  <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-ink [&::-webkit-details-marker]:hidden">
+                    <Users className="h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
+                    {myMembers.length > 0 ? `Mon cabinet · ${cabinetKines} kiné${cabinetKines > 1 ? "s" : ""}` : "Cabinet : réglez pour vos collègues"}
+                    <ChevronRight className="ml-auto h-4 w-4 text-muted transition-transform group-open:rotate-90" strokeWidth={1.75} />
+                  </summary>
+                  <p className="mt-1 text-[11px] leading-snug text-muted">
+                    Vous réglez l&apos;abonnement de collègues kinés : 2e kiné {pct(CABINET_SHARES[1])}, à partir du 3e{" "}
+                    {pct(CABINET_SHARES[2])}. Chacun garde ses patients ; le cabinet ne sert qu&apos;à la facture. Pris en compte à
+                    votre prochaine échéance.
+                  </p>
+                  {myMembers.length > 0 && (
+                    <ul className="mt-1.5 divide-y divide-line">
+                      {myMembers.map((m) => (
+                        <li key={m.member_id} className="flex items-center justify-between gap-2 py-1 text-sm">
+                          <span className="min-w-0 truncate text-ink">
+                            {m.member_name ?? m.member_email}
+                            {m.status === "pending" && <span className="ml-1.5 text-xs text-warn">invitation envoyée</span>}
+                          </span>
+                          <form action={removeFromCabinet}>
+                            <input type="hidden" name="member_id" value={m.member_id} />
+                            <SubmitButton pendingText="…" className="shrink-0 text-xs font-medium text-muted underline hover:text-danger">
+                              Retirer
+                            </SubmitButton>
+                          </form>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <form action={inviteToCabinet} className="mt-1.5 flex items-center gap-2">
+                    <input
+                      name="email"
+                      type="email"
+                      required
+                      placeholder="E-mail d'un collègue kiné"
+                      aria-label="E-mail d'un collègue kiné"
+                      className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 py-1 text-xs text-ink placeholder:text-muted focus:border-brand focus:outline-none"
+                    />
+                    <SubmitButton pendingText="…" className="shrink-0 rounded-lg border border-brand px-2.5 py-1 text-xs font-medium text-brand hover:bg-brand-soft">
+                      Inviter
+                    </SubmitButton>
+                  </form>
+                </details>
               )}
             </PhoneFold>
 

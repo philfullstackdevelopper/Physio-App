@@ -14,13 +14,17 @@ import KineMockup from "@/components/KineMockup";
 import DotCanvas from "@/components/DotCanvas";
 import {
   FREE_FIRST_MONTH,
+  KINE_PLANS,
   KINE_SUBSCRIPTION_TTC_CENTS,
+  subscriptionPrice,
   RECOMMENDED_REVIEW_PRICE_CENTS,
   eurosFR,
 } from "@/lib/billing/reviewModel";
 
 // Montants : lib/billing/reviewModel.ts, jamais écrits en dur.
-const KINE_SUB = eurosFR(KINE_SUBSCRIPTION_TTC_CENTS, 0);
+const KINE_SUB = eurosFR(KINE_SUBSCRIPTION_TTC_CENTS);
+// Prix par mois le plus bas d'un kiné seul (abonnement le plus long).
+const KINE_SUB_FROM = eurosFR(subscriptionPrice(KINE_PLANS[KINE_PLANS.length - 1].months).perKinePerMonthCents, 0);
 const REVIEW_PRICE = eurosFR(RECOMMENDED_REVIEW_PRICE_CENTS, 0);
 
 export const metadata: Metadata = {
@@ -123,7 +127,7 @@ export default function PraticiensPage() {
               <Cta />
             </div>
             <p className="mt-4 text-sm text-slate-500">
-              {KINE_SUB} € TTC par mois, patients illimités. Vos honoraires de suivi restent à 100 % à vous.
+              {KINE_SUB} € TTC par mois (dès {KINE_SUB_FROM} € en payant d&apos;avance), patients illimités. Vos honoraires de suivi restent à 100 % à vous.
             </p>
           </div>
           <KineMockup />
@@ -204,12 +208,13 @@ export default function PraticiensPage() {
               Ce que ça vous coûte
             </h2>
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-300">
-              Un abonnement de {KINE_SUB} € TTC par mois, patients illimités. Vos patients vous paient directement leur
+              Un abonnement de {KINE_SUB} € TTC par mois, ou dès {KINE_SUB_FROM} € par mois sur 3, 6 ou 12 mois payés d&apos;avance ;
+              en cabinet, chaque kiné en plus coûte moins cher. Patients illimités. Vos patients vous paient directement leur
               programme mensuel, au tarif que vous fixez (conseillé : {REVIEW_PRICE} €, ou 0 € pour l&apos;offrir) : EasyPhysio
               ne prend rien sur vos honoraires.
             </p>
             <ul className="mx-auto mt-6 flex max-w-lg flex-col gap-2 text-left sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-6 sm:text-left">
-              {[...(FREE_FIRST_MONTH ? ["Premier mois offert"] : []), "Sans engagement", "Données hébergées en France"].map((point) => (
+              {[...(FREE_FIRST_MONTH ? ["Premier mois offert (au mois)"] : []), "Sans engagement", "Données hébergées en France"].map((point) => (
                 <li key={point} className="flex items-center gap-2 text-sm text-slate-200">
                   <Check className="h-4 w-4 shrink-0 text-emerald-400" strokeWidth={2.5} />
                   {point}

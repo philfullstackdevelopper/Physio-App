@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { refreshConnectStatus } from "@/lib/billing/connectStatus";
 import { loadKineBillingData } from "@/lib/billing/kineBillingData";
-import FacturationView, { type ConnectStatus } from "./FacturationView";
+import FacturationView, { type CabinetInfo, type ConnectStatus } from "./FacturationView";
+import { cabinetView } from "@/lib/db/admin";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
-// « Suivi & facturation » (nouveau modèle, 2026-10-24) : bilans du mois,
-// tarif du kiné, paiements, documents, facture EasyPhysio. L'affichage vit
+// « Suivi & facturation » : programmes du mois, tarif du kiné, paiements,
+// documents, abonnement EasyPhysio (durée, cabinet). L'affichage vit
 // dans FacturationView.tsx, les données dans lib/billing/kineBillingData.ts.
 export default async function FacturationPage({
   searchParams,
@@ -18,13 +19,22 @@ export default async function FacturationPage({
   // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
   const { user } = await requireApprovedInstructor(supabase);
 
+  // Cabinet (migration 0078) : sans elle, la section reste cachée.
+  let cabinet: CabinetInfo = { ready: false, meId: user.id, links: [] };
+  try {
+    cabinet = { ready: true, meId: user.id, links: await cabinetView(user.id) };
+  } catch (err) {
+    console.error("[facturation] cabinet illisible (migration 0078 appliquée ?) :", err);
+  }
+  const cabinetKines = 1 + cabinet.links.filter((l) => l.payer_id === user.id && l.status === "active").length;
+
   const [{ data: connect }, data] = await Promise.all([
     supabase
       .from("instructor_connect_accounts")
       .select("status, stripe_connect_account_id")
       .eq("instructor_id", user.id)
       .maybeSingle(),
-    loadKineBillingData(supabase, user.id),
+    loadKineBillingData(supabase, user.id, new Date(), cabinetKines),
   ]);
 
   let connectStatus = ((connect?.status as string | null) ?? "not_started") as ConnectStatus;
@@ -39,5 +49,5 @@ export default async function FacturationPage({
     }
   }
 
-  return <FacturationView data={data} connectStatus={connectStatus} error={error} saved={saved} notice={moyen} />;
+  return <FacturationView data={data} connectStatus={connectStatus} error={error} saved={saved} notice={moyen} cabinet={cabinet} />;
 }

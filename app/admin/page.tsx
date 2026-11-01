@@ -80,7 +80,7 @@ export default async function AdminPage({
       <form action={invoiceLastMonth} className="mb-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
         <div>
           <p className="text-sm font-semibold text-slate-900">Facturer les kinés — {periodLabel(periodOf(new Date()))}</p>
-          <p className="text-xs text-slate-500">Abonnement de {eurosFR(KINE_SUBSCRIPTION_TTC_CENTS)} € TTC par kiné, d&apos;avance, prélevé automatiquement. Premier mois offert. Se fait tout seul le 1er du mois ; un mois n&apos;est jamais facturé deux fois.</p>
+          <p className="text-xs text-slate-500">Abonnement de {eurosFR(KINE_SUBSCRIPTION_TTC_CENTS)} € TTC par mois (ou 3, 6, 12 mois et cabinets), d&apos;avance, prélevé automatiquement. Premier mois offert sur la formule mensuelle. Se fait tout seul le 1er du mois ; un mois n&apos;est jamais facturé deux fois.</p>
         </div>
         <input type="hidden" name="period" value={periodOf(new Date())} />
         <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Lancer la facturation</button>

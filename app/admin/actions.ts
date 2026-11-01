@@ -64,7 +64,7 @@ export async function reactivateInstructor(formData: FormData) {
 }
 
 // Secours de la facturation automatique (tâche planifiée du 1er du mois) :
-// abonnement fixe du mois en cours à chaque kiné validé, premier mois offert,
+// abonnement (durée choisie, d'avance) à chaque kiné validé, premier mois offert sur la formule mensuelle,
 // jamais deux fois le même mois (lib/billing/platformInvoice.ts). Le bilan
 // revient dans l'URL.
 export async function invoiceLastMonth(formData: FormData) {

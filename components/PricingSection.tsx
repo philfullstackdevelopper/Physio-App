@@ -8,7 +8,9 @@ import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 import { estimateStripeFeeCents } from "@/lib/billing/reviewModel";
 import {
   FREE_FIRST_MONTH,
+  KINE_PLANS,
   KINE_SUBSCRIPTION_TTC_CENTS,
+  subscriptionPrice,
   RECOMMENDED_REVIEW_PRICE_CENTS,
   eurosFR,
 } from "@/lib/billing/reviewModel";
@@ -24,12 +26,14 @@ import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 const euros = (cents: number) => eurosFR(cents);
 const eurosRound = (cents: number) => eurosFR(cents, 0);
-// Simulateur : de 10 à 200 € par mois (le kiné fixe librement son tarif ; ces
+// Simulateur : de 0 à 200 € par mois (le kiné fixe librement son tarif ; ces
 // bornes ne servent qu'au curseur).
-const SIM_PRICE_MIN_CENTS = 1000;
+const SIM_PRICE_MIN_CENTS = 0;
 const SIM_PRICE_MAX_CENTS = 20000;
 const REVIEW_PRICE = eurosRound(RECOMMENDED_REVIEW_PRICE_CENTS);
-const KINE_SUB = eurosRound(KINE_SUBSCRIPTION_TTC_CENTS);
+const KINE_SUB = euros(KINE_SUBSCRIPTION_TTC_CENTS);
+// Le prix par mois le plus bas d'un kiné seul (abonnement le plus long).
+const KINE_SUB_FROM = eurosRound(subscriptionPrice(KINE_PLANS[KINE_PLANS.length - 1].months).perKinePerMonthCents);
 
 const FOLLOW_UP_POINTS = [
   "Chaque mois, votre kiné regarde vos séances et vos douleurs et ajuste votre programme",
@@ -92,7 +96,7 @@ const KINE_STEPS = [
   },
   {
     title: "Vous payez EasyPhysio à part",
-    body: `Un abonnement de ${KINE_SUB} € TTC par mois, patients illimités, sans engagement.${FREE_FIRST_MONTH ? " Premier mois offert." : ""}`,
+    body: `${KINE_SUB} € TTC par mois${FREE_FIRST_MONTH ? " (premier mois offert)" : ""}, ou dès ${KINE_SUB_FROM} € par mois en payant d'avance. Patients illimités ; en cabinet, chaque kiné en plus coûte moins cher (voir les formules plus bas).`,
   },
 ];
 
@@ -150,13 +154,17 @@ function KineOffer() {
   const [priceCents, setPriceCents] = useState(RECOMMENDED_REVIEW_PRICE_CENTS);
 
   const reviewsCents = patients * priceCents;
+  // Abonnement (Philippe, 2026-11-01) : durée payée d'avance et nombre de
+  // kinés du cabinet ; le revenu, lui, reste celui d'UN kiné.
+  // Abonnement au mois ; les durées et les cabinets sont dans la section
+  // « Formules » juste en dessous (components/KinePlans.tsx).
   const easyphysioCents = KINE_SUBSCRIPTION_TTC_CENTS;
   const cardFeesCents = patients * estimateStripeFeeCents(priceCents);
   const netCents = reviewsCents - easyphysioCents - cardFeesCents;
 
   const rows = [
     { label: `${patients} patient${patients > 1 ? "s" : ""} × ${euros(priceCents)} €`, value: `+ ${euros(reviewsCents)} €`, tone: "text-slate-900" },
-    { label: "Abonnement EasyPhysio (TTC)", value: `− ${euros(easyphysioCents)} €`, tone: "text-blue-600" },
+    { label: "Abonnement EasyPhysio au mois (TTC)", value: `− ${euros(easyphysioCents)} €`, tone: "text-blue-600" },
     { label: "Frais de paiement (estimés)", value: `− ${euros(cardFeesCents)} €`, tone: "text-slate-700" },
   ];
 
@@ -231,6 +239,9 @@ function KineOffer() {
                 </div>
               ))}
             </dl>
+            <a href="#formules" className="mt-1.5 block border-t border-slate-200 pt-1.5 text-xs font-medium text-blue-700 hover:underline">
+              Dès {KINE_SUB_FROM}&nbsp;€ par mois en payant d&apos;avance, moins cher en cabinet : voir les formules
+            </a>
           </div>
 
           <div className="mt-3 flex items-center gap-3 rounded-xl bg-blue-50/70 px-3.5 py-2.5 max-sm:hidden sm:short:hidden">

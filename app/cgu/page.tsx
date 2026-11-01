@@ -46,7 +46,7 @@ export default function CguPage() {
             <h2 className="font-display font-semibold text-slate-900">3. Accès à l&apos;application</h2>
             <p className="mt-1">
               L&apos;application est mise à disposition du patient par son kinésithérapeute, qui
-              règle à EasyPhysio un abonnement mensuel fixe. Le patient n&apos;a rien à payer à
+              règle à EasyPhysio un abonnement fixe (au mois, ou payé d&apos;avance pour plusieurs mois). Le patient n&apos;a rien à payer à
               EasyPhysio. Si le kinésithérapeute propose son suivi gratuitement, l&apos;accès est libre ;
               s&apos;il a fixé un tarif, l&apos;accès à l&apos;application passe par l&apos;acceptation du
               suivi mensuel décrit à l&apos;article 4.
@@ -77,7 +77,8 @@ export default function CguPage() {
             <p className="mt-1">
               Le patient peut supprimer son compte à tout moment depuis son espace personnel. Le
               kinésithérapeute peut également résilier son propre compte à tout moment ; son
-              abonnement EasyPhysio est facturé chaque mois, d&apos;avance, sans engagement.
+              abonnement EasyPhysio est facturé d&apos;avance pour la durée qu&apos;il a choisie (1, 3, 6 ou 12 mois), sans
+              engagement au-delà : il peut changer de durée pour l&apos;échéance suivante.
             </p>
           </section>
 
