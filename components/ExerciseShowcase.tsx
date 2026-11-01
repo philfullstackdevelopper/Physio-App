@@ -8,8 +8,9 @@ import LoopVideo from "@/components/LoopVideo";
 // la page de connexion, mais de gauche à droite »). Toutes les vidéos à la
 // même hauteur, chacune dans son vrai format : au cabinet, filmées à
 // l'horizontale (cases larges) ; en salle, filmées à la verticale (cases
-// hautes, de la tête aux pieds). Le bandeau s'arrête au survol pour qu'on
-// puisse regarder une vidéo ; immobile si « réduire les animations ».
+// hautes, de la tête aux pieds). Pas de pause au survol : le bandeau prend
+// toute la largeur, la souris est presque toujours dessus et il semblait
+// figé (Philippe, 2026-11-01). Immobile si « réduire les animations ».
 type ShowcaseExercise = {
   /** Nom du fichier dans public/videos-demo/ (sans extension). */
   clip: string;
@@ -54,11 +55,11 @@ function Tile({ ex, copy }: { ex: ShowcaseExercise; copy: boolean }) {
 
 export default function ExerciseShowcase() {
   return (
-    <div className="group overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+    <div className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
       <style>{`@keyframes vitrine-defile{from{transform:translateX(-50%)}to{transform:translateX(0)}}`}</style>
       {/* La liste est écrite deux fois : quand la 1re moitié est sortie à
           droite, la 2e est exactement à sa place de départ. */}
-      <ul className="flex h-64 w-max [animation:vitrine-defile_70s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:[animation:none] sm:h-80 lg:h-[22rem] lg:short:h-[19rem]">
+      <ul className="flex h-64 w-max [animation:vitrine-defile_40s_linear_infinite] motion-reduce:[animation:none] sm:h-80 lg:h-[22rem] lg:short:h-[19rem]">
         {[false, true].map((copy) =>
           EXERCISES.map((ex) => <Tile key={`${ex.clip}-${copy}`} ex={ex} copy={copy} />),
         )}
