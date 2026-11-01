@@ -58,7 +58,12 @@ function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string;
   };
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-xl short:aspect-auto short:h-36">
+    // Les vidéos du tournage sont filmées en hauteur (1080×1920) : cadre plus
+    // haut que l'ancien 16/9, pour que la vidéo remplisse l'écran au lieu
+    // d'être coincée entre deux bandes noires (Philippe, 2026-11-01 : « que le
+    // patient voie bien ses exercices »). Téléphone : cadre vertical, sans
+    // dépasser la moitié de l'écran ; ordinateur : jusqu'à 55 % de la hauteur.
+    <div className="relative aspect-[4/5] max-h-[40vh] w-full overflow-hidden rounded-xl bg-black sm:aspect-auto sm:h-[min(55vh,560px)] sm:max-h-none short:aspect-auto short:h-36">
       <video
         ref={videoRef}
         playsInline
