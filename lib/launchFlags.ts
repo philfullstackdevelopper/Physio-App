@@ -31,3 +31,10 @@ export const WAITLIST_HREF = "/#liste-attente";
 // exercices de la plateforme sont cachés aux kinés, pas supprimés. Passer à
 // false pour tout réafficher.
 export const ONLY_FILMED_EXERCISES = true;
+
+// Abonnement des kinés à EasyPhysio (Philippe, 2026-11-02) : ARRÊTÉ. Le kiné
+// s'inscrit et utilise l'appli gratuitement ; EasyPhysio se rémunère sur les
+// formules payées par les patients (lib/billing/reviewModel.ts). Tant que
+// c'est faux, la facturation mensuelle des kinés (cron du 1er du mois et
+// bouton « Lancer la facturation » de /admin) ne facture personne.
+export const KINE_SUBSCRIPTION_BILLING = false;

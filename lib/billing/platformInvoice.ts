@@ -25,6 +25,7 @@ import {
   upsertPlatformBilling,
   upsertPlatformInvoice,
 } from "@/lib/db/admin";
+import { KINE_SUBSCRIPTION_BILLING } from "@/lib/launchFlags";
 import { VAT_RATE, periodCovered, periodLabel, periodLastDay, planMonthsOf, platformFeeForPeriod } from "./reviewModel";
 
 function sig(instructorId: string): string {
@@ -160,6 +161,10 @@ export type MonthlyInvoicingReport = {
  * doit avoir vérifié que c'est l'administrateur (ou la tâche planifiée).
  */
 export async function runMonthlyInvoicing(period: string): Promise<MonthlyInvoicingReport> {
+  // Abonnement kiné arrêté (Philippe, 2026-11-02) : aucun kiné n'est facturé.
+  if (!KINE_SUBSCRIPTION_BILLING) {
+    return { period, invoiced: [], missingPaymentMethod: [], alreadyDone: [], coveredByCabinet: [], errors: [] };
+  }
   const stripe = getStripe();
   const [kines, testAccounts, billing, invoices, plans, cabinets] = await Promise.all([
     listAllInstructors(),
