@@ -24,6 +24,8 @@ import SignupOnboardingView from "@/app/signup/onboarding/SignupOnboardingView";
 import SeanceDuJourView from "@/app/patient/seance-du-jour/SeanceDuJourView";
 import { DEMO_BODY_PARTS } from "@/app/prototypes/kine-telephone/mock";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
+import { buildHistoryWeeks } from "@/lib/patient/historyWeeks";
+import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 
 export const metadata = { title: "Aperçu écrans patient", robots: { index: false } };
 // Recalculée à chaque visite : la courbe de douleur fictive suit la vraie date.
@@ -50,6 +52,21 @@ const EXERCISES = [
 
 // Hors du composant : la règle react-hooks/purity refuse Date.now() dans le rendu.
 const daysAgoIso = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+
+// Historique fictif : 4 semaines, séance prévue 3 fois par semaine — cette
+// semaine 1 faite, puis 3/3, 2/3 et 1/3 (bleu = fait, rouge = manqué).
+function demoHistoryWeeks() {
+  const now = new Date();
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7), 18, 15);
+  const at = (weeksAgo: number, day: number) => new Date(monday.getTime() + (day - weeksAgo * 7) * 86_400_000).toISOString();
+  const workout = { name: "Renforcement du genou, niveau 2", timesPerWeek: 3, exercises: EXERCISES.map(([name]) => name) };
+  const done: [number, number][] = [[0, 0], [1, 0], [1, 2], [1, 4], [2, 1], [2, 3], [3, 2]];
+  return buildHistoryWeeks({
+    now,
+    assignments: [{ workoutId: "demo-seance", weekStartDate: thisWeekStartDateKey(new Date(at(3, 0))), workout }],
+    logs: done.map(([w, d], i) => ({ id: `log${i}`, completedAt: at(w, d), workout })),
+  });
+}
 
 // Onglet surligné dans la barre de navigation, selon l'écran affiché.
 const NAV_PATH: Record<string, string> = {
@@ -169,12 +186,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
             exercises={[...EXERCISES.map(([name]) => name), "Quad Set", "Heel Slide", "Clamshell"]}
           />
         ) : ecran === "historique" ? (
-          <HistoriqueView
-            groups={Array.from({ length: 9 }, (_, i) => ({
-              day: `jour ${i + 1} — ${["lundi", "mercredi", "vendredi"][i % 3]} ${28 - i * 2} septembre`,
-              logs: [{ id: `log${i}`, name: "Renforcement du genou, niveau 2", time: "18:15" }],
-            }))}
-          />
+          <HistoriqueView weeks={demoHistoryWeeks()} />
         ) : ecran === "seance-du-jour" ? (
           <SeanceDuJourView
             activeWorkout={{

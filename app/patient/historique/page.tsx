@@ -1,43 +1,58 @@
 import HistoriqueView from "./HistoriqueView";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { formatHistoryDay } from "@/lib/patient/historyWindow";
+import { buildHistoryWeeks, type HistoryWorkout } from "@/lib/patient/historyWeeks";
 
-type LogRow = {
-  id: string;
-  completed_at: string;
-  workouts: { name: string } | null;
-};
+type WorkoutRow = {
+  name: string;
+  times_per_week: number | null;
+  workout_exercises: { position: number | null; exercises: { name: string } | null }[] | null;
+} | null;
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const WORKOUT_SELECT = "name, times_per_week, workout_exercises ( position, exercises ( name ) )";
+
+function toWorkout(w: WorkoutRow): HistoryWorkout | null {
+  if (!w) return null;
+  return {
+    name: w.name,
+    timesPerWeek: w.times_per_week,
+    exercises: [...(w.workout_exercises ?? [])]
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .map((we) => we.exercises?.name)
+      .filter((n): n is string => !!n),
+  };
 }
 
 export default async function HistoriquePage() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const { data } = await supabase
-    .from("workout_logs")
-    .select("id, completed_at, workouts ( name )")
-    .eq("patient_id", user.id)
-    .order("completed_at", { ascending: false })
-    .limit(200);
-  const logs = (data ?? []) as unknown as LogRow[];
+  const [{ data: logRows }, { data: recRows }] = await Promise.all([
+    supabase
+      .from("workout_logs")
+      .select(`id, completed_at, workouts ( ${WORKOUT_SELECT} )`)
+      .eq("patient_id", user.id)
+      .order("completed_at", { ascending: false })
+      .limit(200),
+    supabase
+      .from("patient_recommended_workouts")
+      .select(`workout_id, week_start_date, week_count, workouts ( ${WORKOUT_SELECT} )`)
+      .eq("patient_id", user.id),
+  ]);
 
-  // Group by day for a readable list — most recent day first.
-  const groups: { day: string; logs: LogRow[] }[] = [];
-  for (const log of logs) {
-    const day = formatHistoryDay(log.completed_at);
-    const group = groups.find((g) => g.day === day);
-    if (group) group.logs.push(log);
-    else groups.push({ day, logs: [log] });
-  }
-
-  const toView = (g: { day: string; logs: LogRow[] }) => ({
-    day: g.day,
-    logs: g.logs.map((log) => ({ id: log.id, name: log.workouts?.name ?? "Séance", time: formatTime(log.completed_at) })),
+  const weeks = buildHistoryWeeks({
+    logs: (logRows ?? []).map((l) => ({
+      id: l.id as string,
+      completedAt: l.completed_at as string,
+      workout: toWorkout(l.workouts as unknown as WorkoutRow),
+    })),
+    assignments: (recRows ?? []).map((r) => ({
+      workoutId: r.workout_id as string,
+      weekStartDate: r.week_start_date as string,
+      weekCount: (r.week_count as number | null) ?? null,
+      workout: toWorkout(r.workouts as unknown as WorkoutRow),
+    })),
   });
 
-  return <HistoriqueView groups={groups.map(toView)} />;
+  return <HistoriqueView weeks={weeks} />;
 }
