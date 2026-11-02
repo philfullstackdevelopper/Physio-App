@@ -22,7 +22,7 @@ function InfoButton({ name, onOpen }: { name: string; onOpen: () => void }) {
       onClick={onOpen}
       aria-label={`Voir la démonstration : ${name}`}
       title="Voir la démonstration"
-      className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-surface/80 text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+      className="absolute right-1 top-1 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface/80 text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
     >
       <Info className="h-4 w-4" strokeWidth={1.75} />
     </button>
