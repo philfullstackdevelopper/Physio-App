@@ -8,9 +8,9 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Flame, CheckCircle2, Check, Play } from "lucide-react";
+import { Flame, CheckCircle2, Check, Play, Repeat2, Dumbbell, Timer, X, ArrowRight, ShieldAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { goalTextFor, type Prescription } from "@/lib/exercise/prescription";
+import { goalPartsFor, goalTextFor, type GoalParts, type Prescription } from "@/lib/exercise/prescription";
 import { fetchStreak } from "@/lib/exercise/streak";
 import { getYoutubeEmbedId, isVideoFileUrl, isImageFileUrl } from "@/lib/exercise/media";
 import { parseSteps } from "@/lib/exercise/steps";
@@ -161,15 +161,68 @@ function Demo({ url, name, startSeconds = 0 }: { url: string | null; name: strin
 /** Numbered "how to" steps parsed from the exercise's instructions, plus the
  *  session goal. Always visible — the demonstration is the point of this
  *  screen, not something to hunt for behind a toggle. */
+/** L'objectif en badges lisibles d'un coup d'œil (Philippe, 2026-11-02 :
+ *  « nice icons / nice display ») : séries, répétitions ou temps. */
+function GoalBadges({ goal, label }: { goal: GoalParts; label: string }) {
+  const badge = "inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-800 max-sm:py-1 short:py-1";
+  return (
+    <div className="flex flex-wrap items-center gap-2" aria-label={`Objectif : ${label}`}>
+      {goal.kind === "duration" ? (
+        <span className={badge}>
+          <Timer className="h-4 w-4" strokeWidth={2} />
+          {goal.minutes} min
+        </span>
+      ) : (
+        <>
+          <span className={badge}>
+            <Repeat2 className="h-4 w-4" strokeWidth={2} />
+            {goal.sets} séries
+          </span>
+          <span className={badge}>
+            {goal.kind === "reps" ? <Dumbbell className="h-4 w-4" strokeWidth={2} /> : <Timer className="h-4 w-4" strokeWidth={2} />}
+            {goal.kind === "reps" ? `${goal.reps} répétitions` : `${goal.seconds} s`}
+          </span>
+        </>
+      )}
+      {goal.kind === "reps" && <span className="text-xs text-slate-500 max-sm:hidden">selon votre aisance</span>}
+    </div>
+  );
+}
+
+/** Une pastille par série, à cocher au fil de l'exercice : facultatif, juste
+ *  pour savoir où l'on en est. */
+function SetTracker({ sets, done, onToggle }: { sets: number; done: number; onToggle: (n: number) => void }) {
+  return (
+    <div className="mt-3 flex items-center gap-2 max-sm:mt-2 short:mt-2">
+      <span className="text-xs font-medium text-slate-500">Séries faites</span>
+      {Array.from({ length: sets }, (_, i) => {
+        const on = i < done;
+        return (
+          <button
+            key={i}
+            type="button"
+            aria-pressed={on}
+            aria-label={`Série ${i + 1}${on ? " faite" : ""}`}
+            onClick={() => onToggle(on && i === done - 1 ? i : i + 1)}
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors motion-reduce:transition-none max-sm:h-7 max-sm:w-7 ${
+              on ? "bg-blue-600 text-white" : "border border-slate-300 bg-white text-slate-500 hover:border-blue-400"
+            }`}
+          >
+            {on ? <Check className="h-4 w-4" strokeWidth={2.5} /> : i + 1}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function HowTo({ instructions, goalText }: { instructions: string | null; goalText: string }) {
   const steps = parseSteps(instructions);
   return (
-    <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 short:mt-2 short:p-3">
-      <p className="text-sm text-slate-700">
-        Objectif : <span className="font-semibold">{goalText}</span>
-      </p>
+    <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 max-sm:mt-2 max-sm:p-3 short:mt-2 short:p-3">
+      <p className="sr-only">Objectif : {goalText}</p>
       {steps.length > 0 ? (
-        <ol className="mt-3 space-y-2 short:mt-2 short:space-y-1">
+        <ol className="space-y-2 short:space-y-1">
           {steps.map((s, i) => (
             <li key={i} className="flex gap-2 text-sm text-slate-700">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
@@ -180,9 +233,10 @@ function HowTo({ instructions, goalText }: { instructions: string | null; goalTe
           ))}
         </ol>
       ) : (
-        <p className="mt-2 text-sm text-slate-500">Allez-y doucement, sans forcer.</p>
+        <p className="text-sm text-slate-500">Allez-y doucement, sans forcer.</p>
       )}
-      <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500 short:mt-2 short:pt-2">
+      <p className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-500 short:mt-2 short:pt-2">
+        <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-amber-500" strokeWidth={2} />
         Une douleur vive ? Arrêtez-vous et parlez-en à votre praticien.
       </p>
     </div>
@@ -231,9 +285,14 @@ export default function WorkoutSession({
   const [fbSent, setFbSent] = useState(false);
   const [fbBusy, setFbBusy] = useState(false);
 
+  // Séries cochées sur l'exercice en cours (affichage seulement, rien n'est enregistré).
+  const [setsDone, setSetsDone] = useState(0);
+
   const total = exercises.length;
   const current = exercises[idx];
+  const upcoming = exercises[idx + 1] ?? null;
   const goalText = goalTextFor(current?.instructions ?? null, prescription);
+  const goal = goalPartsFor(current?.instructions ?? null);
 
   const finish = async () => {
     // Log the completed workout (RLS: patient can insert their own logs),
@@ -329,6 +388,7 @@ export default function WorkoutSession({
       // Réarme le bouton « J'ai terminé cet exercice » : sinon il restait
       // désactivé dès le 2e exercice (Philippe, 2026-10-07).
       setCompleting(false);
+      setSetsDone(0);
       setPhase("exercise");
     } else {
       finish();
@@ -458,24 +518,34 @@ export default function WorkoutSession({
     // moins haute et marges resserrées pour que l'exercice et son bouton
     // tiennent sans défiler (audit 2026-10-10).
     <div className="mx-auto flex max-w-xl flex-col gap-4 short:gap-2">
-      {/* Progress header */}
-      <div className="flex items-center gap-3">
-        <Link href="/patient" className="text-sm text-slate-400 hover:underline">
-          Quitter
-        </Link>
-        <div className="flex flex-1 gap-1.5">
-          {exercises.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 flex-1 rounded-full ${
-                i < idx || (i === idx && phase === "celebrate") ? "bg-blue-500" : i === idx ? "bg-blue-200" : "bg-slate-200"
-              }`}
-            />
-          ))}
+      {/* Progress header : nom de la séance, position, barre par exercice. */}
+      <div>
+        <div className="flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-sm font-semibold text-slate-700">{workoutName}</p>
+          <Link
+            href="/patient"
+            aria-label="Quitter la séance"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-sm text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          >
+            <X className="h-4 w-4" strokeWidth={2} />
+            Quitter
+          </Link>
         </div>
-        <span className="text-xs font-medium text-slate-400">
-          {idx + 1}/{total}
-        </span>
+        <div className="mt-1.5 flex items-center gap-3">
+          <div className="flex flex-1 gap-1.5">
+            {exercises.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 flex-1 rounded-full ${
+                  i < idx || (i === idx && phase === "celebrate") ? "bg-blue-500" : i === idx ? "bg-blue-200" : "bg-slate-200"
+                }`}
+              />
+            ))}
+          </div>
+          <span className="text-xs font-medium tabular-nums text-slate-400">
+            {idx + 1}/{total}
+          </span>
+        </div>
       </div>
 
       {/* ---- Between exercises ---- */}
@@ -491,33 +561,59 @@ export default function WorkoutSession({
             Exercice {idx + 1} sur {total} terminé
           </p>
 
+          {/* À suivre : le prochain exercice et son objectif, pour enchaîner sans surprise. */}
+          {upcoming && (
+            <div className="mt-5 flex items-center gap-3 rounded-xl bg-slate-50 p-3 text-left">
+              <ExerciseIllustration name={upcoming.name} className="h-14 w-14 shrink-0 rounded-lg bg-white text-blue-600" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">À suivre</p>
+                <p className="truncate text-sm font-semibold text-slate-900">{upcoming.name}</p>
+                <p className="text-xs text-slate-500">{goalTextFor(upcoming.instructions, prescription)}</p>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={next}
             disabled={saving}
-            className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {idx < total - 1 ? "Exercice suivant →" : saving ? "Enregistrement…" : "Terminer la séance"}
+            {idx < total - 1 ? (
+              <>
+                Exercice suivant
+                <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              </>
+            ) : saving ? (
+              "Enregistrement…"
+            ) : (
+              "Terminer la séance"
+            )}
           </button>
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm max-sm:p-4 short:p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
-            Exercice {idx + 1}
+            Exercice {idx + 1} sur {total}
           </p>
           <h2 className="font-display mt-1 text-2xl font-semibold text-slate-900 short:mt-0 short:text-xl">
             {current.name}
           </h2>
+          <div className="mt-2 short:mt-1">
+            <GoalBadges goal={goal} label={goalText} />
+          </div>
 
-          <div className="mt-4 short:mt-2">
+          <div className="mt-4 max-sm:mt-3 short:mt-2">
             <Demo url={current.mediaUrl} name={current.name} startSeconds={current.mediaStartSeconds ?? 0} />
           </div>
+
+          {goal.kind !== "duration" && <SetTracker sets={goal.sets} done={setsDone} onToggle={setSetsDone} />}
 
           <HowTo instructions={current.instructions} goalText={goalText} />
 
           <button
             onClick={onExerciseDone}
             disabled={completing}
-            className={`mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl py-4 text-lg font-semibold text-white short:mt-3 short:py-3 short:text-base transition-transform duration-150 ease-out motion-reduce:transition-none ${
+            className={`mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl py-4 text-lg font-semibold text-white max-sm:mt-3 max-sm:py-3 short:mt-3 short:py-3 short:text-base transition-transform duration-150 ease-out motion-reduce:transition-none ${
               completing ? "scale-95 bg-blue-700" : "scale-100 bg-blue-600 hover:bg-blue-700"
             }`}
           >

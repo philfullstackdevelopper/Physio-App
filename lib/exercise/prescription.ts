@@ -150,6 +150,19 @@ export function goalTextFor(instructions: string | null, p: Pick<Prescription, "
   return `${p.goalSets} séries de ${FIXED_GOAL_REPS_MIN} à ${p.goalReps} répétitions`;
 }
 
+/** Objectif découpé pour l'affichage en badges dans la séance guidée. */
+export type GoalParts =
+  | { kind: "reps"; sets: number; reps: string }
+  | { kind: "hold"; sets: number; seconds: string }
+  | { kind: "duration"; minutes: string };
+
+export function goalPartsFor(instructions: string | null): GoalParts {
+  const g = goalFromInstructions(instructions);
+  if (g && "minutes" in g) return { kind: "duration", minutes: g.minutes };
+  if (g && "seconds" in g) return { kind: "hold", sets: FIXED_GOAL_SETS, seconds: g.seconds.replace(" à ", "-") };
+  return { kind: "reps", sets: FIXED_GOAL_SETS, reps: `${FIXED_GOAL_REPS_MIN}-${FIXED_GOAL_REPS}` };
+}
+
 /** Version courte pour les tuiles d'exercice : « 3 × 8-12 rép. », « 10 min », « 3 × 30 s ». */
 export function goalShortFor(instructions: string | null): string {
   const g = goalFromInstructions(instructions);
