@@ -23,17 +23,29 @@ import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import SignupOnboardingView from "@/app/signup/onboarding/SignupOnboardingView";
 import SeanceDuJourView from "@/app/patient/seance-du-jour/SeanceDuJourView";
 import { DEMO_BODY_PARTS } from "@/app/prototypes/kine-telephone/mock";
+import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 
 export const metadata = { title: "Aperçu écrans patient", robots: { index: false } };
 // Recalculée à chaque visite : la courbe de douleur fictive suit la vraie date.
 export const dynamic = "force-dynamic";
 
+// Exercices filmés avec Jules (lib/exercise/filmedExercises.ts) : la démo
+// montre leur vraie vidéo (Cloudflare R2, lien signé côté serveur — même
+// fichier que exercises.media_url, migration 0075) et l'objectif séries ×
+// répétitions (Philippe, 2026-11-02).
 const EXERCISES = [
-  // Exercices réellement présents dans la banque actuelle (après le tri 0069).
-  ["Glute Bridge", "Allongé sur le dos, genoux fléchis, soulevez le bassin en serrant les fessiers puis redescendez lentement."],
-  ["Wall Sit", "Dos contre le mur, descendez légèrement en pliant les genoux, tenez la position puis remontez."],
-  ["Bodyweight Squat", "Debout, pieds écartés largeur du bassin, fléchissez doucement les genoux sans dépasser les orteils."],
-  ["Sit-to-Stand", "Assis au bord d'une chaise, bras croisés, levez-vous sans l'aide des mains puis rasseyez-vous lentement."],
+  ["Glute Bridge", "Allongé sur le dos, genoux fléchis, soulevez le bassin en serrant les fessiers puis redescendez lentement.", "glute-bridge.mp4"],
+  ["Bodyweight Squat", "Debout, pieds écartés largeur du bassin, fléchissez doucement les genoux sans dépasser les orteils.", "bodyweight-squat.mp4"],
+  [
+    "Straight Leg Raise",
+    "Allongé sur le dos, appuyé sur les avant-bras, l'autre jambe allongée au sol. Contractez la cuisse pour verrouiller le genou, puis levez la jambe tendue jusqu'à environ 45°, sans plier le genou. Redescendez lentement.",
+    "straight-leg-raise.mp4",
+  ],
+  [
+    "Terminal Knee Extension (Band)",
+    "Debout, un pied devant l'autre, élastique passé derrière le genou avant et fixé devant vous à hauteur du genou. Partez genou légèrement plié, puis tendez complètement le genou en poussant vers l'arrière contre l'élastique. Revenez lentement.",
+    "terminal-knee-extension.mp4",
+  ],
 ] as const;
 
 // Hors du composant : la règle react-hooks/purity refuse Date.now() dans le rendu.
@@ -184,7 +196,14 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
                 workoutId="demo-seance"
                 patientId="demo-patient"
                 workoutName="Renforcement du genou, niveau 2"
-                exercises={EXERCISES.map(([name, instructions]) => ({ name, instructions, mediaUrl: null, mediaStartSeconds: 0 }))}
+                exercises={await Promise.all(
+                  EXERCISES.map(async ([name, instructions, video]) => ({
+                    name,
+                    instructions,
+                    mediaUrl: await resolveMediaUrl(`r2:${video}`),
+                    mediaStartSeconds: 0,
+                  })),
+                )}
                 prescription={DEFAULT_SQUAT}
                 demo
               />

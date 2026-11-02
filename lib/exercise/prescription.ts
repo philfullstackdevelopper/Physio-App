@@ -55,6 +55,11 @@ export const FIXED_GOAL_SETS = 3;
  *  mode (3 × 8) was discussed but deliberately not built for now. */
 export const FIXED_GOAL_REPS = 12;
 
+/** Bas de la fourchette affichée au patient : « 3 séries de 8 à 12
+ *  répétitions », selon l'aisance de chacun (Philippe, 2026-11-02 : « 3 sets
+ *  of 8-12 depending on how easy the movement is »). */
+export const FIXED_GOAL_REPS_MIN = 8;
+
 export interface PatientContext {
   ageYears?: number;
   heightCm?: number;
@@ -120,16 +125,35 @@ export function recommendPrescription(
   return { ...base, goalReps: FIXED_GOAL_REPS, goalSets: FIXED_GOAL_SETS, goodDepth };
 }
 
+/** Objectif lu dans la consigne : durée d'endurance (« 10 minutes », migration
+ *  0060) ou temps de maintien (« tenez 30 secondes », « 20 à 30 secondes »). */
+function goalFromInstructions(instructions: string | null): { minutes: string } | { seconds: string } | null {
+  const min = instructions?.match(/(\d+)\s*minutes?\b/i);
+  if (min) return { minutes: min[1] };
+  const sec = instructions?.match(/(\d+(?:\s*à\s*\d+)?)\s*secondes?\b/i);
+  if (sec) return { seconds: sec[1].replace(/\s+/g, " ") };
+  return null;
+}
+
 /**
  * Texte « Objectif » d'un exercice dans la séance du patient.
  *
- * 3 × 12 partout, sauf l'endurance (vélo, marche…) : là on fixe simplement un
- * nombre de minutes, écrit dans la consigne de l'exercice (Philippe,
- * 2026-10-01 ; migration 0060). Si la consigne contient « N minutes »,
- * l'objectif devient « N minutes » au lieu de « 3 séries × 12 répétitions ».
+ * Exercice en répétitions : « 3 séries de 8 à 12 répétitions », le patient
+ * choisit dans la fourchette selon son aisance (Philippe, 2026-11-02).
+ * Endurance (vélo, marche…) : « N minutes », lu dans la consigne (2026-10-01,
+ * migration 0060). Maintien (gainage, étirement) : « 3 × N secondes ».
  */
 export function goalTextFor(instructions: string | null, p: Pick<Prescription, "goalSets" | "goalReps">): string {
-  const m = instructions?.match(/(\d+)\s*minutes?\b/i);
-  if (m) return `${m[1]} minute${Number(m[1]) > 1 ? "s" : ""}`;
-  return `${p.goalSets} séries × ${p.goalReps} répétitions`;
+  const g = goalFromInstructions(instructions);
+  if (g && "minutes" in g) return `${g.minutes} minute${Number(g.minutes) > 1 ? "s" : ""}`;
+  if (g && "seconds" in g) return `${p.goalSets} × ${g.seconds} secondes`;
+  return `${p.goalSets} séries de ${FIXED_GOAL_REPS_MIN} à ${p.goalReps} répétitions`;
+}
+
+/** Version courte pour les tuiles d'exercice : « 3 × 8-12 rép. », « 10 min », « 3 × 30 s ». */
+export function goalShortFor(instructions: string | null): string {
+  const g = goalFromInstructions(instructions);
+  if (g && "minutes" in g) return `${g.minutes} min`;
+  if (g && "seconds" in g) return `${FIXED_GOAL_SETS} × ${g.seconds.replace(" à ", "-")} s`;
+  return `${FIXED_GOAL_SETS} × ${FIXED_GOAL_REPS_MIN}-${FIXED_GOAL_REPS} rép.`;
 }
