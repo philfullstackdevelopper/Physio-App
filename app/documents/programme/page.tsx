@@ -66,27 +66,21 @@ export default async function ProgrammeDocumentPage({ searchParams }: { searchPa
         <PrintButton />
       </div>
 
-      <article className="mx-auto max-w-[720px] rounded-2xl border border-line bg-white p-8 text-ink print:max-w-none print:rounded-none print:border-0 print:p-0">
-        <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand">Programme d&apos;exercices</p>
-            <h2 className="mt-1 text-2xl font-semibold">{(patient.full_name as string | null) ?? "Patient"}</h2>
-            <p className="mt-1 text-sm text-muted">Remis le {today}</p>
-          </div>
-          <div className="text-right text-sm">
-            <p className="font-semibold">{(kine?.full_name as string | null) ?? ""}</p>
-            {kine?.cabinet_name && <p className="text-muted">{kine.cabinet_name as string}</p>}
-            {kine?.cabinet_address && <p className="text-muted">{kine.cabinet_address as string}</p>}
-          </div>
-        </header>
-
-        {!workout ? (
-          <p className="py-10 text-center text-sm text-muted">Aucune séance n&apos;est attribuée à ce patient cette semaine.</p>
-        ) : (
-          <>
-            <section className="mt-4">
-              <h3 className="text-lg font-semibold">{workout.name as string}</h3>
-              <p className="mt-0.5 text-sm text-muted">
+      {/* Fiches en 2 colonnes (Philippe, 2026-11-02, option B validée) : bandeau,
+          une fiche par exercice avec cases « fait » pour la semaine, et un
+          carnet de douleur — le patient peut l'utiliser sans téléphone. */}
+      <article className="mx-auto flex max-w-[760px] flex-col gap-4 rounded-2xl border border-line bg-white p-8 text-ink print:max-w-none print:rounded-none print:border-0 print:p-0">
+        <header className="flex flex-wrap items-center gap-4 rounded-xl bg-brand-soft px-5 py-4 print:border print:border-brand">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-brand-dark">
+              Mon programme · remis le {today}
+            </p>
+            <h2 className="mt-0.5 text-xl font-semibold">
+              {(patient.full_name as string | null) ?? "Patient"}
+              {workout ? ` — ${workout.name as string}` : ""}
+            </h2>
+            {workout && (
+              <p className="mt-0.5 text-sm text-ink/80">
                 {[
                   workout.times_per_week ? `${workout.times_per_week} fois par semaine` : null,
                   workout.duration_minutes ? `environ ${workout.duration_minutes} min` : null,
@@ -95,38 +89,65 @@ export default async function ProgrammeDocumentPage({ searchParams }: { searchPa
                   .filter(Boolean)
                   .join(" · ")}
               </p>
-              {workout.description && <p className="mt-2 text-sm">{workout.description as string}</p>}
-            </section>
+            )}
+          </div>
+          <div className="text-right text-sm">
+            <p className="font-semibold">{(kine?.full_name as string | null) ?? ""}</p>
+            {kine?.cabinet_name && <p className="text-ink/80">{kine.cabinet_name as string}</p>}
+            {kine?.cabinet_address && <p className="text-ink/80">{kine.cabinet_address as string}</p>}
+          </div>
+        </header>
 
-            <ol className="mt-5 space-y-4">
+        {!workout ? (
+          <p className="py-10 text-center text-sm text-muted">Aucune séance n&apos;est attribuée à ce patient cette semaine.</p>
+        ) : (
+          <>
+            {workout.description && <p className="text-sm">{workout.description as string}</p>}
+            <ol className="grid grid-cols-2 gap-3 print:gap-2.5">
               {rows.map((r, i) => {
                 const ex = r.exercises;
                 if (!ex) return null;
-                const steps = parseSteps(ex.instructions);
+                const steps = parseSteps(ex.instructions).slice(0, 3);
                 return (
-                  <li key={`${ex.id}-${i}`} className="flex gap-4 rounded-xl border border-line p-4 break-inside-avoid print:rounded-none">
-                    <ExerciseIllustration name={ex.name} animate={false} className="h-24 w-32 shrink-0 text-brand" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-muted">Exercice {i + 1}</p>
-                      <p className="font-semibold">{ex.name}</p>
-                      <p className="mt-0.5 inline-flex rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-semibold text-brand print:border print:border-brand">
+                  <li key={`${ex.id}-${i}`} className="flex break-inside-avoid flex-col overflow-hidden rounded-xl border border-line">
+                    <ExerciseIllustration name={ex.name} animate={false} still="middle" className="h-28 w-full bg-app-bg p-2 text-brand print:bg-white" />
+                    <div className="flex flex-1 flex-col gap-1.5 p-3">
+                      <p className="text-sm font-semibold">
+                        {i + 1} · {ex.name}
+                      </p>
+                      <p className="inline-flex self-start rounded-md border border-brand px-2 py-0.5 text-xs font-semibold text-brand-dark">
                         {goalTextFor(ex.instructions, prescription, doseFromRow(r))}
                       </p>
                       {steps.length > 0 && (
-                        <ol className="mt-2 list-decimal space-y-0.5 pl-5 text-sm">
-                          {steps.map((s, j) => (
-                            <li key={j}>{s}</li>
+                        <ol className="list-decimal space-y-0.5 pl-4 text-xs leading-snug text-ink/90">
+                          {steps.map((st, j) => (
+                            <li key={j}>{st}</li>
                           ))}
                         </ol>
                       )}
+                      <p className="mt-auto flex items-center gap-1.5 pt-1 text-[11px] text-muted">
+                        Fait cette semaine :
+                        {Array.from({ length: Math.min(Math.max((workout.times_per_week as number | null) ?? 3, 1), 7) }, (_, k) => (
+                          <span key={k} aria-hidden="true" className="inline-block h-3.5 w-3.5 rounded-sm border border-muted" />
+                        ))}
+                      </p>
                     </div>
                   </li>
                 );
               })}
             </ol>
 
-            <p className="mt-6 border-t border-line pt-3 text-xs text-muted">
-              Une douleur vive pendant un exercice ? Arrêtez-vous et parlez-en à votre kiné. Vos vidéos et votre suivi sont aussi dans l&apos;application EasyPhysio.
+            <section className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-line px-4 py-3 text-sm break-inside-avoid">
+              <span className="font-semibold">Ma douleur cette semaine</span>
+              {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((d) => (
+                <span key={d} className="text-ink/80">
+                  {d} ___/10
+                </span>
+              ))}
+            </section>
+
+            <p className="border-t border-line pt-3 text-xs text-muted">
+              Une douleur vive pendant un exercice ? Arrêtez-vous et parlez-en à votre kiné. Les vidéos de chaque exercice et votre suivi sont dans l&apos;application EasyPhysio : easyphysio.fr
             </p>
           </>
         )}

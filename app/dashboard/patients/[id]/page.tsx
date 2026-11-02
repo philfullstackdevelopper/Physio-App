@@ -7,6 +7,9 @@ import { computeAdherence, adherenceLabel, adherenceTone } from "@/lib/exercise/
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import { programmeWarning } from "@/lib/dashboard/programmeWarning";
 import { summarizeExercises, type ExerciseResultRow } from "@/lib/dashboard/exerciseWatch";
+import { buildExerciseGrid, type GridResultRow } from "@/lib/dashboard/exerciseGrid";
+import ExerciseGridButton from "@/components/ExerciseGridButton";
+import { recommendVariants, type VariantSeance } from "@/lib/exercise/variants";
 import { relativeDay } from "@/lib/format/relativeDay";
 import { initials } from "@/lib/format/initials";
 import { STAGE_LABELS, doseFromRow, type InjuryStage } from "@/lib/exercise/prescription";
@@ -242,6 +245,20 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       bodyPartIds: [...new Set(w.workout_exercises.flatMap((we) => (we.exercises?.exercise_body_parts ?? []).map((t) => t.body_part_id)))],
     }));
 
+  // Séance → format des « changements recommandés » (lib/exercise/variants.ts).
+  const toVariantSeance = (w: Workout): VariantSeance => ({
+    conditionId: w.condition_id ?? null,
+    stage: w.stage ?? null,
+    exercises: [...w.workout_exercises]
+      .sort((a, b) => a.position - b.position)
+      .filter((we) => !!we.exercises)
+      .map((we) => ({
+        id: we.exercises!.id,
+        name: we.exercises!.name,
+        bodyPartIds: (we.exercises!.exercise_body_parts ?? []).map((t) => t.body_part_id),
+      })),
+  });
+
   const profileUpdated = profile?.updated_at ? new Date(profile.updated_at as string).toLocaleDateString("fr-FR") : null;
 
   const lastWorkoutExercises = lastWorkout?.workout_exercises.length ?? 0;
@@ -260,6 +277,15 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       name={(patient.full_name as string | null) ?? "Patient"}
       warning={warning}
       exerciseWatch={exerciseWatch}
+      exerciseGrid={
+        <ExerciseGridButton
+          patientName={firstName}
+          grid={buildExerciseGrid(
+            (resultRows ?? []) as GridResultRow[],
+            (allLogs ?? []).map((l) => ({ id: l.id as string, completed_at: l.completed_at as string })),
+          )}
+        />
+      }
       error={error}
       adjusted={adjusted === "1"}
       stats={{
@@ -354,6 +380,19 @@ export default async function PatientDetailPage({ params, searchParams }: { para
         adjustAction={adjustPatientWorkout}
         assignAction={addRecommendedWorkout}
         removeAction={removeRecommendedWorkout}
+        recommendations={
+          active
+            ? {
+                forWorkoutId: active.id,
+                items: recommendVariants({
+                  current: toVariantSeance(active),
+                  pool: pool.map(toVariantSeance),
+                  pickable: new Set(addableExercises.map((e) => e.id)),
+                  watch: new Map(exerciseWatch.map((w) => [w.name, w.reason])),
+                }),
+              }
+            : null
+        }
       />
       }
     />

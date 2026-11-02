@@ -211,37 +211,158 @@ function SetTracker({ sets, done, onToggle }: { sets: number; done: number; onTo
   );
 }
 
-/** Ressenti d'un exercice, en option (Philippe, 2026-11-02, inspiré de
- *  Fullphysio) : une réglette de 0 à 10, vide tant que le patient n'y touche pas. */
-function RatingSlider({ label, hint, value, onChange }: { label: string; hint: string; value: number | null; onChange: (n: number) => void }) {
+/** Douleur pendant l'exercice, en pastilles de 0 à 10 (Philippe, 2026-11-02,
+ *  option B validée) : facultatif, colorées de plus en plus chaud. */
+function PainPills({ value, onChange }: { value: number | null; onChange: (n: number) => void }) {
   return (
-    <label className="block text-left">
-      <span className="flex items-baseline justify-between text-sm">
-        <span className="font-medium text-slate-700">{label}</span>
-        <span className={`tabular-nums ${value == null ? "text-xs text-slate-400" : "font-semibold text-blue-700"}`}>
-          {value == null ? "facultatif" : `${value}/10`}
-        </span>
-      </span>
-      <input
-        type="range"
-        min={0}
-        max={10}
-        step={1}
-        value={value ?? 0}
-        onChange={(e) => onChange(Number(e.target.value))}
-        aria-label={`${label} (0 à 10) — ${hint}`}
-        className={`mt-1 w-full ${value == null ? "accent-slate-300 opacity-60" : "accent-blue-600"}`}
-      />
-      <span className="flex justify-between text-[11px] text-slate-400">
-        <span>0</span>
-        <span>{hint}</span>
-        <span>10</span>
-      </span>
-    </label>
+    <div className="text-left">
+      <p id="ex-pain-label" className="text-sm font-semibold text-slate-800">Douleur pendant l&apos;exercice</p>
+      <div role="group" aria-labelledby="ex-pain-label" className="mt-2 grid grid-cols-11 gap-1">
+        {Array.from({ length: 11 }, (_, n) => {
+          const on = value === n;
+          const tone = n >= 8 ? "border-red-200 bg-red-50 text-red-700" : n >= 6 ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 bg-white text-slate-700";
+          return (
+            <button
+              key={n}
+              type="button"
+              aria-pressed={on}
+              aria-label={`Douleur ${n} sur 10`}
+              onClick={() => onChange(n)}
+              className={`h-9 rounded-lg border text-sm font-semibold tabular-nums max-sm:h-8 ${on ? "border-blue-600 bg-blue-600 text-white" : tone}`}
+            >
+              {n}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-1 flex justify-between text-[11px] text-slate-500">
+        <span>aucune</span>
+        <span>très forte</span>
+      </p>
+    </div>
   );
 }
 
-type ExerciseResult = { status: "done" | "skipped"; pain: number | null; difficulty: number | null };
+/** « C'était… » : facile / correct / difficile, enregistré en 2, 5 ou 8 sur 10. */
+const DIFFICULTY_CHOICES = [
+  { label: "Facile", value: 2 },
+  { label: "Correct", value: 5 },
+  { label: "Difficile", value: 8 },
+] as const;
+
+function DifficultyChoice({ value, onChange }: { value: number | null; onChange: (n: number) => void }) {
+  return (
+    <div className="text-left">
+      <p id="ex-diff-label" className="text-sm font-semibold text-slate-800">C&apos;était…</p>
+      <div role="group" aria-labelledby="ex-diff-label" className="mt-2 grid grid-cols-3 gap-1.5">
+        {DIFFICULTY_CHOICES.map((c) => {
+          const on = value === c.value;
+          return (
+            <button
+              key={c.value}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onChange(c.value)}
+              className={`h-11 rounded-xl text-sm font-semibold max-sm:h-10 ${on ? "border-2 border-blue-600 bg-blue-50 text-blue-800" : "border border-slate-200 bg-white text-slate-700"}`}
+            >
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+type SkipReason = "pain" | "equipment" | "unclear" | "time";
+const SKIP_REASONS: { id: SkipReason; label: string }[] = [
+  { id: "pain", label: "Ça fait mal" },
+  { id: "equipment", label: "Pas le matériel" },
+  { id: "unclear", label: "Pas compris" },
+  { id: "time", label: "Pas le temps" },
+];
+/** Intensité de la douleur quand c'est la raison : légère / moyenne / forte = 3 / 5 / 8. */
+const SKIP_PAIN = [
+  { label: "Légère", value: 3 },
+  { label: "Moyenne", value: 5 },
+  { label: "Forte", value: 8 },
+] as const;
+
+/** « Pourquoi passer cet exercice ? » (option C validée) : n'apparaît QUE quand
+ *  le patient touche « Passer cet exercice ». Tout est facultatif. */
+function SkipSheet({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: (reason: SkipReason | null, pain: number | null) => void }) {
+  const [reason, setReason] = useState<SkipReason | null>(null);
+  const [pain, setPain] = useState<number | null>(null);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 sm:items-center" onClick={onCancel}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Pourquoi passer cet exercice ?"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-t-3xl bg-white px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 sm:rounded-3xl sm:pb-6"
+      >
+        <div className="mx-auto h-1 w-10 rounded-full bg-slate-300 sm:hidden" aria-hidden="true" />
+        <h2 className="mt-3 text-lg font-semibold text-slate-900">Pourquoi passer cet exercice ?</h2>
+        <p className="text-sm text-slate-500">Votre kiné le verra pour adapter votre programme.</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {SKIP_REASONS.map((r) => {
+            const on = reason === r.id;
+            return (
+              <button
+                key={r.id}
+                type="button"
+                aria-pressed={on}
+                onClick={() => {
+                  setReason(on ? null : r.id);
+                  if (r.id !== "pain") setPain(null);
+                }}
+                className={`min-h-12 rounded-xl px-3 text-sm font-semibold ${
+                  on ? (r.id === "pain" ? "border-2 border-red-600 bg-red-50 text-red-700" : "border-2 border-blue-600 bg-blue-50 text-blue-800") : "border border-slate-200 bg-white text-slate-700"
+                }`}
+              >
+                {r.label}
+              </button>
+            );
+          })}
+        </div>
+        {reason === "pain" && (
+          <>
+            <p id="skip-pain-label" className="mt-4 text-sm font-semibold text-slate-800">Et cette douleur, c&apos;est…</p>
+            <div role="group" aria-labelledby="skip-pain-label" className="mt-2 grid grid-cols-3 gap-2">
+              {SKIP_PAIN.map((c) => {
+                const on = pain === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setPain(on ? null : c.value)}
+                    className={`h-11 rounded-xl text-sm font-semibold ${on ? "border-2 border-amber-600 bg-amber-50 text-amber-800" : "border border-slate-200 bg-white text-slate-700"}`}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+        <button
+          type="button"
+          onClick={() => onConfirm(reason, pain)}
+          className="mt-5 h-12 w-full rounded-xl bg-slate-900 text-base font-semibold text-white hover:bg-slate-800"
+        >
+          Passer et continuer
+        </button>
+        <button type="button" onClick={onCancel} className="mt-2 h-10 w-full rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-50">
+          Finalement, je le fais
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type ExerciseResult = { status: "done" | "skipped"; pain: number | null; difficulty: number | null; skipReason?: SkipReason | null };
 
 function HowTo({ instructions, goalText }: { instructions: string | null; goalText: string }) {
   const steps = parseSteps(instructions);
@@ -370,6 +491,7 @@ export default function WorkoutSession({
           position: Number(i),
           status: r.status,
           pain: r.pain,
+          skip_reason: r.skipReason ?? null,
           difficulty: r.difficulty,
         }));
         if (rows.length > 0) {
@@ -439,10 +561,13 @@ export default function WorkoutSession({
     setTimeout(() => setPhase("celebrate"), 180);
   };
 
-  // « Passer cet exercice » : noté comme passé, on enchaîne directement.
-  const skip = () => {
+  // « Passer cet exercice » : la fenêtre « Pourquoi ? » s'ouvre, puis on
+  // enchaîne directement (noté comme passé, avec la raison si donnée).
+  const [skipOpen, setSkipOpen] = useState(false);
+  const skip = (reason: SkipReason | null, skipPain: number | null) => {
+    setSkipOpen(false);
     if (completing || saving) return;
-    const updated: Record<number, ExerciseResult> = { ...results, [idx]: { status: "skipped", pain: null, difficulty: null } };
+    const updated: Record<number, ExerciseResult> = { ...results, [idx]: { status: "skipped", pain: skipPain, difficulty: null, skipReason: reason } };
     setResults(updated);
     if (idx < total - 1) {
       setIdx(idx + 1);
@@ -636,9 +761,9 @@ export default function WorkoutSession({
           </p>
 
           {/* Ressenti de CET exercice, facultatif : le kiné voit lequel gêne. */}
-          <div className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3 short:mt-3 short:space-y-2">
-            <RatingSlider label="Douleur" hint="pendant l'exercice" value={results[idx]?.pain ?? null} onChange={(n) => setRating("pain", n)} />
-            <RatingSlider label="Difficulté" hint="ressentie" value={results[idx]?.difficulty ?? null} onChange={(n) => setRating("difficulty", n)} />
+          <div className="mt-4 space-y-4 short:mt-3 short:space-y-3">
+            <PainPills value={results[idx]?.pain ?? null} onChange={(n) => setRating("pain", n)} />
+            <DifficultyChoice value={results[idx]?.difficulty ?? null} onChange={(n) => setRating("difficulty", n)} />
           </div>
 
           {/* À suivre : le prochain exercice et son objectif, pour enchaîner sans surprise. */}
@@ -708,13 +833,14 @@ export default function WorkoutSession({
           </button>
           <button
             type="button"
-            onClick={skip}
+            onClick={() => setSkipOpen(true)}
             disabled={completing || saving}
             className="mx-auto mt-2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 max-sm:mt-1"
           >
             <SkipForward className="h-4 w-4" strokeWidth={1.75} />
             Passer cet exercice
           </button>
+          {skipOpen && <SkipSheet onCancel={() => setSkipOpen(false)} onConfirm={skip} />}
           </div>
           </div>
         </div>

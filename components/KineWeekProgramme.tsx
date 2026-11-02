@@ -29,6 +29,7 @@ import { gradeDay, type DayGrade } from "@/lib/exercise/dayGrade";
 import { PAIN_HOLD } from "@/lib/exercise/stageProgress";
 import { type BodyPart } from "@/lib/exercise/category";
 import { SegmentRow, runViewTransition as runSharedViewTransition, type SegmentItem, type SegmentTone, type VTStyle } from "@/components/WeekStrip";
+import type { Recommendation } from "@/lib/exercise/variants";
 import AdjustWorkoutModal, { type AddableExercise, type AddableWorkout, type ModalExercise } from "@/components/AdjustWorkoutModal";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { useIsPhone, type SessionDetail } from "@/components/WeekProgramme";
@@ -79,7 +80,10 @@ export default function KineWeekProgramme({
   adjustAction,
   assignAction,
   removeAction,
+  recommendations,
 }: {
+  /** « Changements recommandés » de la fenêtre « Ajuster la séance ». */
+  recommendations?: { forWorkoutId: string; items: Recommendation[] } | null;
   weeks: WeekInfo[];
   currentWeekNumber: number;
   /** Séances réalisées, par jour (localDateKey) — avec douleur/difficulté/notes. */
@@ -480,6 +484,7 @@ export default function KineWeekProgramme({
               adjustAction={adjustAction}
               assignAction={assignAction}
               removeAction={removeAction}
+              recommendations={recommendations}
               weekStartDate={selectedWeek.startDateKey}
               weekLabel={`${selectedWeek.label} · ${selectedWeek.rangeLabel}`}
             />

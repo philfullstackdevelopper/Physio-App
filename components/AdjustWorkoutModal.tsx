@@ -6,6 +6,7 @@ import { isPhoneFormat } from "@/lib/phoneFormat";
 import Link from "next/link";
 import { CalendarRange, Check, ChevronDown, ChevronLeft, ChevronUp, Dumbbell, Info, Plus, Repeat, Search, Trash2, X } from "lucide-react";
 import { levelNeighbours } from "@/lib/exercise/levelStep";
+import type { Recommendation } from "@/lib/exercise/variants";
 import { type BodyPart } from "@/lib/exercise/category";
 import SubmitButton from "@/components/SubmitButton";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
@@ -70,6 +71,55 @@ export type AddableWorkout = {
 // from the same button, instead of a separate "Ajuster" button up top and a
 // separate queue/reorder list further down the page (a patient has at most
 // one recommended séance at a time now, see actions.ts).
+/** « Changements recommandés » (Philippe, 2026-11-02) : en haut de la colonne
+ *  de droite, avant la bibliothèque, une variante plus facile / plus difficile
+ *  des exercices de la séance (lib/exercise/variants.ts). « Remplacer » coche
+ *  l'ancien exercice « à retirer » et ajoute la variante ; un 2e clic annule. */
+function RecommendedChanges({
+  items,
+  removeIds,
+  addIds,
+  onSwap,
+}: {
+  items: Recommendation[];
+  removeIds: Set<string>;
+  addIds: Set<string>;
+  onSwap: (r: Recommendation, on: boolean) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <section aria-label="Changements recommandés" className="shrink-0 rounded-xl border border-line bg-surface p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">Changements recommandés</p>
+      <ul className="mt-2 max-h-44 space-y-1.5 overflow-y-auto pr-1">
+        {items.map((r) => {
+          const on = removeIds.has(r.forId) && addIds.has(r.alt.id);
+          return (
+            <li key={`${r.forId}-${r.alt.id}`} className="flex items-center gap-2 rounded-lg bg-app-bg px-2.5 py-1.5 text-sm">
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${r.kind === "easier" ? "bg-ok-soft text-ok" : "bg-brand-soft text-brand-dark"}`}>
+                {r.kind === "easier" ? "Plus facile" : "Plus difficile"}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-ink" title={`${r.forName} → ${r.alt.name}`}>
+                <span className="text-muted">{r.forName}</span>
+                {r.reason && <span className="text-danger"> ({r.reason})</span>}
+                <span className="text-muted"> → </span>
+                <span className="font-medium">{r.alt.name}</span>
+              </span>
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => onSwap(r, !on)}
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${on ? "bg-ok text-white" : "border border-line bg-surface text-ink hover:bg-app-bg"}`}
+              >
+                {on ? "Remplacé" : "Remplacer"}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 export default function AdjustWorkoutModal({
   patientId,
   patientFirstName,
@@ -84,7 +134,11 @@ export default function AdjustWorkoutModal({
   removeAction,
   weekStartDate,
   weekLabel,
+  recommendations,
 }: {
+  /** Variantes plus faciles / plus difficiles, calculées pour la séance de la
+   *  semaine en cours (forWorkoutId) ; masquées pour une autre séance. */
+  recommendations?: { forWorkoutId: string; items: Recommendation[] } | null;
   patientId: string;
   patientFirstName: string;
   /** Matériel déclaré par le patient à l'onboarding ; null = inconnu (aucun signalement). */
@@ -499,15 +553,38 @@ export default function AdjustWorkoutModal({
                     </ul>
                   </section>
 
-                  <div className={`sm:contents ${phoneTab === "add" ? "max-sm:grid max-sm:h-full max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[minmax(0,1fr)]" : "max-sm:hidden"}`}>
-                    <ExerciseLibraryPicker
-                      exercises={addableExercises}
-                      bodyParts={bodyParts}
-                      selectedIds={addIds}
-                      onToggle={(id) => setAddIds((set) => toggle(set, id))}
-                      patientEquipment={patientEquipment}
-                      patientFirstName={patientFirstName}
-                    />
+                  <div className={`flex min-h-0 min-w-0 flex-col gap-3 ${phoneTab === "add" ? "max-sm:h-full" : "max-sm:hidden"}`}>
+                    {recommendations && recommendations.forWorkoutId === workout.id && (
+                      <RecommendedChanges
+                        items={recommendations.items}
+                        removeIds={removeIds}
+                        addIds={addIds}
+                        onSwap={(r, on) => {
+                          setRemoveIds((s) => {
+                            const n = new Set(s);
+                            if (on) n.add(r.forId);
+                            else n.delete(r.forId);
+                            return n;
+                          });
+                          setAddIds((s) => {
+                            const n = new Set(s);
+                            if (on) n.add(r.alt.id);
+                            else n.delete(r.alt.id);
+                            return n;
+                          });
+                        }}
+                      />
+                    )}
+                    <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]">
+                      <ExerciseLibraryPicker
+                        exercises={addableExercises}
+                        bodyParts={bodyParts}
+                        selectedIds={addIds}
+                        onToggle={(id) => setAddIds((set) => toggle(set, id))}
+                        patientEquipment={patientEquipment}
+                        patientFirstName={patientFirstName}
+                      />
+                    </div>
                   </div>
                 </div>
 

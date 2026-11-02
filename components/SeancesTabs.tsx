@@ -222,6 +222,7 @@ function SeanceThumb({
           name={leadExerciseName}
           className={`h-full w-full text-brand ${size === "inset" ? "" : "p-4 max-sm:p-0"}`}
           animate={false}
+          still="middle"
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center">
@@ -246,6 +247,102 @@ function SeanceThumb({
           {STAGE_SHORT[stage]}
         </span>
       )}
+    </div>
+  );
+}
+
+const PHASES: InjuryStage[] = ["acute", "subacute", "recovery", "return_to_sport"];
+
+/** « Séances prévues » regroupées par pathologie (Philippe, 2026-11-02,
+ *  option C validée, façon « Modèles » de Fullphysio) : une carte par
+ *  condition, le dessin bleu en plein mouvement, et ses phases 1 à 4 — on
+ *  choisit la phase, la carte montre la séance correspondante. */
+function PathologyCard({
+  condition,
+  seances,
+  duplicateSeance,
+  hideTemplateWorkout,
+  unhideTemplateWorkout,
+}: {
+  condition: string;
+  seances: ListItem[];
+  duplicateSeance: (formData: FormData) => void;
+  hideTemplateWorkout: (formData: FormData) => void;
+  unhideTemplateWorkout: (formData: FormData) => void;
+}) {
+  const byStage = new Map(seances.filter((t) => t.stage).map((t) => [t.stage as InjuryStage, t]));
+  const first = PHASES.find((ph) => byStage.has(ph));
+  const [picked, setPicked] = useState<string>(first ? byStage.get(first)!.id : seances[0].id);
+  const current = seances.find((t) => t.id === picked) ?? seances[0];
+  const noStage = seances.filter((t) => !t.stage);
+  return (
+    <div className={`flex flex-col overflow-hidden rounded-xl border border-line bg-surface max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-soft ${current.hidden ? "opacity-60" : ""}`}>
+      <div className="relative aspect-[4/3] bg-brand-soft/60 max-sm:aspect-auto max-sm:h-24">
+        {current.leadExerciseName ? (
+          <ExerciseIllustration name={current.leadExerciseName} animate={false} still="middle" className="h-full w-full p-3 text-brand max-sm:p-1" />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <Dumbbell className="h-8 w-8 text-muted" strokeWidth={1.5} />
+          </div>
+        )}
+        <span className="absolute right-2 top-2 rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-brand max-sm:hidden">
+          {byStage.size || seances.length} niveau{(byStage.size || seances.length) > 1 ? "x" : ""}
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col gap-2 p-3 max-sm:p-2">
+        <div className="flex items-start justify-between gap-2">
+          <p className="min-w-0 font-medium text-ink max-sm:line-clamp-2 max-sm:text-[13px] max-sm:leading-tight">{condition}</p>
+          <TemplateCardMenu
+            templateId={current.id}
+            hidden={current.hidden}
+            duplicateSeance={duplicateSeance}
+            hideTemplateWorkout={hideTemplateWorkout}
+            unhideTemplateWorkout={unhideTemplateWorkout}
+          />
+        </div>
+        {byStage.size > 0 && (
+          <div role="group" aria-label={`Niveaux — ${condition}`} className="grid grid-cols-4 gap-1">
+            {PHASES.map((ph, i) => {
+              const t = byStage.get(ph);
+              const on = t?.id === current.id;
+              return (
+                <button
+                  key={ph}
+                  type="button"
+                  disabled={!t}
+                  aria-pressed={on}
+                  title={t ? `${STAGE_LABELS[ph]} — ${t.name}` : `${STAGE_LABELS[ph]} : pas de séance`}
+                  onClick={() => t && setPicked(t.id)}
+                  className={`h-7 rounded-md text-xs font-bold tabular-nums ${
+                    on ? "bg-brand text-white" : t ? "bg-brand-soft text-brand hover:bg-brand/15" : "bg-app-bg text-muted/60"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {noStage.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {noStage.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                aria-pressed={t.id === current.id}
+                onClick={() => setPicked(t.id)}
+                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${t.id === current.id ? "bg-brand text-white" : "bg-app-bg text-ink"}`}
+              >
+                Toutes phases
+              </button>
+            ))}
+          </div>
+        )}
+        <p className="text-xs text-muted max-sm:hidden">
+          {current.stageLabel ?? "Toutes phases"} · {current.exerciseCount ?? current.exerciseNames?.length ?? 0} exercice{(current.exerciseCount ?? current.exerciseNames?.length ?? 0) > 1 ? "s" : ""}
+        </p>
+        <ExerciseNamesList names={current.exerciseNames} />
+      </div>
     </div>
   );
 }
@@ -369,7 +466,15 @@ export default function SeancesTabs({
     });
   }, [templates, templateQuery, showHiddenTemplates, inZone]);
 
-  const visibleTemplates = filteredTemplates.slice(0, templatesShown);
+  const templateGroups = useMemo(() => {
+    const groups = new Map<string, ListItem[]>();
+    for (const t of filteredTemplates) {
+      const key = t.conditionName ?? "Autres séances";
+      (groups.get(key) ?? groups.set(key, []).get(key)!).push(t);
+    }
+    return [...groups.entries()].map(([condition, seances]) => ({ condition, seances }));
+  }, [filteredTemplates]);
+  const visibleGroups = templateGroups.slice(0, templatesShown);
 
   const zoneLabel = zoneId ? bodyParts.find((bp) => bp.id === zoneId)?.label : undefined;
 
@@ -605,33 +710,18 @@ export default function SeancesTabs({
           ) : (
             <>
               <div className={CARD_GRID}>
-                {visibleTemplates.map((t) => (
-                  <div
-                    key={t.id}
-                    className={`rounded-xl border border-line bg-surface p-4 max-sm:relative max-sm:rounded-2xl max-sm:border-0 max-sm:p-2.5 max-sm:text-center max-sm:shadow-soft ${t.hidden ? "opacity-60" : ""}`}
-                  >
-                    <SeanceThumb badge="template" stage={t.stage} leadExerciseName={t.leadExerciseName} size="inset" />
-                    <div className="mt-2 flex flex-col gap-1 max-sm:mt-1.5 max-sm:gap-0">
-                      <div className="flex items-start justify-between gap-2 max-sm:block">
-                        <div className="min-w-0">
-                          <p className="font-medium text-ink max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:text-[13px] max-sm:leading-tight">{t.conditionName ?? t.name}</p>
-                          <p className="text-sm text-muted max-sm:mt-0.5 max-sm:truncate max-sm:text-[11px]">{t.stageLabel ?? t.name}</p>
-                        </div>
-                        {/* Téléphone : le menu ⋮ passe dans le coin du bloc. */}
-                        <TemplateCardMenu
-                          templateId={t.id}
-                          hidden={t.hidden}
-                          duplicateSeance={duplicateSeance}
-                          hideTemplateWorkout={hideTemplateWorkout}
-                          unhideTemplateWorkout={unhideTemplateWorkout}
-                        />
-                      </div>
-                      <ExerciseNamesList names={t.exerciseNames} />
-                    </div>
-                  </div>
+                {visibleGroups.map((g) => (
+                  <PathologyCard
+                    key={g.condition}
+                    condition={g.condition}
+                    seances={g.seances}
+                    duplicateSeance={duplicateSeance}
+                    hideTemplateWorkout={hideTemplateWorkout}
+                    unhideTemplateWorkout={unhideTemplateWorkout}
+                  />
                 ))}
               </div>
-              {templatesShown < filteredTemplates.length && (
+              {templatesShown < templateGroups.length && (
                 <VoirPlusButton onClick={() => setTemplatesShown((n) => n + REVEAL_STEP)} />
               )}
             </>

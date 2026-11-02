@@ -28,13 +28,24 @@ function VendoredIllustration({
   name,
   className,
   animate,
+  still = "start",
 }: {
   slug: string;
   name: string;
   className: string;
   animate: boolean;
+  still?: "start" | "middle";
 }) {
   if (!animate) {
+    // « middle » : le dessin en plein mouvement (cartes « Séances prévues »,
+    // Philippe 2026-11-02) — image 4 sur 8, ou 2 sur 3.
+    const eightStill = EIGHT_FRAME_SLUGS.has(slug);
+    const stillSrc =
+      still === "middle"
+        ? eightStill
+          ? `/exercise-illustrations/${slug}/anim-4.svg`
+          : `/exercise-illustrations/${slug}/frame-2.svg`
+        : `/exercise-illustrations/${slug}/frame-1.svg`;
     // A single fixed frame — used where the movement doesn't need to be
     // demonstrated in motion, just recognized at a glance (e.g. a séance
     // card in a list).
@@ -42,7 +53,7 @@ function VendoredIllustration({
       <div className={`relative ${className}`} role="img" aria-label={`Démonstration : ${name}`}>
         {/* eslint-disable-next-line @next/next/no-img-element -- static local SVG, no next/image benefit */}
         <img
-          src={`/exercise-illustrations/${slug}/frame-1.svg`}
+          src={stillSrc}
           alt=""
           loading="lazy"
           decoding="async"
@@ -100,16 +111,19 @@ export default function ExerciseIllustration({
   name,
   className = "h-28 w-full text-blue-600",
   animate = true,
+  still,
 }: {
   name: string;
   className?: string;
   /** false renders a single fixed frame instead of the cross-fading 3-frame loop. */
   animate?: boolean;
+  /** Image fixe montrée quand animate=false : début (défaut) ou plein mouvement. */
+  still?: "start" | "middle";
 }) {
   const vendoredSlug = EXERCISE_ILLUSTRATION_MAP[name];
   if (vendoredSlug) {
     return (
-      <VendoredIllustration slug={vendoredSlug} name={name} className={className} animate={animate} />
+      <VendoredIllustration slug={vendoredSlug} name={name} className={className} animate={animate} still={still} />
     );
   }
 

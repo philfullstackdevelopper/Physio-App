@@ -43,6 +43,7 @@ export default function PatientDetailView({
   name,
   warning,
   exerciseWatch = [],
+  exerciseGrid,
   actionsMenu,
   error,
   adjusted,
@@ -53,6 +54,8 @@ export default function PatientDetailView({
   warning: { label: string; detail: string } | null;
   /** Exercices qui font mal ou que le patient passe (30 derniers jours). */
   exerciseWatch?: { name: string; reason: string }[];
+  /** Le bouton « Suivi par exercice » (tableau exercice × séance), construit par la page. */
+  exerciseGrid?: React.ReactNode;
   /** Le bouton « Gérer » (PatientActionsMenu), construit par la page. */
   actionsMenu: React.ReactNode;
   error?: string;
@@ -100,6 +103,7 @@ export default function PatientDetailView({
                 </span>
               </span>
             )}
+            {exerciseGrid}
           </div>
           <div className="max-sm:shrink-0 sm:contents">{actionsMenu}</div>
         </div>

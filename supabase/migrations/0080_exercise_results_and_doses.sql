@@ -5,7 +5,7 @@
 -- Ce que ça ajoute, en clair :
 --
 -- 1. public.exercise_results — une ligne par exercice d'une séance faite :
---    « fait » ou « passé », et, si le patient l'a donné, sa douleur (0-10) et
+--    « fait » ou « passé » (avec la raison, s'il la donne), sa douleur (0-10) et
 --    la difficulté ressentie (0-10) pour CET exercice.
 --    (Le suivi par exercice avait été retiré en mars, migration 0036 ; il
 --    revient à la demande de Philippe, en plus simple : rien n'est obligatoire.)
@@ -42,6 +42,9 @@ create table if not exists public.exercise_results (
   exercise_name  text not null,
   position       int  not null default 0,
   status         text not null check (status in ('done', 'skipped')),
+  -- Pourquoi le patient a passé l'exercice (facultatif) : douleur, pas le
+  -- matériel, pas compris, pas le temps.
+  skip_reason    text check (skip_reason in ('pain', 'equipment', 'unclear', 'time')),
   pain           int  check (pain between 0 and 10),
   difficulty     int  check (difficulty between 0 and 10),
   created_at     timestamptz not null default now()
