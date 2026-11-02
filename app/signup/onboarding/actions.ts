@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { rppsInUse, setInstructorStatus, setInstructorRppsVerified } from "@/lib/db/admin";
-import { verifyRpps, AUTO_APPROVE_VERIFIED_RPPS } from "@/lib/instructor/rppsVerification";
+import { verifyRpps } from "@/lib/instructor/rppsVerification";
 import { friendlyDbError } from "@/lib/format/dbError";
 
 // Saves the cabinet/practice details collected right after Clerk signup (see
@@ -47,11 +47,10 @@ export async function saveInstructorOnboarding(formData: FormData) {
   if (!cabinetName) missing.push("le nom du cabinet");
   if (!cabinetAddress) missing.push("l'adresse du cabinet");
   if (!phone) missing.push("le téléphone professionnel");
-  if (!rppsNumber) missing.push("le numéro RPPS ou ADELI");
   if (missing.length > 0) {
     redirect(`/signup/onboarding?error=${encodeURIComponent(`Champ(s) manquant(s) : ${missing.join(", ")}.`)}`);
   }
-  if (!/^\d{9,11}$/.test(rppsNumber)) {
+  if (rppsNumber && !/^\d{9,11}$/.test(rppsNumber)) {
     redirect(
       `/signup/onboarding?error=${encodeURIComponent("Le numéro RPPS ou ADELI doit contenir uniquement des chiffres.")}`,
     );
@@ -64,10 +63,10 @@ export async function saveInstructorOnboarding(formData: FormData) {
   // skips the manual /admin approval queue entirely (Philippe, 2026-09-10),
   // same as the normal signup path in app/signup/finalize/page.tsx — an
   // unverified RPPS, or one whose name doesn't match, still needs a human.
-  const verification = await verifyRpps(rppsNumber, instructor?.full_name ?? "");
-  // Numéro déjà porté par un autre compte : revue manuelle (2026-10-07).
-  const autoApproved =
-    AUTO_APPROVE_VERIFIED_RPPS && verification.status === "verified" && !(await rppsInUse(rppsNumber, user.id));
+  // Inscription libre (Philippe, 2026-11-02) : le RPPS, facultatif, ne sert
+  // plus qu'à la pastille « RPPS vérifié », jamais à bloquer l'accès.
+  const verification = rppsNumber ? await verifyRpps(rppsNumber, instructor?.full_name ?? "") : null;
+  const rppsVerified = !!rppsNumber && verification?.status === "verified" && !(await rppsInUse(rppsNumber, user.id));
 
   const { error } = await supabase
     .from("instructors")
@@ -75,7 +74,7 @@ export async function saveInstructorOnboarding(formData: FormData) {
       cabinet_name: cabinetName,
       cabinet_address: cabinetAddress,
       phone,
-      rpps_number: rppsNumber,
+      rpps_number: rppsNumber || null,
       siret,
     })
     .eq("id", user.id);
@@ -85,10 +84,8 @@ export async function saveInstructorOnboarding(formData: FormData) {
   }
 
   // Badge « RPPS vérifié » : écrit par le serveur (migration 0063).
-  if (verification.status === "verified") await setInstructorRppsVerified(user.id, verification.verifiedAt);
-  if (autoApproved) {
-    await setInstructorStatus(user.id, "approved");
-  }
-
-  redirect(autoApproved ? "/dashboard" : "/signup/pending");
+  if (rppsVerified && verification?.status === "verified") await setInstructorRppsVerified(user.id, verification.verifiedAt);
+  // Validé d'office dès que le cabinet est renseigné.
+  await setInstructorStatus(user.id, "approved");
+  redirect("/dashboard");
 }

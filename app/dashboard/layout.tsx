@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getInstructor } from "@/lib/dashboard/instructor";
 import { loadUnreadCount } from "@/lib/dashboard/unreadMessages";
+import { setInstructorStatus } from "@/lib/db/admin";
 
 // The one shared gate for every /dashboard/* route: not an instructor at all
 // -> back to the patient side; instructor but not yet approved by Philippe
@@ -21,7 +22,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   if (!instructor) redirect("/patient");
 
-  const status = (instructor.status as string | null) ?? "approved";
+  let status = (instructor.status as string | null) ?? "approved";
+
+  // Inscription libre (Philippe, 2026-11-02) : un compte resté « en attente »
+  // d’avant ce changement, cabinet renseigné, est validé à sa prochaine visite.
+  if (status === "pending" && instructor.cabinet_name) {
+    await setInstructorStatus(user.id, "approved");
+    status = "approved";
+  }
 
   // En attente SANS coordonnées de cabinet (inscription Clerk directe, cookie
   // perdu) : renvoyer vers le formulaire, sinon l'écran d'attente n'offre

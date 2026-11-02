@@ -25,8 +25,7 @@ export default function SignupOnboardingView({
         <div className="rounded-3xl border border-blue-100 bg-white/90 p-8 shadow-sm backdrop-blur max-sm:p-5 short:p-5">
           <h1 className="font-display text-2xl font-semibold text-slate-900"><span className="text-blue-700">EasyPhysio ·</span>{" "}Votre cabinet</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-600 short:hidden">
-            Quelques informations professionnelles avant l&apos;activation de votre compte —
-            elles nous permettent de vérifier votre inscription.
+            Quelques informations pour vos notes d&apos;honoraires et vos patients.
           </p>
 
           {error && (
@@ -72,11 +71,10 @@ export default function SignupOnboardingView({
 
             <div className="flex flex-col gap-4 short:grid short:grid-cols-2 short:gap-3">
             <label>
-              <span className="text-sm font-medium text-slate-700">Numéro RPPS ou ADELI</span>
+              <span className="text-sm font-medium text-slate-700">Numéro RPPS <span className="font-normal text-slate-400">(facultatif)</span></span>
               <input
                 type="text"
                 name="rpps_number"
-                required
                 inputMode="numeric"
                 defaultValue={defaults.rpps_number ?? ""}
                 placeholder="11 chiffres"

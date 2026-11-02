@@ -32,7 +32,7 @@ export default async function SignupOnboardingPage({
   // Already completed — don't let a bookmarked/back-navigated link re-open
   // this step (also whichever screen is next: approved goes straight in).
   if (instructor.cabinet_name) {
-    redirect(instructor.status === "approved" ? "/dashboard" : "/signup/pending");
+    redirect("/dashboard");
   }
 
   return (

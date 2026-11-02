@@ -4,7 +4,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { resolveAppUserId } from "@/lib/auth/user-map";
 import { createClient } from "@/lib/supabase/server";
 import { rppsInUse, setInstructorStatus, setInstructorRppsVerified } from "@/lib/db/admin";
-import { verifyRpps, AUTO_APPROVE_VERIFIED_RPPS } from "@/lib/instructor/rppsVerification";
+import { verifyRpps } from "@/lib/instructor/rppsVerification";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 const PENDING_CABINET_COOKIE = "pending_cabinet";
@@ -13,7 +13,8 @@ type PendingCabinet = {
   cabinetName: string;
   cabinetAddress: string;
   phone: string;
-  rppsNumber: string;
+  /** Facultatif depuis le 2026-11-02 (inscription libre). */
+  rppsNumber: string | null;
   siret: string | null;
 };
 
@@ -21,7 +22,7 @@ function readPendingCabinet(raw: string | undefined): PendingCabinet | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(decodeURIComponent(raw));
-    if (!parsed?.cabinetName || !parsed?.cabinetAddress || !parsed?.phone || !parsed?.rppsNumber) return null;
+    if (!parsed?.cabinetName || !parsed?.cabinetAddress || !parsed?.phone) return null;
     return parsed as PendingCabinet;
   } catch {
     return null;
@@ -96,19 +97,13 @@ export default async function SignupFinalizePage() {
       [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
       email.split("@")[0];
 
-    const verification = pendingCabinet ? await verifyRpps(pendingCabinet.rppsNumber, fullName) : null;
-    // A confirmed RPPS + name match (see lib/instructor/rppsVerification.ts)
-    // skips the manual /admin approval queue entirely (Philippe, 2026-09-10)
-    // — an unverified or missing RPPS still needs a human to check it by
-    // hand, same as today.
-    // Numéro déjà porté par un autre compte : pas d'approbation automatique,
-    // la demande passe en revue manuelle dans /admin (Philippe, 2026-10-07 —
-    // un RPPS et un nom sont publics, on ne valide pas deux comptes dessus).
-    const autoApproved =
-      AUTO_APPROVE_VERIFIED_RPPS &&
-      verification?.status === "verified" &&
-      !!pendingCabinet &&
-      !(await rppsInUse(pendingCabinet.rppsNumber, appId));
+    // Inscription libre (Philippe, 2026-11-02 : le kiné paie son accès, on ne
+    // vérifie plus son inscription à l'Ordre). Le RPPS, facultatif, ne sert
+    // plus qu'à la pastille « RPPS vérifié » — jamais à bloquer. Un numéro
+    // déjà porté par un autre compte n'a simplement pas la pastille.
+    const rpps = pendingCabinet?.rppsNumber || null;
+    const verification = rpps ? await verifyRpps(rpps, fullName) : null;
+    const rppsVerified = !!rpps && verification?.status === "verified" && !(await rppsInUse(rpps, appId));
 
     const { error } = await supabase.from("instructors").insert({
       id: appId,
@@ -129,18 +124,23 @@ export default async function SignupFinalizePage() {
     }
 
     // Badge « RPPS vérifié » : écrit par le serveur (migration 0063).
-    if (verification?.status === "verified") await setInstructorRppsVerified(appId, verification.verifiedAt);
-    if (autoApproved) {
+    if (rppsVerified && verification?.status === "verified") await setInstructorRppsVerified(appId, verification.verifiedAt);
+    // Validé d'office dès que le cabinet est renseigné → directement dans
+    // l'appli. Cabinet manquant (cookie perdu) → on le demande d'abord.
+    if (pendingCabinet) {
       await setInstructorStatus(appId, "approved");
+      redirect("/dashboard");
     }
-    // Auto-approved → straight into the app. Cabinet details on file but not
-    // (yet) verified → the waiting screen. Missing entirely (recovery path,
-    // no cookie) → collect them now.
-    redirect(autoApproved ? "/dashboard" : pendingCabinet ? "/signup/pending" : "/signup/onboarding");
+    redirect("/signup/onboarding");
   }
 
   // Already had a profile (re-run, or previously approved account re-signing up).
   // Validé, refusé ou suspendu : /dashboard affiche l'espace ou le bon message.
   if ((existing.status ?? "approved") !== "pending") redirect("/dashboard");
-  redirect(existing.cabinet_name ? "/signup/pending" : "/signup/onboarding");
+  // Resté « en attente » d'avant l'inscription libre, cabinet renseigné : validé.
+  if (existing.cabinet_name) {
+    await setInstructorStatus(appId, "approved");
+    redirect("/dashboard");
+  }
+  redirect("/signup/onboarding");
 }
