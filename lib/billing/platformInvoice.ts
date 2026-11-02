@@ -66,15 +66,24 @@ export async function createPlatformBillingSetupUrl(p: {
     customerId = customer.id;
     await upsertPlatformBilling({ instructorId: p.instructorId, stripeCustomerId: customerId, stripePaymentMethodId: null, label: null });
   }
-  const session = await stripe.checkout.sessions.create({
-    mode: "setup",
+  const params = {
+    mode: "setup" as const,
     customer: customerId,
     currency: "eur",
-    payment_method_types: ["sepa_debit", "card"],
     metadata: { kind: "platform_billing", instructor_id: p.instructorId, platform_sig: sig(p.instructorId) },
     success_url: `${p.baseUrl}/dashboard/facturation/moyen-de-paiement?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${p.baseUrl}/dashboard/facturation?moyen=annule`,
-  });
+  };
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await stripe.checkout.sessions.create({ ...params, payment_method_types: ["sepa_debit", "card"] });
+  } catch (err) {
+    // Tant que Stripe n'a pas approuvé le prélèvement SEPA sur le compte, il
+    // refuse toute la page : on la rouvre avec la carte seule, pour que le
+    // kiné puisse quand même enregistrer un moyen de paiement.
+    console.warn("[facturation] SEPA indisponible, carte seule :", err instanceof Error ? err.message : err);
+    session = await stripe.checkout.sessions.create({ ...params, payment_method_types: ["card"] });
+  }
   return session.url;
 }
 
