@@ -99,7 +99,7 @@ export default async function SeancePage({
 
   return (
     <main className="p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:p-4 max-sm:short:py-2 sm:min-h-dvh sm:p-8 short:sm:py-3">
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-xl sm:max-w-5xl">
         <WorkoutSession
           workoutId={workout.id}
           patientId={user.id}

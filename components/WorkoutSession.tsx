@@ -27,15 +27,12 @@ export interface SessionExercise {
 type Phase = "exercise" | "celebrate" | "finished";
 
 /** A self-hosted demo clip of the kiné doing the exercise (Philippe,
- *  2026-10-01): the box first shows the exercise drawing with a big play
- *  button in the middle; the patient taps it and the clip plays — WITHOUT sound
- *  for now (Philippe, 2026-10-31), no autoplay, no endless loop. Tapping the video pauses it;
- *  at the end the play button comes back to watch again. Clips are filmed
- *  upright on a phone, so they're shown whole (object-contain) on black.
- *  `startSeconds` skips any intro. */
+ *  2026-10-01). The clip's first frame shows straight away; one tap plays it,
+ *  another pauses it (2026-11-02, no big play button any more) — WITHOUT sound
+ *  for now (2026-10-31), no autoplay, no endless loop. Shown whole
+ *  (object-contain) on black. `startSeconds` skips any intro. */
 function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string; startSeconds?: number }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [started, setStarted] = useState(false);
   const [playing, setPlaying] = useState(false);
   // A clip that fails to load (mislink, deleted file) must degrade to the
   // illustration rather than sit as a black unplayable player.
@@ -58,59 +55,53 @@ function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string;
     return <IllustrationDemo name={name} />;
   }
 
-  const play = () => {
-    setStarted(true);
+  // Un toucher sur la vidéo : lecture ou pause (Philippe, 2026-11-02 : « direct
+  // voir la vidéo prête à jouer, sans le gros truc bleu »).
+  const toggle = () => {
     const v = videoRef.current;
     if (!v) return;
+    if (!v.paused) {
+      v.pause();
+      setPlaying(false);
+      return;
+    }
     if (v.ended || v.currentTime < startSeconds) v.currentTime = startSeconds;
     v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
   };
-  const pause = () => {
-    videoRef.current?.pause();
-    setPlaying(false);
-  };
 
   return (
-    // Le cadre prend la forme de la vidéo elle-même (Philippe, 2026-11-01 :
-    // « filmée à l'horizontale → affichée à l'horizontale, filmée à la
-    // verticale → à la verticale ») : largeur/hauteur lues sur le fichier dès
-    // qu'il est chargé. La hauteur reste plafonnée (--mh) pour que tout tienne
-    // sur un écran ; une vidéo verticale devient alors moins large et se centre.
+    // Le cadre prend la forme de la vidéo elle-même (verticale ou horizontale,
+    // Philippe, 2026-11-01). Hauteur plafonnée (--mh) pour tenir sur un écran :
+    // sur ordinateur la vidéo est à gauche et prend presque toute la hauteur
+    // (2026-11-02 : « la vidéo est trop petite »), largeur plafonnée (--mw).
     <div
-      className="relative mx-auto overflow-hidden rounded-xl bg-black [--mh:40vh] sm:[--mh:min(55vh,560px)] short:[--mh:9rem]"
-      style={{ aspectRatio: ratio, width: `min(100%, calc(var(--mh) * ${ratio}))` }}
+      className="relative mx-auto overflow-hidden rounded-xl bg-black [--mh:40vh] [--mw:100%] sm:[--mh:calc(100dvh-9rem)] sm:[--mw:min(34rem,50vw)]"
+      style={{ aspectRatio: ratio, width: `min(var(--mw), calc(var(--mh) * ${ratio}))` }}
     >
+      {/* Première image affichée tout de suite (#t=… : aussi sur iPhone). */}
       <video
         ref={attachVideo}
         playsInline
         muted
         preload="metadata"
+        aria-label={`Vidéo : ${name}. Touchez pour lire ou mettre en pause.`}
         onLoadedMetadata={(e) => {
           const v = e.currentTarget;
           if (v.videoWidth > 0 && v.videoHeight > 0) setRatio(v.videoWidth / v.videoHeight);
         }}
         onError={() => setFailed(true)}
-        onClick={pause}
+        onClick={toggle}
+        onPause={() => setPlaying(false)}
+        onPlay={() => setPlaying(true)}
         onEnded={() => setPlaying(false)}
-        className={`absolute inset-0 h-full w-full bg-black object-contain ${started ? "" : "invisible"}`}
-        src={startSeconds > 0 ? `${url}#t=${startSeconds}` : url}
+        className="absolute inset-0 h-full w-full cursor-pointer bg-black object-contain"
+        src={`${url}#t=${Math.max(startSeconds, 0.001)}`}
       />
-      {!started && (
-        <div className="absolute inset-0 flex items-center justify-center border border-slate-200 bg-slate-50">
-          <ExerciseIllustration name={name} className="h-40 w-56 text-blue-600 short:h-32" />
-        </div>
-      )}
+      {/* Petit repère discret quand la vidéo est à l'arrêt, sans gêner l'image. */}
       {!playing && (
-        <button
-          type="button"
-          onClick={play}
-          aria-label={started ? "Reprendre la vidéo" : `Voir la vidéo : ${name}`}
-          className="absolute inset-0 flex items-center justify-center bg-black/10 transition hover:bg-black/20"
-        >
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg">
-            <Play className="ml-1 h-7 w-7" strokeWidth={2} fill="currentColor" />
-          </span>
-        </button>
+        <span className="pointer-events-none absolute bottom-2 left-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white">
+          <Play className="ml-0.5 h-4 w-4" strokeWidth={2} fill="currentColor" />
+        </span>
       )}
     </div>
   );
@@ -517,7 +508,7 @@ export default function WorkoutSession({
     // Écran peu haut (petit téléphone, PC de 549 px de haut) : démonstration
     // moins haute et marges resserrées pour que l'exercice et son bouton
     // tiennent sans défiler (audit 2026-10-10).
-    <div className="mx-auto flex max-w-xl flex-col gap-4 short:gap-2">
+    <div className="mx-auto flex max-w-xl flex-col gap-4 sm:max-w-5xl short:gap-2">
       {/* Progress header : nom de la séance, position, barre par exercice. */}
       <div>
         <div className="flex items-center justify-between gap-3">
@@ -592,6 +583,10 @@ export default function WorkoutSession({
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm max-sm:p-4 short:p-4">
+          {/* Téléphone : tout en colonne. Ordinateur : la vidéo à gauche, en
+              grand, et l'exercice à droite (Philippe, 2026-11-02). */}
+          <div className="flex flex-col sm:grid sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start sm:gap-x-6">
+          <div className="sm:col-start-2">
           <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
             Exercice {idx + 1} sur {total}
           </p>
@@ -601,11 +596,13 @@ export default function WorkoutSession({
           <div className="mt-2 short:mt-1">
             <GoalBadges goal={goal} label={goalText} />
           </div>
+          </div>
 
-          <div className="mt-4 max-sm:mt-3 short:mt-2">
+          <div className="mt-4 max-sm:mt-3 sm:col-start-1 sm:row-span-2 sm:row-start-1 sm:mt-0">
             <Demo url={current.mediaUrl} name={current.name} startSeconds={current.mediaStartSeconds ?? 0} />
           </div>
 
+          <div className="sm:col-start-2">
           {goal.kind !== "duration" && <SetTracker sets={goal.sets} done={setsDone} onToggle={setSetsDone} />}
 
           <HowTo instructions={current.instructions} goalText={goalText} />
@@ -620,6 +617,8 @@ export default function WorkoutSession({
             <Check className="h-5 w-5" strokeWidth={1.75} />
             J&apos;ai terminé cet exercice
           </button>
+          </div>
+          </div>
         </div>
       )}
     </div>
