@@ -27,3 +27,12 @@ test("maintien : le temps écrit dans la consigne devient l'objectif", () => {
   assert.equal(goalTextFor("Tenez 20 à 30 secondes.", p), "3 × 20 à 30 secondes");
   assert.equal(goalShortFor("Tenez 20 à 30 secondes."), "3 × 20-30 s");
 });
+
+test("la dose du kiné remplace la règle habituelle", () => {
+  const p = { goalSets: 3, goalReps: 12 };
+  assert.equal(goalTextFor("Soulevez le bassin.", p, { sets: 4, reps: 10 }), "4 séries de 10 répétitions");
+  assert.equal(goalShortFor("Soulevez le bassin.", { sets: 2 }), "2 × 8-12 rép.");
+  assert.equal(goalTextFor("Tenez 20 à 30 secondes.", p, { holdSeconds: 45 }), "3 × 45 secondes");
+  assert.equal(goalShortFor("Pédalez 10 minutes.", { sets: 4 }), "10 min");
+  assert.equal(goalShortFor("Tenez 20 à 30 secondes."), "3 × 20-30 s");
+});

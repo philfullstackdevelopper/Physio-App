@@ -36,5 +36,6 @@ test("retirer puis ajouter le même exercice le garde (en fin)", () => {
 test("message : accords et parties omises", () => {
   assert.equal(adjustmentMessage("Initiation genou", 1, 1), "J'ai ajusté votre séance « Initiation genou » : 1 exercice retiré, 1 exercice ajouté.");
   assert.equal(adjustmentMessage("Initiation genou", 0, 2), "J'ai ajusté votre séance « Initiation genou » : 2 exercices ajoutés.");
+  assert.equal(adjustmentMessage("Initiation genou", 0, 0, 2), "J'ai ajusté votre séance « Initiation genou » : séries ou répétitions modifiées sur 2 exercices.");
   assert.equal(adjustmentMessage("Initiation genou", 3, 0), "J'ai ajusté votre séance « Initiation genou » : 3 exercices retirés.");
 });

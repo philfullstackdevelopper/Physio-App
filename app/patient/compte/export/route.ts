@@ -26,7 +26,7 @@ export async function GET() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, messages, subscription, personalWorkouts, followUp, monthlyReviews] =
+  const [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, messages, subscription, personalWorkouts, followUp, monthlyReviews, exerciseResults] =
     await Promise.all([
       supabase.from("patient_profiles").select("*").eq("id", user.id).maybeSingle(),
       supabase.from("patients").select("*").eq("id", user.id).maybeSingle(),
@@ -41,11 +41,13 @@ export async function GET() {
       // Nouveau modèle (2026-10-24) : suivi mensuel accepté et bilans reçus.
       supabase.from("patient_follow_ups").select("patient_id, instructor_id, price_cents, status, consented_at, card_label, stopped_at, created_at").eq("patient_id", user.id).maybeSingle(),
       readAll((a, b) => supabase.from("monthly_reviews").select("*").eq("patient_id", user.id).order("period").range(a, b)),
+      // Suivi par exercice (0080) : fait / passé, douleur, difficulté.
+      readAll((a, b) => supabase.from("exercise_results").select("*").eq("patient_id", user.id).order("created_at").range(a, b)),
     ]);
 
   // Une requête en échec ne doit pas apparaître comme « aucune donnée » dans
   // un export RGPD : on refuse plutôt l'export, le patient peut réessayer.
-  const failed = [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, messages, subscription, personalWorkouts, followUp, monthlyReviews].some(
+  const failed = [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, messages, subscription, personalWorkouts, followUp, monthlyReviews, exerciseResults].some(
     (r) => r.error,
   );
   if (failed) {
@@ -64,6 +66,7 @@ export async function GET() {
     recommended_workouts: recommendedWorkouts.data,
     personal_workouts: personalWorkouts.data,
     workout_logs: workoutLogs.data,
+    exercise_results: exerciseResults.data,
     messages: messages.data,
     subscription: subscription.data,
     monthly_follow_up: followUp.data,

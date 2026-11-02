@@ -62,6 +62,21 @@ function AdherenceCell({ row }: { row: PatientRow }) {
   );
 }
 
+/** « 2 nouveaux retours » : séances faites depuis la dernière visite de la
+ *  fiche (Philippe, 2026-11-02, inspiré de Fullphysio). */
+function NewSessionsBadge({ row }: { row: PatientRow }) {
+  if (!row.newSessions) return null;
+  const n = row.newSessions;
+  return (
+    <span
+      title={`${n} séance${n > 1 ? "s" : ""} faite${n > 1 ? "s" : ""} depuis votre dernière visite`}
+      className="shrink-0 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white"
+    >
+      {n} nouveau{n > 1 ? "x" : ""}
+    </span>
+  );
+}
+
 function PhaseBadge({ row }: { row: PatientRow }) {
   if (!row.stageShort) return <span className="text-sm text-muted">—</span>;
   return (
@@ -263,7 +278,10 @@ export default function PatientsTable({
                       <span className="flex items-center gap-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand">{r.initials}</span>
                         <span className="min-w-0">
-                          <span className="block truncate text-sm font-semibold text-ink">{r.name}</span>
+                          <span className="flex items-center gap-2">
+                            <span className="truncate text-sm font-semibold text-ink">{r.name}</span>
+                            <NewSessionsBadge row={r} />
+                          </span>
                           <span className="block truncate text-xs text-muted">
                             {r.onboardingStage ? "Inscription en cours" : r.conditionName ?? "Condition non assignée"}
                           </span>
@@ -360,7 +378,10 @@ export default function PatientsTable({
                       {r.initials}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-semibold leading-tight text-ink">{r.name}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="truncate text-[15px] font-semibold leading-tight text-ink">{r.name}</span>
+                        <NewSessionsBadge row={r} />
+                      </span>
                       <span className="mt-0.5 block truncate text-xs text-muted">
                         {r.onboardingStage ? "Inscription en cours" : r.conditionName ?? "Condition non assignée"}
                         {r.lastSessionAt && ` · ${r.lastSessionLabel}`}

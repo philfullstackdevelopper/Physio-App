@@ -47,6 +47,9 @@ export interface KineWorkoutSummary {
   id: string;
   name: string;
   exercises: ModalExercise[];
+  /** Pour « plus facile / plus difficile » (lib/exercise/levelStep.ts). */
+  conditionId?: string | null;
+  stage?: string | null;
 }
 
 /** Seuil de douleur à partir duquel une semaine passe en rouge sur la frise.
@@ -594,6 +597,27 @@ export default function KineWeekProgramme({
                       {s.difficulty != null && <li>Difficulté {s.difficulty}/10</li>}
                       {s.notes && <li>« {s.notes} »</li>}
                     </ul>
+                    {/* Exercice par exercice (Philippe, 2026-11-02) : lequel gêne, lequel est passé. */}
+                    {s.exercises && s.exercises.length > 0 && (
+                      <ul className="mt-2 max-h-56 space-y-1 overflow-y-auto border-t border-line pt-2">
+                        {s.exercises.map((ex, i) => (
+                          <li key={i} className="flex items-center justify-between gap-2 text-xs">
+                            <span className={`min-w-0 truncate ${ex.status === "skipped" ? "text-muted line-through" : "text-ink"}`}>{ex.name}</span>
+                            <span className="flex shrink-0 items-center gap-1.5 tabular-nums">
+                              {ex.status === "skipped" ? (
+                                <span className="rounded-full bg-warn-soft px-1.5 py-0.5 font-medium text-warn">Passé</span>
+                              ) : (
+                                <>
+                                  {ex.pain != null && <span className={ex.pain >= WEEK_PAIN_ALERT ? "font-semibold text-danger" : "text-muted"}>D {ex.pain}</span>}
+                                  {ex.difficulty != null && <span className="text-muted">Diff. {ex.difficulty}</span>}
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-ok" strokeWidth={2} aria-label="Fait" />
+                                </>
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 );
               })}

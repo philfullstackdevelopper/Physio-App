@@ -26,9 +26,10 @@ const plural = (n: number, word: string, pastParticiple: string) =>
   `${n} ${word}${n > 1 ? "s" : ""} ${pastParticiple}${n > 1 ? "s" : ""}`;
 
 /** « J'ai ajusté votre séance « X » : 1 exercice retiré, 2 exercices ajoutés. » */
-export function adjustmentMessage(workoutName: string, removed: number, added: number): string {
+export function adjustmentMessage(workoutName: string, removed: number, added: number, dosesChanged = 0): string {
   const parts: string[] = [];
   if (removed > 0) parts.push(plural(removed, "exercice", "retiré"));
   if (added > 0) parts.push(plural(added, "exercice", "ajouté"));
+  if (dosesChanged > 0) parts.push(`séries ou répétitions modifiées sur ${dosesChanged} exercice${dosesChanged > 1 ? "s" : ""}`);
   return `J'ai ajusté votre séance « ${workoutName} » : ${parts.join(", ")}.`;
 }

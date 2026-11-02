@@ -8,16 +8,20 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Flame, CheckCircle2, Check, Play, Repeat2, Dumbbell, Timer, X, ArrowRight, ShieldAlert } from "lucide-react";
+import { Flame, CheckCircle2, Check, Play, Repeat2, Dumbbell, Timer, X, ArrowRight, ShieldAlert, SkipForward } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { goalPartsFor, goalTextFor, type GoalParts, type Prescription } from "@/lib/exercise/prescription";
+import { goalPartsFor, goalTextFor, type ExerciseDose, type GoalParts, type Prescription } from "@/lib/exercise/prescription";
 import { fetchStreak } from "@/lib/exercise/streak";
 import { getYoutubeEmbedId, isVideoFileUrl, isImageFileUrl } from "@/lib/exercise/media";
 import { parseSteps } from "@/lib/exercise/steps";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 
 export interface SessionExercise {
+  /** Identifiant de l'exercice (pour le suivi par exercice, migration 0080). */
+  id?: string | null;
   name: string;
+  /** Dose choisie par le kiné pour cet exercice de la séance (vide = règle habituelle). */
+  dose?: ExerciseDose | null;
   instructions: string | null;
   mediaUrl: string | null;
   /** Where in the clip the movement actually starts — skip any intro. */
@@ -207,6 +211,38 @@ function SetTracker({ sets, done, onToggle }: { sets: number; done: number; onTo
   );
 }
 
+/** Ressenti d'un exercice, en option (Philippe, 2026-11-02, inspiré de
+ *  Fullphysio) : une réglette de 0 à 10, vide tant que le patient n'y touche pas. */
+function RatingSlider({ label, hint, value, onChange }: { label: string; hint: string; value: number | null; onChange: (n: number) => void }) {
+  return (
+    <label className="block text-left">
+      <span className="flex items-baseline justify-between text-sm">
+        <span className="font-medium text-slate-700">{label}</span>
+        <span className={`tabular-nums ${value == null ? "text-xs text-slate-400" : "font-semibold text-blue-700"}`}>
+          {value == null ? "facultatif" : `${value}/10`}
+        </span>
+      </span>
+      <input
+        type="range"
+        min={0}
+        max={10}
+        step={1}
+        value={value ?? 0}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={`${label} (0 à 10) — ${hint}`}
+        className={`mt-1 w-full ${value == null ? "accent-slate-300 opacity-60" : "accent-blue-600"}`}
+      />
+      <span className="flex justify-between text-[11px] text-slate-400">
+        <span>0</span>
+        <span>{hint}</span>
+        <span>10</span>
+      </span>
+    </label>
+  );
+}
+
+type ExerciseResult = { status: "done" | "skipped"; pain: number | null; difficulty: number | null };
+
 function HowTo({ instructions, goalText }: { instructions: string | null; goalText: string }) {
   const steps = parseSteps(instructions);
   return (
@@ -278,14 +314,23 @@ export default function WorkoutSession({
 
   // Séries cochées sur l'exercice en cours (affichage seulement, rien n'est enregistré).
   const [setsDone, setSetsDone] = useState(0);
+  // Suivi par exercice (migration 0080) : fait ou passé, et le ressenti
+  // facultatif. Enregistré avec la séance, à la fin.
+  const [results, setResults] = useState<Record<number, ExerciseResult>>({});
+  const resultsSavedRef = useRef(false);
+  const setRating = (key: "pain" | "difficulty", n: number) =>
+    setResults((r) => ({ ...r, [idx]: { ...(r[idx] ?? { status: "done", pain: null, difficulty: null }), [key]: n } }));
 
   const total = exercises.length;
   const current = exercises[idx];
   const upcoming = exercises[idx + 1] ?? null;
-  const goalText = goalTextFor(current?.instructions ?? null, prescription);
-  const goal = goalPartsFor(current?.instructions ?? null);
+  const goalText = goalTextFor(current?.instructions ?? null, prescription, current?.dose);
+  const goal = goalPartsFor(current?.instructions ?? null, current?.dose);
+  const doneCount = Object.values(results).filter((r) => r.status === "done").length;
+  const skippedCount = Object.values(results).filter((r) => r.status === "skipped").length;
 
-  const finish = async () => {
+  const finish = async (latest?: Record<number, ExerciseResult>) => {
+    const allResults = latest ?? results;
     // Log the completed workout (RLS: patient can insert their own logs),
     // then recompute the daily streak to celebrate it. A failed insert must
     // NOT show the success celebration — the patient needs to know their
@@ -313,6 +358,26 @@ export default function WorkoutSession({
         if (error || !log) throw error ?? new Error("insert failed");
         savedLogIdRef.current = log.id as string;
         setLogId(log.id as string);
+      }
+      // Suivi par exercice : un bonus, son échec ne doit pas faire croire
+      // que la séance n'est pas enregistrée.
+      if (!resultsSavedRef.current && savedLogIdRef.current) {
+        const rows = Object.entries(allResults).map(([i, r]) => ({
+          patient_id: patientId,
+          workout_log_id: savedLogIdRef.current,
+          exercise_id: exercises[Number(i)]?.id ?? null,
+          exercise_name: exercises[Number(i)]?.name ?? "Exercice",
+          position: Number(i),
+          status: r.status,
+          pain: r.pain,
+          difficulty: r.difficulty,
+        }));
+        if (rows.length > 0) {
+          const { error: resErr } = await supabase.from("exercise_results").insert(rows);
+          if (!resErr) resultsSavedRef.current = true;
+        } else {
+          resultsSavedRef.current = true;
+        }
       }
       // La série de jours n'est qu'un bonus d'affichage : son échec ne doit
       // pas faire croire que la séance n'est pas enregistrée.
@@ -362,6 +427,7 @@ export default function WorkoutSession({
 
   const onExerciseDone = () => {
     if (completing) return;
+    setResults((r) => ({ ...r, [idx]: { status: "done", pain: r[idx]?.pain ?? null, difficulty: r[idx]?.difficulty ?? null } }));
     // Skip the visual hold for patients who've asked for reduced motion —
     // the tap itself is still the confirmation.
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -371,6 +437,20 @@ export default function WorkoutSession({
     }
     setCompleting(true);
     setTimeout(() => setPhase("celebrate"), 180);
+  };
+
+  // « Passer cet exercice » : noté comme passé, on enchaîne directement.
+  const skip = () => {
+    if (completing || saving) return;
+    const updated: Record<number, ExerciseResult> = { ...results, [idx]: { status: "skipped", pain: null, difficulty: null } };
+    setResults(updated);
+    if (idx < total - 1) {
+      setIdx(idx + 1);
+      setSetsDone(0);
+      setPhase("exercise");
+    } else {
+      finish(updated);
+    }
   };
 
   const next = () => {
@@ -409,7 +489,7 @@ export default function WorkoutSession({
             Vérifiez votre connexion et réessayez : vos exercices ne sont pas perdus.
           </p>
           <button
-            onClick={finish}
+            onClick={() => finish()}
             disabled={saving}
             className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
@@ -433,7 +513,10 @@ export default function WorkoutSession({
           Séance terminée
         </h2>
         <p className="mt-2 text-sm text-slate-500">
-          {total} exercice{total > 1 ? "s" : ""} complété{total > 1 ? "s" : ""} — « {workoutName} »
+          {skippedCount > 0
+            ? `${doneCount} exercice${doneCount > 1 ? "s" : ""} sur ${total} réalisé${doneCount > 1 ? "s" : ""}`
+            : `${total} exercice${total > 1 ? "s" : ""} complété${total > 1 ? "s" : ""}`}{" "}
+          — « {workoutName} »
         </p>
         {streak != null && streak > 0 && (
           <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900">
@@ -552,6 +635,12 @@ export default function WorkoutSession({
             Exercice {idx + 1} sur {total} terminé
           </p>
 
+          {/* Ressenti de CET exercice, facultatif : le kiné voit lequel gêne. */}
+          <div className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3 short:mt-3 short:space-y-2">
+            <RatingSlider label="Douleur" hint="pendant l'exercice" value={results[idx]?.pain ?? null} onChange={(n) => setRating("pain", n)} />
+            <RatingSlider label="Difficulté" hint="ressentie" value={results[idx]?.difficulty ?? null} onChange={(n) => setRating("difficulty", n)} />
+          </div>
+
           {/* À suivre : le prochain exercice et son objectif, pour enchaîner sans surprise. */}
           {upcoming && (
             <div className="mt-5 flex items-center gap-3 rounded-xl bg-slate-50 p-3 text-left">
@@ -559,7 +648,7 @@ export default function WorkoutSession({
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">À suivre</p>
                 <p className="truncate text-sm font-semibold text-slate-900">{upcoming.name}</p>
-                <p className="text-xs text-slate-500">{goalTextFor(upcoming.instructions, prescription)}</p>
+                <p className="text-xs text-slate-500">{goalTextFor(upcoming.instructions, prescription, upcoming.dose)}</p>
               </div>
             </div>
           )}
@@ -616,6 +705,15 @@ export default function WorkoutSession({
           >
             <Check className="h-5 w-5" strokeWidth={1.75} />
             J&apos;ai terminé cet exercice
+          </button>
+          <button
+            type="button"
+            onClick={skip}
+            disabled={completing || saving}
+            className="mx-auto mt-2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 max-sm:mt-1"
+          >
+            <SkipForward className="h-4 w-4" strokeWidth={1.75} />
+            Passer cet exercice
           </button>
           </div>
           </div>

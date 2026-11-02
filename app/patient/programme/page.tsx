@@ -6,9 +6,10 @@ import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { tipOfTheDay } from "@/lib/patient/tips";
 import { resolveWorkoutForWeek } from "@/lib/exercise/activeRecommendation";
 import { primaryBodyPart, type BodyPart } from "@/lib/exercise/category";
+import { doseFromRow, type ExerciseDose } from "@/lib/exercise/prescription";
 import ProgrammeView, { type ProgrammeWorkout } from "./ProgrammeView";
 
-type Exercise = { id: string; name: string; instructions: string | null; bodyPartIds: string[] };
+type Exercise = { id: string; name: string; instructions: string | null; bodyPartIds: string[]; dose?: ExerciseDose | null };
 type Workout = {
   id: string;
   name: string;
@@ -38,15 +39,20 @@ export default async function ProgrammePage() {
   const user = await requireUser(supabase);
   const home = await loadPatientHome(supabase, user.id);
 
-  const { data: recRows } = await supabase
-    .from("patient_recommended_workouts")
-    .select(
-      `week_start_date, week_count, workouts (
+  // Les doses (séries, répétitions, maintien) viennent de la migration 0080 ;
+  // tant qu'elle n'est pas passée, on relit sans elles (code Postgres 42703).
+  const recSelect = (withDose: boolean) =>
+    `week_start_date, week_count, workouts (
         id, name, description, duration_minutes, times_per_week,
-        workout_exercises ( position, exercises ( id, name, instructions, exercise_body_parts ( body_part_id ) ) )
-      )`,
-    )
-    .eq("patient_id", user.id);
+        workout_exercises ( position${withDose ? ", sets, reps, hold_seconds" : ""}, exercises ( id, name, instructions, exercise_body_parts ( body_part_id ) ) )
+      )`;
+  type RecRow = { week_start_date: string; week_count: number | null; workouts: unknown };
+  const firstRec = await supabase.from("patient_recommended_workouts").select(recSelect(true)).eq("patient_id", user.id);
+  let recRows = firstRec.data as unknown as RecRow[] | null;
+  if (firstRec.error?.code === "42703") {
+    const retry = await supabase.from("patient_recommended_workouts").select(recSelect(false)).eq("patient_id", user.id);
+    recRows = retry.data as unknown as RecRow[] | null;
+  }
   const { data: bodyPartRows } = await supabase.from("body_parts").select("id, slug, label, position").order("position");
   const bodyParts = (bodyPartRows ?? []) as BodyPart[];
 
@@ -54,7 +60,7 @@ export default async function ProgrammePage() {
     .map((r) => {
       const w = r.workouts as unknown as
         | (Omit<Workout, "workout_exercises"> & {
-            workout_exercises: { position: number | null; exercises: (Omit<Exercise, "bodyPartIds"> & { exercise_body_parts: { body_part_id: string }[] }) | null }[];
+            workout_exercises: { position: number | null; sets?: number | null; reps?: number | null; hold_seconds?: number | null; exercises: (Omit<Exercise, "bodyPartIds"> & { exercise_body_parts: { body_part_id: string }[] }) | null }[];
           })
         | null;
       if (!w) return null;
@@ -66,7 +72,7 @@ export default async function ProgrammePage() {
           // Dans l'ordre de la séance (position), comme la séance guidée.
           workout_exercises: [...w.workout_exercises].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)).map((we) => ({
             exercises: we.exercises
-              ? { ...we.exercises, bodyPartIds: we.exercises.exercise_body_parts.map((t) => t.body_part_id) }
+              ? { ...we.exercises, bodyPartIds: we.exercises.exercise_body_parts.map((t) => t.body_part_id), dose: doseFromRow(we) }
               : null,
           })),
         } as Workout,
@@ -121,6 +127,7 @@ export default async function ProgrammePage() {
         id: ex.id,
         name: ex.name,
         instructions: ex.instructions,
+        dose: ex.dose ?? null,
         categoryLabel: primaryBodyPart(ex.bodyPartIds, bodyParts)?.label ?? null,
       })),
   }));

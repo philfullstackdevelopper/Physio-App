@@ -2,13 +2,17 @@ import { redirect } from "next/navigation";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { recommendPrescription } from "@/lib/exercise/prescription";
+import { doseFromRow, recommendPrescription } from "@/lib/exercise/prescription";
 import { isProfileComplete, profileToContext } from "@/lib/exercise/patientProfile";
 import WorkoutSession, { type SessionExercise } from "@/components/WorkoutSession";
 
 type WorkoutExerciseRow = {
   position: number;
+  sets?: number | null;
+  reps?: number | null;
+  hold_seconds?: number | null;
   exercises: {
+    id?: string;
     name: string;
     instructions: string | null;
     media_url: string | null;
@@ -43,7 +47,7 @@ export default async function SeancePage({
   const firstTry = await supabase
     .from("workouts")
     .select(
-      "id, name, workout_exercises ( position, exercises ( name, instructions, media_url, media_start_seconds ) )",
+      "id, name, workout_exercises ( position, sets, reps, hold_seconds, exercises ( id, name, instructions, media_url, media_start_seconds ) )",
     )
     .eq("id", workoutId)
     .maybeSingle();
@@ -51,7 +55,8 @@ export default async function SeancePage({
   if (firstTry.error?.code === "42703") {
     ({ data: workoutData } = await supabase
       .from("workouts")
-      .select("id, name, workout_exercises ( position, exercises ( name, instructions, media_url ) )")
+      // Sans les doses (migration 0080 pas encore passée).
+      .select("id, name, workout_exercises ( position, exercises ( id, name, instructions, media_url, media_start_seconds ) )")
       .eq("id", workoutId)
       .maybeSingle());
   }
@@ -87,7 +92,9 @@ export default async function SeancePage({
     [...(workout.workout_exercises ?? [])]
       .sort((a, b) => a.position - b.position)
       .map(async (we) => ({
+        id: we.exercises?.id ?? null,
         name: we.exercises?.name ?? "Exercice",
+        dose: doseFromRow(we),
         instructions: we.exercises?.instructions ?? null,
         // Vidéo chez Cloudflare R2 : lien signé fabriqué ici, côté serveur.
         mediaUrl: await resolveMediaUrl(we.exercises?.media_url ?? null),

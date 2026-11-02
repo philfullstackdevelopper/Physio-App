@@ -19,6 +19,8 @@ export interface SessionDetail {
   painScore: number | null;
   difficulty: number | null;
   notes: string | null;
+  /** Détail par exercice (migration 0080) : fait / passé, douleur, difficulté. */
+  exercises?: { name: string; status: "done" | "skipped"; pain: number | null; difficulty: number | null }[];
 }
 
 /**

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { isPickableExercise } from "@/lib/exercise/filmedExercises";
 import { createClient } from "@/lib/supabase/server";
-import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
+import { STAGE_LABELS, doseFromRow, type InjuryStage } from "@/lib/exercise/prescription";
 import EditSeanceModal from "@/components/EditSeanceModal";
 import { saveSeance, deleteSeance } from "../actions";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
@@ -40,11 +40,13 @@ export default async function SeanceEditorPage({
     .select("id, name, created_by, instructions, equipment, search_keywords, exercise_body_parts(body_part_id)")
     .order("name");
 
+  // select("*") : inclut les doses (migration 0080) quand elles existent.
   const { data: current } = await supabase
     .from("workout_exercises")
-    .select("exercise_id, position")
+    .select("*")
     .eq("workout_id", id)
     .order("position");
+  const doses = Object.fromEntries((current ?? []).map((r) => [r.exercise_id as string, doseFromRow(r)]));
   // Dans l'ordre de la séance : c'est l'ordre affiché, et celui qui sera ré-enregistré.
   const selectedIds = (current ?? []).map((r) => r.exercise_id as string);
   const selected = new Set(selectedIds);
@@ -85,6 +87,7 @@ export default async function SeanceEditorPage({
           durationMinutes: workout.duration_minutes,
           timesPerWeek: workout.times_per_week,
           exerciseIds: selectedIds,
+          doses,
           deleteAction: deleteSeance,
           saved: !!saved,
           error: error ?? null,

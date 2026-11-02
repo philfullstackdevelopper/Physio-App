@@ -143,11 +143,24 @@ function goalFromInstructions(instructions: string | null): { minutes: string } 
  * Endurance (vélo, marche…) : « N minutes », lu dans la consigne (2026-10-01,
  * migration 0060). Maintien (gainage, étirement) : « 3 × N secondes ».
  */
-export function goalTextFor(instructions: string | null, p: Pick<Prescription, "goalSets" | "goalReps">): string {
-  const g = goalFromInstructions(instructions);
-  if (g && "minutes" in g) return `${g.minutes} minute${Number(g.minutes) > 1 ? "s" : ""}`;
-  if (g && "seconds" in g) return `${p.goalSets} × ${g.seconds} secondes`;
-  return `${p.goalSets} séries de ${FIXED_GOAL_REPS_MIN} à ${p.goalReps} répétitions`;
+export function goalTextFor(
+  instructions: string | null,
+  p: Pick<Prescription, "goalSets" | "goalReps">,
+  dose?: ExerciseDose | null,
+): string {
+  const g = goalPartsFor(instructions, dose, p.goalSets);
+  if (g.kind === "duration") return `${g.minutes} minute${Number(g.minutes) > 1 ? "s" : ""}`;
+  if (g.kind === "hold") return `${g.sets} × ${g.seconds.replace("-", " à ")} secondes`;
+  const reps = g.reps === `${FIXED_GOAL_REPS_MIN}-${FIXED_GOAL_REPS}` ? `${FIXED_GOAL_REPS_MIN} à ${p.goalReps}` : g.reps;
+  return `${g.sets} séries de ${reps} répétitions`;
+}
+
+/** Dose choisie par le kiné pour un exercice d'une séance (migration 0080) :
+ *  séries, répétitions, maintien. Vide = la règle habituelle. */
+export interface ExerciseDose {
+  sets?: number | null;
+  reps?: number | null;
+  holdSeconds?: number | null;
 }
 
 /** Objectif découpé pour l'affichage en badges dans la séance guidée. */
@@ -156,17 +169,27 @@ export type GoalParts =
   | { kind: "hold"; sets: number; seconds: string }
   | { kind: "duration"; minutes: string };
 
-export function goalPartsFor(instructions: string | null): GoalParts {
+/** La dose du kiné l'emporte ; sinon la consigne (durée, maintien), sinon
+ *  3 séries de 8 à 12. Une durée d'endurance (« 10 minutes ») reste une durée. */
+export function goalPartsFor(instructions: string | null, dose?: ExerciseDose | null, defaultSets = FIXED_GOAL_SETS): GoalParts {
   const g = goalFromInstructions(instructions);
+  const sets = dose?.sets ?? defaultSets;
+  if (dose?.holdSeconds) return { kind: "hold", sets, seconds: String(dose.holdSeconds) };
   if (g && "minutes" in g) return { kind: "duration", minutes: g.minutes };
-  if (g && "seconds" in g) return { kind: "hold", sets: FIXED_GOAL_SETS, seconds: g.seconds.replace(" à ", "-") };
-  return { kind: "reps", sets: FIXED_GOAL_SETS, reps: `${FIXED_GOAL_REPS_MIN}-${FIXED_GOAL_REPS}` };
+  if (g && "seconds" in g && !dose?.reps) return { kind: "hold", sets, seconds: g.seconds.replace(" à ", "-") };
+  return { kind: "reps", sets, reps: dose?.reps ? String(dose.reps) : `${FIXED_GOAL_REPS_MIN}-${FIXED_GOAL_REPS}` };
 }
 
 /** Version courte pour les tuiles d'exercice : « 3 × 8-12 rép. », « 10 min », « 3 × 30 s ». */
-export function goalShortFor(instructions: string | null): string {
-  const g = goalFromInstructions(instructions);
-  if (g && "minutes" in g) return `${g.minutes} min`;
-  if (g && "seconds" in g) return `${FIXED_GOAL_SETS} × ${g.seconds.replace(" à ", "-")} s`;
-  return `${FIXED_GOAL_SETS} × ${FIXED_GOAL_REPS_MIN}-${FIXED_GOAL_REPS} rép.`;
+export function goalShortFor(instructions: string | null, dose?: ExerciseDose | null): string {
+  const g = goalPartsFor(instructions, dose);
+  if (g.kind === "duration") return `${g.minutes} min`;
+  if (g.kind === "hold") return `${g.sets} × ${g.seconds} s`;
+  return `${g.sets} × ${g.reps} rép.`;
+}
+
+/** Lit une dose depuis une ligne workout_exercises (colonnes de 0080). */
+export function doseFromRow(row: { sets?: number | null; reps?: number | null; hold_seconds?: number | null } | null | undefined): ExerciseDose | null {
+  if (!row || (row.sets == null && row.reps == null && row.hold_seconds == null)) return null;
+  return { sets: row.sets ?? null, reps: row.reps ?? null, holdSeconds: row.hold_seconds ?? null };
 }

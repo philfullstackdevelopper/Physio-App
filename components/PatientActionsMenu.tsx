@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, MessageCircle, MoreVertical, Settings2, Trash2, UserRound, X } from "lucide-react";
+import { AlertTriangle, MessageCircle, MoreVertical, Printer, Settings2, Trash2, UserRound, X } from "lucide-react";
 import PatientMessagesModal, { type MessagesModalPatient } from "@/components/PatientMessagesModal";
 import type { ThreadMessage } from "@/components/MessageThread";
 import { isPhoneFormat } from "@/lib/phoneFormat";
@@ -185,6 +185,18 @@ export default function PatientActionsMenu({
               <span className="text-sm font-medium text-ink">Profil déclaré</span>
             </button>
           )}
+          {/* Programme à imprimer / PDF (Philippe, 2026-11-02). */}
+          <a
+            role="menuitem"
+            href={`/documents/programme?patient=${patientId}`}
+            target="_blank"
+            rel="noopener"
+            onClick={() => setOpen(false)}
+            className={`${itemClass} items-center`}
+          >
+            <Printer className="h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
+            <span className="text-sm font-medium text-ink">Imprimer le programme</span>
+          </a>
         </div>
       )}
 

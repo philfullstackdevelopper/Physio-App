@@ -4,7 +4,8 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { isPhoneFormat } from "@/lib/phoneFormat";
 import Link from "next/link";
-import { CalendarRange, Check, ChevronLeft, Dumbbell, Info, Plus, Repeat, Search, Trash2, X } from "lucide-react";
+import { CalendarRange, Check, ChevronDown, ChevronLeft, ChevronUp, Dumbbell, Info, Plus, Repeat, Search, Trash2, X } from "lucide-react";
+import { levelNeighbours } from "@/lib/exercise/levelStep";
 import { type BodyPart } from "@/lib/exercise/category";
 import SubmitButton from "@/components/SubmitButton";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
@@ -31,17 +32,22 @@ function InfoButton({ name, onOpen }: { name: string; onOpen: () => void }) {
 import { equipmentListLabel, missingEquipment } from "@/lib/exercise/equipment";
 import { addWeeksToKey } from "@/lib/exercise/activeRecommendation";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
+import DoseInputs from "@/components/DoseInputs";
+import type { ExerciseDose } from "@/lib/exercise/prescription";
 
 /** Choix « jusqu'à quand ? » de l'étape 2 (null = jusqu'à la prochaine séance). */
 const DURATION_CHOICES: (number | null)[] = [null, 1, 2, 3, 4, 6, 8, 12];
 
 /** `equipment` : matériel indispensable à l'exercice (exercises.equipment, migration 0065). */
-export type ModalExercise = { id: string; name: string; equipment?: string[] | null };
+export type ModalExercise = { id: string; name: string; equipment?: string[] | null; dose?: ExerciseDose | null };
 export type AddableExercise = ModalExercise & { bodyPartIds: string[] };
 
 export type AddableWorkout = {
   id: string;
   name: string;
+  /** Pour « plus facile / plus difficile » (lib/exercise/levelStep.ts). */
+  conditionId?: string | null;
+  stage?: string | null;
   description: string | null;
   durationMinutes: number | null;
   timesPerWeek: number | null;
@@ -83,7 +89,7 @@ export default function AdjustWorkoutModal({
   patientFirstName: string;
   /** Matériel déclaré par le patient à l'onboarding ; null = inconnu (aucun signalement). */
   patientEquipment?: string[] | null;
-  workout: { id: string; name: string; exercises: ModalExercise[] } | null;
+  workout: { id: string; name: string; exercises: ModalExercise[]; conditionId?: string | null; stage?: string | null } | null;
   /** `patient_recommended_workouts.id` for the current workout, if any — needed
    *  to unassign it and (adjust) to repoint exactly that row at the copy. */
   recId: string | null;
@@ -128,6 +134,17 @@ export default function AdjustWorkoutModal({
   // on open, and typing in that picker's search box overrides it.
   const [templateBodyPartId, setTemplateBodyPartId] = useState<string | null>(firstBodyPartId);
   const removeFormId = useId();
+  // Séance un niveau en dessous / au-dessus, même condition (phase voisine).
+  const level = workout
+    ? levelNeighbours(
+        { id: workout.id, conditionId: workout.conditionId ?? null, stage: workout.stage ?? null },
+        addableWorkouts.map((w) => ({ id: w.id, conditionId: w.conditionId ?? null, stage: w.stage ?? null })),
+      )
+    : { easier: null, harder: null };
+  const easierWorkout = addableWorkouts.find((w) => w.id === level.easier) ?? null;
+  const harderWorkout = addableWorkouts.find((w) => w.id === level.harder) ?? null;
+  // Une dose (séries × répétitions) modifiée compte comme un changement.
+  const [doseEdited, setDoseEdited] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -226,7 +243,7 @@ export default function AdjustWorkoutModal({
 
   const removed = removeIds.size;
   const added = addIds.size;
-  const noChanges = removed === 0 && added === 0;
+  const noChanges = removed === 0 && added === 0 && !doseEdited;
   const wouldBeEmpty = Boolean(
     workout &&
       workout.exercises.length > 0 &&
@@ -333,6 +350,40 @@ export default function AdjustWorkoutModal({
                     />
                   </label>
                 )}
+                {/* Un niveau plus facile / plus difficile (Philippe, 2026-11-02) :
+                    la séance de la même condition, phase voisine, à partir de
+                    cette semaine. Formulaire à part (hors du formulaire
+                    « Enregistrer » plus bas). */}
+                {view === "exercises" && workout && (easierWorkout || harderWorkout) && (
+                  <form action={assignAction} onSubmit={close} className="flex items-center gap-1 max-sm:hidden">
+                    <input type="hidden" name="patient_id" value={patientId} />
+                    {weekStartDate && <input type="hidden" name="week_start_date" value={weekStartDate} />}
+                    {easierWorkout && (
+                      <button
+                        type="submit"
+                        name="workout_id"
+                        value={easierWorkout.id}
+                        title={`Plus facile : « ${easierWorkout.name} »${easierWorkout.stageLabel ? ` (${easierWorkout.stageLabel})` : ""}`}
+                        className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-app-bg"
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.25} />
+                        Plus facile
+                      </button>
+                    )}
+                    {harderWorkout && (
+                      <button
+                        type="submit"
+                        name="workout_id"
+                        value={harderWorkout.id}
+                        title={`Plus difficile : « ${harderWorkout.name} »${harderWorkout.stageLabel ? ` (${harderWorkout.stageLabel})` : ""}`}
+                        className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-app-bg"
+                      >
+                        <ChevronUp className="h-3.5 w-3.5" strokeWidth={2.25} />
+                        Plus difficile
+                      </button>
+                    )}
+                  </form>
+                )}
                 {view === "exercises" && workout && addableWorkouts.length > 0 && (
                   <button
                     type="button"
@@ -395,14 +446,14 @@ export default function AdjustWorkoutModal({
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-muted max-sm:mt-0">
-                      <span className="max-sm:hidden">Cliquez sur un exercice pour le retirer.</span>
+                      <span className="max-sm:hidden">Cliquez sur un exercice pour le retirer ; dessous, séries × répétitions ou maintien (vide = 3 × 8-12).</span>
                       <span className="sm:hidden">Touchez un exercice pour le retirer.</span>
                     </p>
                     <ul className="mt-3 grid grid-cols-2 content-start gap-2 max-sm:mt-2 max-sm:min-h-0 max-sm:flex-1 max-sm:overflow-y-auto md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
                       {workout.exercises.map((ex) => {
                         const marked = removeIds.has(ex.id);
                         return (
-                          <li key={ex.id} className="relative">
+                          <li key={ex.id} className="relative flex flex-col">
                             <InfoButton name={ex.name} onOpen={() => setInfo({ id: ex.id, name: ex.name })} />
                             <button
                               type="button"
@@ -420,6 +471,7 @@ export default function AdjustWorkoutModal({
                                 <Check className="h-4 w-4 text-brand" strokeWidth={2} />
                               )}
                             </button>
+                            {!marked && <DoseInputs exerciseId={ex.id} exerciseName={ex.name} dose={ex.dose} onEdit={() => setDoseEdited(true)} />}
                           </li>
                         );
                       })}
@@ -427,7 +479,7 @@ export default function AdjustWorkoutModal({
                         const ex = addableExercises.find((e) => e.id === id);
                         if (!ex) return null;
                         return (
-                          <li key={`new-${id}`} className="relative">
+                          <li key={`new-${id}`} className="relative flex flex-col">
                             <InfoButton name={ex.name} onOpen={() => setInfo({ id: ex.id, name: ex.name })} />
                             <button
                               type="button"
@@ -439,6 +491,7 @@ export default function AdjustWorkoutModal({
                               <MissingEquipmentPill required={ex.equipment} owned={patientEquipment} firstName={patientFirstName} />
                               <span className="text-xs font-medium">Ajouté</span>
                             </button>
+                            <DoseInputs exerciseId={ex.id} exerciseName={ex.name} onEdit={() => setDoseEdited(true)} />
                           </li>
                         );
                       })}

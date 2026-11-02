@@ -7,7 +7,7 @@
 // restante (une semaine par écran, voir KineWeekProgramme).
 
 import Link from "next/link";
-import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Minus } from "lucide-react";
+import { Activity, AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Minus } from "lucide-react";
 
 const TONE_TEXT = { ok: "text-ok", warn: "text-warn", danger: "text-danger", muted: "text-muted" } as const;
 const TONE_BG = { ok: "bg-ok-soft text-ok", warn: "bg-warn-soft text-warn", danger: "bg-danger-soft text-danger", muted: "bg-app-bg text-muted" } as const;
@@ -42,6 +42,7 @@ const STAT_CELL = "flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2.5 max
 export default function PatientDetailView({
   name,
   warning,
+  exerciseWatch = [],
   actionsMenu,
   error,
   adjusted,
@@ -50,6 +51,8 @@ export default function PatientDetailView({
 }: {
   name: string;
   warning: { label: string; detail: string } | null;
+  /** Exercices qui font mal ou que le patient passe (30 derniers jours). */
+  exerciseWatch?: { name: string; reason: string }[];
   /** Le bouton « Gérer » (PatientActionsMenu), construit par la page. */
   actionsMenu: React.ReactNode;
   error?: string;
@@ -81,6 +84,20 @@ export default function PatientDetailView({
               <span title={warning.detail} className="inline-flex items-center gap-1.5 rounded-full bg-warn-soft px-3 py-1 text-xs font-medium text-warn max-sm:px-2 max-sm:py-0.5 max-sm:text-[11px]">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
                 {warning.label}
+              </span>
+            )}
+            {/* Exercice à surveiller (suivi par exercice, 2026-11-02). */}
+            {exerciseWatch.length > 0 && (
+              <span
+                title={exerciseWatch.map((w) => `${w.name} : ${w.reason}`).join(" · ")}
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-danger-soft px-3 py-1 text-xs font-medium text-danger max-sm:px-2 max-sm:py-0.5 max-sm:text-[11px]"
+              >
+                <Activity className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+                <span className="truncate">
+                  {exerciseWatch.length === 1
+                    ? `${exerciseWatch[0].name} : ${exerciseWatch[0].reason}`
+                    : `${exerciseWatch.length} exercices à surveiller`}
+                </span>
               </span>
             )}
           </div>

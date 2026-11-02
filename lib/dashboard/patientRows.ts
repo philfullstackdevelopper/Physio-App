@@ -21,6 +21,8 @@ export interface PatientRowsInput {
     created_at: string;
     /** CGU acceptance (app/patient/layout.tsx's gate). Optional for old test fixtures — see `onboardingStage`. */
     terms_accepted_at?: string | null;
+    /** Jusqu'où le kiné a vu les retours de ce patient (migration 0080). */
+    feedback_seen_at?: string | null;
   }[];
   profiles: { id: string; injury_stage: string | null; health_data_consent_at?: string | null }[];
   conditions: { id: string; name: string }[];
@@ -53,7 +55,13 @@ export interface PatientRow {
    */
   onboardingStage: "invite" | "profile" | null;
   createdAt: string;
+  /** Séances terminées que le kiné n'a pas encore vues (migration 0080). */
+  newSessions: number;
 }
+
+/** Sans date « vu » (jamais ouvert depuis la migration 0080), seules les
+ *  séances des 7 derniers jours comptent comme nouvelles. */
+export const NEW_SESSIONS_FALLBACK_DAYS = 7;
 
 const SIGNAL_RANK: Record<Signal["kind"], number> = { pain: 0, inactive: 1, ok: 2 };
 
@@ -97,6 +105,7 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
       : !healthConsentOf.get(p.id)
         ? "profile"
         : null;
+    const seenSince = p.feedback_seen_at ?? new Date(now.getTime() - NEW_SESSIONS_FALLBACK_DAYS * 86_400_000).toISOString();
     return {
       id: p.id,
       name: p.full_name ?? "Patient",
@@ -121,6 +130,7 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
       }),
       onboardingStage,
       createdAt: p.created_at,
+      newSessions: completed.filter((c) => c > seenSince).length,
     };
   });
 
@@ -144,7 +154,7 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
 /** Toutes les requêtes en parallèle ; RLS limite chaque table aux patients du kiné connecté. */
 export async function loadPatientRows(supabase: SupabaseClient, now: Date = new Date()): Promise<PatientRow[]> {
   const since14 = new Date(now.getTime() - 14 * 86_400_000).toISOString();
-  const [{ data: patients }, { data: profiles }, { data: conditions }, { data: logs }, { data: feedback }, { data: recs }] =
+  const [{ data: patients }, { data: profiles }, { data: conditions }, { data: logs }, { data: feedback }, { data: recs }, { data: seenRows }] =
     await Promise.all([
       supabase.from("patients").select("id, full_name, condition_id, created_at, terms_accepted_at"),
       supabase.from("patient_profiles").select("id, injury_stage, health_data_consent_at"),
@@ -154,11 +164,14 @@ export async function loadPatientRows(supabase: SupabaseClient, now: Date = new 
       supabase.from("patient_recommended_workouts").select("patient_id, workout_id, week_start_date, week_count, workouts ( times_per_week )"),
       // Plus d'abonnements patient depuis le 2026-10-24 (nouveau modèle) : on ne
       // les lit plus, donc personne n'est « ancien patient » d'après un abonnement.
+      // Retours « vus » (0080) : requête à part, vide si la migration manque.
+      supabase.from("patients").select("id, feedback_seen_at"),
     ]);
+  const seenOf = new Map((seenRows ?? []).map((r) => [r.id as string, (r.feedback_seen_at as string | null) ?? null]));
 
   return buildPatientRows({
     now,
-    patients: (patients ?? []) as PatientRowsInput["patients"],
+    patients: ((patients ?? []) as PatientRowsInput["patients"]).map((p) => ({ ...p, feedback_seen_at: seenOf.get(p.id) ?? null })),
     profiles: (profiles ?? []) as PatientRowsInput["profiles"],
     conditions: (conditions ?? []) as PatientRowsInput["conditions"],
     logs: (logs ?? []) as PatientRowsInput["logs"],

@@ -9,6 +9,8 @@ import { type InjuryStage } from "@/lib/exercise/prescription";
 import SubmitButton from "@/components/SubmitButton";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import ExerciseLibraryPicker, { type PickerExercise } from "@/components/ExerciseLibraryPicker";
+import DoseInputs from "@/components/DoseInputs";
+import type { ExerciseDose } from "@/lib/exercise/prescription";
 
 // « Nouvelle séance » en fenêtre (Philippe, 2026-10-02) : même disposition que
 // « Ajuster la séance » d'un patient (AdjustWorkoutModal) — à gauche les
@@ -47,6 +49,8 @@ export default function NewSeanceModal({
     durationMinutes: number | null;
     timesPerWeek: number | null;
     exerciseIds: string[];
+    /** Dose de chaque exercice déjà dans la séance (migration 0080). */
+    doses?: Record<string, ExerciseDose | null>;
     deleteAction: (formData: FormData) => void;
     saved?: boolean;
     error?: string | null;
@@ -180,7 +184,7 @@ export default function NewSeanceModal({
                   il prenait de la place sans rien apprendre. */}
               <p className="text-xs text-muted">
                 <span className="max-sm:hidden">
-                  {selected.length ? "Cliquez sur un exercice pour le retirer." : "Choisissez des exercices dans la bibliothèque, à droite."}
+                  {selected.length ? "Cliquez sur un exercice pour le retirer. Sous chaque exercice : séries × répétitions, ou maintien en secondes (vide = 3 × 8-12)." : "Choisissez des exercices dans la bibliothèque, à droite."}
                 </span>
                 <span className="sm:hidden">
                   {selected.length ? "Touchez un exercice pour le retirer." : "Touchez « Ajouter un exercice » pour composer la séance."}
@@ -191,7 +195,7 @@ export default function NewSeanceModal({
                   const ex = byId.get(id);
                   if (!ex) return null;
                   return (
-                    <li key={id}>
+                    <li key={id} className="flex flex-col">
                       <button
                         type="button"
                         onClick={() => toggle(id)}
@@ -202,6 +206,8 @@ export default function NewSeanceModal({
                         <span className="line-clamp-2 min-h-[2.5em] text-[13px] leading-tight">{ex.name}</span>
                         <X className="absolute right-2 top-2 h-4 w-4 shrink-0 text-muted group-hover:text-danger" strokeWidth={2} />
                       </button>
+                      {/* Séries × répétitions / maintien de CET exercice (vide = 3 × 8-12). */}
+                      <DoseInputs exerciseId={id} exerciseName={ex.name} dose={edit?.doses?.[id] ?? null} />
                     </li>
                   );
                 })}

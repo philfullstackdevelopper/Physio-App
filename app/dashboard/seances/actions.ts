@@ -7,6 +7,7 @@ import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstru
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { recordMonthlyReviewIfDue } from "@/lib/billing/autoReview";
+import { doseColumnsFromForm, doseColumnsFromRow } from "@/lib/exercise/doseForm";
 
 // Ensure the caller is an approved instructor; returns their user id.
 // (Philippe, 2026-10-07 : délègue à la garde commune, qui vérifie aussi que
@@ -49,7 +50,7 @@ export async function createSeance(formData: FormData) {
   if (exerciseIds.length) {
     const { error: exError } = await supabase
       .from("workout_exercises")
-      .insert(exerciseIds.map((exId, i) => ({ workout_id: data.id, exercise_id: exId, position: i })));
+      .insert(exerciseIds.map((exId, i) => ({ workout_id: data.id, exercise_id: exId, position: i, ...doseColumnsFromForm(formData, exId) })));
     if (exError) redirect(`/dashboard/seances/${data.id}?error=${encodeURIComponent(exError.message)}`);
   }
 
@@ -112,7 +113,7 @@ export async function saveSeance(formData: FormData) {
   if (readError) fail("Impossible de lire les exercices de la séance : " + readError.message);
   const oldIds = (oldRows ?? []).map((r) => r.id as string);
 
-  const rows = exerciseIds.map((exId, i) => ({ workout_id: id, exercise_id: exId, position: i }));
+  const rows = exerciseIds.map((exId, i) => ({ workout_id: id, exercise_id: exId, position: i, ...doseColumnsFromForm(formData, exId) }));
   const { data: inserted, error: insertError } = await supabase.from("workout_exercises").insert(rows).select("id");
   if (insertError) fail("Impossible d'enregistrer les exercices : " + insertError.message);
 
@@ -169,14 +170,15 @@ export async function duplicateSeance(formData: FormData) {
     redirect(`/dashboard/seances?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
+  // select("*") : recopie aussi les doses (migration 0080) quand il y en a.
   const { data: exs } = await supabase
     .from("workout_exercises")
-    .select("exercise_id, position")
+    .select("*")
     .eq("workout_id", templateId)
     .order("position");
   if (exs && exs.length) {
     const { error: exError } = await supabase.from("workout_exercises").insert(
-      exs.map((e) => ({ workout_id: created.id, exercise_id: e.exercise_id, position: e.position })),
+      exs.map((e) => ({ workout_id: created.id, exercise_id: e.exercise_id, position: e.position, ...doseColumnsFromRow(e) })),
     );
     if (exError) {
       redirect(`/dashboard/seances/${created.id}?error=${encodeURIComponent("Exercices non copiés : " + exError.message)}`);

@@ -6,9 +6,10 @@ import { buildWeeks, currentWeekNumber, localDateKey, thisWeekStartDateKey } fro
 import { computeAdherence, adherenceLabel, adherenceTone } from "@/lib/exercise/adherence";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import { programmeWarning } from "@/lib/dashboard/programmeWarning";
+import { summarizeExercises, type ExerciseResultRow } from "@/lib/dashboard/exerciseWatch";
 import { relativeDay } from "@/lib/format/relativeDay";
 import { initials } from "@/lib/format/initials";
-import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
+import { STAGE_LABELS, doseFromRow, type InjuryStage } from "@/lib/exercise/prescription";
 import { ageFromDob } from "@/lib/exercise/patientProfile";
 import { EQUIPMENT_LABELS, type EquipmentId } from "@/lib/exercise/equipment";
 import { type AddableWorkout } from "@/components/AdjustWorkoutModal";
@@ -29,6 +30,10 @@ import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstru
 
 type WorkoutExercise = {
   position: number;
+  /** Doses (migration 0080). */
+  sets?: number | null;
+  reps?: number | null;
+  hold_seconds?: number | null;
   exercises: { id: string; name: string; equipment: string[] | null; exercise_body_parts: { body_part_id: string }[] } | null;
 };
 type Workout = {
@@ -52,7 +57,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || "ce patient";
 
   const WORKOUT_FIELDS =
-    "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, patient_id, workout_exercises ( position, exercises ( id, name, equipment, exercise_body_parts ( body_part_id ) ) )";
+    "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, patient_id, workout_exercises ( position, sets, reps, hold_seconds, exercises ( id, name, equipment, exercise_body_parts ( body_part_id ) ) )";
   const since30 = new Date(now.getTime() - 30 * 86_400_000).toISOString();
 
   // Tout l'historique du patient (séances + ressentis) est chargé une fois :
@@ -63,6 +68,8 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     { data: allFeedback }, { data: ownWorkouts }, { data: platformWorkouts }, { data: recRows }, { data: allExercises }, { data: hiddenRows },
     { data: bodyParts },
     { count: unreadCount },
+    { data: resultRows },
+    { data: seenRow },
   ] = await Promise.all([
     supabase.from("conditions").select("id, name").order("name"),
     supabase.from("patient_profiles").select("declared_body_part_ids, injury_stage, rehab_progress, history, date_of_birth, height_cm, weight_kg, activity_level, equipment, updated_at").eq("id", id).maybeSingle(),
@@ -76,6 +83,10 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
     supabase.from("body_parts").select("id, slug, label, position").order("position"),
     supabase.from("patient_messages").select("id", { count: "exact", head: true }).eq("patient_id", id).eq("sender", "patient").is("read_by_instructor_at", null),
+    // Suivi par exercice et retours « vus » (migration 0080) : requêtes à part,
+    // une erreur (migration pas encore passée) laisse simplement ces infos vides.
+    supabase.from("exercise_results").select("workout_log_id, exercise_name, position, status, pain, difficulty, created_at").eq("patient_id", id),
+    supabase.from("patients").select("feedback_seen_at").eq("id", id).maybeSingle(),
   ]);
 
   const conditionName = (cid: string | null) => conditions?.find((c) => c.id === cid)?.name;
@@ -124,6 +135,17 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   // chaque jour (séance, heure, douleur, difficulté, notes) indexé par date
   // locale — même structure que côté patient (app/patient/page.tsx).
   const weeks = buildWeeks((patient.created_at as string | null) ?? now.toISOString(), now);
+  const resultsByLogId = new Map<string, NonNullable<SessionDetail["exercises"]>>();
+  for (const r of [...(resultRows ?? [])].sort((a, b) => (a.position as number) - (b.position as number))) {
+    const list = resultsByLogId.get(r.workout_log_id as string) ?? [];
+    list.push({ name: r.exercise_name as string, status: r.status as "done" | "skipped", pain: (r.pain as number | null) ?? null, difficulty: (r.difficulty as number | null) ?? null });
+    resultsByLogId.set(r.workout_log_id as string, list);
+  }
+  const exerciseWatch = summarizeExercises(
+    ((resultRows ?? []) as ExerciseResultRow[]).filter((r) => r.created_at >= since30),
+  )
+    .filter((s) => s.watch)
+    .map((s) => ({ name: s.name, reason: s.watch! }));
   const feedbackByLogId = new Map((allFeedback ?? []).filter((f) => f.workout_log_id).map((f) => [f.workout_log_id as string, f]));
   const dayDetails: Record<string, SessionDetail[]> = {};
   for (const l of allLogs ?? []) {
@@ -138,6 +160,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       painScore: (f?.pain_score as number | null) ?? null,
       difficulty: (f?.difficulty as number | null) ?? null,
       notes: (f?.notes as string | null) ?? null,
+      exercises: resultsByLogId.get(l.id as string),
     });
   }
   // La frise résout elle-même la séance effective de chaque semaine à partir
@@ -148,11 +171,12 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     workoutSummaries[r.workout.id] ??= {
       id: r.workout.id,
       name: r.workout.name,
+      conditionId: r.workout.condition_id ?? null,
+      stage: r.workout.stage ?? null,
       exercises: [...r.workout.workout_exercises]
         .sort((a, b) => a.position - b.position)
-        .map((we) => we.exercises)
-        .filter((e): e is NonNullable<typeof e> => !!e)
-        .map((e) => ({ id: e.id, name: e.name, equipment: e.equipment ?? [] })),
+        .filter((we) => !!we.exercises)
+        .map((we) => ({ id: we.exercises!.id, name: we.exercises!.name, equipment: we.exercises!.equipment ?? [], dose: doseFromRow(we) })),
     };
   }
   const warning = programmeWarning({
@@ -202,6 +226,8 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     .map((w) => ({
       id: w.id,
       name: w.name,
+      conditionId: w.condition_id ?? null,
+      stage: w.stage ?? null,
       description: w.description,
       durationMinutes: w.duration_minutes,
       timesPerWeek: w.times_per_week,
@@ -221,10 +247,19 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const lastWorkoutExercises = lastWorkout?.workout_exercises.length ?? 0;
 
 
+  // Ouvrir la fiche = voir les retours du patient : les séances plus récentes
+  // que la dernière visite ne sont plus « non lues » (migration 0080).
+  const latestLogAt = (allLogs ?? []).reduce<string | null>((m, l) => (!m || (l.completed_at as string) > m ? (l.completed_at as string) : m), null);
+  const seenAt = (seenRow?.feedback_seen_at as string | null | undefined) ?? null;
+  if (seenRow && latestLogAt && (!seenAt || latestLogAt > seenAt)) {
+    await supabase.from("patients").update({ feedback_seen_at: new Date().toISOString() }).eq("id", id);
+  }
+
   return (
     <PatientDetailView
       name={(patient.full_name as string | null) ?? "Patient"}
       warning={warning}
+      exerciseWatch={exerciseWatch}
       error={error}
       adjusted={adjusted === "1"}
       stats={{
