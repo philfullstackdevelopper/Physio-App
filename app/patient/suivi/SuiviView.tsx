@@ -80,7 +80,7 @@ export default function SuiviView({ sp, kineName, kineReady, status, currentPric
               )}
             </div>
 
-            <ul className="mt-4 space-y-2 border-t border-line pt-4 text-sm text-muted">
+            <ul className={`mt-4 space-y-2 border-t border-line pt-4 text-sm text-muted ${status === "active" ? "max-sm:hidden" : ""}`}>
               <li className="flex gap-2"><ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />Un programme mensuel hors nomenclature : votre kiné analyse vos séances et vos ressentis, et ajuste votre programme.</li>
               <li className="flex gap-2"><CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />Prélevé seulement le mois où votre kiné ajuste réellement votre programme. Sinon, rien n&apos;est prélevé.</li>
               <li className="flex gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />Payé directement à votre kiné, par Stripe. Acte non remboursé par l&apos;Assurance Maladie. Arrêt à tout moment.</li>

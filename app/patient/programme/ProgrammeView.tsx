@@ -131,7 +131,7 @@ export default function ProgrammeView({
                             <p className="line-clamp-2 text-sm font-medium leading-snug text-ink max-sm:short:line-clamp-1">{ex.name}</p>
                             {/* Séries × répétitions de chaque exercice (Philippe, 2026-11-02). */}
                             <p className="mt-0.5 text-xs font-semibold tabular-nums text-brand">{goalShortFor(ex.instructions)}</p>
-                            {ex.categoryLabel && <p className="mt-0.5 truncate text-xs text-muted max-sm:short:hidden">{ex.categoryLabel}</p>}
+                            {ex.categoryLabel && <p className="mt-0.5 truncate text-xs text-muted short:hidden">{ex.categoryLabel}</p>}
                           </div>
                         </div>
                       ))}
