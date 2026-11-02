@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { refreshConnectStatus } from "@/lib/billing/connectStatus";
+import { isMissingStripeObject, refreshConnectStatus } from "@/lib/billing/connectStatus";
+import { upsertConnectAccount } from "@/lib/db/admin";
 import { loadKineBillingData } from "@/lib/billing/kineBillingData";
 import FacturationView, { type CabinetInfo, type ConnectStatus } from "./FacturationView";
 import { cabinetView } from "@/lib/db/admin";
@@ -41,11 +42,23 @@ export default async function FacturationPage({
   // Le statut stocké peut être en retard sur Stripe (webhook manqué) : tant
   // qu'il n'est pas « active », on relit le compte chez Stripe à chaque visite.
   const accountId = (connect?.stripe_connect_account_id as string | null) ?? null;
-  if (accountId && connectStatus !== "active") {
+  // Relu aussi quand il est « actif » : un compte créé en mode test n'existe
+  // pas en mode réel — on le repasse alors à « non commencé » pour que le kiné
+  // reconnecte Stripe (et qu'aucun patient ne soit envoyé vers un compte mort).
+  if (accountId) {
     try {
       connectStatus = await refreshConnectStatus(user.id, accountId);
     } catch (err) {
-      console.error("[facturation] resynchronisation du compte Stripe impossible :", err);
+      if (isMissingStripeObject(err)) {
+        connectStatus = "not_started";
+        try {
+          await upsertConnectAccount({ instructorId: user.id, stripeConnectAccountId: accountId, status: "not_started" });
+        } catch (dbErr) {
+          console.error("[facturation] statut Stripe non remis à zéro :", dbErr);
+        }
+      } else {
+        console.error("[facturation] resynchronisation du compte Stripe impossible :", err);
+      }
     }
   }
 

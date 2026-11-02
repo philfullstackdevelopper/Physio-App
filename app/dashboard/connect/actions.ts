@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { upsertConnectAccount } from "@/lib/db/admin";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { getStripe } from "@/lib/billing/stripe";
+import { isMissingStripeObject } from "@/lib/billing/connectStatus";
 import { requestOrigin } from "@/lib/requestOrigin";
 
 // Starts (or resumes) Stripe Connect onboarding for the kiné — this is the
@@ -27,6 +28,16 @@ export async function startConnectOnboarding() {
     .maybeSingle();
 
   let accountId = existing?.stripe_connect_account_id as string | null;
+  // Compte créé en mode test, inconnu en mode réel : on en crée un neuf.
+  const staleId = accountId;
+  if (accountId) {
+    try {
+      await stripe.accounts.retrieve(accountId);
+    } catch (err) {
+      if (!isMissingStripeObject(err)) throw err;
+      accountId = null;
+    }
+  }
   if (!accountId) {
     // Compte Standard classique. Stripe n'autorise PAS fees.payer:
     // "application" (EasyPhysio absorbant les frais Stripe) sur un compte
@@ -39,7 +50,7 @@ export async function startConnectOnboarding() {
     // Clé d'idempotence : un double clic ne crée pas deux comptes Stripe.
     const account = await stripe.accounts.create(
       { type: "standard", email: user.email },
-      { idempotencyKey: `connect-account-${user.id}` },
+      { idempotencyKey: staleId ? `connect-account-${user.id}-replaces-${staleId}` : `connect-account-${user.id}` },
     );
     accountId = account.id;
     await upsertConnectAccount({ instructorId: user.id, stripeConnectAccountId: accountId, status: "onboarding" });

@@ -39,6 +39,18 @@ export function connectAccountMetadata(instructorId: string, accountId: string):
   return { instructor_id: instructorId, instructor_sig: signature(instructorId, accountId) };
 }
 
+/**
+ * Vrai si Stripe ne connaît pas (ou plus) cet objet — typiquement un compte
+ * Connect créé en mode TEST, relu avec les clés du mode RÉEL (passage en
+ * production du 2026-11-02). L'appelant le traite alors comme « pas de compte ».
+ */
+export function isMissingStripeObject(err: unknown): boolean {
+  const e = err as { code?: string; type?: string; message?: string } | null;
+  if (!e) return false;
+  if (e.code === "resource_missing" || e.code === "account_invalid") return true;
+  return e.type === "StripeInvalidRequestError" && /no such|does not exist|exists in (test|live) mode/i.test(e.message ?? "");
+}
+
 /** L'id du kiné rattaché à ce compte, seulement si la signature est valide. */
 export function verifiedInstructorId(account: Pick<Stripe.Account, "id" | "metadata">): string | null {
   const instructorId = account.metadata?.instructor_id;

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
+import { isMissingStripeObject } from "@/lib/billing/connectStatus";
 
 // Stripe's Account Links expire quickly. If the kiné comes back after that,
 // this re-issues a fresh link for the SAME account instead of creating a
@@ -22,11 +23,18 @@ export async function GET(request: Request) {
   }
 
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
-  const link = await getStripe().accountLinks.create({
-    account: accountId,
-    refresh_url: `${base}/dashboard/connect/refresh`,
-    return_url: `${base}/dashboard/connect/return`,
-    type: "account_onboarding",
-  });
-  return NextResponse.redirect(link.url);
+  try {
+    const link = await getStripe().accountLinks.create({
+      account: accountId,
+      refresh_url: `${base}/dashboard/connect/refresh`,
+      return_url: `${base}/dashboard/connect/return`,
+      type: "account_onboarding",
+    });
+    return NextResponse.redirect(link.url);
+  } catch (err) {
+    // Compte du mode test, inconnu en mode réel : retour à la facturation,
+    // où « Activer Stripe » en crée un neuf.
+    if (isMissingStripeObject(err)) return NextResponse.redirect(new URL("/dashboard/facturation", request.url));
+    throw err;
+  }
 }
