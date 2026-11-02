@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
-import { signExerciseVideo } from "@/lib/storage/video-actions";
+import { signExerciseVideo, signFilmedVideoByName } from "@/lib/storage/video-actions";
 
 // Fenêtre « démo d'un exercice » ouverte par le petit (i) des listes
 // d'exercices du kiné (Philippe, 2026-10-10) : avant d'ajouter un exercice à
@@ -43,21 +43,25 @@ export default function ExerciseInfoModal({
       .maybeSingle()
       .then(async ({ data, error }) => {
         if (cancelled) return;
-        if (error || !data) return setDetails(null);
         // Vidéo chez Cloudflare R2 (« r2:… ») : le serveur fournit un lien signé.
-        const raw = (data.media_url as string | null) ?? null;
-        const mediaUrl = raw?.startsWith("r2:") ? await signExerciseVideo(raw).catch(() => null) : raw;
+        const raw = (data?.media_url as string | null) ?? null;
+        let mediaUrl = raw?.startsWith("r2:") ? await signExerciseVideo(raw).catch(() => null) : raw;
+        // Fiche illisible (démo, non connecté) ou lien non obtenu : la vidéo de
+        // Jules retrouvée par le nom de l'exercice (Philippe, 2026-11-02 : le (i)
+        // doit montrer la VRAIE vidéo, pas le dessin).
+        if (!mediaUrl) mediaUrl = await signFilmedVideoByName(exercise.name).catch(() => null);
         if (cancelled) return;
+        if ((error || !data) && !mediaUrl) return setDetails(null);
         setDetails({
-          instructions: (data.instructions as string | null) ?? null,
+          instructions: (data?.instructions as string | null) ?? null,
           mediaUrl,
-          startSeconds: (data.media_start_seconds as number | null) ?? 0,
+          startSeconds: (data?.media_start_seconds as number | null) ?? 0,
         });
       });
     return () => {
       cancelled = true;
     };
-  }, [exercise.id]);
+  }, [exercise.id, exercise.name]);
 
   // Échap ferme CETTE fenêtre seulement (pas celle de la séance derrière) ;
   // le focus va sur « Fermer » à l'ouverture.

@@ -1,7 +1,6 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { EQUIPMENT_OPTIONS, type EquipmentId } from "@/lib/exercise/equipment";
@@ -9,7 +8,7 @@ import { friendlyDbError } from "@/lib/format/dbError";
 
 // Saves the patient's onboarding profile into `patient_profiles`.
 // RLS ensures a patient can only write their own row (id = auth.uid()).
-export async function saveOnboarding(formData: FormData) {
+export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
@@ -128,8 +127,11 @@ export async function saveOnboarding(formData: FormData) {
     redirect(`/patient/onboarding?error=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
-  revalidatePath("/patient");
-  // Onboarding terminé → directement dans l'appli (plus d'offre à choisir
-  // depuis le 2026-10-24 : le kiné paie l'appli pour ses patients).
-  redirect("/patient");
+  // Onboarding terminé → directement dans l'appli. Pas de redirect() ni de
+  // revalidatePath ici (2026-11-02) : la navigation « en douceur » de
+  // l'onboarding (plein écran) vers l'appli (barre de navigation) pouvait
+  // laisser un écran blanc — même cause que celui corrigé après les CGU
+  // (app/patient/actions.ts). Le formulaire (OnboardingWizard) fait un vrai
+  // chargement de /patient quand il reçoit { ok: true }.
+  return { ok: true };
 }

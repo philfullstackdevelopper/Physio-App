@@ -35,7 +35,9 @@ export default function OnboardingWizard({
   needsConsent,
   hasError,
 }: {
-  saveAction: (formData: FormData) => Promise<void>;
+  /** Renvoie { ok: true } une fois enregistré : on ouvre alors l'appli par un
+   *  vrai chargement de page (voir app/patient/onboarding/actions.ts). */
+  saveAction: (formData: FormData) => Promise<void | { ok: true }>;
   bodyParts: { id: string; slug: string; label: string }[];
   stages: [InjuryStage, string][];
   profile: OnboardingProfile | null;
@@ -125,7 +127,13 @@ export default function OnboardingWizard({
         ))}
       </ol>
 
-      <form action={saveAction} className="mt-6 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 short:mt-3 short:p-5">
+      <form
+        action={async (formData) => {
+          const result = await saveAction(formData);
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- chargement complet VOULU : la navigation interne pouvait laisser un écran blanc.
+          if (result?.ok) window.location.assign("/patient");
+        }}
+        className="mt-6 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 short:mt-3 short:p-5">
         {/* Zone qui défile : les champs de l'étape. -mx-1 px-1 py-1 : de quoi
             ne pas rogner l'anneau de focus des champs. */}
         <div className="-mx-1 min-h-0 overflow-y-auto px-1 py-1">
