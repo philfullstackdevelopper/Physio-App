@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { canInvitePatients, INVITATIONS_CLOSED_MESSAGE } from "@/lib/launch";
 import { addPatient } from "../actions";
+import JoinQrCard from "@/components/JoinQrCard";
 
 export default async function NewPatientPage({
   searchParams,
@@ -81,6 +82,9 @@ export default async function NewPatientPage({
             </fieldset>
           </form>
         </div>
+
+        {/* QR code personnel (2026-11-04) : le patient rejoint ce kiné seul. */}
+        <JoinQrCard instructorId={user.id} open={open} />
       </div>
     </main>
   );

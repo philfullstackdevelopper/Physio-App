@@ -479,3 +479,24 @@ export async function feeWaivedUntilForPatient(patientId: string): Promise<strin
   }
   return instructorId ? feeWaivedUntil(instructorId) : null;
 }
+
+// ---------------------------------------------------------------------------
+// Rejoindre son kiné par QR code ou lien (migration 0082).
+// ---------------------------------------------------------------------------
+
+/** Nom, e-mail et statut d'UN kiné, pour la page /rejoindre. */
+export async function joinLinkKine(instructorId: string): Promise<{ full_name: string | null; email: string | null; status: string } | null> {
+  const { rows } = await getPool().query("select * from internal.join_link_kine($1)", [instructorId]);
+  return rows[0] ?? null;
+}
+
+/** Crée la fiche du patient chez ce kiné : 'OK', 'KINE_UNAVAILABLE', 'IS_KINE' ou 'EMAIL_TAKEN'. */
+export async function joinPatientByLink(params: { instructorId: string; appId: string; email: string; fullName: string }): Promise<string> {
+  const { rows } = await getPool().query<{ r: string }>("select internal.join_patient_by_link($1, $2, $3, $4) as r", [
+    params.instructorId,
+    params.appId,
+    params.email,
+    params.fullName,
+  ]);
+  return rows[0]?.r ?? "ERROR";
+}
