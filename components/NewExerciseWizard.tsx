@@ -50,6 +50,7 @@ export default function NewExerciseWizard({
   defaultBodyPartId,
   publishedCount,
   onClose,
+  demo = false,
 }: {
   bodyParts: WizardBodyPart[];
   /** Exercices de la plateforme et publiés : pour la recherche de doublons. */
@@ -59,9 +60,12 @@ export default function NewExerciseWizard({
   /** Exercices de ce kiné déjà publiés (récompense). */
   publishedCount: number;
   onClose: () => void;
+  /** Démo publique (/demo/kine) : tout le formulaire fonctionne, rien n'est enregistré. */
+  demo?: boolean;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  const [demoDone, setDemoDone] = useState(false);
   const [name, setName] = useState("");
   const [source, setSource] = useState<WizardLibraryExercise | null>(null);
   const [dupDismissed, setDupDismissed] = useState(false);
@@ -128,6 +132,10 @@ export default function NewExerciseWizard({
     const problem = step1Problem ?? step2Problem ?? step3Problem;
     if (problem) {
       setError(problem);
+      return;
+    }
+    if (demo) {
+      setDemoDone(true);
       return;
     }
     setBusy(true);
@@ -465,6 +473,13 @@ export default function NewExerciseWizard({
           )}
 
           {error && <p className="mt-4 rounded-lg bg-danger-soft p-3 text-sm text-danger">{error}</p>}
+          {demoDone && (
+            <p className="mt-4 rounded-lg bg-ok-soft p-3 text-sm text-ink">
+              C&apos;est tout : dans l&apos;appli, l&apos;exercice serait créé
+              {scope === "patient" ? " pour ce patient" : makePublic ? " et envoyé à EasyPhysio pour vérification" : " dans votre banque"}. En démo,
+              rien n&apos;est enregistré.
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-line px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -482,8 +497,8 @@ export default function NewExerciseWizard({
               Suivant : {STEP_TITLES[step + 1].toLowerCase()} →
             </button>
           ) : (
-            <button type="button" disabled={busy} onClick={submit} className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-60">
-              {busy ? (progress !== null ? `Envoi de la vidéo… ${progress} %` : "Création…") : "Créer l'exercice"}
+            <button type="button" disabled={busy} onClick={demoDone ? onClose : submit} className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-60">
+              {demoDone ? "Fermer" : busy ? (progress !== null ? `Envoi de la vidéo… ${progress} %` : "Création…") : "Créer l'exercice"}
             </button>
           )}
         </div>

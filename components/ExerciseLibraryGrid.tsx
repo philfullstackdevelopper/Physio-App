@@ -56,6 +56,8 @@ export interface LibraryCreator {
   patients: WizardPatient[];
   publishedCount: number;
   requestPublication: (exerciseId: string) => Promise<{ ok: true } | { error: string }>;
+  /** Démo publique : le formulaire fonctionne sans rien enregistrer. */
+  demo?: boolean;
 }
 
 /** Three-dot menu on an exercise card — hide/unhide, the only action for now. */
@@ -421,6 +423,7 @@ export default function ExerciseLibraryGrid({
           defaultBodyPartId={selectedId}
           publishedCount={creator.publishedCount}
           onClose={() => setShowCreateForm(false)}
+          demo={creator.demo}
         />
       )}
 

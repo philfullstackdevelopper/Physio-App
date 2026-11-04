@@ -67,6 +67,7 @@ function kineScreen(url: URL): string | null {
   if (p === "/dashboard/seances") return url.searchParams.get("nouvelle") === "1" ? "seances&nouvelle=1" : "seances";
   if (p.startsWith("/dashboard/seances/")) return `editeur&seance=${encodeURIComponent(p.split("/")[3])}`;
   if (p === "/dashboard/exercises") return "exercices";
+  if (p === "/dashboard/exercises/contributeurs") return "contributeurs";
   return null;
 }
 

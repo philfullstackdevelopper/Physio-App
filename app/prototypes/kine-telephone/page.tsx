@@ -20,6 +20,9 @@ import KineInfosView from "@/components/KineInfosView";
 import FacturationView from "@/app/dashboard/facturation/FacturationView";
 import SeancesTabs from "@/components/SeancesTabs";
 import ExerciseLibraryGrid from "@/components/ExerciseLibraryGrid";
+import ContributionSummary from "@/components/ContributionSummary";
+import ContributorsView from "@/components/ContributorsView";
+import { contributorRanking } from "@/lib/exercise/kineExercises";
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { DEMO_BODY_PARTS, DEMO_EXERCISES, mockData, mockFiche } from "./mock";
 import { noopResult, noopVoid } from "./actions";
@@ -39,7 +42,25 @@ const PATHS: Record<string, string> = {
   editeur: "/dashboard/seances/demo",
   nouveau: "/dashboard/patients/new",
   exercices: "/dashboard/exercises",
+  contributeurs: "/dashboard/exercises",
 };
+
+// Exercices proposés par d'autres kinés et publiés (fictifs) : crédit
+// « Proposé par » sur les cartes, et classement des contributeurs.
+const DEMO_CONTRIB_EXERCISES: { name: string; bodyPartIds: string[]; author: string; authorId: string }[] = [
+  { name: "Montée de marche latérale", bodyPartIds: ["bp-genou"], author: "Claire Fontaine · Kiné du Parc", authorId: "k1" },
+  { name: "Fente arrière contrôlée", bodyPartIds: ["bp-genou", "bp-hanche"], author: "Claire Fontaine · Kiné du Parc", authorId: "k1" },
+  { name: "Pont fessier sur une jambe, élastique", bodyPartIds: ["bp-hanche"], author: "Marc Lefèvre · Cabinet des Lilas", authorId: "k2" },
+  { name: "Rotation thoracique à quatre pattes", bodyPartIds: ["bp-dos"], author: "Julien Roux", authorId: "moi" },
+];
+// Classement de démo : Julien Roux (le kiné de la démo) a 6 exercices publiés.
+const DEMO_RANKING_ROWS = [
+  ...Array.from({ length: 9 }, () => ({ created_by: "k1", publication_status: "published" as const, author_label: "Claire Fontaine · Kiné du Parc" })),
+  ...Array.from({ length: 6 }, () => ({ created_by: "moi", publication_status: "published" as const, author_label: "Julien Roux" })),
+  ...Array.from({ length: 3 }, () => ({ created_by: "k2", publication_status: "published" as const, author_label: "Marc Lefèvre · Cabinet des Lilas" })),
+  ...Array.from({ length: 1 }, () => ({ created_by: "k3", publication_status: "published" as const, author_label: "Inès Garnier · Kiné Sport Lyon" })),
+];
+const DEMO_PUBLISHED = 6;
 
 export default async function KineTelephonePrototype({
   searchParams,
@@ -150,11 +171,18 @@ export default async function KineTelephonePrototype({
       <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
         <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
+            <div className="flex min-w-0 flex-col gap-1">
+              <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
+              <ContributionSummary
+                contributors={contributorRanking(DEMO_RANKING_ROWS).map((r) => ({ id: r.authorId, label: r.label }))}
+                published={DEMO_PUBLISHED}
+                pending={1}
+              />
+            </div>
           </div>
           <ExerciseLibraryGrid
             bodyParts={bodyParts}
-            exercises={DEMO_EXERCISES.map((e, i) => ({
+            exercises={[...DEMO_EXERCISES.map((e, i) => ({
               id: `ex${i}`,
               name: e.name,
               instructions: e.instructions,
@@ -169,14 +197,38 @@ export default async function KineTelephonePrototype({
               patient_id: null,
               review_note: null,
               author_label: null,
-            }))}
+            })),
+            ...DEMO_CONTRIB_EXERCISES.map((e, i) => ({
+              id: `kex${i}`,
+              name: e.name,
+              instructions: null,
+              media_url: null,
+              media_start_seconds: 0,
+              created_by: e.authorId,
+              bodyPartIds: e.bodyPartIds,
+              equipment: [],
+              search_keywords: [],
+              hidden: false,
+              publication_status: (e.authorId === "moi" ? "pending" : "published") as "pending" | "published",
+              patient_id: null,
+              review_note: null,
+              author_label: e.author,
+            }))]}
             currentUserId="moi"
             hideExercise={noopVoid}
             unhideExercise={noopVoid}
+            creator={{
+              patients: d.rows.map((p) => ({ id: p.id, name: p.name })),
+              publishedCount: DEMO_PUBLISHED,
+              requestPublication: async () => ({ ok: true }),
+              demo: true,
+            }}
           />
         </div>
       </main>
     );
+  } else if (ecran === "contributeurs") {
+    screen = <ContributorsView ranking={contributorRanking(DEMO_RANKING_ROWS)} meId="moi" />;
   } else if (ecran === "editeur") {
     // Détail d'une séance de « Mes séances » (s1, s2, s3), dans la même fenêtre
     // que dans l'appli. Enregistrer ne fait rien en démo.
@@ -261,7 +313,12 @@ export default async function KineTelephonePrototype({
 
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
-      <DashboardSidebar instructorName="Julien Roux" unreadCount={d.unreadCount} pathnameOverride={PATHS[ecran] ?? "/dashboard"} />
+      <DashboardSidebar
+        instructorName="Julien Roux"
+        unreadCount={d.unreadCount}
+        pathnameOverride={PATHS[ecran] ?? "/dashboard"}
+        contributorTitle="Contributeur EasyPhysio"
+      />
       <div data-phone-pad="" className="relative min-w-0 flex-1 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))]">{screen}</div>
     </div>
   );
