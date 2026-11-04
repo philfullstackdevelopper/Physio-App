@@ -113,8 +113,8 @@ function Paywall({
     { icon: CreditCard, title: firstCharge, text: "1er paiement" },
   ];
   return (
-    <main className="min-h-dvh bg-[#f6f8fd] px-4 py-5 sm:px-8 sm:py-8 short:sm:py-4">
-      <div className="mx-auto grid max-w-4xl items-center gap-5 md:grid-cols-[0.9fr_1.1fr] md:gap-10">
+    <main className="min-h-dvh bg-[#f6f8fd] px-4 py-3 sm:px-8 sm:py-8 short:sm:py-4">
+      <div className="mx-auto grid max-w-4xl items-center gap-3 md:grid-cols-[0.9fr_1.1fr] md:gap-10">
         {/* Qui, et comment se passe l'essai */}
         <div>
           <div className="flex items-center gap-3">
@@ -126,13 +126,13 @@ function Paywall({
               <p className="text-xs text-slate-500">vous a préparé votre programme</p>
             </div>
           </div>
-          <h1 className="font-display mt-4 text-2xl font-semibold leading-tight tracking-tight text-slate-900 max-sm:mt-3 max-sm:text-xl sm:text-3xl short:sm:text-2xl">
+          <h1 className="font-display mt-4 text-2xl font-semibold leading-tight tracking-tight text-slate-900 max-sm:mt-2 max-sm:text-xl sm:text-3xl short:sm:text-2xl">
             {trial ? `${TRIAL_DAYS} jours offerts pour démarrer` : "Reprenez votre programme"}
           </h1>
           {trial ? (
-            <ol className="mt-5 space-y-4 max-md:mt-4 max-md:grid max-md:grid-cols-3 max-md:gap-2 max-md:space-y-0 short:md:mt-3 short:md:space-y-3">
+            <ol className="mt-5 space-y-4 max-md:mt-3 max-md:grid max-md:grid-cols-3 max-md:gap-2 max-md:space-y-0 short:md:mt-3 short:md:space-y-3">
               {steps.map(({ icon: Icon, title, text }) => (
-                <li key={text} className="flex items-center gap-3 max-md:flex-col max-md:items-start max-md:gap-1.5 max-md:rounded-xl max-md:bg-white max-md:p-2.5">
+                <li key={text} className="flex items-center gap-3 max-md:flex-col max-md:items-start max-md:gap-1.5 max-md:rounded-xl max-md:bg-white max-md:p-2">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 max-md:h-7 max-md:w-7">
                     <Icon className="h-4 w-4" strokeWidth={2} />
                   </span>
@@ -149,7 +149,7 @@ function Paywall({
         </div>
 
         {/* Les offres */}
-        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70 max-sm:p-4">
+        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70 max-sm:p-3">
           {(refused || error) && (
             <p role="alert" className="mb-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
@@ -159,7 +159,7 @@ function Paywall({
           <OfferPicker kineName={kineName} trial={trial} firstChargeLabel={firstCharge} demo={demo} />
         </div>
       </div>
-      <p className="mx-auto mt-4 max-w-4xl text-center text-xs text-slate-400">
+      <p className="mx-auto mt-4 max-w-4xl text-center text-xs text-slate-400 max-sm:mt-2">
         <Link href="/patient/compte" className="hover:text-slate-600 hover:underline">
           Mes données (export, suppression)
         </Link>
