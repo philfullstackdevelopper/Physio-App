@@ -60,7 +60,7 @@ export default function CguPage() {
               </li>
             </ul>
             <p className="mt-2">
-              Soit de {eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} € à {eurosFR(HIGHEST_MONTHLY_TOTAL_CENTS)} € au plus par mois selon l&apos;offre choisie pour l&apos;accès : {PLATFORM_OFFERS.map((o) => `${o.label.toLowerCase()} ${eurosFR(o.platformCents)} €`).join(", ")}. L&apos;engagement ne porte que sur l&apos;accès à la plateforme ; à son terme, l&apos;accès continue au même prix, mois par mois, résiliable à tout moment. EasyPhysio ne perçoit aucune part des
+              Soit de {eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} € à {eurosFR(HIGHEST_MONTHLY_TOTAL_CENTS)} € par mois selon l&apos;offre choisie, les 6,00 € du kinésithérapeute n&apos;étant dus que les mois où il met à jour le programme. Accès : {PLATFORM_OFFERS.map((o) => `${o.label.toLowerCase()} ${eurosFR(o.platformCents)} €`).join(", ")}. L&apos;engagement ne porte que sur l&apos;accès à la plateforme ; à son terme, l&apos;accès continue au même prix, mois par mois, résiliable à tout moment. EasyPhysio ne perçoit aucune part des
               honoraires du kinésithérapeute, et le kinésithérapeute aucune part de l&apos;accès à la plateforme.
             </p>
           </section>

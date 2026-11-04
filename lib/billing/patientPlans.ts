@@ -72,9 +72,15 @@ export function platformOffer(key: PlatformOfferKey): PlatformOffer {
   return PLATFORM_OFFERS.find((o) => o.key === key)!;
 }
 
-/** Total mensuel au plus pour le patient (un mois où le kiné met à jour le programme). */
+/** Prix mensuel de l'offre pour le patient (accès + programme du kiné). */
 export function monthlyTotalCents(offer: PlatformOffer): number {
   return offer.platformCents + KINE_FOLLOW_UP_CENTS;
+}
+
+/** Économie par rapport à l'offre sans engagement, en % arrondi (0 pour elle-même). */
+export function savingsPercent(offer: PlatformOffer): number {
+  const base = Math.max(...PLATFORM_OFFERS.map(monthlyTotalCents));
+  return Math.round((1 - monthlyTotalCents(offer) / base) * 100);
 }
 
 /** Frais Stripe estimés d'un paiement par carte européenne (1,5 % + 0,25 €). */

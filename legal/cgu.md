@@ -68,7 +68,8 @@ distincts, payés en deux paiements et facturés sur deux documents :
   mois où il met à jour le programme, après cette mise à jour ; note
   d'honoraires à son nom.
 
-Soit au plus 12,99 €, 9,99 € ou 8,99 € par mois selon l'offre. 10 jours
+Soit 12,99 €, 9,99 € ou 8,99 € par mois selon l'offre (les 6,00 € du
+kinésithérapeute ne sont dus que les mois où il met à jour le programme). 10 jours
 d'essai gratuit à la première souscription. Accès immédiat : en cas de
 rétractation dans les 14 jours, seule la période déjà utilisée est due. Résiliable à tout moment (accès jusqu'à la fin du mois en
 cours, puis plus aucun prélèvement). Les montants font foi dans

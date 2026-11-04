@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, CalendarClock, CheckCircle2, RefreshCw, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Bell, CalendarClock, CheckCircle2, CreditCard, LockOpen, RefreshCw } from "lucide-react";
+import OfferPicker from "./OfferPicker";
 import SubmitButton from "@/components/SubmitButton";
 import {
-  BEST_OFFER_KEY,
-  DEFAULT_OFFER_KEY,
   EARLY_ACCESS_PLAN_KEY,
   KINE_FOLLOW_UP_CENTS,
-  PLATFORM_OFFERS,
   TRIAL_DAYS,
   eurosFR,
   isPlatformOfferKey,
@@ -14,7 +12,7 @@ import {
   platformOffer,
   type PlatformOffer,
 } from "@/lib/billing/patientPlans";
-import { cancelPlan, resumePlan, startPlan } from "./actions";
+import { cancelPlan, resumePlan } from "./actions";
 
 // « Mon suivi » (patient) — modèle définitif (Philippe, 2026-11-04 ;
 // lib/billing/patientPlans.ts). Trois offres côte à côte (empilées sur
@@ -79,58 +77,94 @@ function commitmentText(offer: PlatformOffer): string {
 }
 
 // Hors du composant : la règle react-hooks/purity refuse Date.now() dans le rendu.
-const trialEndISO = () => new Date(Date.now() + TRIAL_DAYS * 86_400_000).toISOString();
+const daysFromNow = (n: number) => new Date(Date.now() + n * 86_400_000);
+const shortDay = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
-function Subscribe({ kineName, trial, demo }: { kineName: string; trial: boolean; demo: boolean }) {
-  const start = trialEndISO();
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "K") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+/**
+ * Paywall (proposition A retenue par Philippe le 2026-11-04, inspirée des
+ * paywalls Blinkist / Strava) : ce que voit TOUT patient juste après avoir
+ * rejoint son kiné. Ordinateur : à gauche son kiné et le déroulé de l'essai,
+ * à droite les offres ; téléphone : l'un sous l'autre, frise de l'essai en une
+ * ligne. Tient sur un écran (règle « pas de défilement »).
+ */
+function Paywall({
+  kineName,
+  trial,
+  refused,
+  error,
+  demo,
+}: {
+  kineName: string;
+  trial: boolean;
+  refused: boolean;
+  error?: string;
+  demo: boolean;
+}) {
+  const reminder = shortDay(daysFromNow(TRIAL_DAYS - 2));
+  const firstCharge = shortDay(daysFromNow(TRIAL_DAYS));
+  const steps = [
+    { icon: LockOpen, title: "Aujourd'hui", text: "Accès complet, gratuit" },
+    { icon: Bell, title: reminder, text: "On vous prévient" },
+    { icon: CreditCard, title: firstCharge, text: "1er paiement" },
+  ];
   return (
-    <form action={demo ? undefined : startPlan}>
-      {trial && (
-        <p className="text-base font-semibold text-ink">
-          {TRIAL_DAYS} jours offerts, <span className="font-normal text-muted">puis choisissez votre offre :</span>
-        </p>
-      )}
-      <fieldset className="mt-3">
-        <legend className="sr-only">Choisissez votre offre</legend>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {PLATFORM_OFFERS.map((o) => (
-            <label
-              key={o.key}
-              className="relative flex cursor-pointer flex-col rounded-2xl border-2 border-line bg-surface p-3 transition has-[:checked]:border-brand has-[:checked]:bg-brand-soft/40"
-            >
-              <input type="radio" name="plan" value={o.key} defaultChecked={o.key === DEFAULT_OFFER_KEY} required className="sr-only" />
-              {o.key === BEST_OFFER_KEY && (
-                <span className="absolute -top-2.5 right-3 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">Le plus avantageux</span>
-              )}
-              <span className="text-sm font-semibold text-ink">{o.label}</span>
-              <span className="mt-1 text-2xl font-semibold tabular-nums text-ink max-sm:text-xl">
-                {eurosFR(monthlyTotalCents(o))} €<span className="text-sm font-normal text-muted"> / mois</span>
-              </span>
-              <Breakdown offer={o} kineName={kineName} />
-            </label>
-          ))}
+    <main className="min-h-dvh bg-[#f6f8fd] px-4 py-5 sm:px-8 sm:py-8 short:sm:py-4">
+      <div className="mx-auto grid max-w-4xl items-center gap-5 md:grid-cols-[0.9fr_1.1fr] md:gap-10">
+        {/* Qui, et comment se passe l'essai */}
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+              {initials(kineName)}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900">{kineName}</p>
+              <p className="text-xs text-slate-500">vous a préparé votre programme</p>
+            </div>
+          </div>
+          <h1 className="font-display mt-4 text-2xl font-semibold leading-tight tracking-tight text-slate-900 max-sm:mt-3 max-sm:text-xl sm:text-3xl short:sm:text-2xl">
+            {trial ? `${TRIAL_DAYS} jours offerts pour démarrer` : "Reprenez votre programme"}
+          </h1>
+          {trial ? (
+            <ol className="mt-5 space-y-4 max-md:mt-4 max-md:grid max-md:grid-cols-3 max-md:gap-2 max-md:space-y-0 short:md:mt-3 short:md:space-y-3">
+              {steps.map(({ icon: Icon, title, text }) => (
+                <li key={text} className="flex items-center gap-3 max-md:flex-col max-md:items-start max-md:gap-1.5 max-md:rounded-xl max-md:bg-white max-md:p-2.5">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 max-md:h-7 max-md:w-7">
+                    <Icon className="h-4 w-4" strokeWidth={2} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-slate-900 max-md:text-xs">{title}</span>
+                    <span className="block text-sm text-slate-500 max-md:text-[11px] max-md:leading-tight">{text}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="mt-2 text-sm text-slate-500">Choisissez une offre pour retrouver vos exercices.</p>
+          )}
         </div>
-      </fieldset>
-      <label className="mt-3 flex items-start gap-2 text-xs leading-snug text-ink">
-        <input type="checkbox" name="consent" required className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-brand)]" />
-        <span>
-          J&apos;accepte l&apos;accès à la plateforme EasyPhysio au prix de l&apos;offre choisie, prélevé chaque mois par EasyPhysio
-          {trial ? ` à partir du ${dateFR(start)}` : ""}, avec l&apos;engagement indiqué (ensuite au même prix, résiliable à tout moment), et
-          les honoraires de {kineName} de {eurosFR(KINE_FOLLOW_UP_CENTS)} € les mois où il met à jour mon programme, prélevés par lui.
-          J&apos;accède au service tout de suite : si j&apos;exerce mon droit de rétractation de 14 jours, seule la période déjà utilisée est due.
-        </span>
-      </label>
-      <SubmitButton
-        pendingText="Redirection…"
-        className="mt-3 w-full rounded-full bg-brand py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
-      >
-        {trial ? `Commencer mes ${TRIAL_DAYS} jours gratuits` : "Payer et accéder à mon programme"}
-      </SubmitButton>
-      <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-xs text-muted">
-        <ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-        {trial ? "Rien n'est prélevé pendant l'essai. " : ""}Deux factures distinctes, paiement sécurisé par Stripe. Non remboursé par l&apos;Assurance Maladie.
+
+        {/* Les offres */}
+        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70 max-sm:p-4">
+          {(refused || error) && (
+            <p role="alert" className="mb-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
+              {error ?? "Le dernier paiement a été refusé. Choisissez à nouveau une offre."}
+            </p>
+          )}
+          <OfferPicker kineName={kineName} trial={trial} firstChargeLabel={firstCharge} demo={demo} />
+        </div>
+      </div>
+      <p className="mx-auto mt-4 max-w-4xl text-center text-xs text-slate-400">
+        <Link href="/patient/compte" className="hover:text-slate-600 hover:underline">
+          Mes données (export, suppression)
+        </Link>
       </p>
-    </form>
+    </main>
   );
 }
 
@@ -143,6 +177,10 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
   const refused = known && ["past_due", "unpaid", "incomplete"].includes(subscription!.status);
   const committed = !!subscription?.commitUntil && new Date(subscription.commitUntil) > new Date(0) ? subscription.commitUntil : null;
   const ending = !!subscription && (subscription.cancelAtPeriodEnd || !!subscription.endsAt);
+
+  if (!live && kineReady) {
+    return <Paywall kineName={kineName} trial={!subscription} refused={refused} error={sp.error} demo={demo} />;
+  }
 
   return (
     <main className="bg-app-bg p-4 pt-5 max-sm:bg-transparent max-sm:pt-2 sm:min-h-dvh sm:p-8 short:sm:py-5">
@@ -188,7 +226,7 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
                 <div>
                   <p className="text-sm font-medium text-muted">{trialing ? "Essai gratuit en cours" : "Mon offre"}</p>
                   <p className="mt-0.5 text-xl font-semibold text-ink">
-                    {legacy ? "Formule de lancement" : offer ? `${offer.label} · ${eurosFR(monthlyTotalCents(offer))} € / mois au plus` : "Accès à la plateforme"}
+                    {legacy ? "Formule de lancement" : offer ? `${offer.label} · ${eurosFR(monthlyTotalCents(offer))} € / mois` : "Accès à la plateforme"}
                   </p>
                 </div>
                 <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ok-soft px-3 py-1 text-sm font-medium text-ok">
@@ -247,15 +285,7 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
               {kineName} n&apos;a pas encore activé ses paiements en ligne. Le suivi sera disponible dès que ce sera fait.
             </p>
           ) : (
-            <div>
-              {refused && (
-                <p className="mb-3 flex items-start gap-2 rounded-xl bg-danger-soft p-3 text-sm text-danger">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
-                  Le dernier paiement a été refusé. Choisissez à nouveau une offre pour retrouver votre programme.
-                </p>
-              )}
-              <Subscribe kineName={kineName} trial={!subscription} demo={demo} />
-            </div>
+            <p className="text-sm text-muted">Aucun abonnement en cours.</p>
           )}
         </section>
       </div>
