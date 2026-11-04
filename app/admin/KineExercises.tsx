@@ -77,7 +77,7 @@ export default function KineExercises({ rows }: { rows: AdminKineExercise[] }) {
   );
 
   return (
-    <section id="exercices-kines" className="mt-12">
+    <section id="exercices-kines" className="mb-4 scroll-mt-6">
       <h2 className="font-display text-xl font-semibold text-slate-900">Exercices des kinés</h2>
       <p className="mt-1 text-sm text-slate-500">
         Chaque exercice créé par un kiné arrive ici. Ceux qu&apos;il propose à tous attendent votre vérification ; les autres

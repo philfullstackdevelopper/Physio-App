@@ -10,6 +10,8 @@ import TestAccounts from "./TestAccounts";
 import KineExercises, { type AdminKineExercise } from "./KineExercises";
 import { listKineExercises } from "@/lib/db/admin";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
+import AdminSummary, { sinceLabel, type AdminTodo } from "./AdminSummary";
+import { KINE_SUBSCRIPTION_BILLING } from "@/lib/launchFlags";
 import { approveInstructor, invoiceLastMonth, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
 import { KINE_SUBSCRIPTION_TTC_CENTS, eurosFR, periodLabel, periodOf } from "@/lib/billing/reviewModel";
 
@@ -89,8 +91,61 @@ export default async function AdminPage({
     console.error("[admin] exercices des kinés : liste indisponible", e);
   }
 
+  // « À traiter » (Philippe, 2026-11-04) : ce qui attend une action.
+  const exToReview = (kineExercises ?? []).filter((r) => r.status === "pending");
+  const oldestReview = exToReview.map((r) => r.submittedAt).filter(Boolean).sort()[0] ?? null;
+  const exToDraw = (kineExercises ?? []).filter((r) => !r.seenAt && r.status !== "declined");
+  const approved = all.filter((k) => k.status === "approved");
+  const noStripe = approved.filter((k) => k.patient_count > 0 && k.connect_status !== "active");
+  const todos: AdminTodo[] = [
+    {
+      key: "review",
+      label: "Exercices à vérifier",
+      count: exToReview.length,
+      detail: `Proposés à tous par des kinés${oldestReview ? `, le plus ancien ${sinceLabel(oldestReview)}` : ""}. Publier, demander une modification ou garder privé.`,
+      href: "#exercices-kines",
+      urgent: true,
+    },
+    {
+      key: "draw",
+      label: "Démos bleues à dessiner",
+      count: exToDraw.length,
+      detail: "Nouveaux exercices créés par des kinés, sans dessin animé.",
+      href: "#exercices-kines",
+    },
+    {
+      key: "pending",
+      label: "Kinés à valider",
+      count: pending.length,
+      detail: "Inscriptions en attente : vérifier le RPPS, puis approuver ou refuser.",
+      href: "#kines-attente",
+      urgent: true,
+    },
+    {
+      key: "stripe",
+      label: "Paiements non activés",
+      count: noStripe.length,
+      detail: "Kinés qui ont des patients mais pas encore activé Stripe : leurs patients entrent sans payer.",
+      href: "#praticiens",
+    },
+    {
+      key: "waitlist",
+      label: "Liste d'attente",
+      count: waitlist?.length ?? 0,
+      detail: "Personnes à prévenir au lancement (copier les adresses).",
+      href: "#liste-attente",
+    },
+  ];
+  const stats = [
+    { label: "kinés actifs", value: approved.length },
+    { label: "patients", value: all.reduce((n, k) => n + (k.patient_count ?? 0), 0) },
+    { label: "patients payants", value: all.reduce((n, k) => n + (k.paying_count ?? 0), 0) },
+    { label: "exercices de kinés publiés", value: (kineExercises ?? []).filter((r) => r.status === "published").length },
+  ];
+
   return (
     <div>
+      <AdminSummary todos={todos} stats={stats} />
       {/* Bilan de la dernière suspension (app/admin/actions.ts). */}
       {sp.suspended === "1" && (
         <p className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
@@ -119,7 +174,9 @@ export default async function AdminPage({
         </p>
       )}
 
-      {/* Abonnement EasyPhysio des kinés (secours de la tâche automatique du 1er). */}
+      {/* Abonnement EasyPhysio des kinés (secours de la tâche automatique du 1er).
+          Arrêté le 2026-11-02 (KINE_SUBSCRIPTION_BILLING) : masqué tant qu'il ne sert pas. */}
+      {KINE_SUBSCRIPTION_BILLING && (
       <form action={invoiceLastMonth} className="mb-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
         <div>
           <p className="text-sm font-semibold text-slate-900">Facturer les kinés — {periodLabel(periodOf(new Date()))}</p>
@@ -128,10 +185,20 @@ export default async function AdminPage({
         <input type="hidden" name="period" value={periodOf(new Date())} />
         <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Lancer la facturation</button>
       </form>
+      )}
 
-      <h1 className="font-display text-2xl font-semibold text-slate-900">
+      {/* Exercices des kinés juste après « À traiter » : c'est la file la plus active. */}
+      {kineExercises ? (
+        <KineExercises rows={kineExercises} />
+      ) : (
+        <p className="mb-10 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+          Exercices des kinés : la base n&apos;est pas encore prête (migration 0081 non appliquée).
+        </p>
+      )}
+
+      <h2 id="kines-attente" className="mt-12 scroll-mt-6 font-display text-xl font-semibold text-slate-900">
         Comptes praticiens en attente
-      </h1>
+      </h2>
       <p className="mt-1 text-sm text-slate-500">
         {pending.length === 0
           ? "Aucune demande en attente."
@@ -218,7 +285,7 @@ export default async function AdminPage({
 
       {/* Vue d'ensemble de tous les kinés (Philippe, 2026-10-07 : « I need to
           still have overview on the kiné and be able to kick some out »). */}
-      <h2 className="mt-12 font-display text-xl font-semibold text-slate-900">Tous les praticiens</h2>
+      <h2 id="praticiens" className="mt-12 scroll-mt-6 font-display text-xl font-semibold text-slate-900">Tous les praticiens</h2>
       <p className="mt-1 text-sm text-slate-500">
         {all.length} compte{all.length > 1 ? "s" : ""}. « RPPS vérifié » = numéro et nom retrouvés dans l&apos;Annuaire Santé (la validation du compte reste manuelle).
       </p>
@@ -288,14 +355,6 @@ export default async function AdminPage({
           );
         })}
       </ul>
-
-      {kineExercises ? (
-        <KineExercises rows={kineExercises} />
-      ) : (
-        <p className="mt-12 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
-          Exercices des kinés : la base n&apos;est pas encore prête (migration 0081 non appliquée).
-        </p>
-      )}
 
       {waitlist ? (
         <Waitlist rows={waitlist} />
