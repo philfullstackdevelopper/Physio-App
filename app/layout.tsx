@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
-import { frFR } from "@clerk/localizations";
+import { easyPhysioFR } from "@/lib/clerk/localization";
 import CookieBanner from "@/components/CookieBanner";
 import { siteConfig } from "@/lib/site";
 import "./globals.css";
@@ -69,7 +69,7 @@ export default function RootLayout({
           data-new-gr-c-s-check-loaded. N'agit que sur les attributs de
           <body> lui-même, pas sur ses enfants. */}
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <ClerkProvider localization={frFR}>{children}</ClerkProvider>
+        <ClerkProvider localization={easyPhysioFR}>{children}</ClerkProvider>
         <CookieBanner />
       </body>
     </html>
