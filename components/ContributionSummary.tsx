@@ -27,10 +27,10 @@ export default function ContributionSummary({
         className="group flex items-center gap-2 rounded-md hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
       >
         {shown.length > 0 && (
-          <span className="flex -space-x-1.5">
+          <span className="flex -space-x-1">
             {shown.map((c) => (
               <span key={c.id} className="rounded-full ring-2 ring-app-bg">
-                <AuthorAvatar label={c.label} size={20} />
+                <AuthorAvatar label={c.label} size={22} />
               </span>
             ))}
           </span>
@@ -42,8 +42,8 @@ export default function ContributionSummary({
         </span>
       </Link>
       {(published > 0 || pending > 0) && (
-        <span className="tabular-nums" title={next ?? undefined}>
-          · {published} publié{published > 1 ? "s" : ""}
+        <span className="tabular-nums sm:border-l sm:border-line sm:pl-3" title={next ?? undefined}>
+          {published} publié{published > 1 ? "s" : ""}
           {pending > 0 ? ` · ${pending} en vérification` : ""}
         </span>
       )}
