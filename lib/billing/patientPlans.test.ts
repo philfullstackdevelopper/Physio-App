@@ -39,10 +39,9 @@ test("période dépassée sans nouvelles : relire chez Stripe", () => {
   assert.equal(subscriptionNeedsRefresh({ ...active, current_period_end: "2026-11-03T00:00:00Z" }, now), true);
 });
 
-test("doit choisir une formule : seulement si le kiné encaisse et rien n'ouvre déjà l'accès", () => {
-  const base = { kineFree: false, kineCanCharge: true, kineSuspended: false, freeAccessUntil: null, subscription: null, now };
+test("doit choisir une formule : toujours, sauf kiné sans Stripe ou suspendu, accès offert (test) ou abonnement en cours", () => {
+  const base = { kineCanCharge: true, kineSuspended: false, freeAccessUntil: null, subscription: null, now };
   assert.equal(patientMustSubscribe(base), true);
-  assert.equal(patientMustSubscribe({ ...base, kineFree: true }), false);
   assert.equal(patientMustSubscribe({ ...base, kineCanCharge: false }), false);
   assert.equal(patientMustSubscribe({ ...base, kineSuspended: true }), false);
   assert.equal(patientMustSubscribe({ ...base, freeAccessUntil: "2036-01-01T00:00:00Z" }), false);

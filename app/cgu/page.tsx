@@ -46,8 +46,8 @@ export default function CguPage() {
             <h2 className="font-display font-semibold text-slate-900">3. Accès à l&apos;application</h2>
             <p className="mt-1">
               L&apos;application est gratuite pour le kinésithérapeute. Elle est mise à disposition du patient par son
-              kinésithérapeute : si celui-ci offre l&apos;accès, il est libre ; sinon, l&apos;accès passe par la
-              souscription d&apos;une formule de suivi décrite à l&apos;article 4.
+              kinésithérapeute ; l&apos;accès du patient passe par la souscription d&apos;une formule de suivi décrite à
+              l&apos;article 4.
             </p>
           </section>
 

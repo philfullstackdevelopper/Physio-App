@@ -98,7 +98,7 @@ export default function KinePlans() {
             {SIGNUPS_OPEN ? "Créer mon compte gratuit" : "Rejoindre la liste d'attente"}
             <ArrowRight className="h-4 w-4" strokeWidth={2} />
           </Link>
-          <p className="mt-3 text-xs text-slate-500">Vous pouvez aussi offrir l&apos;accès à vos patients : rien à payer pour personne.</p>
+          <p className="mt-3 text-xs text-slate-500">Inscription gratuite, sans engagement. Vous ne payez jamais EasyPhysio.</p>
         </div>
       </div>
     </div>

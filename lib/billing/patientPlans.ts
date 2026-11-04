@@ -97,12 +97,13 @@ export function subscriptionNeedsRefresh(sub: SubscriptionRow | null, now: Date 
 
 /**
  * Le patient doit-il choisir une formule avant d'entrer dans l'appli ?
- * Non si son kiné offre l'accès (tarif 0 €), s'il n'a pas activé Stripe, s'il
- * est suspendu, si l'accès est offert au patient (comptes de test), ou si
- * l'abonnement en cours donne accès.
+ * Toujours, sauf si son kiné n'a pas encore activé Stripe (rien ne peut être
+ * encaissé), s'il est suspendu, si l'accès est offert au patient par
+ * l'administrateur (comptes de test), ou si l'abonnement en cours donne accès.
+ * Plus d'accès gratuit offert par le kiné (Philippe, 2026-11-04 : « Free
+ * acces is no longer a thing ») : instructors.review_price_cents n'est plus lu.
  */
 export function patientMustSubscribe(p: {
-  kineFree: boolean;
   kineCanCharge: boolean;
   kineSuspended: boolean;
   freeAccessUntil: string | null;
@@ -110,7 +111,7 @@ export function patientMustSubscribe(p: {
   now?: Date;
 }): boolean {
   const now = p.now ?? new Date();
-  if (p.kineFree || !p.kineCanCharge || p.kineSuspended) return false;
+  if (!p.kineCanCharge || p.kineSuspended) return false;
   if (p.freeAccessUntil && new Date(p.freeAccessUntil) > now) return false;
   return !subscriptionGivesAccess(p.subscription, now);
 }

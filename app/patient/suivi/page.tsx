@@ -26,7 +26,7 @@ export default async function SuiviPage({
       .maybeSingle();
   const [{ data: kine }, { data: connect }, subRes] = await Promise.all([
     instructorId
-      ? supabase.from("instructors").select("full_name, status, review_price_cents").eq("id", instructorId).maybeSingle()
+      ? supabase.from("instructors").select("full_name, status").eq("id", instructorId).maybeSingle()
       : Promise.resolve({ data: null }),
     instructorId
       ? supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", instructorId).maybeSingle()
@@ -40,10 +40,8 @@ export default async function SuiviPage({
     sub = (await loadSub()).data;
   }
 
-  const kineFree = (kine?.review_price_cents as number | null) === 0;
   const kineReady = ((kine?.status as string | null) ?? "approved") === "approved" && connect?.status === "active";
   const required = patientMustSubscribe({
-    kineFree,
     kineCanCharge: connect?.status === "active",
     kineSuspended: (kine?.status as string | null) === "suspended",
     freeAccessUntil: (patient?.trial_ends_at as string | null) ?? null,
@@ -55,7 +53,6 @@ export default async function SuiviPage({
       sp={sp}
       kineName={(kine?.full_name as string | null) ?? "votre kiné"}
       kineReady={kineReady}
-      kineFree={kineFree}
       required={required}
       subscription={
         sub

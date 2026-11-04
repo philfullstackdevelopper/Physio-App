@@ -25,7 +25,7 @@ async function context() {
   if (!patient) fail("Compte patient introuvable.");
   const instructorId = patient!.instructor_id as string;
   const [{ data: kine }, { data: connect }, { data: sub }] = await Promise.all([
-    supabase.from("instructors").select("status, review_price_cents").eq("id", instructorId).maybeSingle(),
+    supabase.from("instructors").select("status").eq("id", instructorId).maybeSingle(),
     supabase.from("instructor_connect_accounts").select("stripe_connect_account_id, status").eq("instructor_id", instructorId).maybeSingle(),
     supabase.from("subscriptions").select("plan, status, stripe_subscription_id, stripe_customer_id, stripe_account_id").eq("user_id", user.id).maybeSingle(),
   ]);
@@ -39,7 +39,6 @@ export async function startPlan(formData: FormData) {
   if (formData.get("consent") !== "on") fail("Cochez la case pour accepter le tarif et le renouvellement automatique.");
   const { user, patient, kine, accountId, sub } = await context();
   if (((kine?.status as string | null) ?? "approved") !== "approved") fail("Votre kinésithérapeute ne propose pas de suivi pour le moment.");
-  if ((kine?.review_price_cents as number | null) === 0) redirect("/patient");
   if (!accountId) fail("Votre kinésithérapeute n'a pas encore activé les paiements en ligne. Prévenez-le, puis revenez ici.");
 
   const stripe = getStripe();

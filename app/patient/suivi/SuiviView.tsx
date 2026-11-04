@@ -20,8 +20,6 @@ export type SuiviViewProps = {
   kineName: string;
   /** Le kiné a activé les paiements en ligne (Stripe). */
   kineReady: boolean;
-  /** Le kiné offre l'accès (tarif 0 €). */
-  kineFree: boolean;
   /** Pas encore d'accès : l'appli s'ouvre une fois la formule payée. */
   required?: boolean;
   subscription: SuiviSubscription | null;
@@ -82,7 +80,7 @@ function PlanChoice({ kineName, demo }: { kineName: string; demo: boolean }) {
   );
 }
 
-export default function SuiviView({ sp, kineName, kineReady, kineFree, required = false, subscription, demo = false }: SuiviViewProps) {
+export default function SuiviView({ sp, kineName, kineReady, required = false, subscription, demo = false }: SuiviViewProps) {
   const plan = subscription && isPatientPlanKey(subscription.plan) ? patientPlan(subscription.plan) : null;
   const live = !!plan && (subscription!.status === "active" || subscription!.status === "trialing");
   const refused = !!plan && ["past_due", "unpaid", "incomplete"].includes(subscription!.status);
@@ -130,9 +128,7 @@ export default function SuiviView({ sp, kineName, kineReady, kineFree, required 
         {sp.reprise === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">C&apos;est noté : votre formule continue.</p>}
 
         <section className={`mt-4 ${card}`}>
-          {kineFree ? (
-            <p className="rounded-xl bg-ok-soft px-3 py-2 text-sm text-ok">{kineName} vous offre l&apos;accès : rien à payer, votre programme est accessible.</p>
-          ) : live ? (
+          {live ? (
             <div>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>

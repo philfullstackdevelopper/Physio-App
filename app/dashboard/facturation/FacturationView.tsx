@@ -1,15 +1,14 @@
 import Link from "next/link";
-import { CheckCircle2, ChevronRight, Circle, ExternalLink, Gift, Tag, Users, Wallet } from "lucide-react";
+import { CheckCircle2, ChevronRight, Circle, ExternalLink, Tag, Users } from "lucide-react";
 import SubmitButton from "@/components/SubmitButton";
 import PhoneFold from "@/components/PhoneFold";
 import { PATIENT_PLANS, eurosFR } from "@/lib/billing/patientPlans";
 import { startConnectOnboarding } from "../connect/actions";
-import { setAccessMode } from "./actions";
 
 // Page « Suivi & facturation » du kiné — modèle du 2026-11-02 (Philippe) :
 // l'appli est GRATUITE pour le kiné ; ses patients paient une formule
 // 1 / 3 / 6 mois, versée sur son compte Stripe (6,99 € / 13,99 € / 20,99 €
-// pour lui). Il peut aussi offrir l'accès (gratuit). Tient sur un écran :
+// pour lui). Plus d'accès gratuit (2026-11-04). Tient sur un écran :
 // trois colonnes sur ordinateur, cartes repliables sur téléphone.
 
 export type ConnectStatus = "active" | "onboarding" | "not_started";
@@ -32,7 +31,6 @@ const SAVED: Record<string, string> = {
 const CARD = "rounded-2xl border border-line bg-surface p-4 sm:p-5 max-sm:border-0 max-sm:shadow-soft max-sm:short:p-3";
 
 export default function FacturationView({
-  free,
   connectStatus,
   subscribers,
   monthlyCents,
@@ -40,8 +38,6 @@ export default function FacturationView({
   error,
   saved,
 }: {
-  /** Le kiné offre l'accès à ses patients (tarif 0 €). */
-  free: boolean;
   connectStatus: ConnectStatus;
   subscribers: SubscriberRow[];
   /** Revenu mensuel moyen des formules en cours, pour le kiné (centimes). */
@@ -94,9 +90,7 @@ export default function FacturationView({
               <div className="mt-3 rounded-xl border border-dashed border-line px-4 py-4 text-center">
                 <p className="text-sm font-medium text-ink">Aucun patient abonné pour l&apos;instant.</p>
                 <p className="mx-auto mt-1 max-w-md text-xs text-muted">
-                  {free
-                    ? "Vous offrez l'accès : vos patients entrent sans payer."
-                    : "Vos patients choisissent leur formule dans l'appli, juste après leur inscription."}
+                  Vos patients choisissent leur formule dans l&apos;appli, juste après leur inscription.
                 </p>
               </div>
             ) : (
@@ -140,40 +134,12 @@ export default function FacturationView({
               title={
                 <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
                   <Tag className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
-                  Accès de mes patients
+                  Formules de mes patients
                 </h2>
               }
-              summary={free ? "Gratuit" : "Formules payantes"}
+              summary="9,99 € à 29,99 €"
             >
-              <form action={setAccessMode} className="mt-2 grid grid-cols-2 gap-2">
-                <button
-                  name="mode"
-                  value="paid"
-                  className={`rounded-xl border-2 px-3 py-2 text-left text-sm transition ${
-                    !free ? "border-brand bg-brand-soft/50 text-ink" : "border-line bg-surface text-muted hover:border-brand/40"
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5 font-semibold">
-                    <Wallet className="h-4 w-4" strokeWidth={1.75} />
-                    Payant
-                  </span>
-                  <span className="block text-[11px] leading-tight">Vos patients choisissent une formule</span>
-                </button>
-                <button
-                  name="mode"
-                  value="free"
-                  className={`rounded-xl border-2 px-3 py-2 text-left text-sm transition ${
-                    free ? "border-brand bg-brand-soft/50 text-ink" : "border-line bg-surface text-muted hover:border-brand/40"
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5 font-semibold">
-                    <Gift className="h-4 w-4" strokeWidth={1.75} />
-                    Gratuit
-                  </span>
-                  <span className="block text-[11px] leading-tight">Vous offrez l&apos;accès</span>
-                </button>
-              </form>
-              <table className="mt-3 w-full text-left text-xs">
+              <table className="mt-2 w-full text-left text-xs">
                 <thead className="text-muted">
                   <tr>
                     <th className="pb-1 font-medium">Formule</th>
@@ -202,7 +168,7 @@ export default function FacturationView({
 
           {/* ── Colonne 3 : encaissement ───────────────────────────── */}
           <div className="flex min-w-0 flex-col gap-3">
-            <ConnectCard status={connectStatus} free={free} />
+            <ConnectCard status={connectStatus} />
           </div>
         </div>
       </div>
@@ -210,7 +176,7 @@ export default function FacturationView({
   );
 }
 
-function ConnectCard({ status, free }: { status: ConnectStatus; free: boolean }) {
+function ConnectCard({ status }: { status: ConnectStatus }) {
   const s = {
     active: {
       box: "border-ok/30 bg-ok-soft",
@@ -247,7 +213,7 @@ function ConnectCard({ status, free }: { status: ConnectStatus; free: boolean })
           <p className="text-xs text-muted">{s.text}</p>
           {status !== "active" && (
             <p className="mt-1 text-xs text-muted">
-              {free ? "Vous offrez l'accès : rien à encaisser." : "En attendant, vos patients entrent dans l'appli sans payer."}
+              En attendant, vos patients entrent dans l&apos;appli sans payer.
             </p>
           )}
         </div>

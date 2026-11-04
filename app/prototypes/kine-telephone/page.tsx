@@ -89,7 +89,6 @@ export default async function KineTelephonePrototype({
     screen = (
       <FacturationView
         connectStatus="active"
-        free={false}
         patientCount={9}
         monthlyCents={1515}
         subscribers={[

@@ -91,8 +91,8 @@ export default async function PatientLayout({ children }: { children: React.Reac
     }
   }
 
-  // Accès selon la formule (Philippe, 2026-11-02) : si le kiné offre l'accès
-  // (tarif 0 €), entrée directe ; sinon le patient choisit une formule 1, 3
+  // Accès selon la formule (Philippe, 2026-11-02 ; plus d'accès gratuit
+  // offert par le kiné depuis le 2026-11-04) : le patient choisit une formule 1, 3
   // ou 6 mois sur /patient/suivi avant d'accéder au reste. Pas d'écran de
   // paiement si le kiné n'a pas activé Stripe, s'il est suspendu, ou si
   // l'accès est offert au patient (comptes de test).
@@ -120,9 +120,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
       await refreshPatientSubscription(sub.stripe_subscription_id as string, sub.stripe_account_id as string);
       sub = (await loadSub()).data;
     }
-    const kineRow = patient.instructors as unknown as { review_price_cents: number | null } | null;
     mustAcceptFollowUp = patientMustSubscribe({
-      kineFree: kineRow?.review_price_cents === 0,
       kineCanCharge: connectRes.data?.status === "active",
       kineSuspended,
       freeAccessUntil: (trialRes.data?.trial_ends_at as string | null) ?? null,

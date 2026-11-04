@@ -39,11 +39,11 @@ const QUESTIONS = [
   },
   {
     question: "Combien coûte l'application pour moi, patient ?",
-    answer: `Si votre kiné vous offre l'accès, l'appli est gratuite. Sinon, vous choisissez une formule : ${PLANS_TEXT}. Elle se renouvelle automatiquement et vous pouvez la résilier à tout moment depuis l'appli. L'essentiel du paiement va à votre kiné. Acte non remboursé par l'Assurance Maladie.`,
+    answer: `Vous choisissez une formule : ${PLANS_TEXT}. Elle se renouvelle automatiquement et vous pouvez la résilier à tout moment depuis l'appli. L'essentiel du paiement va à votre kiné. Acte non remboursé par l'Assurance Maladie.`,
   },
   {
     question: "Je suis kiné : combien ça me coûte, et combien ça me rapporte ?",
-    answer: `Rien : EasyPhysio est gratuit pour vous, patients illimités. Vos patients paient leur formule (${PLANS_TEXT}) et vous recevez ${KINE_SHARE_TEXT}, frais de paiement déduits, directement sur votre compte. Avec 20 patients abonnés au mois, c'est ${eurosFR(20 * P1.kineCents)} € par mois pour vous. Vous pouvez aussi offrir l'accès à vos patients.`,
+    answer: `Rien : EasyPhysio est gratuit pour vous, patients illimités. Vos patients paient leur formule (${PLANS_TEXT}) et vous recevez ${KINE_SHARE_TEXT}, frais de paiement déduits, directement sur votre compte. Avec 20 patients abonnés au mois, c'est ${eurosFR(20 * P1.kineCents)} € par mois pour vous.`,
   },
   {
     question: "Je suis praticien : comment essayer avec mes patients ?",

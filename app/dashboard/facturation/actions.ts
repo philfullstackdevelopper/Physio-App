@@ -4,38 +4,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { requestOrigin } from "@/lib/requestOrigin";
-import { REVIEW_PRICE_MAX_CENTS, REVIEW_PRICE_MIN_CENTS, eurosFR, isPlanMonths, isValidReviewPrice } from "@/lib/billing/reviewModel";
+import { isPlanMonths } from "@/lib/billing/reviewModel";
 import { cabinetInvite, cabinetRemove, cabinetRespond } from "@/lib/db/admin";
 import { createPlatformBillingSetupUrl } from "@/lib/billing/platformInvoice";
 
 // Page « Suivi & facturation » du kiné (nouveau modèle, 2026-10-24).
 
-/**
- * Le kiné fixe son tarif de bilan mensuel (0 € = accès gratuit, sinon entre 10 et 40 €). Le nouveau tarif
- * vaut pour les patients qui acceptent le suivi à partir de maintenant : un
- * patient déjà inscrit garde le tarif qu'il a accepté par écrit
- * (art. R.4321-98 CSP — information préalable sur le montant).
- */
-export async function setReviewPrice(formData: FormData) {
-  const supabase = await createClient();
-  const { user } = await requireApprovedInstructor(supabase);
-  const raw = String(formData.get("price_euros") ?? "").replace(",", ".").trim();
-  // Case vide : refusée (Number("") vaudrait 0, soit « gratuit » par erreur).
-  const cents = raw === "" ? Number.NaN : Math.round(Number(raw) * 100);
-  if (!isValidReviewPrice(cents)) {
-    redirect(
-      `/dashboard/facturation?error=${encodeURIComponent(
-        `Le tarif doit être 0 € (accès gratuit) ou compris entre ${eurosFR(REVIEW_PRICE_MIN_CENTS, 0)} € et ${eurosFR(REVIEW_PRICE_MAX_CENTS, 0)} €.`,
-      )}`,
-    );
-  }
-  const { error } = await supabase.from("instructors").update({ review_price_cents: cents }).eq("id", user.id);
-  if (error) {
-    console.error("setReviewPrice:", error);
-    redirect(`/dashboard/facturation?error=${encodeURIComponent("Enregistrement impossible pour le moment. Réessayez dans un instant.")}`);
-  }
-  redirect("/dashboard/facturation?saved=prix");
-}
 
 /** Ouvre la page Stripe (compte EasyPhysio) où le kiné enregistre sa carte ou son IBAN pour sa facture mensuelle. */
 export async function startPlatformBillingSetup() {
@@ -139,24 +113,3 @@ export async function removeFromCabinet(formData: FormData) {
   back("saved=cabinet-retire");
 }
 
-/**
- * Accès des patients (modèle du 2026-11-02) : « payant » = les patients
- * choisissent une formule 1 / 3 / 6 mois ; « gratuit » = le kiné offre
- * l'accès. Stocké dans instructors.review_price_cents : 0 = gratuit,
- * null = payant (formules).
- */
-export async function setAccessMode(formData: FormData) {
-  const supabase = await createClient();
-  const { user } = await requireApprovedInstructor(supabase);
-  const mode = String(formData.get("mode") ?? "");
-  if (mode !== "free" && mode !== "paid") redirect("/dashboard/facturation");
-  const { error } = await supabase
-    .from("instructors")
-    .update({ review_price_cents: mode === "free" ? 0 : null })
-    .eq("id", user.id);
-  if (error) {
-    console.error("setAccessMode:", error);
-    redirect(`/dashboard/facturation?error=${encodeURIComponent("Enregistrement impossible pour le moment. Réessayez dans un instant.")}`);
-  }
-  redirect("/dashboard/facturation?saved=acces");
-}

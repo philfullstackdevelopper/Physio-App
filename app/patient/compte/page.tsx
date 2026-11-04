@@ -16,12 +16,11 @@ export default async function CompteePage({
   const user = await requireUser(supabase);
 
   const [{ data: patient }, { data: sub }] = await Promise.all([
-    supabase.from("patients").select("full_name, instructors ( full_name, review_price_cents )").eq("id", user.id).maybeSingle(),
+    supabase.from("patients").select("full_name, instructors ( full_name )").eq("id", user.id).maybeSingle(),
     supabase.from("subscriptions").select("plan, status, current_period_end, cancel_at_period_end").eq("user_id", user.id).maybeSingle(),
   ]);
-  const kine = patient?.instructors as unknown as { full_name: string | null; review_price_cents: number | null } | null;
+  const kine = patient?.instructors as unknown as { full_name: string | null } | null;
   const kineName = kine?.full_name ?? "votre kiné";
-  const free = kine?.review_price_cents === 0;
   const plan = sub && isPatientPlanKey(sub.plan) ? patientPlan(sub.plan) : null;
   const live = !!plan && (sub!.status === "active" || sub!.status === "trialing");
   const refused = !!plan && ["past_due", "unpaid", "incomplete"].includes(sub!.status as string);
@@ -35,10 +34,7 @@ export default async function CompteePage({
     priceCents: plan?.priceCents ?? 0,
     cardLabel: null,
     kineName,
-    free,
-    line: free
-      ? `Offert par ${kineName} : rien à payer`
-      : live
+    line: live
         ? `${plan!.label} · ${sub!.cancel_at_period_end ? `accès jusqu'au ${date}` : `renouvelée le ${date}`}`
         : refused
           ? "Le dernier paiement a été refusé"

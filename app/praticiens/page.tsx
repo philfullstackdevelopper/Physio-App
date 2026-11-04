@@ -63,7 +63,7 @@ const CAPABILITIES = [
   },
   {
     title: "Vos patients s'abonnent, vous êtes payé",
-    body: `Vos patients choisissent une formule de 1, 3 ou 6 mois (${PATIENT_PRICES}) et vous recevez ${KINE_SHARES} sur votre compte. Ou vous offrez l'accès.`,
+    body: `Vos patients choisissent une formule de 1, 3 ou 6 mois (${PATIENT_PRICES}) et vous recevez ${KINE_SHARES} sur votre compte.`,
   },
   {
     title: "Vos versements en un coup d'œil",
@@ -203,7 +203,7 @@ export default function PraticiensPage() {
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-300">
               Rien : EasyPhysio est gratuit pour vous, patients illimités. Vos patients choisissent une formule de 1, 3 ou 6 mois
               ({PATIENT_PRICES}), renouvelée automatiquement et résiliable à tout moment ; vous recevez {KINE_SHARES}, frais de
-              paiement déduits. Vous pouvez aussi offrir l&apos;accès à vos patients.
+              paiement déduits.
             </p>
             <ul className="mx-auto mt-6 flex max-w-lg flex-col gap-2 text-left sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-6 sm:text-left">
               {["Gratuit pour le kiné", "Sans engagement", "Données hébergées en France"].map((point) => (

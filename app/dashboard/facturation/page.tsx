@@ -6,7 +6,7 @@ import FacturationView, { type ConnectStatus, type SubscriberRow } from "./Factu
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
 // « Suivi & facturation » du kiné (modèle du 2026-11-02) : ses patients
-// abonnés, l'accès gratuit ou payant, et l'activation de ses paiements.
+// abonnés, les formules, et l'activation de ses paiements.
 // L'affichage vit dans FacturationView.tsx.
 export default async function FacturationPage({
   searchParams,
@@ -19,9 +19,8 @@ export default async function FacturationPage({
   // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
   const { user } = await requireApprovedInstructor(supabase);
 
-  const [{ data: connect }, { data: kine }, { data: patients }] = await Promise.all([
+  const [{ data: connect }, { data: patients }] = await Promise.all([
     supabase.from("instructor_connect_accounts").select("status, stripe_connect_account_id").eq("instructor_id", user.id).maybeSingle(),
-    supabase.from("instructors").select("review_price_cents").eq("id", user.id).maybeSingle(),
     supabase.from("patients").select("id, full_name").eq("instructor_id", user.id),
   ]);
   const ids = (patients ?? []).map((p) => p.id as string);
@@ -74,7 +73,6 @@ export default async function FacturationPage({
 
   return (
     <FacturationView
-      free={(kine?.review_price_cents as number | null) === 0}
       connectStatus={connectStatus}
       subscribers={subscribers}
       monthlyCents={monthlyCents}
