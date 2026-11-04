@@ -7,8 +7,8 @@ export type PublicationStatus = "private" | "pending" | "published" | "changes_r
 
 /** Récompense : au 5e exercice publié, EasyPhysio ne prend rien sur les
  *  paiements des patients du kiné pendant 3 mois, à partir de la date de
- *  publication du 5e (Philippe, 2026-11-04 ; durée de 3 mois proposée, à
- *  confirmer). Enregistrée dans instructor_fee_waivers. */
+ *  publication du 5e (Philippe, 2026-11-04). Enregistrée dans
+ *  instructor_fee_waivers. */
 export const KINE_EXERCISE_REWARD = { threshold: 5, months: 3 } as const;
 
 /** Vidéo filmée au téléphone : formats lus par les navigateurs, taille max. */
