@@ -144,24 +144,12 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
             )}
           />
         ) : ecran === "suivi" ? (
-          <SuiviView
-            sp={{}}
-            kineName="Julien Roux"
-            kineReady
-            status="active"
-            currentPrice={2000}
-            acceptedPrice={2000}
-            price={2000}
-            cardLabel="VISA •••• 4242"
-            reviews={[
-              { id: "r2", period: "2026-09-01", amount_cents: 2000, payment_status: "paid", fee_note_year: 2026, fee_note_seq: 14 },
-              { id: "r1", period: "2026-08-01", amount_cents: 2000, payment_status: "paid", fee_note_year: 2026, fee_note_seq: 6 },
-            ]}
-          />
+          // Formules patient (2026-11-02) : la démo montre le choix des trois formules.
+          <SuiviView sp={{}} kineName="Julien Roux" kineReady kineFree={false} subscription={null} demo />
         ) : ecran === "compte" ? (
           <CompteView
             fullName="Léa Martin"
-            followUp={{ status: "active", priceCents: 2000, cardLabel: "VISA •••• 4242", kineName: "Julien Roux" }}
+            followUp={{ status: "active", priceCents: 1999, cardLabel: null, kineName: "Julien Roux", line: "3 mois · renouvelée le 4 février" }}
           />
         ) : ecran === "informations" ? (
           <InformationsView

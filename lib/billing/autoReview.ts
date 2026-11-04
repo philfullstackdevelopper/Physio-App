@@ -15,6 +15,9 @@ import { followUpForCharge, recordMonthlyReview } from "@/lib/db/admin";
 import { chargeReview } from "./followUp";
 import { eurosFR, feeNoteNumber, periodLabel, periodOf } from "./reviewModel";
 
+/** Ancien prélèvement « au mois ajusté » : coupé (formules patient à la place). */
+const MONTHLY_REVIEW_CHARGES = false;
+
 export async function recordMonthlyReviewIfDue(p: {
   supabase: SupabaseClient;
   instructorId: string;
@@ -22,6 +25,10 @@ export async function recordMonthlyReviewIfDue(p: {
   /** Ce que le kiné a fait, gardé dans le dossier (ex. « Séance ajustée : Genou, renforcement »). */
   note: string;
 }): Promise<void> {
+  // Modèle arrêté le 2026-11-02 (Philippe) : le patient paie sa formule
+  // 1 / 3 / 6 mois (lib/billing/patientPlans.ts) ; plus aucun prélèvement
+  // quand le kiné ajuste un programme.
+  if (!MONTHLY_REVIEW_CHARGES) return;
   try {
     const period = periodOf(new Date());
     // Déjà un bilan ce mois-ci : rien à faire (cas le plus fréquent, une seule lecture).

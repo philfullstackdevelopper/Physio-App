@@ -5,6 +5,7 @@ import { connectStatusFromAccount, verifiedInstructorId } from "@/lib/billing/co
 import { upsertConnectAccount } from "@/lib/db/admin";
 import { handleFollowUpSetupEvent, syncReviewPaymentFromIntent } from "@/lib/billing/followUp";
 import { finalizePlatformBillingSetup, syncPlatformInvoice } from "@/lib/billing/platformInvoice";
+import { refreshPatientSubscription, syncPatientSubscription } from "@/lib/billing/patientSubscription";
 
 // Stripe needs the Node runtime (not Edge) and the raw request body to verify
 // the signature, so this route reads req.text() and never parses JSON first.
@@ -52,6 +53,19 @@ export async function POST(req: Request) {
         else await finalizePlatformBillingSetup(session.id);
         break;
       }
+      // Formule patient payée (2026-11-02), sur le compte Connect du kiné.
+      if (session.mode === "subscription" && event.account) {
+        const subId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+        if (subId) await refreshPatientSubscription(subId, event.account);
+      }
+      break;
+    }
+    // Formule patient créée, renouvelée, résiliée, paiement refusé… (compte
+    // Connect du kiné). Ignorée si elle n'a pas été créée par EasyPhysio.
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted": {
+      if (event.account) await syncPatientSubscription(event.data.object as Stripe.Subscription, event.account);
       break;
     }
     case "account.updated": {

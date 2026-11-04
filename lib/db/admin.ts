@@ -350,3 +350,38 @@ export async function platformInvoicesWithEnd(): Promise<
   );
   return rows;
 }
+
+// ---------------------------------------------------------------------------
+// Formules patient (migration 0080) : enregistrement d'un abonnement Stripe,
+// appelé par le webhook, le retour de paiement et la relecture chez Stripe.
+// ---------------------------------------------------------------------------
+
+export async function upsertSubscription(params: {
+  userId: string;
+  plan: string;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string;
+  status: string;
+  currentPeriodEnd: string | null;
+  stripeAccountId: string;
+  cancelAtPeriodEnd: boolean;
+}): Promise<void> {
+  await getPool().query("select internal.admin_upsert_subscription($1, $2, $3, $4, $5, $6, $7, $8)", [
+    params.userId,
+    params.plan,
+    params.stripeCustomerId,
+    params.stripeSubscriptionId,
+    params.status,
+    params.currentPeriodEnd,
+    params.stripeAccountId,
+    params.cancelAtPeriodEnd,
+  ]);
+}
+
+/** Abonnements des patients d'un kiné (suspension : on les arrête). */
+export async function instructorSubscriptions(
+  instructorId: string,
+): Promise<{ patient_id: string; stripe_subscription_id: string; status: string; connect_account_id: string | null }[]> {
+  const { rows } = await getPool().query("select * from internal.admin_instructor_subscriptions($1)", [instructorId]);
+  return rows;
+}

@@ -45,40 +45,36 @@ export default function CguPage() {
           <section>
             <h2 className="font-display font-semibold text-slate-900">3. Accès à l&apos;application</h2>
             <p className="mt-1">
-              L&apos;application est mise à disposition du patient par son kinésithérapeute, qui
-              règle à EasyPhysio un abonnement fixe (au mois, ou payé d&apos;avance pour plusieurs mois). Le patient n&apos;a rien à payer à
-              EasyPhysio. Si le kinésithérapeute propose son suivi gratuitement, l&apos;accès est libre ;
-              s&apos;il a fixé un tarif, l&apos;accès à l&apos;application passe par l&apos;acceptation du
-              suivi mensuel décrit à l&apos;article 4.
+              L&apos;application est gratuite pour le kinésithérapeute. Elle est mise à disposition du patient par son
+              kinésithérapeute : si celui-ci offre l&apos;accès, il est libre ; sinon, l&apos;accès passe par la
+              souscription d&apos;une formule de suivi décrite à l&apos;article 4.
             </p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">4. Suivi mensuel par le kinésithérapeute</h2>
+            <h2 className="font-display font-semibold text-slate-900">4. Formules de suivi</h2>
             <p className="mt-1">
-              Le kinésithérapeute propose un suivi mensuel à distance (programme mensuel hors
-              nomenclature) : il analyse les séances et les ressentis du patient et ajuste son
-              programme. C&apos;est un acte du kinésithérapeute, non remboursé par l&apos;Assurance
-              Maladie, au tarif qu&apos;il fixe librement et que le patient accepte par écrit avant
-              d&apos;accéder à l&apos;application.
+              Le patient choisit une formule de 1 mois (9,99 €), 3 mois (19,99 €) ou 6 mois (29,99 €), toutes taxes
+              comprises, qui lui donne accès à son programme d&apos;exercices et au suivi à distance de son
+              kinésithérapeute pendant la période payée. C&apos;est un suivi non remboursé par l&apos;Assurance Maladie ; le
+              patient en accepte le prix et le renouvellement automatique avant de payer.
             </p>
             <p className="mt-2">
-              Le patient enregistre une carte bancaire ; il n&apos;est prélevé que le mois où son
-              kinésithérapeute ajuste effectivement son programme, directement au profit de celui-ci,
-              qui lui délivre une note d&apos;honoraires. EasyPhysio ne perçoit aucune part de ces
-              honoraires. Les soins en cabinet ne dépendent pas de ce suivi. Le patient peut
-              l&apos;arrêter à tout moment depuis son espace, sans frais ; il garde alors le droit
-              d&apos;exporter ou de supprimer ses données.
+              Le paiement est encaissé par Stripe pour le compte du kinésithérapeute, qui en reçoit la plus grande part ;
+              EasyPhysio perçoit une commission sur chaque paiement. La formule se renouvelle automatiquement à la fin de
+              chaque période. Le patient peut la résilier à tout moment depuis son espace : il garde l&apos;accès jusqu&apos;à
+              la fin de la période payée, puis plus aucun prélèvement n&apos;a lieu. Toute période commencée reste due,
+              sans remboursement au prorata, sauf disposition légale contraire. En cas de paiement refusé, l&apos;accès est
+              suspendu jusqu&apos;à la souscription d&apos;une nouvelle formule. Les soins en cabinet ne dépendent pas de ce
+              suivi, et le patient garde toujours le droit d&apos;exporter ou de supprimer ses données.
             </p>
           </section>
 
           <section>
             <h2 className="font-display font-semibold text-slate-900">5. Comptes et résiliation</h2>
             <p className="mt-1">
-              Le patient peut supprimer son compte à tout moment depuis son espace personnel. Le
-              kinésithérapeute peut également résilier son propre compte à tout moment ; son
-              abonnement EasyPhysio est facturé d&apos;avance pour la durée qu&apos;il a choisie (1, 3, 6 ou 12 mois), sans
-              engagement au-delà : il peut changer de durée pour l&apos;échéance suivante.
+              Le patient peut supprimer son compte à tout moment depuis son espace personnel ; sa formule en cours est
+              alors résiliée. Le kinésithérapeute peut également supprimer son propre compte à tout moment, sans frais.
             </p>
           </section>
 

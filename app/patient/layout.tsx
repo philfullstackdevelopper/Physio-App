@@ -7,7 +7,8 @@ import PatientWelcomeGate from "@/components/PatientWelcomeGate";
 import PatientNoRecordGate from "@/components/PatientNoRecordGate";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { patientMustAcceptFollowUp } from "@/lib/billing/reviewModel";
+import { patientMustSubscribe, subscriptionNeedsRefresh, type SubscriptionRow } from "@/lib/billing/patientPlans";
+import { refreshPatientSubscription } from "@/lib/billing/patientSubscription";
 
 const ONBOARDING_PATH = "/patient/onboarding";
 // Suivi mensuel à accepter quand le kiné a fixé un tarif au-dessus de 0 €.
@@ -90,25 +91,42 @@ export default async function PatientLayout({ children }: { children: React.Reac
     }
   }
 
-  // Accès selon le tarif du kiné (Philippe, 2026-11-01) : à 0 €, entrée
-  // directe ; au-dessus, le patient accepte le suivi mensuel (tarif par écrit +
-  // carte) sur /patient/suivi avant d'accéder au reste. Pas d'écran de paiement
-  // si le kiné n'a pas activé Stripe, ni si son compte est suspendu.
+  // Accès selon la formule (Philippe, 2026-11-02) : si le kiné offre l'accès
+  // (tarif 0 €), entrée directe ; sinon le patient choisit une formule 1, 3
+  // ou 6 mois sur /patient/suivi avant d'accéder au reste. Pas d'écran de
+  // paiement si le kiné n'a pas activé Stripe, s'il est suspendu, ou si
+  // l'accès est offert au patient (comptes de test).
   const onSuiviPath = pathname.startsWith(SUIVI_PATH);
   let mustAcceptFollowUp = false;
   if (!onOnboardingPath && !kineSuspended) {
     const instructorId = (patient.instructor_id as string | null) ?? null;
-    const [connectRes, followUpRes] = await Promise.all([
+    const loadSub = () =>
+      supabase
+        .from("subscriptions")
+        .select("plan, status, current_period_end, cancel_at_period_end, stripe_subscription_id, stripe_account_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+    const [connectRes, subRes, trialRes] = await Promise.all([
       instructorId
         ? supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", instructorId).maybeSingle()
         : Promise.resolve({ data: null }),
-      supabase.from("patient_follow_ups").select("status").eq("patient_id", user.id).maybeSingle(),
+      loadSub(),
+      supabase.from("patients").select("trial_ends_at").eq("id", user.id).maybeSingle(),
     ]);
+    let sub = subRes.data;
+    // Période payée dépassée sans nouvelles de Stripe : on relit l'abonnement
+    // (renouvelé ou non) avant de décider — une seule fois par période.
+    if (sub && subscriptionNeedsRefresh(sub as unknown as SubscriptionRow) && sub.stripe_subscription_id && sub.stripe_account_id) {
+      await refreshPatientSubscription(sub.stripe_subscription_id as string, sub.stripe_account_id as string);
+      sub = (await loadSub()).data;
+    }
     const kineRow = patient.instructors as unknown as { review_price_cents: number | null } | null;
-    mustAcceptFollowUp = patientMustAcceptFollowUp({
-      kinePriceCents: kineRow?.review_price_cents ?? null,
+    mustAcceptFollowUp = patientMustSubscribe({
+      kineFree: kineRow?.review_price_cents === 0,
       kineCanCharge: connectRes.data?.status === "active",
-      followUpStatus: (followUpRes.data?.status as string | undefined) ?? null,
+      kineSuspended,
+      freeAccessUntil: (trialRes.data?.trial_ends_at as string | null) ?? null,
+      subscription: (sub as unknown as SubscriptionRow | null) ?? null,
     });
   }
   // Le compte reste ouvert (RGPD) : exporter ou supprimer ses données ne

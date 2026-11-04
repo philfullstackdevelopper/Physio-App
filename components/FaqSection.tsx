@@ -3,20 +3,13 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
-import {
-  FREE_FIRST_MONTH,
-  KINE_PLANS,
-  KINE_SUBSCRIPTION_TTC_CENTS,
-  subscriptionPrice,
-  RECOMMENDED_REVIEW_PRICE_CENTS,
-  eurosFR,
-} from "@/lib/billing/reviewModel";
+import { PATIENT_PLANS, eurosFR, perMonthCents } from "@/lib/billing/patientPlans";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
-const REVIEW_PRICE = eurosFR(RECOMMENDED_REVIEW_PRICE_CENTS, 0);
-const KINE_SUB = eurosFR(KINE_SUBSCRIPTION_TTC_CENTS);
-// Prix par mois le plus bas d'un kiné seul (abonnement le plus long).
-const KINE_SUB_FROM = eurosFR(subscriptionPrice(KINE_PLANS[KINE_PLANS.length - 1].months).perKinePerMonthCents, 0);
+// Formules patient (modèle du 2026-11-02) : lib/billing/patientPlans.ts.
+const [P1, P3, P6] = PATIENT_PLANS;
+const PLANS_TEXT = `${eurosFR(P1.priceCents)} € pour 1 mois, ${eurosFR(P3.priceCents)} € pour 3 mois ou ${eurosFR(P6.priceCents)} € pour 6 mois (soit ${eurosFR(perMonthCents(P6))} € par mois)`;
+const KINE_SHARE_TEXT = `${eurosFR(P1.kineCents)} €, ${eurosFR(P3.kineCents)} € ou ${eurosFR(P6.kineCents)} €`;
 
 const QUESTIONS = [
   {
@@ -46,11 +39,11 @@ const QUESTIONS = [
   },
   {
     question: "Combien coûte l'application pour moi, patient ?",
-    answer: `C'est votre kiné qui fixe son tarif. S'il vous offre le suivi, l'appli est gratuite. Sinon, vous acceptez son tarif mensuel (programme hors nomenclature, non remboursé) et enregistrez votre carte : vous n'êtes prélevé que le mois où il ajuste réellement votre programme, et vous pouvez arrêter à tout moment. Le paiement va directement à votre kiné.`,
+    answer: `Si votre kiné vous offre l'accès, l'appli est gratuite. Sinon, vous choisissez une formule : ${PLANS_TEXT}. Elle se renouvelle automatiquement et vous pouvez la résilier à tout moment depuis l'appli. L'essentiel du paiement va à votre kiné. Acte non remboursé par l'Assurance Maladie.`,
   },
   {
     question: "Je suis kiné : combien ça me coûte, et combien ça me rapporte ?",
-    answer: `Un abonnement de ${KINE_SUB} € TTC par mois, ou dès ${KINE_SUB_FROM} € par mois en payant 3, 6 ou 12 mois d'avance, patients illimités${FREE_FIRST_MONTH ? " (premier mois offert sur la formule au mois)" : ""}. En cabinet, chaque kiné en plus coûte moins cher. Vous fixez librement le tarif de votre programme mensuel hors nomenclature (ou 0 € pour l'offrir) ; vos patients vous paient directement et EasyPhysio ne prend rien. Avec 20 patients suivis à ${REVIEW_PRICE} €, c'est ${eurosFR(20 * RECOMMENDED_REVIEW_PRICE_CENTS, 0)} € d'honoraires par mois.`,
+    answer: `Rien : EasyPhysio est gratuit pour vous, patients illimités. Vos patients paient leur formule (${PLANS_TEXT}) et vous recevez ${KINE_SHARE_TEXT}, frais de paiement déduits, directement sur votre compte. Avec 20 patients abonnés au mois, c'est ${eurosFR(20 * P1.kineCents)} € par mois pour vous. Vous pouvez aussi offrir l'accès à vos patients.`,
   },
   {
     question: "Je suis praticien : comment essayer avec mes patients ?",

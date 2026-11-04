@@ -89,25 +89,15 @@ export default async function KineTelephonePrototype({
     screen = (
       <FacturationView
         connectStatus="active"
-        data={{
-          period: "2026-10-01",
-          kinePriceCents: 2000,
-          priceCents: 2000,
-          followUps: [
-            { patientId: "p1", name: "Claire Martin", status: "active", priceCents: 2000, cardLabel: "VISA •••• 4242", review: null },
-            { patientId: "p2", name: "Hugo Bernard", status: "pending_card", priceCents: 2000, cardLabel: null, review: null },
-            { patientId: "p3", name: "Léa Petit", status: "active", priceCents: 2000, cardLabel: "VISA •••• 1881", review: { id: "r1", paymentStatus: "paid", amountCents: 2000, validatedAt: "2026-10-12T09:00:00Z" } },
-          ],
-          monthEstimate: { free: false, months: 3, kines: 1, htCents: 7499, vatCents: 1500, ttcCents: 8999 },
-          firstBilledMonth: false,
-          planMonths: 3,
-          paidUntil: "2027-01-31",
-          platformPaymentLabel: "Prélèvement SEPA •••• 3201",
-          platformCustomerId: "cus_demo",
-          invoices: [{ periodStart: "2026-11-01", periodEnd: "2027-01-31", amountCents: 8999, status: "paid", patientCount: 0 }],
-          reviewMonths: ["2026-10-01", "2026-09-01"],
-          collectedCents: 2000,
-        }}
+        free={false}
+        patientCount={9}
+        monthlyCents={1515}
+        subscribers={[
+          { patientId: "p1", name: "Claire Martin", planLabel: "3 mois", status: "active", periodEnd: "2027-01-12T09:00:00Z" },
+          { patientId: "p2", name: "Hugo Bernard", planLabel: "1 mois", status: "active", periodEnd: "2026-11-28T09:00:00Z" },
+          { patientId: "p3", name: "Léa Petit", planLabel: "6 mois", status: "active", periodEnd: "2027-04-03T09:00:00Z" },
+          { patientId: "p4", name: "Marc Dubois", planLabel: "1 mois", status: "cancelled", periodEnd: "2026-11-20T09:00:00Z" },
+        ]}
       />
     );
   } else if (ecran === "seances") {

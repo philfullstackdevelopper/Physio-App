@@ -5,77 +5,81 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 import { requestOrigin } from "@/lib/requestOrigin";
-import { followUpForCharge, upsertFollowUp } from "@/lib/db/admin";
-import { followUpSetupMetadata } from "@/lib/billing/followUp";
-import { effectiveReviewPrice } from "@/lib/billing/reviewModel";
+import { applicationFeePercent, isPatientPlanKey, patientPlan } from "@/lib/billing/patientPlans";
+import { signedSubscriptionMetadata } from "@/lib/billing/subscriptionSignature";
+import { refreshPatientSubscription } from "@/lib/billing/patientSubscription";
 
-// Suivi mensuel, côté patient (nouveau modèle, 2026-10-24).
-// Le patient accepte par écrit le tarif de son kiné (art. R.4321-98 CSP :
-// information préalable sur le montant), puis enregistre sa carte chez
-// Stripe, sur le compte de son kiné. Aucun prélèvement à ce moment-là : il
-// n'est prélevé que le mois où son kiné valide un bilan.
+// Formules patient (Philippe, 2026-11-02) : le patient choisit 1, 3 ou 6
+// mois ; Stripe Checkout crée l'abonnement sur le compte Stripe de SON kiné,
+// renouvelé automatiquement, avec la part EasyPhysio prélevée au passage
+// (lib/billing/patientPlans.ts). Résiliable à tout moment : l'accès dure
+// jusqu'à la fin de la période payée.
 
 const fail = (msg: string): never => redirect(`/patient/suivi?error=${encodeURIComponent(msg)}`);
 
-export async function startFollowUp(formData: FormData) {
-  if (formData.get("consent") !== "on") fail("Cochez la case pour accepter le tarif et les conditions du suivi.");
+/** Le patient connecté, le compte Stripe de son kiné et son abonnement actuel. */
+async function context() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
-
   const { data: patient } = await supabase.from("patients").select("id, instructor_id, full_name").eq("id", user.id).maybeSingle();
   if (!patient) fail("Compte patient introuvable.");
   const instructorId = patient!.instructor_id as string;
-  const [{ data: kine }, { data: connect }] = await Promise.all([
-    supabase.from("instructors").select("full_name, status, review_price_cents").eq("id", instructorId).maybeSingle(),
+  const [{ data: kine }, { data: connect }, { data: sub }] = await Promise.all([
+    supabase.from("instructors").select("status, review_price_cents").eq("id", instructorId).maybeSingle(),
     supabase.from("instructor_connect_accounts").select("stripe_connect_account_id, status").eq("instructor_id", instructorId).maybeSingle(),
+    supabase.from("subscriptions").select("plan, status, stripe_subscription_id, stripe_customer_id, stripe_account_id").eq("user_id", user.id).maybeSingle(),
   ]);
-  if (((kine?.status as string | null) ?? "approved") !== "approved") fail("Votre kinésithérapeute ne propose pas de suivi pour le moment.");
   const accountId = connect?.status === "active" ? ((connect.stripe_connect_account_id as string | null) ?? null) : null;
+  return { user, patient: patient!, kine, accountId, sub };
+}
+
+export async function startPlan(formData: FormData) {
+  const plan = formData.get("plan");
+  if (!isPatientPlanKey(plan)) fail("Choisissez une formule.");
+  if (formData.get("consent") !== "on") fail("Cochez la case pour accepter le tarif et le renouvellement automatique.");
+  const { user, patient, kine, accountId, sub } = await context();
+  if (((kine?.status as string | null) ?? "approved") !== "approved") fail("Votre kinésithérapeute ne propose pas de suivi pour le moment.");
+  if ((kine?.review_price_cents as number | null) === 0) redirect("/patient");
   if (!accountId) fail("Votre kinésithérapeute n'a pas encore activé les paiements en ligne. Prévenez-le, puis revenez ici.");
 
-  // Le tarif accepté est celui affiché sur la page, relu ici côté serveur.
-  const priceCents = effectiveReviewPrice((kine?.review_price_cents as number | null) ?? null);
-  if (priceCents === 0) redirect("/patient");
-  if (Number(formData.get("price_cents")) !== priceCents) fail("Le tarif de votre kiné vient de changer : vérifiez-le et recommencez.");
-
   const stripe = getStripe();
-  const existing = await followUpForCharge(user.id);
+  const p = patientPlan(plan as Parameters<typeof patientPlan>[0]);
   let url: string | null = null;
   try {
-    // Réutiliser le client Stripe déjà créé chez ce kiné (même carte possible).
-    let customerId: string | null = null;
-    if (existing?.stripe_customer_id && existing.connect_account_id === accountId) {
-      try {
-        const c = await stripe.customers.retrieve(existing.stripe_customer_id, undefined, { stripeAccount: accountId! });
-        if (!("deleted" in c && c.deleted)) customerId = c.id;
-      } catch {
-        /* introuvable : un nouveau client est créé */
-      }
+    // Ancien abonnement en échec de paiement chez ce kiné : on l'arrête avant
+    // d'en créer un nouveau (un seul abonnement par patient).
+    if (sub?.stripe_subscription_id && sub.stripe_account_id === accountId && ["past_due", "unpaid", "incomplete"].includes(sub.status as string)) {
+      await stripe.subscriptions.cancel(sub.stripe_subscription_id as string, undefined, { stripeAccount: accountId! }).catch(() => null);
     }
+    // Même client Stripe chez ce kiné si possible (carte déjà connue).
+    let customerId: string | null = sub?.stripe_account_id === accountId ? ((sub?.stripe_customer_id as string | null) ?? null) : null;
     if (!customerId) {
       const c = await stripe.customers.create(
-        { email: user.email ?? undefined, name: (patient!.full_name as string | null) ?? undefined, metadata: { patient_id: user.id } },
+        { email: user.email ?? undefined, name: (patient.full_name as string | null) ?? undefined, metadata: { patient_id: user.id } },
         { stripeAccount: accountId! },
       );
       customerId = c.id;
     }
-    await upsertFollowUp({
-      patientId: user.id,
-      instructorId,
-      priceCents,
-      status: existing?.status === "active" ? "active" : "pending_card",
-      stripeCustomerId: customerId,
-      stripePaymentMethodId: null,
-      cardLabel: null,
-    });
     const base = await requestOrigin();
+    const metadata = signedSubscriptionMetadata(user.id, p.key, accountId!);
     const session = await stripe.checkout.sessions.create(
       {
-        mode: "setup",
+        mode: "subscription",
         customer: customerId,
-        currency: "eur",
-        payment_method_types: ["card"],
-        metadata: followUpSetupMetadata({ patientId: user.id, instructorId, priceCents, accountId: accountId! }),
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: "eur",
+              unit_amount: p.priceCents,
+              recurring: { interval: "month", interval_count: p.months },
+              product_data: { name: `Suivi de rééducation — ${p.label}` },
+            },
+          },
+        ],
+        subscription_data: { application_fee_percent: applicationFeePercent(p), metadata },
+        metadata,
+        locale: "fr",
         success_url: `${base}/patient/suivi/retour?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${base}/patient/suivi?checkout=annule`,
       },
@@ -83,26 +87,40 @@ export async function startFollowUp(formData: FormData) {
     );
     url = session.url;
   } catch (e) {
-    console.error("startFollowUp:", e);
+    console.error("startPlan:", e);
   }
-  if (!url) fail("L'enregistrement de la carte est momentanément indisponible. Réessayez dans quelques minutes.");
+  if (!url) fail("Le paiement est momentanément indisponible. Réessayez dans quelques minutes.");
   redirect(url!);
 }
 
-export async function stopFollowUp() {
-  const supabase = await createClient();
-  const user = await requireUser(supabase);
-  const existing = await followUpForCharge(user.id);
-  if (existing) {
-    await upsertFollowUp({
-      patientId: user.id,
-      instructorId: existing.instructor_id,
-      priceCents: existing.price_cents,
-      status: "stopped",
-      stripeCustomerId: null,
-      stripePaymentMethodId: null,
-      cardLabel: null,
-    });
+/** Résilier : l'abonnement s'arrête à la fin de la période payée. */
+export async function cancelPlan() {
+  const { sub } = await context();
+  const id = sub?.stripe_subscription_id as string | undefined;
+  const account = sub?.stripe_account_id as string | undefined;
+  if (!id || !account) fail("Aucune formule en cours.");
+  try {
+    await getStripe().subscriptions.update(id!, { cancel_at_period_end: true }, { stripeAccount: account! });
+    await refreshPatientSubscription(id!, account!);
+  } catch (e) {
+    console.error("cancelPlan:", e);
+    fail("La résiliation n'a pas pu être enregistrée. Réessayez.");
   }
   redirect("/patient/suivi?arret=1");
+}
+
+/** Annuler la résiliation : la formule se renouvelle à nouveau. */
+export async function resumePlan() {
+  const { sub } = await context();
+  const id = sub?.stripe_subscription_id as string | undefined;
+  const account = sub?.stripe_account_id as string | undefined;
+  if (!id || !account) fail("Aucune formule en cours.");
+  try {
+    await getStripe().subscriptions.update(id!, { cancel_at_period_end: false }, { stripeAccount: account! });
+    await refreshPatientSubscription(id!, account!);
+  } catch (e) {
+    console.error("resumePlan:", e);
+    fail("La reprise n'a pas pu être enregistrée. Réessayez.");
+  }
+  redirect("/patient/suivi?reprise=1");
 }

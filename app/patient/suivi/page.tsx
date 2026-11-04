@@ -1,67 +1,72 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { effectiveReviewPrice, patientMustAcceptFollowUp } from "@/lib/billing/reviewModel";
-import SuiviView, { type SuiviViewProps } from "./SuiviView";
+import { patientMustSubscribe, subscriptionNeedsRefresh, type SubscriptionRow } from "@/lib/billing/patientPlans";
+import { refreshPatientSubscription } from "@/lib/billing/patientSubscription";
+import SuiviView from "./SuiviView";
 
-// « Suivi mensuel » côté patient (nouveau modèle, 2026-10-24). Le patient y
-// accepte le tarif de son kiné (information préalable, art. R.4321-98 CSP),
-// enregistre sa carte, l'arrête quand il veut, et retrouve ses bilans et
-// notes d'honoraires. Tarif du kiné au-dessus de 0 € : ce suivi est la
-// condition d'accès à l'appli (app/patient/layout.tsx) ; à 0 €, appli ouverte.
+// « Mon suivi » côté patient : choisir, voir ou résilier sa formule
+// (1, 3 ou 6 mois — Philippe, 2026-11-02). C'est aussi l'écran où
+// app/patient/layout.tsx envoie un patient qui n'a pas encore accès.
 export default async function SuiviPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string; attente?: string; arret?: string; checkout?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; attente?: string; arret?: string; reprise?: string }>;
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const { data: patient } = await supabase.from("patients").select("instructor_id").eq("id", user.id).maybeSingle();
+  const { data: patient } = await supabase.from("patients").select("instructor_id, trial_ends_at").eq("id", user.id).maybeSingle();
   const instructorId = (patient?.instructor_id as string | null) ?? null;
-  const [{ data: kine }, { data: connect }, { data: followUp }, { data: reviews }] = await Promise.all([
+  const loadSub = () =>
+    supabase
+      .from("subscriptions")
+      .select("plan, status, current_period_end, cancel_at_period_end, stripe_subscription_id, stripe_account_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+  const [{ data: kine }, { data: connect }, subRes] = await Promise.all([
     instructorId
       ? supabase.from("instructors").select("full_name, status, review_price_cents").eq("id", instructorId).maybeSingle()
       : Promise.resolve({ data: null }),
     instructorId
       ? supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", instructorId).maybeSingle()
       : Promise.resolve({ data: null }),
-    supabase.from("patient_follow_ups").select("status, price_cents, card_label").eq("patient_id", user.id).maybeSingle(),
-    supabase
-      .from("monthly_reviews")
-      .select("id, period, amount_cents, payment_status, fee_note_year, fee_note_seq")
-      .eq("patient_id", user.id)
-      .order("period", { ascending: false })
-      .limit(24),
+    loadSub(),
   ]);
+  let sub = subRes.data;
+  // Période payée dépassée sans nouvelles de Stripe : on relit l'abonnement.
+  if (sub && subscriptionNeedsRefresh(sub as unknown as SubscriptionRow) && sub.stripe_subscription_id && sub.stripe_account_id) {
+    await refreshPatientSubscription(sub.stripe_subscription_id as string, sub.stripe_account_id as string);
+    sub = (await loadSub()).data;
+  }
 
-  const kineSuspended = (kine?.status as string | null) === "suspended";
-  const required =
-    !kineSuspended &&
-    patientMustAcceptFollowUp({
-      kinePriceCents: (kine?.review_price_cents as number | null) ?? null,
-      kineCanCharge: connect?.status === "active",
-      followUpStatus: (followUp?.status as string | undefined) ?? null,
-    });
-  const kineName = (kine?.full_name as string | null) ?? "votre kiné";
+  const kineFree = (kine?.review_price_cents as number | null) === 0;
   const kineReady = ((kine?.status as string | null) ?? "approved") === "approved" && connect?.status === "active";
-  const status = (followUp?.status as "pending_card" | "active" | "stopped" | undefined) ?? "none";
-  const currentPrice = effectiveReviewPrice((kine?.review_price_cents as number | null) ?? null);
-  const acceptedPrice = (followUp?.price_cents as number | undefined) ?? currentPrice;
-  const price = status === "active" ? acceptedPrice : currentPrice;
+  const required = patientMustSubscribe({
+    kineFree,
+    kineCanCharge: connect?.status === "active",
+    kineSuspended: (kine?.status as string | null) === "suspended",
+    freeAccessUntil: (patient?.trial_ends_at as string | null) ?? null,
+    subscription: (sub as unknown as SubscriptionRow | null) ?? null,
+  });
 
   return (
     <SuiviView
       sp={sp}
-      kineName={kineName}
+      kineName={(kine?.full_name as string | null) ?? "votre kiné"}
       kineReady={kineReady}
-      status={status}
-      currentPrice={currentPrice}
-      acceptedPrice={acceptedPrice}
-      price={price}
-      cardLabel={(followUp?.card_label as string | null) ?? null}
+      kineFree={kineFree}
       required={required}
-      reviews={(reviews ?? []) as SuiviViewProps["reviews"]}
+      subscription={
+        sub
+          ? {
+              plan: sub.plan as string,
+              status: sub.status as string,
+              periodEnd: (sub.current_period_end as string | null) ?? null,
+              cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+            }
+          : null
+      }
     />
   );
 }

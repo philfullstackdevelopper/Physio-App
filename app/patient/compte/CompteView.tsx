@@ -15,6 +15,8 @@ export type FollowUpSummary = {
   free?: boolean;
   cardLabel: string | null;
   kineName: string | null;
+  /** Formules patient (2026-11-02) : texte de la carte calculé par page.tsx. */
+  line?: string;
 };
 
 export interface CompteViewProps {
@@ -31,6 +33,13 @@ const euros = (cents: number) => (cents / 100).toLocaleString("fr-FR", { minimum
 // kiné (programme mensuel) et mène à /patient/suivi pour le gérer.
 function followUpText(f: FollowUpSummary): { title: string; line: string; badge: string; badgeClass: string; cta: string } {
   const kine = f.kineName ?? "votre kiné";
+  // Formules patient (2026-11-02) : page.tsx fournit la ligne ; même carte.
+  if (f.line) {
+    if (f.free) return { title: "Mon suivi", line: f.line, badge: "Offert", badgeClass: "bg-ok-soft text-ok", cta: "Voir" };
+    if (f.status === "active") return { title: "Mon suivi", line: f.line, badge: "Actif", badgeClass: "bg-ok-soft text-ok", cta: "Gérer" };
+    if (f.status === "pending_card") return { title: "Mon suivi", line: f.line, badge: "Paiement refusé", badgeClass: "bg-danger-soft text-danger", cta: "Régler" };
+    return { title: "Mon suivi", line: f.line, badge: "Non activé", badgeClass: "bg-app-bg text-muted", cta: "Choisir" };
+  }
   if (f.free && f.status !== "active") {
     return { title: "Suivi mensuel", line: `Offert par ${kine} : rien à payer`, badge: "Offert", badgeClass: "bg-ok-soft text-ok", cta: "Voir" };
   }

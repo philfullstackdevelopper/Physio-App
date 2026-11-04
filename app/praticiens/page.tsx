@@ -12,20 +12,13 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import KineMockup from "@/components/KineMockup";
 import DotCanvas from "@/components/DotCanvas";
-import {
-  FREE_FIRST_MONTH,
-  KINE_PLANS,
-  KINE_SUBSCRIPTION_TTC_CENTS,
-  subscriptionPrice,
-  RECOMMENDED_REVIEW_PRICE_CENTS,
-  eurosFR,
-} from "@/lib/billing/reviewModel";
+import { PATIENT_PLANS, eurosFR } from "@/lib/billing/patientPlans";
 
-// Montants : lib/billing/reviewModel.ts, jamais écrits en dur.
-const KINE_SUB = eurosFR(KINE_SUBSCRIPTION_TTC_CENTS);
-// Prix par mois le plus bas d'un kiné seul (abonnement le plus long).
-const KINE_SUB_FROM = eurosFR(subscriptionPrice(KINE_PLANS[KINE_PLANS.length - 1].months).perKinePerMonthCents, 0);
-const REVIEW_PRICE = eurosFR(RECOMMENDED_REVIEW_PRICE_CENTS, 0);
+// Modèle du 2026-11-02 : gratuit pour le kiné, formules payées par les
+// patients. Montants : lib/billing/patientPlans.ts, jamais écrits en dur.
+const [P1, P3, P6] = PATIENT_PLANS;
+const PATIENT_PRICES = `${eurosFR(P1.priceCents)} €, ${eurosFR(P3.priceCents)} € ou ${eurosFR(P6.priceCents)} €`;
+const KINE_SHARES = `${eurosFR(P1.kineCents)} €, ${eurosFR(P3.kineCents)} € ou ${eurosFR(P6.kineCents)} €`;
 
 export const metadata: Metadata = {
   title: "Pour les kinésithérapeutes",
@@ -69,12 +62,12 @@ const CAPABILITIES = [
     body: "Retirez un exercice, ajoutez-en un ou changez de séance : le patient voit la mise à jour dans son application et reçoit un message.",
   },
   {
-    title: "Facturez votre suivi mensuel",
-    body: "Un programme mensuel hors nomenclature, au tarif que vous fixez (ou offert). Le patient n'est prélevé que le mois où vous ajustez réellement son programme.",
+    title: "Vos patients s'abonnent, vous êtes payé",
+    body: `Vos patients choisissent une formule de 1, 3 ou 6 mois (${PATIENT_PRICES}) et vous recevez ${KINE_SHARES} sur votre compte. Ou vous offrez l'accès.`,
   },
   {
-    title: "Votre comptabilité en un clic",
-    body: "Une note d'honoraires par mois facturé, et en fin de mois le récapitulatif de vos recettes, prêt pour votre comptable.",
+    title: "Vos versements en un coup d'œil",
+    body: "Qui est abonné, à quelle formule, jusqu'à quand, et vos versements dans votre compte Stripe, prêts pour votre comptable.",
   },
 ];
 
@@ -127,7 +120,7 @@ export default function PraticiensPage() {
               <Cta />
             </div>
             <p className="mt-4 text-sm text-slate-500">
-              {KINE_SUB} € TTC par mois (dès {KINE_SUB_FROM} € en payant d&apos;avance), patients illimités. Vos honoraires de suivi restent à 100 % à vous.
+              Gratuit pour vous, patients illimités. Vos patients paient leur formule, et la plus grande part vous revient.
             </p>
           </div>
           <KineMockup />
@@ -208,13 +201,12 @@ export default function PraticiensPage() {
               Ce que ça vous coûte
             </h2>
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-300">
-              Un abonnement de {KINE_SUB} € TTC par mois, ou dès {KINE_SUB_FROM} € par mois sur 3, 6 ou 12 mois payés d&apos;avance ;
-              en cabinet, chaque kiné en plus coûte moins cher. Patients illimités. Vos patients vous paient directement leur
-              programme mensuel, au tarif que vous fixez (conseillé : {REVIEW_PRICE} €, ou 0 € pour l&apos;offrir) : EasyPhysio
-              ne prend rien sur vos honoraires.
+              Rien : EasyPhysio est gratuit pour vous, patients illimités. Vos patients choisissent une formule de 1, 3 ou 6 mois
+              ({PATIENT_PRICES}), renouvelée automatiquement et résiliable à tout moment ; vous recevez {KINE_SHARES}, frais de
+              paiement déduits. Vous pouvez aussi offrir l&apos;accès à vos patients.
             </p>
             <ul className="mx-auto mt-6 flex max-w-lg flex-col gap-2 text-left sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-6 sm:text-left">
-              {[...(FREE_FIRST_MONTH ? ["Premier mois offert (au mois)"] : []), "Sans engagement", "Données hébergées en France"].map((point) => (
+              {["Gratuit pour le kiné", "Sans engagement", "Données hébergées en France"].map((point) => (
                 <li key={point} className="flex items-center gap-2 text-sm text-slate-200">
                   <Check className="h-4 w-4 shrink-0 text-emerald-400" strokeWidth={2.5} />
                   {point}

@@ -10,6 +10,7 @@ import { applyAdjustment, adjustmentMessage } from "@/lib/exercise/adjustPlan";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { deleteClerkUserWithRetry } from "@/lib/auth/deleteClerkUser";
 import { deleteAppUserById } from "@/lib/db/admin";
+import { getStripe } from "@/lib/billing/stripe";
 import { resolveAppUserId, precreateAppUserId } from "@/lib/auth/user-map";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { doseColumnsFromForm, doseColumnsFromRow, type DoseColumns } from "@/lib/exercise/doseForm";
@@ -71,6 +72,24 @@ export async function deletePatient(formData: FormData) {
   //   2. seulement ensuite, le nettoyage Clerk (toujours en meilleur effort) ;
   //   3. puis la correspondance app_users, via la connexion serveur directe
   //      (lib/db/admin.ts) et non plus via PostgREST, qui n'y a plus accès.
+  // 0. Formule en cours (2026-11-02) : arrêtée tout de suite chez Stripe,
+  // sinon le patient supprimé continuerait d'être prélevé.
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("stripe_subscription_id, stripe_account_id, status")
+    .eq("user_id", patientId)
+    .maybeSingle();
+  if (sub?.stripe_subscription_id && sub.stripe_account_id && sub.status !== "canceled") {
+    try {
+      await getStripe().subscriptions.cancel(sub.stripe_subscription_id as string, undefined, { stripeAccount: sub.stripe_account_id as string });
+    } catch (e) {
+      if ((e as { code?: string })?.code !== "resource_missing") {
+        console.error("deletePatient: résiliation Stripe impossible", e);
+        redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("La formule du patient n'a pas pu être résiliée. Réessayez dans quelques minutes.")}`);
+      }
+    }
+  }
+
   const { error } = await supabase.from("patients").delete().eq("id", patientId).eq("instructor_id", user.id);
   if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
 

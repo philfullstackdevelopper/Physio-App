@@ -138,3 +138,25 @@ export async function removeFromCabinet(formData: FormData) {
   }
   back("saved=cabinet-retire");
 }
+
+/**
+ * Accès des patients (modèle du 2026-11-02) : « payant » = les patients
+ * choisissent une formule 1 / 3 / 6 mois ; « gratuit » = le kiné offre
+ * l'accès. Stocké dans instructors.review_price_cents : 0 = gratuit,
+ * null = payant (formules).
+ */
+export async function setAccessMode(formData: FormData) {
+  const supabase = await createClient();
+  const { user } = await requireApprovedInstructor(supabase);
+  const mode = String(formData.get("mode") ?? "");
+  if (mode !== "free" && mode !== "paid") redirect("/dashboard/facturation");
+  const { error } = await supabase
+    .from("instructors")
+    .update({ review_price_cents: mode === "free" ? 0 : null })
+    .eq("id", user.id);
+  if (error) {
+    console.error("setAccessMode:", error);
+    redirect(`/dashboard/facturation?error=${encodeURIComponent("Enregistrement impossible pour le moment. Réessayez dans un instant.")}`);
+  }
+  redirect("/dashboard/facturation?saved=acces");
+}

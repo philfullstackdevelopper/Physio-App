@@ -6,6 +6,7 @@ import { deleteAppUserById } from "@/lib/db/admin";
 import { requireUser, forgetKnownUser } from "@/lib/supabase/require-user";
 import { revokeCurrentSession } from "@/lib/auth/clerk-session";
 import { deleteClerkUserWithRetry } from "@/lib/auth/deleteClerkUser";
+import { getStripe } from "@/lib/billing/stripe";
 
 // RGPD droit à l'effacement: a patient deletes their own account. Every
 // table referencing patients.id has "on delete cascade" (see the
@@ -33,6 +34,26 @@ export async function deleteMyAccount(formData: FormData) {
 
   // redirect() lève une exception interne à Next : toujours HORS des try.
   let failure: string | null = null;
+
+  // 0) Formule en cours (2026-11-02) : arrêtée tout de suite chez Stripe,
+  // sinon le patient continuerait d'être prélevé après la suppression.
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("stripe_subscription_id, stripe_account_id, status")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (sub?.stripe_subscription_id && sub.stripe_account_id && sub.status !== "canceled") {
+    try {
+      await getStripe().subscriptions.cancel(sub.stripe_subscription_id as string, undefined, { stripeAccount: sub.stripe_account_id as string });
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code !== "resource_missing") {
+        console.error("deleteMyAccount: résiliation Stripe impossible", err);
+        failure = "Votre formule n'a pas pu être résiliée pour le moment. Votre compte est intact — réessayez dans quelques minutes.";
+      }
+    }
+  }
+  if (failure) redirect(`/patient/compte?error=${encodeURIComponent(failure)}`);
 
   // 1) Les données : la ligne d'identité interne  // 2) Les données : la ligne d'identité interne (cascade sur toutes les
   // tables du patient). Connexion directe, pas le client supabase-js. Si ça
