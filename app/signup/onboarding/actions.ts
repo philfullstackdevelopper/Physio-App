@@ -87,5 +87,7 @@ export async function saveInstructorOnboarding(formData: FormData) {
   if (rppsVerified && verification?.status === "verified") await setInstructorRppsVerified(user.id, verification.verifiedAt);
   // Validé d'office dès que le cabinet est renseigné.
   await setInstructorStatus(user.id, "approved");
-  redirect("/dashboard");
+  // Page de passage (chargement complet) plutôt qu'une navigation interne
+  // vers /dashboard, qui pouvait laisser un écran blanc (2026-11-04).
+  redirect("/apres-connexion");
 }

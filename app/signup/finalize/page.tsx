@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import ClientRedirect from "@/app/apres-connexion/ClientRedirect";
 import { cookies } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { resolveAppUserId } from "@/lib/auth/user-map";
@@ -43,7 +43,16 @@ function readPendingCabinet(raw: string | undefined): PendingCabinet | null {
 // the privileged setInstructorStatus() write (same reasoning as
 // app/signup/onboarding/actions.ts): inserting "approved" directly through
 // this session would let anyone self-approve by calling PostgREST directly.
+// Clerk arrive ici juste après la création du compte. Plus de redirect()
+// serveur comme réponse à cette navigation (écran blanc possible, même cause
+// que /apres-connexion) : on calcule la destination, puis la page fait un vrai
+// chargement vers elle (ClientRedirect). Philippe, 2026-11-04.
 export default async function SignupFinalizePage() {
+  const to = await destination();
+  return <ClientRedirect to={to} />;
+}
+
+async function destination(): Promise<string> {
   // currentUser() can throw (Clerk dev-instance rate limit, a 429) rather
   // than just resolve to null — same failure mode fixed in
   // lib/supabase/require-user.ts, Philippe, 2026-09-10. Right after a fresh
@@ -53,12 +62,12 @@ export default async function SignupFinalizePage() {
   try {
     user = await currentUser();
   } catch {
-    redirect("/connection-error?next=/signup/finalize");
+    return ("/connection-error?next=/signup/finalize");
   }
-  if (!user) redirect("/login");
+  if (!user) return ("/login");
 
   const email = user.primaryEmailAddress?.emailAddress ?? "";
-  if (!email) redirect("/login");
+  if (!email) return ("/login");
 
   const appId = await resolveAppUserId(user.id, email, user.primaryEmailAddress?.verification?.status === "verified");
   const supabase = await createClient();
@@ -83,14 +92,14 @@ export default async function SignupFinalizePage() {
   // appli patient (audit du 2026-10-07).
   if (!existing) {
     const { data: asPatient } = await supabase.from("patients").select("id").eq("id", appId).maybeSingle();
-    if (asPatient) redirect("/patient");
+    if (asPatient) return ("/patient");
   }
 
   // Avant le lancement (lib/launchFlags.ts) : aucune NOUVELLE fiche kiné, même
   // si une identité de connexion a été créée par un autre chemin (bouton
   // Google de la page de connexion, ancien lien…). La personne arrive sur
   // l'écran « les inscriptions ouvriront au lancement ».
-  if (!existing && !SIGNUPS_OPEN) redirect("/signup");
+  if (!existing && !SIGNUPS_OPEN) return ("/signup");
 
   if (!existing) {
     const fullName =
@@ -120,7 +129,7 @@ export default async function SignupFinalizePage() {
     });
 
     if (error) {
-      redirect(`/connection-error?next=${encodeURIComponent("/dashboard")}`);
+      return (`/connection-error?next=${encodeURIComponent("/dashboard")}`);
     }
 
     // Badge « RPPS vérifié » : écrit par le serveur (migration 0063).
@@ -129,18 +138,18 @@ export default async function SignupFinalizePage() {
     // l'appli. Cabinet manquant (cookie perdu) → on le demande d'abord.
     if (pendingCabinet) {
       await setInstructorStatus(appId, "approved");
-      redirect("/dashboard");
+      return ("/dashboard");
     }
-    redirect("/signup/onboarding");
+    return ("/signup/onboarding");
   }
 
   // Already had a profile (re-run, or previously approved account re-signing up).
   // Validé, refusé ou suspendu : /dashboard affiche l'espace ou le bon message.
-  if ((existing.status ?? "approved") !== "pending") redirect("/dashboard");
+  if ((existing.status ?? "approved") !== "pending") return ("/dashboard");
   // Resté « en attente » d'avant l'inscription libre, cabinet renseigné : validé.
   if (existing.cabinet_name) {
     await setInstructorStatus(appId, "approved");
-    redirect("/dashboard");
+    return ("/dashboard");
   }
-  redirect("/signup/onboarding");
+  return ("/signup/onboarding");
 }
