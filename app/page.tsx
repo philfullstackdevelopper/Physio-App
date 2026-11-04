@@ -267,12 +267,11 @@ export default function Home() {
         </Reveal>
 
         {/* ── Tarifs ───────────────────────────────────────────── */}
-        {/* Modèle du 2026-11-02 (Philippe) : l'appli est gratuite pour le kiné ;
-            ses patients paient une formule 1 / 3 / 6 mois dont il touche la plus
-            grande part. Un seul simulateur (KinePlans) sous la question
-            d'accroche ; l'ancienne section « Formules » (abonnement kiné) est
-            retirée, son ancre #formules est gardée ici pour le lien « Tarifs ».
-            Montants : lib/billing/patientPlans.ts. */}
+        {/* Modèle définitif (Philippe, 2026-11-04) : l'appli est gratuite pour
+            le kiné ; chaque patient paie 9,99 € par mois = 3,99 € d'accès à
+            EasyPhysio + 6,00 € de programme versés au kiné. Un seul simulateur
+            (KinePlans) sous la question d'accroche ; l'ancre #formules est
+            gardée ici pour le lien « Tarifs ». Montants : lib/billing/patientPlans.ts. */}
         <Reveal>
         <section id="tarifs" className="mt-24 scroll-mt-24 text-center sm:mt-32">
           <span id="formules" className="block scroll-mt-24" aria-hidden="true" />
@@ -284,7 +283,7 @@ export default function Home() {
           </h2>
 
           <p className="mx-auto mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 max-sm:hidden">
-            EasyPhysio est gratuit pour vous. Vos patients paient leur formule, et la plus grande part vous revient.
+            EasyPhysio est gratuit pour vous. Vos patients paient l'accès à l'appli, et vos honoraires vous sont versés directement.
           </p>
           <FitToViewport className="mt-10 sm:short:mt-5 phone-land:mt-2">
             <KinePlans />

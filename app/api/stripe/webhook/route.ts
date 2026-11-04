@@ -53,19 +53,21 @@ export async function POST(req: Request) {
         else await finalizePlatformBillingSetup(session.id);
         break;
       }
-      // Formule patient payée (2026-11-02), sur le compte Connect du kiné.
-      if (session.mode === "subscription" && event.account) {
+      // Abonnement d'accès du patient (compte EasyPhysio, modèle du
+      // 2026-11-04) ; sur un compte Connect : formule de l'ancien modèle.
+      if (session.mode === "subscription") {
         const subId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
-        if (subId) await refreshPatientSubscription(subId, event.account);
+        if (subId) await refreshPatientSubscription(subId, event.account ?? null);
       }
       break;
     }
-    // Formule patient créée, renouvelée, résiliée, paiement refusé… (compte
-    // Connect du kiné). Ignorée si elle n'a pas été créée par EasyPhysio.
+    // Abonnement d'accès créé, renouvelé, résilié, paiement refusé… (compte
+    // EasyPhysio) ; ou formule de l'ancien modèle (compte Connect du kiné),
+    // arrêtée à la fin de sa période. Ignoré s'il n'a pas été créé par EasyPhysio.
     case "customer.subscription.created":
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
-      if (event.account) await syncPatientSubscription(event.data.object as Stripe.Subscription, event.account);
+      await syncPatientSubscription(event.data.object as Stripe.Subscription, event.account ?? null);
       break;
     }
     case "account.updated": {

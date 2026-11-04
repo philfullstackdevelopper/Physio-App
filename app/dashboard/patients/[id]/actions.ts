@@ -79,9 +79,14 @@ export async function deletePatient(formData: FormData) {
     .select("stripe_subscription_id, stripe_account_id, status")
     .eq("user_id", patientId)
     .maybeSingle();
-  if (sub?.stripe_subscription_id && sub.stripe_account_id && sub.status !== "canceled") {
+  // Abonnement d'accès : compte EasyPhysio (stripe_account_id vide) ; ancienne formule : compte du kiné.
+  if (sub?.stripe_subscription_id && sub.status !== "canceled") {
     try {
-      await getStripe().subscriptions.cancel(sub.stripe_subscription_id as string, undefined, { stripeAccount: sub.stripe_account_id as string });
+      await getStripe().subscriptions.cancel(
+        sub.stripe_subscription_id as string,
+        undefined,
+        sub.stripe_account_id ? { stripeAccount: sub.stripe_account_id as string } : undefined,
+      );
     } catch (e) {
       if ((e as { code?: string })?.code !== "resource_missing") {
         console.error("deletePatient: résiliation Stripe impossible", e);

@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { PATIENT_PLANS, eurosFR, isPatientPlanKey, patientPlan, perMonthCents } from "@/lib/billing/patientPlans";
+import { ACCESS_PLAN_KEY, PATIENT_MONTHLY_TOTAL_CENTS, TRIAL_DAYS, eurosFR, isLegacyPlanKey } from "@/lib/billing/patientPlans";
 import CompteView, { type FollowUpSummary } from "./CompteView";
 
-// « Paramètres » du patient. Formules 1 / 3 / 6 mois (2026-11-02) : la carte
-// « Mon suivi » résume la formule et mène à /patient/suivi. Le reste (compte,
+// « Paramètres » du patient. Modèle définitif (2026-11-04, lib/billing/patientPlans.ts) :
+// la carte « Mon suivi » résume l'abonnement et mène à /patient/suivi. Le reste (compte,
 // export des données, suppression — droits RGPD) ne change pas.
 export default async function CompteePage({
   searchParams,
@@ -21,24 +21,27 @@ export default async function CompteePage({
   ]);
   const kine = patient?.instructors as unknown as { full_name: string | null } | null;
   const kineName = kine?.full_name ?? "votre kiné";
-  const plan = sub && isPatientPlanKey(sub.plan) ? patientPlan(sub.plan) : null;
-  const live = !!plan && (sub!.status === "active" || sub!.status === "trialing");
-  const refused = !!plan && ["past_due", "unpaid", "incomplete"].includes(sub!.status as string);
+  const known = !!sub && (sub.plan === ACCESS_PLAN_KEY || isLegacyPlanKey(sub.plan));
+  const live = known && (sub!.status === "active" || sub!.status === "trialing");
+  const refused = known && ["past_due", "unpaid", "incomplete"].includes(sub!.status as string);
   const date = sub?.current_period_end
     ? new Date(sub.current_period_end as string).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
     : "";
-  const cheapest = Math.min(...PATIENT_PLANS.map(perMonthCents));
 
   const summary: FollowUpSummary = {
     status: live ? "active" : refused ? "pending_card" : "none",
-    priceCents: plan?.priceCents ?? 0,
+    priceCents: PATIENT_MONTHLY_TOTAL_CENTS,
     cardLabel: null,
     kineName,
     line: live
-        ? `${plan!.label} · ${sub!.cancel_at_period_end ? `accès jusqu'au ${date}` : `renouvelée le ${date}`}`
+        ? sub!.cancel_at_period_end || isLegacyPlanKey(sub!.plan)
+          ? `Accès jusqu'au ${date}`
+          : sub!.status === "trialing"
+            ? `Essai gratuit jusqu'au ${date}`
+            : `Actif · prochain mois le ${date}`
         : refused
           ? "Le dernier paiement a été refusé"
-          : `Formules dès ${eurosFR(cheapest)} € par mois (non remboursé)`,
+          : `${TRIAL_DAYS} jours offerts, puis ${eurosFR(PATIENT_MONTHLY_TOTAL_CENTS)} € par mois au plus (non remboursé)`,
   };
 
   return <CompteView fullName={(patient?.full_name as string | null) ?? null} error={error} followUp={summary} />;

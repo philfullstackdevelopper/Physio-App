@@ -1,25 +1,40 @@
 // Suspension d'un kiné par l'administrateur (Philippe, 2026-10-07) : son
 // accès est coupé ; ses patients gardent leur programme, gratuitement.
-// Formules patient (2026-11-02) : les abonnements de ses patients sont
-// arrêtés tout de suite chez Stripe, sinon ils continueraient d'être prélevés
-// pour un suivi que le kiné ne peut plus assurer.
+// Leurs abonnements sont arrêtés tout de suite chez Stripe, sinon ils
+// continueraient d'être prélevés pour un suivi que le kiné ne peut plus
+// assurer : l'abonnement d'accès (compte EasyPhysio, modèle du 2026-11-04) et,
+// s'il en reste, une formule de l'ancien modèle (compte du kiné). Plus aucun
+// prélèvement des 6 € du kiné non plus : lib/billing/autoReview.ts refuse de
+// prélever pour un kiné suspendu.
 import { instructorSubscriptions, setInstructorStatus } from "@/lib/db/admin";
 import { getStripe } from "./stripe";
 import { refreshPatientSubscription } from "./patientSubscription";
 
 const LIVE = new Set(["active", "trialing", "past_due", "unpaid", "incomplete"]);
 
+const missing = (e: unknown) => (e as { code?: string })?.code === "resource_missing";
+
 export async function suspendInstructor(instructorId: string): Promise<void> {
   const subs = await instructorSubscriptions(instructorId);
   const stripe = getStripe();
   for (const s of subs) {
-    if (!LIVE.has(s.status) || !s.connect_account_id) continue;
+    if (!LIVE.has(s.status)) continue;
+    // D'abord sur le compte EasyPhysio (abonnement d'accès) ; s'il n'y est
+    // pas, c'est une formule de l'ancien modèle, sur le compte du kiné.
+    let account: string | null = null;
     try {
-      await stripe.subscriptions.cancel(s.stripe_subscription_id, undefined, { stripeAccount: s.connect_account_id });
+      await stripe.subscriptions.cancel(s.stripe_subscription_id);
     } catch (e) {
-      if ((e as { code?: string })?.code !== "resource_missing") throw e;
+      if (!missing(e)) throw e;
+      if (!s.connect_account_id) continue;
+      account = s.connect_account_id;
+      try {
+        await stripe.subscriptions.cancel(s.stripe_subscription_id, undefined, { stripeAccount: account });
+      } catch (e2) {
+        if (!missing(e2)) throw e2;
+      }
     }
-    await refreshPatientSubscription(s.stripe_subscription_id, s.connect_account_id);
+    await refreshPatientSubscription(s.stripe_subscription_id, account);
   }
   await setInstructorStatus(instructorId, "suspended");
 }

@@ -363,7 +363,8 @@ export async function upsertSubscription(params: {
   stripeSubscriptionId: string;
   status: string;
   currentPeriodEnd: string | null;
-  stripeAccountId: string;
+  /** Compte Stripe du kiné (ancien modèle) ; null = compte d'EasyPhysio (abonnement d'accès). */
+  stripeAccountId: string | null;
   cancelAtPeriodEnd: boolean;
 }): Promise<void> {
   await getPool().query("select internal.admin_upsert_subscription($1, $2, $3, $4, $5, $6, $7, $8)", [

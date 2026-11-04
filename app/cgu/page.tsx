@@ -1,6 +1,7 @@
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import DotCanvas from "@/components/DotCanvas";
+import { KINE_FOLLOW_UP_CENTS, PATIENT_MONTHLY_TOTAL_CENTS, PLATFORM_ACCESS_TTC_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
 
 // Renders legal/cgu.md for the app. Keep the two in sync by hand — this is
 // still a DRAFT pending legal review (see the banner below).
@@ -43,38 +44,56 @@ export default function CguPage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">3. Accès à l&apos;application</h2>
+            <h2 className="font-display font-semibold text-slate-900">3. Deux services distincts</h2>
             <p className="mt-1">
-              L&apos;application est gratuite pour le kinésithérapeute. Elle est mise à disposition du patient par son
-              kinésithérapeute ; l&apos;accès du patient passe par la souscription d&apos;une formule de suivi décrite à
-              l&apos;article 4.
+              L&apos;application est gratuite pour le kinésithérapeute. Le patient souscrit deux services distincts, vendus
+              par deux vendeurs distincts, qui font l&apos;objet de deux paiements et de deux factures distincts :
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>
+                <strong>l&apos;accès à la plateforme EasyPhysio</strong> ({eurosFR(PLATFORM_ACCESS_TTC_CENTS)} € TTC par mois),
+                vendu par EasyPhysio : application, vidéos, messagerie et hébergement sécurisé des données de santé ;
+              </li>
+              <li>
+                <strong>le programme de son kinésithérapeute</strong> ({eurosFR(KINE_FOLLOW_UP_CENTS)} € par mois), vendu par
+                le kinésithérapeute : la mise à jour de son programme d&apos;exercices hors nomenclature.
+              </li>
+            </ul>
+            <p className="mt-2">
+              Soit {eurosFR(PATIENT_MONTHLY_TOTAL_CENTS)} € au plus par mois. EasyPhysio ne perçoit aucune part des
+              honoraires du kinésithérapeute, et le kinésithérapeute aucune part de l&apos;accès à la plateforme.
             </p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">4. Formules de suivi</h2>
+            <h2 className="font-display font-semibold text-slate-900">4. Prix, essai et prélèvements</h2>
             <p className="mt-1">
-              Le patient choisit une formule de 1 mois (9,99 €), 3 mois (19,99 €) ou 6 mois (29,99 €), toutes taxes
-              comprises, qui lui donne accès à son programme d&apos;exercices et au suivi à distance de son
-              kinésithérapeute pendant la période payée. C&apos;est un suivi non remboursé par l&apos;Assurance Maladie ; le
-              patient en accepte le prix et le renouvellement automatique avant de payer.
+              À la première souscription, les {TRIAL_DAYS} premiers jours sont offerts : rien n&apos;est prélevé pendant cette
+              période, et la date du premier prélèvement est indiquée avant l&apos;enregistrement de la carte. Le patient
+              accepte les deux montants par écrit avant de souscrire. Il enregistre sa carte une seule fois : elle sert à
+              EasyPhysio pour l&apos;accès et au kinésithérapeute pour ses honoraires.
             </p>
             <p className="mt-2">
-              Le paiement est encaissé par Stripe pour le compte du kinésithérapeute, qui en reçoit la plus grande part ;
-              EasyPhysio perçoit une commission sur chaque paiement. La formule se renouvelle automatiquement à la fin de
-              chaque période. Le patient peut la résilier à tout moment depuis son espace : il garde l&apos;accès jusqu&apos;à
-              la fin de la période payée, puis plus aucun prélèvement n&apos;a lieu. Toute période commencée reste due,
-              sans remboursement au prorata, sauf disposition légale contraire. En cas de paiement refusé, l&apos;accès est
-              suspendu jusqu&apos;à la souscription d&apos;une nouvelle formule. Les soins en cabinet ne dépendent pas de ce
-              suivi, et le patient garde toujours le droit d&apos;exporter ou de supprimer ses données.
+              L&apos;accès à la plateforme est prélevé chaque mois par EasyPhysio, tant que l&apos;abonnement est en cours.
+              Les honoraires du kinésithérapeute sont prélevés par lui, directement sur son compte, uniquement les mois où
+              il met à jour le programme du patient, après la réalisation de cette mise à jour et jamais pendant
+              l&apos;essai ; il en délivre une note d&apos;honoraires à son nom. C&apos;est un suivi non remboursé par
+              l&apos;Assurance Maladie. Les paiements sont traités par Stripe.
+            </p>
+            <p className="mt-2">
+              Le patient peut résilier à tout moment depuis son espace : il garde l&apos;accès jusqu&apos;à la fin du mois en
+              cours, puis plus aucun prélèvement n&apos;a lieu, ni par EasyPhysio ni par son kinésithérapeute. En cas de
+              paiement refusé, l&apos;accès est suspendu jusqu&apos;à l&apos;enregistrement d&apos;une carte valide. Les
+              soins en cabinet ne dépendent pas de ce suivi, et le patient garde toujours le droit d&apos;exporter ou de
+              supprimer ses données.
             </p>
           </section>
 
           <section>
             <h2 className="font-display font-semibold text-slate-900">5. Comptes et résiliation</h2>
             <p className="mt-1">
-              Le patient peut supprimer son compte à tout moment depuis son espace personnel ; sa formule en cours est
-              alors résiliée. Le kinésithérapeute peut également supprimer son propre compte à tout moment, sans frais.
+              Le patient peut supprimer son compte à tout moment depuis son espace personnel ; son abonnement en cours est
+              alors résilié. Le kinésithérapeute peut également supprimer son propre compte à tout moment, sans frais.
             </p>
           </section>
 

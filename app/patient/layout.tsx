@@ -91,9 +91,9 @@ export default async function PatientLayout({ children }: { children: React.Reac
     }
   }
 
-  // Accès selon la formule (Philippe, 2026-11-02 ; plus d'accès gratuit
-  // offert par le kiné depuis le 2026-11-04) : le patient choisit une formule 1, 3
-  // ou 6 mois sur /patient/suivi avant d'accéder au reste. Pas d'écran de
+  // Accès (modèle définitif du 2026-11-04, lib/billing/patientPlans.ts) : le
+  // patient souscrit sur /patient/suivi (10 jours offerts, puis 3,99 € d'accès
+  // EasyPhysio + 6 € du kiné les mois de mise à jour) avant d'accéder au reste. Pas d'écran de
   // paiement si le kiné n'a pas activé Stripe, s'il est suspendu, ou si
   // l'accès est offert au patient (comptes de test).
   const onSuiviPath = pathname.startsWith(SUIVI_PATH);
@@ -116,8 +116,8 @@ export default async function PatientLayout({ children }: { children: React.Reac
     let sub = subRes.data;
     // Période payée dépassée sans nouvelles de Stripe : on relit l'abonnement
     // (renouvelé ou non) avant de décider — une seule fois par période.
-    if (sub && subscriptionNeedsRefresh(sub as unknown as SubscriptionRow) && sub.stripe_subscription_id && sub.stripe_account_id) {
-      await refreshPatientSubscription(sub.stripe_subscription_id as string, sub.stripe_account_id as string);
+    if (sub && subscriptionNeedsRefresh(sub as unknown as SubscriptionRow) && sub.stripe_subscription_id) {
+      await refreshPatientSubscription(sub.stripe_subscription_id as string, (sub.stripe_account_id as string | null) ?? null);
       sub = (await loadSub()).data;
     }
     mustAcceptFollowUp = patientMustSubscribe({

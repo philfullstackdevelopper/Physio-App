@@ -3,13 +3,11 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
-import { PATIENT_PLANS, eurosFR, perMonthCents } from "@/lib/billing/patientPlans";
+import { KINE_FOLLOW_UP_CENTS, KINE_NET_CENTS, PATIENT_MONTHLY_TOTAL_CENTS, PLATFORM_ACCESS_TTC_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
-// Formules patient (modèle du 2026-11-02) : lib/billing/patientPlans.ts.
-const [P1, P3, P6] = PATIENT_PLANS;
-const PLANS_TEXT = `${eurosFR(P1.priceCents)} € pour 1 mois, ${eurosFR(P3.priceCents)} € pour 3 mois ou ${eurosFR(P6.priceCents)} € pour 6 mois (soit ${eurosFR(perMonthCents(P6))} € par mois)`;
-const KINE_SHARE_TEXT = `${eurosFR(P1.kineCents)} €, ${eurosFR(P3.kineCents)} € ou ${eurosFR(P6.kineCents)} €`;
+// Modèle définitif (2026-11-04) : lib/billing/patientPlans.ts.
+const PRICE_TEXT = `${eurosFR(PATIENT_MONTHLY_TOTAL_CENTS)} € par mois après ${TRIAL_DAYS} jours offerts : ${eurosFR(PLATFORM_ACCESS_TTC_CENTS)} € d'accès à l'appli, payés à EasyPhysio, et ${eurosFR(KINE_FOLLOW_UP_CENTS)} € pour le programme de votre kiné, payés directement à lui, seulement les mois où il met à jour votre programme`;
 
 const QUESTIONS = [
   {
@@ -39,11 +37,11 @@ const QUESTIONS = [
   },
   {
     question: "Combien coûte l'application pour moi, patient ?",
-    answer: `Vous choisissez une formule : ${PLANS_TEXT}. Elle se renouvelle automatiquement et vous pouvez la résilier à tout moment depuis l'appli. L'essentiel du paiement va à votre kiné. Acte non remboursé par l'Assurance Maladie.`,
+    answer: `${PRICE_TEXT}. Vous recevez deux factures distinctes, et vous pouvez résilier à tout moment depuis l'appli. Acte non remboursé par l'Assurance Maladie.`,
   },
   {
     question: "Je suis kiné : combien ça me coûte, et combien ça me rapporte ?",
-    answer: `Rien : EasyPhysio est gratuit pour vous, patients illimités. Vos patients paient leur formule (${PLANS_TEXT}) et vous recevez ${KINE_SHARE_TEXT}, frais de paiement déduits, directement sur votre compte. Avec 20 patients abonnés au mois, c'est ${eurosFR(20 * P1.kineCents)} € par mois pour vous.`,
+    answer: `Rien : EasyPhysio est gratuit pour vous, patients illimités. Chacun de vos patients vous paie ${eurosFR(KINE_FOLLOW_UP_CENTS)} € par mois où vous mettez à jour son programme, directement sur votre compte, avec la note d'honoraires à votre nom (${eurosFR(KINE_NET_CENTS)} € après frais de carte). EasyPhysio ne prend rien sur vos honoraires : le patient paie à part ${eurosFR(PLATFORM_ACCESS_TTC_CENTS)} € d'accès à l'appli. Avec 20 patients suivis, c'est ${eurosFR(20 * KINE_NET_CENTS)} € par mois pour vous.`,
   },
   {
     question: "Je suis praticien : comment essayer avec mes patients ?",

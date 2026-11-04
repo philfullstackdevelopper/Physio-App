@@ -2,14 +2,15 @@ import Link from "next/link";
 import { CheckCircle2, ChevronRight, Circle, ExternalLink, Tag, Users } from "lucide-react";
 import SubmitButton from "@/components/SubmitButton";
 import PhoneFold from "@/components/PhoneFold";
-import { PATIENT_PLANS, eurosFR } from "@/lib/billing/patientPlans";
+import { KINE_FOLLOW_UP_CENTS, KINE_NET_CENTS, PATIENT_MONTHLY_TOTAL_CENTS, PLATFORM_ACCESS_TTC_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
 import { startConnectOnboarding } from "../connect/actions";
 
-// Page « Suivi & facturation » du kiné — modèle du 2026-11-02 (Philippe) :
-// l'appli est GRATUITE pour le kiné ; ses patients paient une formule
-// 1 / 3 / 6 mois, versée sur son compte Stripe (6,99 € / 13,99 € / 20,99 €
-// pour lui). Plus d'accès gratuit (2026-11-04). Tient sur un écran :
-// trois colonnes sur ordinateur, cartes repliables sur téléphone.
+// Page « Suivi & facturation » du kiné — modèle définitif (Philippe,
+// 2026-11-04 ; lib/billing/patientPlans.ts) : l'appli est GRATUITE pour le
+// kiné. Chaque patient paie 9,99 € par mois : 6,00 € d'honoraires versés
+// directement sur le compte Stripe du kiné (les mois où il met à jour le
+// programme) et 3,99 € d'accès à la plateforme, payés à EasyPhysio. Tient
+// sur un écran : trois colonnes sur ordinateur, cartes repliables sur téléphone.
 
 export type ConnectStatus = "active" | "onboarding" | "not_started";
 
@@ -53,7 +54,7 @@ export default function FacturationView({
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
           <h1 className="text-xl font-semibold text-ink max-sm:text-2xl">Suivi &amp; facturation</h1>
           <p className="text-sm text-muted max-sm:text-xs max-sm:short:hidden">
-            EasyPhysio est gratuit pour vous. Vos patients paient leur formule, versée sur votre compte.
+            EasyPhysio est gratuit pour vous. Vos honoraires sont versés directement sur votre compte.
           </p>
         </div>
 
@@ -82,7 +83,7 @@ export default function FacturationView({
               </div>
               <div className="rounded-xl bg-ok-soft px-3 py-2">
                 <p className="text-lg font-semibold tabular-nums text-ok">{eur(monthlyCents)}</p>
-                <p className="text-[11px] leading-tight text-muted">pour vous, par mois en moyenne</p>
+                <p className="text-[11px] leading-tight text-muted">pour vous par mois, programmes à jour</p>
               </div>
             </div>
 
@@ -90,7 +91,7 @@ export default function FacturationView({
               <div className="mt-3 rounded-xl border border-dashed border-line px-4 py-4 text-center">
                 <p className="text-sm font-medium text-ink">Aucun patient abonné pour l&apos;instant.</p>
                 <p className="mx-auto mt-1 max-w-md text-xs text-muted">
-                  Vos patients choisissent leur formule dans l&apos;appli, juste après leur inscription.
+                  Vos patients activent leur suivi dans l&apos;appli, juste après leur inscription ({TRIAL_DAYS} jours offerts).
                 </p>
               </div>
             ) : (
@@ -109,7 +110,7 @@ export default function FacturationView({
                             ? "paiement refusé"
                             : s.status === "cancelled"
                               ? `résiliée, fin le ${shortDate(s.periodEnd)}`
-                              : `renouvelée le ${shortDate(s.periodEnd)}`}
+                              : `prochain mois le ${shortDate(s.periodEnd)}`}
                         </span>
                       </span>
                       <span
@@ -134,34 +135,31 @@ export default function FacturationView({
               title={
                 <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
                   <Tag className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
-                  Formules de mes patients
+                  Ce que paie un patient
                 </h2>
               }
-              summary="9,99 € à 29,99 €"
+              summary={`${eur(KINE_FOLLOW_UP_CENTS)} pour vous`}
             >
               <table className="mt-2 w-full text-left text-xs">
-                <thead className="text-muted">
-                  <tr>
-                    <th className="pb-1 font-medium">Formule</th>
-                    <th className="pb-1 font-medium">Le patient paie</th>
-                    <th className="pb-1 text-right font-medium">Vous recevez</th>
-                  </tr>
-                </thead>
                 <tbody className="divide-y divide-line">
-                  {PATIENT_PLANS.map((p) => (
-                    <tr key={p.key}>
-                      <td className="py-1.5 font-medium text-ink">{p.label}</td>
-                      <td className="py-1.5 tabular-nums text-ink">
-                        {eur(p.priceCents)}
-                      </td>
-                      <td className="py-1.5 text-right font-semibold tabular-nums text-ok">{eur(p.kineCents)}</td>
-                    </tr>
-                  ))}
+                  <tr>
+                    <td className="py-1.5 text-ink">Votre programme (vos honoraires, versés à vous)</td>
+                    <td className="py-1.5 text-right font-semibold tabular-nums text-ok">{eur(KINE_FOLLOW_UP_CENTS)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-ink">Accès à l&apos;appli (payé à EasyPhysio)</td>
+                    <td className="py-1.5 text-right tabular-nums text-ink">{eur(PLATFORM_ACCESS_TTC_CENTS)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 font-medium text-ink">Total pour le patient, par mois</td>
+                    <td className="py-1.5 text-right font-medium tabular-nums text-ink">{eur(PATIENT_MONTHLY_TOTAL_CENTS)}</td>
+                  </tr>
                 </tbody>
               </table>
               <p className="mt-2 text-[11px] leading-snug text-muted">
-                Renouvelée automatiquement, résiliable par le patient à tout moment. Versé sur votre compte Stripe, frais de
-                paiement déjà déduits. Acte non remboursé par l&apos;Assurance Maladie.
+                Vos {eur(KINE_FOLLOW_UP_CENTS)} sont prélevés directement sur votre compte Stripe, avec la note d&apos;honoraires à votre nom,
+                seulement les mois où vous mettez à jour le programme ({eur(KINE_NET_CENTS)} après frais de carte). EasyPhysio ne prend
+                rien sur vos honoraires. {TRIAL_DAYS} jours offerts au patient. Acte non remboursé par l&apos;Assurance Maladie.
               </p>
             </PhoneFold>
           </div>

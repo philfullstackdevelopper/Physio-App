@@ -30,8 +30,8 @@ patient.
 
 ## 4. Statut du service — hors nomenclature
 
-L'abonnement patient à EasyPhysio n'est **jamais pris en charge ni
-remboursé par l'Assurance Maladie**. Il s'agit d'un service complémentaire
+Ni l'accès à la plateforme ni le programme du kinésithérapeute ne sont
+**jamais pris en charge ni remboursés par l'Assurance Maladie**. Il s'agit d'un service complémentaire
 au suivi kinésithérapique, facturé directement au patient, distinct de
 tout acte coté à la nomenclature (NGAP) ou de télésoin.
 
@@ -50,20 +50,33 @@ sans ambiguïté que ce n'est jamais présenté comme un acte remboursé.)*
   kinésithérapeute ne peut conditionner la poursuite du suivi
   kinésithérapique classique à la souscription du patient.
 
-## 6. Tarifs et abonnement
+## 6. Tarifs : deux services distincts (modèle du 2026-11-04)
 
-- Abonnement patient : [tarif] / mois, résiliable à tout moment.
-- Accès kinésithérapeute à la plateforme : [tarif par patient inscrit] —
-  voir section 7.
+Le patient souscrit deux services distincts, vendus par deux vendeurs
+distincts, payés en deux paiements et facturés sur deux documents :
+
+- **Accès à la plateforme EasyPhysio** : 3,99 € TTC par mois, vendu et
+  facturé par EasyPhysio (TVA 20 %), prélevé chaque mois d'abonnement,
+  que le kinésithérapeute intervienne ou non. Application, vidéos,
+  messagerie, hébergement des données de santé.
+- **Programme du kinésithérapeute** : 6,00 € par mois, vendu par le
+  kinésithérapeute, prélevé directement sur son compte, uniquement les
+  mois où il met à jour le programme, après cette mise à jour ; note
+  d'honoraires à son nom.
+
+Soit 9,99 € au plus par mois. 10 jours d'essai gratuit à la première
+souscription. Résiliable à tout moment (accès jusqu'à la fin du mois en
+cours, puis plus aucun prélèvement). Les montants font foi dans
+`lib/billing/patientPlans.ts`.
 
 ## 7. Relation commerciale avec le kinésithérapeute
 
-Le kinésithérapeute paie EasyPhysio pour l'usage de la plateforme, à
-raison de [tarif] par patient actif inscrit. **Aucune somme n'est jamais
-versée par EasyPhysio au kinésithérapeute** en contrepartie de
-l'inscription de patients — l'usage d'EasyPhysio par le kinésithérapeute
-reste à sa seule initiative professionnelle et ne doit jamais influencer
-le choix clinique fait dans l'intérêt du patient.
+L'usage d'EasyPhysio est gratuit pour le kinésithérapeute. **EasyPhysio
+ne perçoit aucune part des honoraires du kinésithérapeute** (aucune
+commission, aucun prélèvement sur ses paiements) et **ne lui verse
+aucune somme** en contrepartie de l'inscription de patients. L'usage
+d'EasyPhysio reste à sa seule initiative professionnelle et ne doit
+jamais influencer le choix clinique fait dans l'intérêt du patient.
 
 ## 8. Propriété du contenu d'exercices
 

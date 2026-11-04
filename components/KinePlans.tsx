@@ -4,15 +4,22 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { HandNote } from "@/components/HandDrawn";
-import { PATIENT_PLANS, eurosFR, perMonthCents, type PatientPlanKey } from "@/lib/billing/patientPlans";
+import {
+  KINE_FOLLOW_UP_CENTS,
+  KINE_NET_CENTS,
+  PATIENT_MONTHLY_TOTAL_CENTS,
+  PLATFORM_ACCESS_TTC_CENTS,
+  TRIAL_DAYS,
+  eurosFR,
+} from "@/lib/billing/patientPlans";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
-// Formules (modèle du 2026-11-02, Philippe) : EasyPhysio est GRATUIT pour le
-// kiné ; ses patients paient une formule 1 / 3 / 6 mois, dont la plus grande
-// part lui revient (6,99 € sur 9,99 €…). Même langage visuel qu'avant
-// (panneau bleu pâle + panneau blanc, boutons pilule, une note manuscrite) :
-// le kiné choisit une formule et un nombre de patients abonnés, et voit ce
-// qu'il touche par mois. Montants : lib/billing/patientPlans.ts.
+// « Et moi, comment je suis payé ? » — modèle définitif (Philippe, 2026-11-04 ;
+// montants : lib/billing/patientPlans.ts). EasyPhysio est GRATUIT pour le kiné.
+// Chaque patient paie 9,99 € par mois en deux parts distinctes : 3,99 €
+// d'accès à la plateforme (à EasyPhysio) et 6,00 € de programme (au kiné,
+// directement, seulement les mois où il le met à jour). Le kiné choisit un
+// nombre de patients et voit ce qu'il touche. Même langage visuel qu'avant.
 
 const PATIENT_CHOICES = [5, 10, 20, 40] as const;
 
@@ -52,29 +59,31 @@ function Choice<T extends string | number>({
 }
 
 export default function KinePlans() {
-  const [planKey, setPlanKey] = useState<PatientPlanKey>("plan_1m");
   const [patients, setPatients] = useState<(typeof PATIENT_CHOICES)[number]>(10);
-  const plan = PATIENT_PLANS.find((p) => p.key === planKey)!;
-  const kinePerMonth = Math.round(plan.kineCents / plan.months);
   const href = SIGNUPS_OPEN ? "/signup/kine" : "#liste-attente";
 
   return (
     <div className="mx-auto max-w-4xl text-left">
       <div className="grid gap-3 rounded-3xl border border-slate-200/70 bg-white/60 p-3 shadow-sm sm:grid-cols-[1.1fr_1fr]">
-        {/* Les choix */}
+        {/* Le choix et le partage des 9,99 € */}
         <div className="flex flex-col justify-center gap-5 rounded-2xl bg-blue-50/60 p-6 max-sm:gap-4 max-sm:p-4 sm:short:gap-4 sm:short:p-5">
-          <Choice
-            label="Formule choisie par le patient"
-            options={PATIENT_PLANS.map((p) => p.key)}
-            value={planKey}
-            onChange={setPlanKey}
-            render={(k) => PATIENT_PLANS.find((p) => p.key === k)!.label}
-          />
-          <Choice label="Patients abonnés" options={PATIENT_CHOICES} value={patients} onChange={setPatients} render={(n) => String(n)} />
-          <p className="text-sm leading-snug text-slate-600">
-            Le patient paie {eurosFR(plan.priceCents)}&nbsp;€{plan.months > 1 ? ` pour ${plan.months} mois (${eurosFR(perMonthCents(plan))} € par mois)` : " par mois"},
-            renouvelé automatiquement et résiliable à tout moment. Vous recevez {eurosFR(plan.kineCents)}&nbsp;€, frais de paiement déduits.
-          </p>
+          <Choice label="Patients suivis" options={PATIENT_CHOICES} value={patients} onChange={setPatients} render={(n) => String(n)} />
+          <div className="text-sm leading-snug text-slate-600">
+            <p>
+              Chaque patient paie {eurosFR(PATIENT_MONTHLY_TOTAL_CENTS)}&nbsp;€ par mois, après {TRIAL_DAYS} jours offerts, en deux parts&nbsp;:
+            </p>
+            <ul className="mt-2 space-y-1">
+              <li className="flex justify-between gap-3">
+                <span>Votre programme, versé directement à vous</span>
+                <span className="font-semibold tabular-nums text-slate-900">{eurosFR(KINE_FOLLOW_UP_CENTS)}&nbsp;€</span>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span>L&apos;accès à l&apos;appli, payé à EasyPhysio</span>
+                <span className="font-semibold tabular-nums text-slate-900">{eurosFR(PLATFORM_ACCESS_TTC_CENTS)}&nbsp;€</span>
+              </li>
+            </ul>
+            <p className="mt-2 text-xs text-slate-500">Vos honoraires ne sont prélevés que les mois où vous mettez à jour son programme.</p>
+          </div>
         </div>
 
         {/* Ce que le kiné touche */}
@@ -85,11 +94,12 @@ export default function KinePlans() {
           <p className="text-sm font-medium text-slate-500">Pour vous, chaque mois</p>
           <p className="flex items-baseline gap-2">
             <span className="font-display text-5xl font-semibold tracking-tight tabular-nums text-slate-900 max-sm:text-4xl" aria-live="polite">
-              {eurosFR(kinePerMonth * patients)}&nbsp;€
+              {eurosFR(KINE_NET_CENTS * patients)}&nbsp;€
             </span>
           </p>
           <p className="mt-2 text-sm text-slate-600">
-            {patients} patients × {eurosFR(kinePerMonth)}&nbsp;€ par mois. EasyPhysio&nbsp;: 0&nbsp;€ pour vous, patients illimités.
+            {patients} patients × {eurosFR(KINE_NET_CENTS)}&nbsp;€ ({eurosFR(KINE_FOLLOW_UP_CENTS)}&nbsp;€ moins les frais de carte). EasyPhysio ne prend rien sur vos
+            honoraires.
           </p>
           <Link
             href={href}
@@ -98,7 +108,7 @@ export default function KinePlans() {
             {SIGNUPS_OPEN ? "Créer mon compte gratuit" : "Rejoindre la liste d'attente"}
             <ArrowRight className="h-4 w-4" strokeWidth={2} />
           </Link>
-          <p className="mt-3 text-xs text-slate-500">Inscription gratuite, sans engagement. Vous ne payez jamais EasyPhysio.</p>
+          <p className="mt-3 text-xs text-slate-500">Inscription gratuite, sans engagement, patients illimités. Vous ne payez jamais EasyPhysio.</p>
         </div>
       </div>
     </div>

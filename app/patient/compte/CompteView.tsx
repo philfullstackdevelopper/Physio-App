@@ -38,7 +38,7 @@ function followUpText(f: FollowUpSummary): { title: string; line: string; badge:
     if (f.free) return { title: "Mon suivi", line: f.line, badge: "Offert", badgeClass: "bg-ok-soft text-ok", cta: "Voir" };
     if (f.status === "active") return { title: "Mon suivi", line: f.line, badge: "Actif", badgeClass: "bg-ok-soft text-ok", cta: "Gérer" };
     if (f.status === "pending_card") return { title: "Mon suivi", line: f.line, badge: "Paiement refusé", badgeClass: "bg-danger-soft text-danger", cta: "Régler" };
-    return { title: "Mon suivi", line: f.line, badge: "Non activé", badgeClass: "bg-app-bg text-muted", cta: "Choisir" };
+    return { title: "Mon suivi", line: f.line, badge: "Non activé", badgeClass: "bg-app-bg text-muted", cta: "Activer" };
   }
   if (f.free && f.status !== "active") {
     return { title: "Suivi mensuel", line: `Offert par ${kine} : rien à payer`, badge: "Offert", badgeClass: "bg-ok-soft text-ok", cta: "Voir" };

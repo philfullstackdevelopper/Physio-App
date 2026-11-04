@@ -12,13 +12,12 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import KineMockup from "@/components/KineMockup";
 import DotCanvas from "@/components/DotCanvas";
-import { PATIENT_PLANS, eurosFR } from "@/lib/billing/patientPlans";
+import { KINE_FOLLOW_UP_CENTS, KINE_NET_CENTS, PATIENT_MONTHLY_TOTAL_CENTS, PLATFORM_ACCESS_TTC_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
 
-// Modèle du 2026-11-02 : gratuit pour le kiné, formules payées par les
+// Modèle définitif du 2026-11-04 : gratuit pour le kiné ; 9,99 € par mois payés par les
 // patients. Montants : lib/billing/patientPlans.ts, jamais écrits en dur.
-const [P1, P3, P6] = PATIENT_PLANS;
-const PATIENT_PRICES = `${eurosFR(P1.priceCents)} €, ${eurosFR(P3.priceCents)} € ou ${eurosFR(P6.priceCents)} €`;
-const KINE_SHARES = `${eurosFR(P1.kineCents)} €, ${eurosFR(P3.kineCents)} € ou ${eurosFR(P6.kineCents)} €`;
+const PATIENT_PRICES = `${eurosFR(PATIENT_MONTHLY_TOTAL_CENTS)} € par mois (${eurosFR(KINE_FOLLOW_UP_CENTS)} € pour vous, ${eurosFR(PLATFORM_ACCESS_TTC_CENTS)} € d'accès à l'appli)`;
+const KINE_SHARES = `${eurosFR(KINE_FOLLOW_UP_CENTS)} € par patient et par mois où vous mettez à jour son programme`;
 
 export const metadata: Metadata = {
   title: "Pour les kinésithérapeutes",
@@ -63,11 +62,11 @@ const CAPABILITIES = [
   },
   {
     title: "Vos patients s'abonnent, vous êtes payé",
-    body: `Vos patients choisissent une formule de 1, 3 ou 6 mois (${PATIENT_PRICES}) et vous recevez ${KINE_SHARES} sur votre compte.`,
+    body: `Vos patients paient ${PATIENT_PRICES}, après ${TRIAL_DAYS} jours offerts. Vous recevez ${KINE_SHARES}, directement sur votre compte.`,
   },
   {
     title: "Vos versements en un coup d'œil",
-    body: "Qui est abonné, à quelle formule, jusqu'à quand, et vos versements dans votre compte Stripe, prêts pour votre comptable.",
+    body: "Qui est abonné, vos notes d'honoraires, et vos versements dans votre compte Stripe, prêts pour votre comptable.",
   },
 ];
 
@@ -120,7 +119,7 @@ export default function PraticiensPage() {
               <Cta />
             </div>
             <p className="mt-4 text-sm text-slate-500">
-              Gratuit pour vous, patients illimités. Vos patients paient leur formule, et la plus grande part vous revient.
+              Gratuit pour vous, patients illimités. Vos honoraires vous sont versés directement, EasyPhysio n&apos;y touche pas.
             </p>
           </div>
           <KineMockup />
@@ -201,9 +200,8 @@ export default function PraticiensPage() {
               Ce que ça vous coûte
             </h2>
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-300">
-              Rien : EasyPhysio est gratuit pour vous, patients illimités. Vos patients choisissent une formule de 1, 3 ou 6 mois
-              ({PATIENT_PRICES}), renouvelée automatiquement et résiliable à tout moment ; vous recevez {KINE_SHARES}, frais de
-              paiement déduits.
+              Rien : EasyPhysio est gratuit pour vous, patients illimités. Vos patients paient {PATIENT_PRICES}, résiliable à tout
+              moment ; vous recevez {KINE_SHARES} ({eurosFR(KINE_NET_CENTS)} € après frais de carte).
             </p>
             <ul className="mx-auto mt-6 flex max-w-lg flex-col gap-2 text-left sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-6 sm:text-left">
               {["Gratuit pour le kiné", "Sans engagement", "Données hébergées en France"].map((point) => (

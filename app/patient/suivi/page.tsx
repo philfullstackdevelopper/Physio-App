@@ -5,7 +5,7 @@ import { refreshPatientSubscription } from "@/lib/billing/patientSubscription";
 import SuiviView from "./SuiviView";
 
 // « Mon suivi » côté patient : choisir, voir ou résilier sa formule
-// (1, 3 ou 6 mois — Philippe, 2026-11-02). C'est aussi l'écran où
+// (modèle définitif du 2026-11-04 : 3,99 € d'accès + 6 € du kiné). C'est aussi l'écran où
 // app/patient/layout.tsx envoie un patient qui n'a pas encore accès.
 export default async function SuiviPage({
   searchParams,
@@ -35,8 +35,8 @@ export default async function SuiviPage({
   ]);
   let sub = subRes.data;
   // Période payée dépassée sans nouvelles de Stripe : on relit l'abonnement.
-  if (sub && subscriptionNeedsRefresh(sub as unknown as SubscriptionRow) && sub.stripe_subscription_id && sub.stripe_account_id) {
-    await refreshPatientSubscription(sub.stripe_subscription_id as string, sub.stripe_account_id as string);
+  if (sub && subscriptionNeedsRefresh(sub as unknown as SubscriptionRow) && sub.stripe_subscription_id) {
+    await refreshPatientSubscription(sub.stripe_subscription_id as string, (sub.stripe_account_id as string | null) ?? null);
     sub = (await loadSub()).data;
   }
 

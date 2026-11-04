@@ -1,42 +1,50 @@
 // =============================================================================
-// Formules patient (Philippe, 2026-11-02) — source unique des prix et du
-// partage. Le kiné utilise l'appli gratuitement ; le patient choisit une
-// formule, renouvelée automatiquement, résiliable à tout moment.
+// MODÈLE DÉFINITIF (Philippe, 2026-11-04) — source unique des montants.
 //
-// Le paiement est fait sur le compte Stripe du kiné (« direct charge ») :
-// Stripe y retire ses frais, puis la part d'EasyPhysio (application fee).
-// La part d'EasyPhysio est calculée pour que le kiné touche exactement
-// 6,99 € / 13,99 € / 20,99 € avec une carte européenne standard
-// (1,5 % + 0,25 €) — EasyPhysio garde 3 € / 6 € / 9 € moins ces frais.
+// Le patient paie 9,99 € par mois, en DEUX services distincts, vendus par deux
+// vendeurs distincts, prélevés en deux paiements distincts sur la même carte :
 //
-// Rien de ce fichier ne lit la base ni Stripe : affichage, prélèvement et
-// contrôles des webhooks lisent les mêmes chiffres.
+//   1. ACCÈS À LA PLATEFORME — 3,99 € TTC / mois, vendu par EasyPhysio.
+//      Abonnement Stripe sur le compte d'EasyPhysio (TVA 20 % incluse, facture
+//      EasyPhysio). Dû CHAQUE mois d'accès, que le kiné agisse ou non : c'est
+//      le prix de l'appli (hébergement, vidéos, messagerie), jamais une part de
+//      l'acte du kiné. 10 jours d'essai gratuit à la première inscription.
+//
+//   2. PROGRAMME DU KINÉ — 6,00 € / mois, vendu par le kiné.
+//      Paiement direct sur le compte Stripe du kiné, 0 % pour EasyPhysio, note
+//      d'honoraires à son nom. Prélevé seulement les mois où le kiné met à jour
+//      le programme (après l'essai) : honoraires pour un acte réellement fait.
+//
+// Pourquoi deux paiements (audit juridique du 2026-11-04, reports/Frais
+// plateforme patient kiné légalité.md) : EasyPhysio ne prend JAMAIS d'argent
+// sur le paiement du kiné (pas d'« application fee »), sinon les 3,99 €
+// seraient une part de ses honoraires (art. L.4113-5 / R.4321-72 CSP).
+//
+// Rien de ce fichier ne lit la base ni Stripe : affichage, prélèvements et
+// contrôles lisent les mêmes chiffres. Ne jamais réécrire ces montants ailleurs.
 // =============================================================================
 
-export type PatientPlanKey = "plan_1m" | "plan_3m" | "plan_6m";
+/** Accès à la plateforme, TTC, centimes, par mois (EasyPhysio). */
+export const PLATFORM_ACCESS_TTC_CENTS = 399;
+/** Programme du kiné, centimes, par mois où il met à jour le programme (honoraires, sans TVA). */
+export const KINE_FOLLOW_UP_CENTS = 600;
+/** Total payé par le patient un mois où le kiné met à jour son programme. */
+export const PATIENT_MONTHLY_TOTAL_CENTS = PLATFORM_ACCESS_TTC_CENTS + KINE_FOLLOW_UP_CENTS;
+/** Essai gratuit à la première inscription (aucun prélèvement pendant ces jours-là). */
+export const TRIAL_DAYS = 10;
+/** TVA sur l'accès à la plateforme (les honoraires du kiné en sont exonérés). */
+export const PLATFORM_VAT_RATE = 0.2;
 
-export interface PatientPlan {
-  key: PatientPlanKey;
-  months: 1 | 3 | 6;
-  label: string;
-  /** Payé par le patient, TTC, centimes, pour toute la période. */
-  priceCents: number;
-  /** Ce que touche le kiné, centimes, après frais Stripe et part EasyPhysio. */
-  kineCents: number;
-}
+/**
+ * Nom de la formule dans la table `subscriptions`. « patient_monthly » est un
+ * nom déjà autorisé par la base (migration 0080) : aucun changement de base.
+ */
+export const ACCESS_PLAN_KEY = "patient_monthly";
+/** Formules du modèle précédent (2026-11-02), payées sur le compte du kiné : arrêtées. */
+export const LEGACY_PLAN_KEYS = ["plan_1m", "plan_3m", "plan_6m"] as const;
 
-export const PATIENT_PLANS: readonly PatientPlan[] = [
-  { key: "plan_1m", months: 1, label: "1 mois", priceCents: 999, kineCents: 699 },
-  { key: "plan_3m", months: 3, label: "3 mois", priceCents: 1999, kineCents: 1399 },
-  { key: "plan_6m", months: 6, label: "6 mois", priceCents: 2999, kineCents: 2099 },
-];
-
-export function isPatientPlanKey(v: unknown): v is PatientPlanKey {
-  return typeof v === "string" && PATIENT_PLANS.some((p) => p.key === v);
-}
-
-export function patientPlan(key: PatientPlanKey): PatientPlan {
-  return PATIENT_PLANS.find((p) => p.key === key)!;
+export function isLegacyPlanKey(v: unknown): boolean {
+  return typeof v === "string" && (LEGACY_PLAN_KEYS as readonly string[]).includes(v);
 }
 
 /** Frais Stripe estimés d'un paiement par carte européenne (1,5 % + 0,25 €). */
@@ -44,34 +52,12 @@ export function stripeFeeCents(amountCents: number): number {
   return Math.round(amountCents * 0.015 + 25);
 }
 
-/** Part d'EasyPhysio sur un paiement de cette formule, centimes. */
-export function platformShareCents(plan: PatientPlan): number {
-  return plan.priceCents - plan.kineCents - stripeFeeCents(plan.priceCents);
-}
-
-/** La même part en pourcentage à 2 décimales (format Stripe application_fee_percent). */
-export function applicationFeePercent(plan: PatientPlan): number {
-  return Math.round((platformShareCents(plan) / plan.priceCents) * 10000) / 100;
-}
-
-/** Récompense « 5 exercices publiés » (lib/exercise/kineExercises.ts,
- *  instructor_fee_waivers) : EasyPhysio ne prend rien jusqu'à cette date
- *  incluse, jour de Paris. */
-export function feeIsWaived(waivedUntil: string | null | undefined, now: Date = new Date()): boolean {
-  if (!waivedUntil) return false;
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(now);
-  return today <= waivedUntil.slice(0, 10);
-}
-
-/** Part d'EasyPhysio à appliquer maintenant : 0 % pendant la récompense. */
-export function effectiveFeePercent(plan: PatientPlan, waivedUntil: string | null | undefined, now: Date = new Date()): number {
-  return feeIsWaived(waivedUntil, now) ? 0 : applicationFeePercent(plan);
-}
-
-/** Prix par mois, centimes (affichage « soit X € / mois »). */
-export function perMonthCents(plan: PatientPlan): number {
-  return Math.round(plan.priceCents / plan.months);
-}
+/** Accès à la plateforme hors TVA, centimes. */
+export const PLATFORM_ACCESS_HT_CENTS = Math.round(PLATFORM_ACCESS_TTC_CENTS / (1 + PLATFORM_VAT_RATE));
+/** Ce que garde EasyPhysio par patient et par mois, hors TVA, après frais de carte (estimation). */
+export const PLATFORM_NET_CENTS = PLATFORM_ACCESS_HT_CENTS - stripeFeeCents(PLATFORM_ACCESS_TTC_CENTS);
+/** Ce que touche le kiné par patient et par mois de mise à jour, après frais de carte (estimation). */
+export const KINE_NET_CENTS = KINE_FOLLOW_UP_CENTS - stripeFeeCents(KINE_FOLLOW_UP_CENTS);
 
 export function eurosFR(cents: number): string {
   return (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -89,33 +75,40 @@ export type SubscriptionRow = {
 };
 
 /**
- * L'abonnement donne-t-il accès à l'appli maintenant ?
- * - actif (ou en essai) : oui, même résilié, jusqu'à la fin de la période payée ;
+ * L'abonnement d'accès donne-t-il accès à l'appli maintenant ?
+ * - actif ou en essai : oui, même résilié, jusqu'à la fin de la période ;
  * - paiement refusé (past_due, unpaid, incomplete) : non, tout de suite
  *   (règle de Philippe : une carte refusée verrouille immédiatement) ;
  * - terminé (canceled…) : non.
+ * Une formule de l'ancien modèle reste valable jusqu'à la fin de sa période
+ * payée (elle ne se renouvelle plus), puis le patient passe au modèle actuel.
  */
 export function subscriptionGivesAccess(sub: SubscriptionRow | null, now: Date = new Date()): boolean {
-  if (!sub || !isPatientPlanKey(sub.plan)) return false;
+  if (!sub) return false;
+  if (sub.plan !== ACCESS_PLAN_KEY && !isLegacyPlanKey(sub.plan)) return false;
   if (sub.status !== "active" && sub.status !== "trialing") return false;
-  if (sub.cancel_at_period_end && sub.current_period_end && new Date(sub.current_period_end) <= now) return false;
+  const ended = !!sub.current_period_end && new Date(sub.current_period_end) <= now;
+  if (ended && (sub.cancel_at_period_end || isLegacyPlanKey(sub.plan))) return false;
   return true;
 }
 
-/** Période payée dépassée sans nouvelle de Stripe : il faut relire l'abonnement chez Stripe. */
+/** Période dépassée sans nouvelles de Stripe : il faut relire l'abonnement chez Stripe. */
 export function subscriptionNeedsRefresh(sub: SubscriptionRow | null, now: Date = new Date()): boolean {
-  if (!sub || !isPatientPlanKey(sub.plan)) return false;
+  if (!sub || (sub.plan !== ACCESS_PLAN_KEY && !isLegacyPlanKey(sub.plan))) return false;
   if (!sub.current_period_end) return false;
   return (sub.status === "active" || sub.status === "trialing") && new Date(sub.current_period_end) <= now;
 }
 
+/** Le kiné peut-il prélever ses 6 € ce mois-ci ? Seulement hors essai, abonnement d'accès actif. */
+export function kineFollowUpChargeable(sub: SubscriptionRow | null, now: Date = new Date()): boolean {
+  return !!sub && sub.plan === ACCESS_PLAN_KEY && sub.status === "active" && subscriptionGivesAccess(sub, now);
+}
+
 /**
- * Le patient doit-il choisir une formule avant d'entrer dans l'appli ?
- * Toujours, sauf si son kiné n'a pas encore activé Stripe (rien ne peut être
- * encaissé), s'il est suspendu, si l'accès est offert au patient par
- * l'administrateur (comptes de test), ou si l'abonnement en cours donne accès.
- * Plus d'accès gratuit offert par le kiné (Philippe, 2026-11-04 : « Free
- * acces is no longer a thing ») : instructors.review_price_cents n'est plus lu.
+ * Le patient doit-il souscrire avant d'entrer dans l'appli ?
+ * Toujours, sauf si son kiné n'a pas encore activé ses paiements (rien ne peut
+ * être encaissé pour lui), s'il est suspendu, si l'accès est offert au patient
+ * par l'administrateur (comptes de test), ou si l'abonnement en cours donne accès.
  */
 export function patientMustSubscribe(p: {
   kineCanCharge: boolean;

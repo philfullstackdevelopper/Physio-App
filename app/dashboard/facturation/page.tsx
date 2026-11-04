@@ -1,12 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { isMissingStripeObject, refreshConnectStatus } from "@/lib/billing/connectStatus";
 import { upsertConnectAccount } from "@/lib/db/admin";
-import { isPatientPlanKey, patientPlan } from "@/lib/billing/patientPlans";
+import { ACCESS_PLAN_KEY, KINE_FOLLOW_UP_CENTS, isLegacyPlanKey } from "@/lib/billing/patientPlans";
 import FacturationView, { type ConnectStatus, type SubscriberRow } from "./FacturationView";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
-// « Suivi & facturation » du kiné (modèle du 2026-11-02) : ses patients
-// abonnés, les formules, et l'activation de ses paiements.
+// « Suivi & facturation » du kiné (modèle définitif du 2026-11-04,
+// lib/billing/patientPlans.ts) : ses patients abonnés, ce qu'il touche
+// (6,00 € par patient, les mois où il met à jour le programme) et
+// l'activation de ses paiements.
 // L'affichage vit dans FacturationView.tsx.
 export default async function FacturationPage({
   searchParams,
@@ -34,16 +36,17 @@ export default async function FacturationPage({
   let monthlyCents = 0;
   const subscribers: SubscriberRow[] = [];
   for (const s of subs ?? []) {
-    if (!isPatientPlanKey(s.plan)) continue;
-    const plan = patientPlan(s.plan);
+    const legacy = isLegacyPlanKey(s.plan);
+    if (s.plan !== ACCESS_PLAN_KEY && !legacy) continue;
     const live = (s.status === "active" || s.status === "trialing") && (!s.current_period_end || new Date(s.current_period_end as string) > now);
     const refused = ["past_due", "unpaid", "incomplete"].includes(s.status as string);
     if (!live && !refused) continue;
-    if (live && !s.cancel_at_period_end) monthlyCents += Math.round(plan.kineCents / plan.months);
+    // Ses honoraires : 6 € par patient abonné (hors essai), les mois où il met à jour le programme.
+    if (live && !legacy && s.status === "active" && !s.cancel_at_period_end) monthlyCents += KINE_FOLLOW_UP_CENTS;
     subscribers.push({
       patientId: s.user_id as string,
       name: nameOf.get(s.user_id as string) ?? "Patient",
-      planLabel: plan.label,
+      planLabel: legacy ? "Ancienne formule" : s.status === "trialing" ? "Essai gratuit" : "Suivi mensuel",
       status: refused ? "refused" : s.cancel_at_period_end ? "cancelled" : "active",
       periodEnd: (s.current_period_end as string | null) ?? null,
     });

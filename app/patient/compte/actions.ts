@@ -42,14 +42,19 @@ export async function deleteMyAccount(formData: FormData) {
     .select("stripe_subscription_id, stripe_account_id, status")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (sub?.stripe_subscription_id && sub.stripe_account_id && sub.status !== "canceled") {
+  // Abonnement d'accès : compte EasyPhysio (stripe_account_id vide) ; ancienne formule : compte du kiné.
+  if (sub?.stripe_subscription_id && sub.status !== "canceled") {
     try {
-      await getStripe().subscriptions.cancel(sub.stripe_subscription_id as string, undefined, { stripeAccount: sub.stripe_account_id as string });
+      await getStripe().subscriptions.cancel(
+        sub.stripe_subscription_id as string,
+        undefined,
+        sub.stripe_account_id ? { stripeAccount: sub.stripe_account_id as string } : undefined,
+      );
     } catch (err) {
       const code = (err as { code?: string })?.code;
       if (code !== "resource_missing") {
         console.error("deleteMyAccount: résiliation Stripe impossible", err);
-        failure = "Votre formule n'a pas pu être résiliée pour le moment. Votre compte est intact — réessayez dans quelques minutes.";
+        failure = "Votre abonnement n'a pas pu être résilié pour le moment. Votre compte est intact — réessayez dans quelques minutes.";
       }
     }
   }
