@@ -19,6 +19,15 @@ const nextConfig: NextConfig = {
   // L'indicateur de dev de Next (bouton « N » en bas à gauche) recouvrait
   // « Se déconnecter » dans la sidebar du dashboard.
   devIndicators: { position: "bottom-right" },
+  // Mesure d'audience PostHog (instrumentation-client.ts) : les envois passent
+  // par /ingest sur notre domaine, réécrit vers PostHog UE (Francfort).
+  skipTrailingSlashRedirect: true,
+  async rewrites() {
+    return [
+      { source: "/ingest/static/:path*", destination: "https://eu-assets.i.posthog.com/static/:path*" },
+      { source: "/ingest/:path*", destination: "https://eu.i.posthog.com/:path*" },
+    ];
+  },
   async headers() {
     return ["/exercise-illustrations/:path*", "/exercise-illustrations-draft/:path*", "/body-parts/:path*"].map((source) => ({
       source,

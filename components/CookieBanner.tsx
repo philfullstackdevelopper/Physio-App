@@ -7,6 +7,9 @@ import { useEffect, useState } from "react";
 // analytics/advertising trackers), which under CNIL guidance don't require
 // an opt-in choice, just information. If that ever changes (analytics,
 // etc.), this needs a real accept/reject choice, not just a dismiss button.
+// PostHog (2026-11-04) is set up WITHOUT cookies or any storage on the
+// device (persistence « memory », instrumentation-client.ts), so this notice
+// stays accurate. Switching PostHog to cookies would require real consent.
 const STORAGE_KEY = "physio-app-cookie-notice-dismissed";
 
 export default function CookieBanner() {

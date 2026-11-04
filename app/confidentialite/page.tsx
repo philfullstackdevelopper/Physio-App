@@ -97,7 +97,20 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">7. Durée de conservation</h2>
+            <h2 className="font-display font-semibold text-slate-900">7. Mesure d&apos;audience</h2>
+            <p className="mt-1">
+              Pour améliorer le site, nous mesurons de façon anonyme la fréquentation des pages
+              publiques et de l&apos;espace kiné (pages vues, clics) avec PostHog, hébergé dans
+              l&apos;Union européenne. Aucun cookie n&apos;est déposé et rien n&apos;est stocké sur
+              votre appareil ; le texte affiché, les noms, les adresses e-mail et les identifiants
+              ne sont pas transmis. L&apos;espace patient n&apos;est jamais mesuré : aucune donnée
+              de santé n&apos;est envoyée à PostHog. Si votre navigateur demande à ne pas être
+              suivi (« Do Not Track »), aucune mesure n&apos;est faite.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display font-semibold text-slate-900">8. Durée de conservation</h2>
             <p className="mt-1">
               Vos données sont conservées pendant la durée de votre suivi. En cas de
               suppression de votre compte, elles sont supprimées ou anonymisées, sauf
@@ -106,7 +119,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">8. Vos droits</h2>
+            <h2 className="font-display font-semibold text-slate-900">9. Vos droits</h2>
             <p className="mt-1">
               Conformément au RGPD, vous disposez d&apos;un droit d&apos;accès, de
               rectification, d&apos;effacement, de limitation, de portabilité, d&apos;opposition
@@ -116,7 +129,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">9. Intelligence artificielle</h2>
+            <h2 className="font-display font-semibold text-slate-900">10. Intelligence artificielle</h2>
             <p className="mt-1">
               EasyPhysio n&apos;utilise actuellement aucune intelligence artificielle
               générative traitant vos données de santé personnelles.
@@ -124,7 +137,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">10. Contact</h2>
+            <h2 className="font-display font-semibold text-slate-900">11. Contact</h2>
             <p className="mt-1">
               Pour toute question sur cette politique ou vos données, contactez-nous depuis
               votre compte.
