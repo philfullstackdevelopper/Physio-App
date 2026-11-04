@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, Bell, CalendarClock, CheckCircle2, CreditCard, LockOpen, RefreshCw } from "lucide-react";
-import OfferPicker from "./OfferPicker";
+import { ArrowLeft, CalendarClock, CheckCircle2, RefreshCw } from "lucide-react";
+import PaywallVideo from "./PaywallVideo";
 import SubmitButton from "@/components/SubmitButton";
 import {
   EARLY_ACCESS_PLAN_KEY,
@@ -80,94 +80,6 @@ function commitmentText(offer: PlatformOffer): string {
 const daysFromNow = (n: number) => new Date(Date.now() + n * 86_400_000);
 const shortDay = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "K") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
-}
-
-/**
- * Paywall (proposition A retenue par Philippe le 2026-11-04, inspirée des
- * paywalls Blinkist / Strava) : ce que voit TOUT patient juste après avoir
- * rejoint son kiné. Ordinateur : à gauche son kiné et le déroulé de l'essai,
- * à droite les offres ; téléphone : l'un sous l'autre, frise de l'essai en une
- * ligne. Tient sur un écran (règle « pas de défilement »).
- */
-function Paywall({
-  kineName,
-  trial,
-  refused,
-  error,
-  demo,
-}: {
-  kineName: string;
-  trial: boolean;
-  refused: boolean;
-  error?: string;
-  demo: boolean;
-}) {
-  const reminder = shortDay(daysFromNow(TRIAL_DAYS - 2));
-  const firstCharge = shortDay(daysFromNow(TRIAL_DAYS));
-  const steps = [
-    { icon: LockOpen, title: "Aujourd'hui", text: "Accès complet, gratuit" },
-    { icon: Bell, title: reminder, text: "On vous prévient" },
-    { icon: CreditCard, title: firstCharge, text: "1er paiement" },
-  ];
-  return (
-    <main className="min-h-dvh bg-[#f6f8fd] px-4 py-3 sm:px-8 sm:py-8 short:sm:py-4">
-      <div className="mx-auto grid max-w-4xl items-center gap-3 md:grid-cols-[0.9fr_1.1fr] md:gap-10">
-        {/* Qui, et comment se passe l'essai */}
-        <div>
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-              {initials(kineName)}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-900">{kineName}</p>
-              <p className="text-xs text-slate-500">vous a préparé votre programme</p>
-            </div>
-          </div>
-          <h1 className="font-display mt-4 text-2xl font-semibold leading-tight tracking-tight text-slate-900 max-sm:mt-2 max-sm:text-xl sm:text-3xl short:sm:text-2xl">
-            {trial ? `${TRIAL_DAYS} jours offerts pour démarrer` : "Reprenez votre programme"}
-          </h1>
-          {trial ? (
-            <ol className="mt-5 space-y-4 max-md:mt-3 max-md:grid max-md:grid-cols-3 max-md:gap-2 max-md:space-y-0 short:md:mt-3 short:md:space-y-3">
-              {steps.map(({ icon: Icon, title, text }) => (
-                <li key={text} className="flex items-center gap-3 max-md:flex-col max-md:items-start max-md:gap-1.5 max-md:rounded-xl max-md:bg-white max-md:p-2">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 max-md:h-7 max-md:w-7">
-                    <Icon className="h-4 w-4" strokeWidth={2} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-slate-900 max-md:text-xs">{title}</span>
-                    <span className="block text-sm text-slate-500 max-md:text-[11px] max-md:leading-tight">{text}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="mt-2 text-sm text-slate-500">Choisissez une offre pour retrouver vos exercices.</p>
-          )}
-        </div>
-
-        {/* Les offres */}
-        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70 max-sm:p-3">
-          {(refused || error) && (
-            <p role="alert" className="mb-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
-              {error ?? "Le dernier paiement a été refusé. Choisissez à nouveau une offre."}
-            </p>
-          )}
-          <OfferPicker kineName={kineName} trial={trial} firstChargeLabel={firstCharge} demo={demo} />
-        </div>
-      </div>
-      <p className="mx-auto mt-4 max-w-4xl text-center text-xs text-slate-400 max-sm:mt-2">
-        <Link href="/patient/compte" className="hover:text-slate-600 hover:underline">
-          Mes données (export, suppression)
-        </Link>
-      </p>
-    </main>
-  );
-}
-
 export default function SuiviView({ sp, kineName, kineReady, required = false, subscription, demo = false }: SuiviViewProps) {
   const known = !!subscription && (isPlatformOfferKey(subscription.plan) || subscription.plan === EARLY_ACCESS_PLAN_KEY);
   const legacy = known && !!subscription!.legacy;
@@ -179,7 +91,17 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
   const ending = !!subscription && (subscription.cancelAtPeriodEnd || !!subscription.endsAt);
 
   if (!live && kineReady) {
-    return <Paywall kineName={kineName} trial={!subscription} refused={refused} error={sp.error} demo={demo} />;
+    return (
+      <PaywallVideo
+        kineName={kineName}
+        trial={!subscription}
+        refused={refused}
+        error={sp.error}
+        reminderLabel={shortDay(daysFromNow(TRIAL_DAYS - 2))}
+        firstChargeLabel={shortDay(daysFromNow(TRIAL_DAYS))}
+        demo={demo}
+      />
+    );
   }
 
   return (
