@@ -26,6 +26,48 @@ import { startPlan } from "./actions";
 // Le choix de l'offre est un curseur « combien de temps » (Libre / 3 mois /
 // 6 mois) : le grand prix change avec lui, et UNE ligne dit l'origine des deux
 // montants. Tient sur un écran.
+//
+// Les vidéos (Philippe, 2026-11-04 : « les exos qui coulissent du haut vers le
+// bas … celle où la caméra reste le plus stable ») : deux bandes qui
+// descendent à des vitesses différentes, les exercices en salle (filmés
+// debout) d'un côté, les exercices au sol de l'autre. Seulement les six
+// extraits où la caméra bouge le moins (mesuré avec vidstabdetect de ffmpeg ;
+// le Pallof press, ancienne vidéo de cet écran, était le moins stable).
+type Clip = { file: string; label: string };
+const STANDING: Clip[] = [
+  { file: "salle-v-seated-external-rotation-elbow-on-knee", label: "Rotation externe assise, coude sur le genou" },
+  { file: "salle-v-band-shoulder-external-rotation", label: "Rotation externe d'épaule à l'élastique" },
+  { file: "salle-v-y-balance", label: "Équilibre en Y" },
+];
+const FLOOR: Clip[] = [
+  { file: "glute-bridge", label: "Pont fessier" },
+  { file: "cat-cow-stretch", label: "Dos rond, dos creux" },
+  { file: "banded-clamshell", label: "Clamshell à l'élastique" },
+];
+
+// La liste est doublée et descend d'une demi-hauteur : la boucle ne se voit
+// pas. L'espace entre vidéos est un padding (pas un « gap ») pour que les deux
+// moitiés aient exactement la même hauteur. Immobile si « réduire les animations ».
+function Strip({ clips, tile, motion }: { clips: Clip[]; tile: string; motion: string }) {
+  return (
+    <div className="h-full overflow-hidden">
+      <ul data-loop-group className={`${motion} motion-reduce:[animation:none]`}>
+        {[...clips, ...clips].map((c, i) => (
+          <li key={i} className="pb-2" aria-hidden={i >= clips.length || undefined}>
+            <div className={`overflow-hidden rounded-2xl bg-slate-800 ${tile}`}>
+              <LoopVideo
+                src={`/videos-demo/${c.file}.mp4`}
+                poster={`/videos-demo/${c.file}.jpg`}
+                label={`Démonstration filmée : ${c.label}`}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 const STOPS = ["Libre", "3 mois", "6 mois"] as const;
 const DEFAULT_INDEX = Math.max(0, PLATFORM_OFFERS.findIndex((o) => o.key === DEFAULT_OFFER_KEY));
@@ -60,15 +102,16 @@ export default function PaywallVideo({
 
   return (
     <main className="min-h-dvh bg-slate-950 text-white md:grid md:h-dvh md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-      {/* Jules fait l'exercice : ce que le patient va recevoir. */}
+      {/* Jules fait les exercices : ce que le patient va recevoir. */}
       <div className="relative h-[38dvh] overflow-hidden md:h-full">
-        <LoopVideo
-          src="/videos-demo/salle-v-pallof-press.mp4"
-          poster="/videos-demo/salle-v-pallof-press.jpg"
-          label="Démonstration filmée d'un exercice"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-slate-950/60" />
+        <style>{`@keyframes paywall-descend{from{transform:translateY(-50%)}to{transform:translateY(0)}}`}</style>
+        <div className="absolute inset-0 grid grid-cols-[1fr_1.1fr] gap-2 px-2">
+          <Strip clips={STANDING} tile="aspect-[9/16]" motion="[animation:paywall-descend_48s_linear_infinite]" />
+          <Strip clips={FLOOR} tile="aspect-[4/3]" motion="[animation:paywall-descend_34s_linear_-11s_infinite]" />
+        </div>
+        {/* Fondu haut et bas ; ordinateur : fondu vers la colonne du prix. */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/70 via-transparent to-slate-950 md:to-slate-950/70" />
+        <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-transparent via-transparent to-slate-950/70 md:block" />
         <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-slate-950/55 py-1 pl-1 pr-3 backdrop-blur-sm sm:left-6 sm:top-6">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-[11px] font-semibold">{initials(kineName)}</span>
           <span className="text-xs font-medium">Préparé par {kineName}</span>

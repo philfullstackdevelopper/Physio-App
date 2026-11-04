@@ -63,13 +63,20 @@ export default async function PatientLayout({ children }: { children: React.Reac
 
   const pathname = (await headers()).get("x-pathname") ?? "";
   const onOnboardingPath = pathname.startsWith(ONBOARDING_PATH);
+  const onSuiviPath = pathname.startsWith(SUIVI_PATH);
   const fullBleed = onOnboardingPath;
 
-  // Les trois lectures qui suivent ne dépendent pas l'une de l'autre : en
-  // parallèle plutôt qu'à la suite (audit du 2026-10-08 — chaque aller-retour
-  // vers PostgREST sur Scalingo se paie). Les décisions restent dans le même
-  // ordre qu'avant.
-  const [profileRes, unreadRes] = await Promise.all([
+  const loadSub = () =>
+    supabase
+      .from("subscriptions")
+      .select("plan, status, current_period_end, cancel_at_period_end, stripe_subscription_id, stripe_account_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+  // Ces lectures ne dépendent pas l'une de l'autre : en parallèle plutôt qu'à
+  // la suite (audit du 2026-10-08 — chaque aller-retour vers PostgREST sur
+  // Scalingo se paie).
+  const [profileRes, unreadRes, subRes, trialRes] = await Promise.all([
     onOnboardingPath
       ? Promise.resolve(null)
       : supabase.from("patient_profiles").select("health_data_consent_at").eq("id", user.id).maybeSingle(),
@@ -83,37 +90,19 @@ export default async function PatientLayout({ children }: { children: React.Reac
           .eq("patient_id", user.id)
           .eq("sender", "instructor")
           .is("read_at", null),
+    kineSuspended ? Promise.resolve(null) : loadSub(),
+    kineSuspended ? Promise.resolve(null) : supabase.from("patients").select("trial_ends_at").eq("id", user.id).maybeSingle(),
   ]);
 
-  if (!onOnboardingPath) {
-    if (!profileRes?.data?.health_data_consent_at) {
-      redirect(ONBOARDING_PATH);
-    }
-  }
-
-  // Accès (modèle définitif du 2026-11-04, lib/billing/patientPlans.ts) : le
-  // patient souscrit sur /patient/suivi (10 jours offerts, puis 3,99 € d'accès
-  // EasyPhysio + 6 € du kiné les mois de mise à jour) avant d'accéder au reste. Pas d'écran de
-  // paiement si le kiné n'a pas activé Stripe, s'il est suspendu, ou si
-  // l'accès est offert au patient (comptes de test).
-  const onSuiviPath = pathname.startsWith(SUIVI_PATH);
+  // Accès (modèle définitif du 2026-11-04, lib/billing/patientPlans.ts) : juste
+  // après les CGU, AVANT le questionnaire — c'est le premier écran du patient
+  // arrivé par le QR code ou le lien de son kiné (Philippe, 2026-11-04 : « tant
+  // que cela n'a pas été débloqué, le patient ne peut pas accéder au reste »).
+  // Pas d'écran de paiement si le kiné est suspendu ou si l'accès est offert au
+  // patient (comptes de test).
   let mustAcceptFollowUp = false;
-  if (!onOnboardingPath && !kineSuspended) {
-    const instructorId = (patient.instructor_id as string | null) ?? null;
-    const loadSub = () =>
-      supabase
-        .from("subscriptions")
-        .select("plan, status, current_period_end, cancel_at_period_end, stripe_subscription_id, stripe_account_id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-    const [connectRes, subRes, trialRes] = await Promise.all([
-      instructorId
-        ? supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", instructorId).maybeSingle()
-        : Promise.resolve({ data: null }),
-      loadSub(),
-      supabase.from("patients").select("trial_ends_at").eq("id", user.id).maybeSingle(),
-    ]);
-    let sub = subRes.data;
+  if (!kineSuspended) {
+    let sub = subRes?.data ?? null;
     // Période payée dépassée sans nouvelles de Stripe : on relit l'abonnement
     // (renouvelé ou non) avant de décider — une seule fois par période.
     if (sub && subscriptionNeedsRefresh(sub as unknown as SubscriptionRow) && sub.stripe_subscription_id) {
@@ -121,9 +110,8 @@ export default async function PatientLayout({ children }: { children: React.Reac
       sub = (await loadSub()).data;
     }
     mustAcceptFollowUp = patientMustSubscribe({
-      kineCanCharge: connectRes.data?.status === "active",
       kineSuspended,
-      freeAccessUntil: (trialRes.data?.trial_ends_at as string | null) ?? null,
+      freeAccessUntil: (trialRes?.data?.trial_ends_at as string | null) ?? null,
       subscription: (sub as unknown as SubscriptionRow | null) ?? null,
     });
   }
@@ -133,6 +121,11 @@ export default async function PatientLayout({ children }: { children: React.Reac
   if (mustAcceptFollowUp && !onSuiviPath && !onAccountPage) redirect(SUIVI_PATH);
   // Écran de suivi à accepter : plein écran, sans la barre d'onglets.
   if (mustAcceptFollowUp) return <>{children}</>;
+
+  // Puis le questionnaire (profil, matériel, consentement données de santé).
+  if (!onOnboardingPath && !profileRes?.data?.health_data_consent_at) {
+    redirect(ONBOARDING_PATH);
+  }
 
 
   // Onboarding renders full-bleed, its own step-wizard layout — the real nav

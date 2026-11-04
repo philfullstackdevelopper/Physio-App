@@ -52,9 +52,10 @@ export async function startPlan(formData: FormData) {
   const key = formData.get("plan");
   if (!isPlatformOfferKey(key)) fail("Choisissez une offre.");
   if (formData.get("consent") !== "on") fail("Cochez la case pour accepter les deux montants et le prélèvement mensuel.");
-  const { user, patient, kine, accountId, sub } = await context();
+  // L'accès est vendu par EasyPhysio : pas besoin que le kiné ait activé
+  // Stripe. Sa part (6 €) démarre quand ses paiements sont actifs.
+  const { user, patient, kine, sub } = await context();
   if (((kine?.status as string | null) ?? "approved") !== "approved") fail("Votre kinésithérapeute ne propose pas de suivi pour le moment.");
-  if (!accountId) fail("Votre kinésithérapeute n'a pas encore activé ses paiements en ligne. Prévenez-le, puis revenez ici.");
 
   const offer = platformOffer(key as Parameters<typeof platformOffer>[0]);
   const stripe = getStripe();

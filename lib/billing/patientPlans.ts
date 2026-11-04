@@ -185,19 +185,22 @@ export function kineFollowUpChargeable(sub: SubscriptionRow | null, now: Date = 
 
 /**
  * Le patient doit-il souscrire avant d'entrer dans l'appli ?
- * Toujours, sauf si son kiné n'a pas encore activé ses paiements (rien ne peut
- * être encaissé pour lui), s'il est suspendu, si l'accès est offert au patient
- * par l'administrateur (comptes de test), ou si l'abonnement en cours donne accès.
+ * Toujours (Philippe, 2026-11-04 : « tant que cela n'a pas été débloqué, le
+ * patient ne peut pas accéder au reste »), sauf si son kiné est suspendu, si
+ * l'accès est offert au patient par l'administrateur (comptes de test), ou si
+ * l'abonnement en cours donne accès. Un kiné qui n'a pas encore activé Stripe
+ * ne dispense plus du paywall : l'accès EasyPhysio est payé à EasyPhysio, et
+ * la carte est copiée chez le kiné plus tard, dès que ses paiements sont actifs
+ * (lib/billing/autoReview.ts).
  */
 export function patientMustSubscribe(p: {
-  kineCanCharge: boolean;
   kineSuspended: boolean;
   freeAccessUntil: string | null;
   subscription: SubscriptionRow | null;
   now?: Date;
 }): boolean {
   const now = p.now ?? new Date();
-  if (!p.kineCanCharge || p.kineSuspended) return false;
+  if (p.kineSuspended) return false;
   if (p.freeAccessUntil && new Date(p.freeAccessUntil) > now) return false;
   return !subscriptionGivesAccess(p.subscription, now);
 }

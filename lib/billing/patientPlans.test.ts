@@ -78,10 +78,9 @@ test("les 6 € du kiné : jamais pendant l'essai, jamais sans abonnement d'acc�
   assert.equal(kineFollowUpChargeable(null, now), false);
 });
 
-test("paywall : obligatoire sauf kiné sans paiements, suspendu, accès offert (test) ou abonnement valide", () => {
-  const base = { kineCanCharge: true, kineSuspended: false, freeAccessUntil: null, subscription: null, now };
+test("paywall : obligatoire sauf kiné suspendu, accès offert (test) ou abonnement valide", () => {
+  const base = { kineSuspended: false, freeAccessUntil: null, subscription: null, now };
   assert.equal(patientMustSubscribe(base), true);
-  assert.equal(patientMustSubscribe({ ...base, kineCanCharge: false }), false);
   assert.equal(patientMustSubscribe({ ...base, kineSuspended: true }), false);
   assert.equal(patientMustSubscribe({ ...base, freeAccessUntil: later }), false);
   assert.equal(patientMustSubscribe({ ...base, subscription: platform("plan_3m", "trialing") }), false);

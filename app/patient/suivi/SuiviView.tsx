@@ -204,7 +204,7 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
             </div>
           ) : !kineReady ? (
             <p className="rounded-xl bg-app-bg px-3 py-2 text-sm text-muted">
-              {kineName} n&apos;a pas encore activé ses paiements en ligne. Le suivi sera disponible dès que ce sera fait.
+              {kineName} ne propose pas de suivi pour le moment.
             </p>
           ) : (
             <p className="text-sm text-muted">Aucun abonnement en cours.</p>
