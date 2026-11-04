@@ -36,7 +36,9 @@ if (key) {
       disable_product_tours: true,
       disable_conversations: true,
       disable_web_experiments: true,
-      capture_exceptions: false,
+      // Erreurs du navigateur (pages mesurées seulement — même filtre) : lues
+      // par la routine de correction des bugs (docs/routine-bugs.md).
+      capture_exceptions: true,
       advanced_disable_flags: true,
       respect_dnt: true,
       before_send: (event) => scrubEvent(event, window.location.pathname),

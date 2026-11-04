@@ -77,6 +77,8 @@ export function scrubEvent<T extends { properties?: Props; $set?: Props; $set_on
     for (const k of DROPPED_PROPS) delete bag[k];
     // Liens et attributs des éléments cliqués (autocapture).
     if (typeof bag.$elements_chain === "string") bag.$elements_chain = scrubText(bag.$elements_chain);
+    // Erreurs (capture_exceptions) : message et pile sans identifiant ni e-mail.
+    if (Array.isArray(bag.$exception_list)) bag.$exception_list = JSON.parse(scrubText(JSON.stringify(bag.$exception_list)));
     if (Array.isArray(bag.$elements)) bag.$elements = JSON.parse(scrubText(JSON.stringify(bag.$elements)));
   }
   return event;
