@@ -6,8 +6,18 @@ import { requestOrigin } from "@/lib/requestOrigin";
 // QR code personnel du kiné (Philippe, 2026-11-04) : ses patients le scannent
 // au cabinet et arrivent sur /rejoindre/<code> pour recevoir leur invitation.
 // Dessiné côté serveur (bibliothèque qrcode) ; téléchargeable pour l'imprimer.
-export default async function JoinQrCard({ instructorId, open }: { instructorId: string; open: boolean }) {
-  const url = `${await requestOrigin()}/rejoindre/${joinCodeFor(instructorId)}`;
+export default async function JoinQrCard({
+  instructorId,
+  open,
+  demoPath,
+}: {
+  instructorId: string;
+  open: boolean;
+  /** Démo publique : le QR code mène à cette page de démo, pas à une vraie inscription. */
+  demoPath?: string;
+}) {
+  const origin = await requestOrigin();
+  const url = demoPath ? `${origin}${demoPath}` : `${origin}/rejoindre/${joinCodeFor(instructorId)}`;
   const svg = await QRCode.toString(url, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#0f2a5c", light: "#ffffff" } });
   const download = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 

@@ -8,3 +8,8 @@ export async function noopResult(): Promise<{ error: string }> {
 }
 
 export async function noopVoid(): Promise<void> {}
+
+/** « Rendre public » en démo : répond comme l'appli, sans rien enregistrer. */
+export async function noopPublish(): Promise<{ ok: true }> {
+  return { ok: true };
+}

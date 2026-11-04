@@ -171,7 +171,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
             name="Renforcement du genou, niveau 2"
             dateLabel="lundi 28 septembre à 18:15"
             feedback={{ pain_score: 3, notes: "Un peu raide au début, mieux à la fin." }}
-            exercises={[...EXERCISES.map(([name]) => name), "Quad Set", "Heel Slide", "Clamshell"]}
+            exercises={[...EXERCISES.map(([name]) => name), "Quad Set", "Heel Slide", "Banded Clamshell"]}
           />
         ) : ecran === "historique" ? (
           <HistoriqueView weeks={demoHistoryWeeks()} />

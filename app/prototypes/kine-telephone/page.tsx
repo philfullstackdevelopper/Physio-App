@@ -22,10 +22,15 @@ import SeancesTabs from "@/components/SeancesTabs";
 import ExerciseLibraryGrid from "@/components/ExerciseLibraryGrid";
 import ContributionSummary from "@/components/ContributionSummary";
 import ContributorsView from "@/components/ContributorsView";
+import NewPatientView from "@/components/NewPatientView";
+import JoinQrCard from "@/components/JoinQrCard";
 import { contributorRanking } from "@/lib/exercise/kineExercises";
+import { KINE_FOLLOW_UP_CENTS, platformOffer } from "@/lib/billing/patientPlans";
+
+const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
 import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
 import { DEMO_BODY_PARTS, DEMO_EXERCISES, mockData, mockFiche } from "./mock";
-import { noopResult, noopVoid } from "./actions";
+import { noopPublish, noopResult, noopVoid } from "./actions";
 
 export const metadata = { title: "Aperçu tableau de bord kiné", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -108,15 +113,19 @@ export default async function KineTelephonePrototype({
     screen = <KineInfosView instructorName="Julien Roux" />;
   } else if (ecran === "revenus") {
     screen = (
+      // Modèle actuel (lib/billing/patientPlans.ts) : mêmes patients que le
+      // reste de la démo, mêmes libellés et même calcul que la vraie page
+      // (6 € par patient abonné hors essai et hors résiliation).
       <FacturationView
         connectStatus="active"
-        patientCount={9}
-        monthlyCents={1515}
+        patientCount={d.rows.length}
+        monthlyCents={3 * KINE_FOLLOW_UP_CENTS}
         subscribers={[
-          { patientId: "p1", name: "Claire Martin", planLabel: "3 mois", status: "active", periodEnd: "2027-01-12T09:00:00Z" },
-          { patientId: "p2", name: "Hugo Bernard", planLabel: "1 mois", status: "active", periodEnd: "2026-11-28T09:00:00Z" },
-          { patientId: "p3", name: "Léa Petit", planLabel: "6 mois", status: "active", periodEnd: "2027-04-03T09:00:00Z" },
-          { patientId: "p4", name: "Marc Dubois", planLabel: "1 mois", status: "cancelled", periodEnd: "2026-11-20T09:00:00Z" },
+          { patientId: "p1", name: "Léa Martin", planLabel: platformOffer("plan_3m").label, status: "active", periodEnd: inDays(18) },
+          { patientId: "p2", name: "Thomas Bernard", planLabel: platformOffer("plan_1m").label, status: "active", periodEnd: inDays(9) },
+          { patientId: "p3", name: "Camille Dubois", planLabel: platformOffer("plan_6m").label, status: "active", periodEnd: inDays(26) },
+          { patientId: "p4", name: "Julien Moreau", planLabel: "Essai gratuit", status: "active", periodEnd: inDays(6) },
+          { patientId: "p5", name: "Sophie Laurent", planLabel: platformOffer("plan_1m").label, status: "cancelled", periodEnd: inDays(4) },
         ]}
       />
     );
@@ -220,12 +229,22 @@ export default async function KineTelephonePrototype({
             creator={{
               patients: d.rows.map((p) => ({ id: p.id, name: p.name })),
               publishedCount: DEMO_PUBLISHED,
-              requestPublication: async () => ({ ok: true }),
+              requestPublication: noopPublish,
               demo: true,
             }}
           />
         </div>
       </main>
+    );
+  } else if (ecran === "nouveau") {
+    // « Ajouter un patient » : le formulaire s'envoie (bloqué par DemoShell,
+    // « rien n'est enregistré ») et le QR code ouvre la démo patient.
+    screen = (
+      <NewPatientView
+        open
+        addPatientAction={noopVoid}
+        qr={<JoinQrCard instructorId="demo" open demoPath="/demo/patient?ecran=onboarding" />}
+      />
     );
   } else if (ecran === "contributeurs") {
     screen = <ContributorsView ranking={contributorRanking(DEMO_RANKING_ROWS)} meId="moi" />;

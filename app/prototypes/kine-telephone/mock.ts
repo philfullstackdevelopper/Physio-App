@@ -124,20 +124,19 @@ export const DEMO_EXERCISES = [
   { name: "Heel Slide", bodyPartIds: ["bp-genou"], equipment: [], instructions: "Allongé sur le dos, jambes tendues. Faites glisser lentement le talon vers les fesses en pliant le genou aussi loin que possible sans douleur forte, puis tendez à nouveau la jambe." },
   { name: "Straight Leg Raise", bodyPartIds: ["bp-genou", "bp-hanche"], equipment: [], instructions: "Allongé sur le dos, appuyé sur les avant-bras. Verrouillez le genou en contractant la cuisse, levez la jambe tendue jusqu'à environ 45°, puis redescendez lentement." },
   { name: "Terminal Knee Extension (Band)", bodyPartIds: ["bp-genou"], equipment: ["elastiques"], instructions: "Debout, élastique derrière le genou avant, fixé devant vous. Partez genou légèrement plié, puis tendez complètement le genou en poussant contre l'élastique." },
-  { name: "Sit-to-Stand", bodyPartIds: ["bp-genou", "bp-hanche"], equipment: [], instructions: "Assis au bord d'une chaise, bras croisés. Penchez le buste en avant et levez-vous sans l'aide des mains, puis rasseyez-vous lentement." },
+  { name: "Bodyweight Squat", bodyPartIds: ["bp-genou", "bp-hanche"], equipment: [], instructions: "Debout, pieds à largeur de bassin. Descendez en poussant les fesses en arrière, genoux dans l'axe des pieds, puis remontez en poussant dans les talons." },
   { name: "Wall Sit", bodyPartIds: ["bp-genou"], equipment: [], instructions: "Dos contre le mur, descendez jusqu'à la hauteur qui reste confortable pour le genou et tenez la position en respirant calmement." },
   { name: "Glute Bridge", bodyPartIds: ["bp-hanche"], equipment: [], instructions: "Allongé sur le dos, genoux fléchis, pieds au sol. Soulevez le bassin en serrant les fessiers, puis redescendez lentement." },
-  { name: "Clamshell", bodyPartIds: ["bp-hanche"], equipment: [], instructions: "Allongé sur le côté, genoux fléchis, pieds joints. Ouvrez le genou du dessus sans faire rouler le bassin, puis refermez lentement." },
+  { name: "Banded Clamshell", bodyPartIds: ["bp-hanche"], equipment: ["elastiques"], instructions: "Allongé sur le côté, élastique au-dessus des genoux, genoux fléchis et pieds joints. Ouvrez le genou du dessus sans faire rouler le bassin, puis refermez lentement." },
   // Au moins un exercice par zone, pour que « Mes exercices » ne paraisse pas vide en démo.
-  { name: "Supine Pelvic Tilt", bodyPartIds: ["bp-dos"], equipment: [], instructions: "Allongé sur le dos, genoux fléchis. Plaquez le bas du dos contre le sol en basculant le bassin, tenez quelques secondes, puis relâchez." },
+  { name: "Dead Bug", bodyPartIds: ["bp-dos"], equipment: [], instructions: "Allongé sur le dos, bras tendus vers le plafond, hanches et genoux à 90°. Tendez lentement un bras et la jambe opposée sans décoller le bas du dos, puis revenez et changez de côté." },
   { name: "Bird Dog", bodyPartIds: ["bp-dos", "bp-tronc"], equipment: [], instructions: "À quatre pattes, dos plat. Tendez un bras devant vous et la jambe opposée derrière vous, sans cambrer, puis revenez et changez de côté." },
   { name: "Cat-Cow Stretch", bodyPartIds: ["bp-dos"], equipment: [], instructions: "À quatre pattes. Arrondissez le dos vers le plafond en rentrant le menton, puis creusez-le doucement en levant la tête. Alternez lentement." },
   { name: "Codman Pendulum", bodyPartIds: ["bp-epaule"], equipment: [], instructions: "Penché en avant, une main sur une table, l'autre bras pendant et relâché. Laissez-le se balancer doucement comme un pendule." },
   { name: "Band Shoulder External Rotation", bodyPartIds: ["bp-epaule"], equipment: ["elastiques"], instructions: "Coude plié à 90° et collé au corps, élastique en main. Tournez l'avant-bras vers l'extérieur sans décoller le coude, puis revenez lentement." },
   { name: "Wall Slides", bodyPartIds: ["bp-epaule"], equipment: [], instructions: "Face au mur, avant-bras posés contre le mur. Faites-les glisser vers le haut en gardant les épaules basses, puis redescendez." },
   { name: "Chin Tuck", bodyPartIds: ["bp-cervicales"], equipment: [], instructions: "Assis bien droit. Rentrez le menton en reculant la tête tout droit, comme pour faire un double menton, tenez quelques secondes." },
-  { name: "Calf Raise", bodyPartIds: ["bp-cheville"], equipment: [], instructions: "Debout, l'avant des pieds sur une marche. Montez sur la pointe des pieds le plus haut possible, puis redescendez lentement." },
-  { name: "Wrist Curl", bodyPartIds: ["bp-poignet"], equipment: [], instructions: "Avant-bras posé sur une table, paume vers le haut. Laissez le poignet descendre, puis remontez-le lentement." },
+  { name: "Single-Leg Calf Raise", bodyPartIds: ["bp-cheville"], equipment: [], instructions: "Debout sur une jambe, une main contre le mur. Montez sur la pointe du pied le plus haut possible, puis redescendez lentement." },
   { name: "Plank", bodyPartIds: ["bp-tronc"], equipment: [], instructions: "En appui sur les avant-bras et la pointe des pieds, corps aligné des chevilles à la tête. Tenez la position en respirant." },
   { name: "Single-Leg Stance", bodyPartIds: ["bp-equilibre", "bp-cheville"], equipment: [], instructions: "Debout, mains sur les hanches. Levez un pied et tenez l'équilibre sur l'autre jambe, genou légèrement déverrouillé." },
 ];
@@ -157,8 +156,8 @@ export function mockFiche(now = new Date(), patient?: FichePatient) {
   const seanceName = (patient?.conditionName && SEANCE_BY_CONDITION[patient.conditionName]) || "Genou, renforcement doux";
   // Exercices de la séance selon la pathologie (noms réels de la banque).
   const byCondition: Record<string, string[]> = {
-    "Lombalgie chronique": ["Supine Pelvic Tilt", "Knee-to-Chest Stretch", "Cat-Cow Stretch", "Bird Dog"],
-    "Épaule douloureuse": ["Codman Pendulum", "Band Shoulder External Rotation", "Wall Slides", "Supine Stick Shoulder Flexion"],
+    "Lombalgie chronique": ["Dead Bug", "Prone Press-Up (McKenzie)", "Cat-Cow Stretch", "Bird Dog"],
+    "Épaule douloureuse": ["Codman Pendulum", "Band Shoulder External Rotation", "Wall Slides", "Side-Lying External Rotation"],
   };
   const names = (patient?.conditionName && byCondition[patient.conditionName]) || DEMO_EXERCISES.slice(0, 4).map((e) => e.name);
   const exercises = names.map((name, i) => ({ id: `e${i + 1}`, name }));

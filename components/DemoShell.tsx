@@ -35,8 +35,9 @@ const TOUR: Record<Side, { ecran: string; title: string; hint: string }[]> = {
     { ecran: "accueil", title: "Tableau de bord", hint: "Qui va bien, qui est à surveiller." },
     { ecran: "patients", title: "Mes patients", hint: "Toute votre patientèle, triée." },
     { ecran: "fiche", title: "La fiche d'un patient", hint: "Sa frise semaine par semaine. Essayez « Ajuster / changer la séance »." },
-    { ecran: "revenus", title: "Suivi & facturation", hint: "Vos patients abonnés, accès payant ou gratuit, vos versements." },
+    { ecran: "revenus", title: "Suivi & facturation", hint: "Vos patients abonnés et vos honoraires : 6 € par mois et par patient." },
     { ecran: "seances", title: "Mes séances", hint: "Vos séances et la bibliothèque d'exercices." },
+    { ecran: "exercices", title: "Mes exercices", hint: "Les exercices filmés. Essayez « Créer un exercice »." },
     { ecran: "messages", title: "Messages", hint: "Vos échanges avec les patients." },
   ],
   patient: [
@@ -44,7 +45,7 @@ const TOUR: Record<Side, { ecran: string; title: string; hint: string }[]> = {
     { ecran: "seance-du-jour", title: "La séance du jour", hint: "Les exercices guidés, un par un." },
     { ecran: "progres", title: "Mes progrès", hint: "La frise et l'évolution de la douleur." },
     { ecran: "messages", title: "Messages", hint: "Écrire à son kiné." },
-    { ecran: "suivi", title: "Le suivi mensuel", hint: "Accepter le tarif de son kiné, ses bilans et notes d'honoraires." },
+    { ecran: "suivi", title: "L'abonnement", hint: "10 jours d'essai, puis l'accès à l'appli et le programme de son kiné." },
   ],
 };
 
@@ -59,7 +60,7 @@ function kineScreen(url: URL): string | null {
   };
   if (p === "/dashboard") return "accueil";
   if (p === "/dashboard/patients") return `patients${q("filtre")}`;
-  if (p === "/dashboard/patients/new") return null;
+  if (p === "/dashboard/patients/new") return "nouveau";
   if (p.startsWith("/dashboard/patients/")) return `fiche&patient=${encodeURIComponent(p.split("/")[3])}`;
   if (p === "/dashboard/messages") return url.searchParams.get("patient") ? `conversation${q("patient")}` : "messages";
   if (p === "/dashboard/informations") return "informations";
