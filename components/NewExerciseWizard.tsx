@@ -19,7 +19,7 @@ import { X, Plus, Trash2, Camera, Upload, Globe, User, BookOpen, Check } from "l
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { EXERCISE_EQUIPMENT_LABELS, EXERCISE_EQUIPMENT_OPTIONS } from "@/lib/exercise/equipment";
 import { parseSteps } from "@/lib/exercise/steps";
-import { KINE_EXERCISE_REWARD, similarExercises } from "@/lib/exercise/kineExercises";
+import { CONTRIBUTOR_THRESHOLD, similarExercises } from "@/lib/exercise/kineExercises";
 import { createKineExercise } from "@/app/dashboard/exercises/actions";
 import { FilmingTips, checkVideoFile, uploadKineVideo } from "@/components/KineVideoUpload";
 
@@ -49,7 +49,6 @@ export default function NewExerciseWizard({
   patients,
   defaultBodyPartId,
   publishedCount,
-  waivedUntil,
   onClose,
 }: {
   bodyParts: WizardBodyPart[];
@@ -59,8 +58,6 @@ export default function NewExerciseWizard({
   defaultBodyPartId: string | null;
   /** Exercices de ce kiné déjà publiés (récompense). */
   publishedCount: number;
-  /** Récompense déjà obtenue : date de fin, sinon null. */
-  waivedUntil: string | null;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -173,7 +170,7 @@ export default function NewExerciseWizard({
     }
   };
 
-  const remaining = Math.max(0, KINE_EXERCISE_REWARD.threshold - publishedCount);
+  const remaining = Math.max(0, CONTRIBUTOR_THRESHOLD - publishedCount);
   const chip =
     "flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors duration-150";
   const field =
@@ -457,22 +454,23 @@ export default function NewExerciseWizard({
                       Vous l&apos;utilisez dès maintenant. EasyPhysio le vérifie, puis lui crée gratuitement un dessin animé. Votre nom
                       s&apos;affichera comme auteur.
                     </span>
-                    {waivedUntil ? (
+                    {remaining === 0 ? (
                       <span className="mt-1.5 block font-medium text-ok">
-                        Récompense obtenue : EasyPhysio ne prend rien sur les paiements de vos patients jusqu&apos;au{" "}
-                        {new Date(waivedUntil).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}.
+                        Vous êtes Contributeur EasyPhysio ({publishedCount} exercices publiés) : vous figurez dans le classement des
+                        contributeurs de « Mes exercices ».
                       </span>
                     ) : (
                       <span className="mt-1.5 block">
                         <b>
                           {publishedCount} exercice{publishedCount > 1 ? "s" : ""} public{publishedCount > 1 ? "s" : ""} validé
-                          {publishedCount > 1 ? "s" : ""} sur {KINE_EXERCISE_REWARD.threshold}.
+                          {publishedCount > 1 ? "s" : ""} sur {CONTRIBUTOR_THRESHOLD}.
                         </b>{" "}
-                        Encore {remaining}, et EasyPhysio ne prendra rien sur les paiements de vos patients pendant {KINE_EXERCISE_REWARD.months} mois.
+                        Encore {remaining}, et vous devenez Contributeur EasyPhysio, avec votre place dans le classement des principaux
+                        contributeurs.
                         <span className="mt-1.5 block h-2 overflow-hidden rounded-full border border-line bg-surface" aria-hidden>
                           <span
                             className="block h-full bg-ok"
-                            style={{ width: `${Math.min(100, (publishedCount / KINE_EXERCISE_REWARD.threshold) * 100)}%` }}
+                            style={{ width: `${Math.min(100, (publishedCount / CONTRIBUTOR_THRESHOLD) * 100)}%` }}
                           />
                         </span>
                       </span>

@@ -12,6 +12,7 @@ import { listKineExercises } from "@/lib/db/admin";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import AdminSummary, { sinceLabel, type AdminTodo } from "./AdminSummary";
 import { KINE_SUBSCRIPTION_BILLING } from "@/lib/launchFlags";
+import { CONTRIBUTOR_THRESHOLD } from "@/lib/exercise/kineExercises";
 import { approveInstructor, invoiceLastMonth, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
 import { KINE_SUBSCRIPTION_TTC_CENTS, eurosFR, periodLabel, periodOf } from "@/lib/billing/reviewModel";
 
@@ -161,7 +162,7 @@ export default async function AdminPage({
             : sp.exercice === "changes"
               ? "Modification demandée : le kiné voit votre message dans la fiche de l'exercice."
               : "Exercice gardé privé : il reste dans la banque du kiné, avec votre message."}
-          {sp.remise && ` Récompense : EasyPhysio ne prend rien sur les paiements de ses patients jusqu'au ${dateFmt.format(new Date(sp.remise))}.`}
+          {sp.exercice === "publish" && Number(sp.publies ?? 0) === CONTRIBUTOR_THRESHOLD && " Il devient Contributeur EasyPhysio (5 exercices publiés)."}
         </p>
       )}
       {/* Bilan de la dernière facturation mensuelle. */}

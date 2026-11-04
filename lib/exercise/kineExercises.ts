@@ -5,11 +5,58 @@
 
 export type PublicationStatus = "private" | "pending" | "published" | "changes_requested" | "declined";
 
-/** Récompense : au 5e exercice publié, EasyPhysio ne prend rien sur les
- *  paiements des patients du kiné pendant 3 mois, à partir de la date de
- *  publication du 5e (Philippe, 2026-11-04). Enregistrée dans
- *  instructor_fee_waivers. */
-export const KINE_EXERCISE_REWARD = { threshold: 5, months: 3 } as const;
+/** Récompense (Philippe, 2026-11-04) : à 5 exercices publiés, le kiné devient
+ *  « Contributeur EasyPhysio », et les principaux contributeurs sont classés
+ *  dans « Mes exercices ». (L'ancienne remise sur la part d'EasyPhysio n'a plus
+ *  de sens depuis le modèle du 2026-11-04 : EasyPhysio ne prend rien sur les
+ *  paiements du kiné. La table instructor_fee_waivers reste, inutilisée.) */
+export const CONTRIBUTOR_THRESHOLD = 5;
+
+/** Petit jeu (Philippe, 2026-11-04 : « discret mais visible, une espèce de
+ *  petit jeu ») : des paliers selon le nombre d'exercices publiés. Argent =
+ *  « Contributeur EasyPhysio ». */
+export const CONTRIBUTOR_LEVELS = [
+  { min: 1, name: "Bronze", tone: "text-amber-700", bg: "bg-amber-50" },
+  { min: CONTRIBUTOR_THRESHOLD, name: "Argent", tone: "text-slate-600", bg: "bg-slate-100" },
+  { min: 10, name: "Or", tone: "text-yellow-600", bg: "bg-yellow-50" },
+  { min: 20, name: "Platine", tone: "text-sky-700", bg: "bg-sky-50" },
+] as const;
+
+export type ContributorLevel = (typeof CONTRIBUTOR_LEVELS)[number];
+
+/** Palier atteint (null avant le 1er exercice publié) et palier suivant. */
+export function contributorLevel(count: number): { level: ContributorLevel | null; next: ContributorLevel | null } {
+  let level: ContributorLevel | null = null;
+  for (const l of CONTRIBUTOR_LEVELS) if (count >= l.min) level = l;
+  const next = CONTRIBUTOR_LEVELS.find((l) => count < l.min) ?? null;
+  return { level, next };
+}
+
+export interface ContributorRank {
+  authorId: string;
+  label: string;
+  count: number;
+  contributor: boolean;
+}
+
+/** Classement des kinés par exercices publiés (les plus nombreux d'abord). */
+export function contributorRanking(
+  exercises: { created_by: string | null; publication_status: PublicationStatus; author_label: string | null }[],
+  limit = Number.POSITIVE_INFINITY,
+): ContributorRank[] {
+  const byAuthor = new Map<string, ContributorRank>();
+  for (const ex of exercises) {
+    if (!ex.created_by || ex.publication_status !== "published") continue;
+    const cur = byAuthor.get(ex.created_by) ?? { authorId: ex.created_by, label: ex.author_label || "Un kiné", count: 0, contributor: false };
+    cur.count += 1;
+    if (ex.author_label) cur.label = ex.author_label;
+    byAuthor.set(ex.created_by, cur);
+  }
+  return [...byAuthor.values()]
+    .map((r) => ({ ...r, contributor: r.count >= CONTRIBUTOR_THRESHOLD }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "fr"))
+    .slice(0, limit);
+}
 
 /** Vidéo filmée au téléphone : formats lus par les navigateurs, taille max. */
 export const KINE_VIDEO_MAX_MB = 80;

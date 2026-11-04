@@ -11,14 +11,14 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { MoreVertical, EyeOff, Eye, Info, Search, Globe } from "lucide-react";
+import { MoreVertical, EyeOff, Eye, Info, Search, Globe, Trophy, X } from "lucide-react";
 import ExerciseInfoModal from "@/components/ExerciseInfoModal";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 import ExerciseVideoUpload from "@/components/ExerciseVideoUpload";
 import KineVideoUpload from "@/components/KineVideoUpload";
 import NewExerciseWizard, { type WizardPatient } from "@/components/NewExerciseWizard";
-import { STATUS_PILL, canRequestPublication, type PublicationStatus } from "@/lib/exercise/kineExercises";
+import { STATUS_PILL, canRequestPublication, contributorLevel, contributorRanking, type PublicationStatus } from "@/lib/exercise/kineExercises";
 
 export interface BodyPart {
   id: string;
@@ -54,7 +54,6 @@ export interface LibraryExercise {
 export interface LibraryCreator {
   patients: WizardPatient[];
   publishedCount: number;
-  waivedUntil: string | null;
   requestPublication: (exerciseId: string) => Promise<{ ok: true } | { error: string }>;
 }
 
@@ -141,6 +140,10 @@ export default function ExerciseLibraryGrid({
   const [publishing, startPublishing] = useTransition();
   const patientName = useMemo(() => new Map((creator?.patients ?? []).map((p) => [p.id, p.name])), [creator]);
   const mineCount = useMemo(() => exercises.filter((ex) => ex.created_by === currentUserId).length, [exercises, currentUserId]);
+  // Classement des contributeurs (Philippe, 2026-11-04) : les kinés qui ont le
+  // plus d'exercices publiés, montré dans « Créés par moi ».
+  const ranking = useMemo(() => contributorRanking(exercises), [exercises]);
+  const [showGame, setShowGame] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
   // Exercice ouvert par le (i) : vidéo + consignes (Philippe, 2026-11-01).
   const [info, setInfo] = useState<LibraryExercise | null>(null);
@@ -264,6 +267,9 @@ export default function ExerciseLibraryGrid({
             className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft max-sm:h-10 max-sm:rounded-xl max-sm:border-0 max-sm:shadow-soft"
           />
         </div>
+        {creator && (
+          <ContributorPill count={creator.publishedCount} onOpen={() => setShowGame(true)} />
+        )}
         {creator && mineCount > 0 && (
           <button
             type="button"
@@ -413,6 +419,19 @@ export default function ExerciseLibraryGrid({
         />
       )}
 
+      {showGame && creator && (
+        <ContributorGame
+          ranking={ranking}
+          currentUserId={currentUserId}
+          count={creator.publishedCount}
+          onClose={() => setShowGame(false)}
+          onCreate={() => {
+            setShowGame(false);
+            setShowCreateForm(true);
+          }}
+        />
+      )}
+
       {showCreateForm && creator && (
         <NewExerciseWizard
           bodyParts={bodyParts.map((bp) => ({ id: bp.id, label: bp.label }))}
@@ -420,7 +439,6 @@ export default function ExerciseLibraryGrid({
           patients={creator.patients}
           defaultBodyPartId={selectedId}
           publishedCount={creator.publishedCount}
-          waivedUntil={creator.waivedUntil}
           onClose={() => setShowCreateForm(false)}
         />
       )}
@@ -514,6 +532,122 @@ function OwnExerciseStatus({
         </button>
       )}
       {message && <p className="text-sm text-muted">{message}</p>}
+    </div>
+  );
+}
+
+/** Petite pastille de la barre d'outils : la coupe du palier atteint et
+ *  la progression vers le suivant (Philippe, 2026-11-04 : « discret mais
+ *  visible, une espèce de petit jeu »). */
+function ContributorPill({ count, onOpen }: { count: number; onOpen: () => void }) {
+  const { level, next } = contributorLevel(count);
+  const target = next?.min ?? count;
+  const pct = next ? Math.min(100, Math.round((count / next.min) * 100)) : 100;
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      title={next ? `${count} exercice${count > 1 ? "s" : ""} publié${count > 1 ? "s" : ""} : encore ${next.min - count} pour le palier ${next.name}` : "Palier Platine atteint"}
+      aria-label="Ma progression de contributeur"
+      className="group flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-2 text-xs font-semibold text-ink transition hover:bg-app-bg max-sm:h-10 max-sm:rounded-xl max-sm:border-0 max-sm:shadow-soft"
+    >
+      <Trophy className={`h-4 w-4 transition-transform group-hover:-rotate-12 ${level ? level.tone : "text-muted"}`} strokeWidth={2} />
+      <span className="tabular-nums">
+        {count}/{target}
+      </span>
+      <span className="h-1.5 w-8 overflow-hidden rounded-full bg-app-bg max-sm:hidden" aria-hidden>
+        <span className="block h-full rounded-full bg-ok transition-[width] duration-500" style={{ width: `${pct}%` }} />
+      </span>
+    </button>
+  );
+}
+
+/** Fenêtre du petit jeu : mon palier, le suivant, et le classement. */
+function ContributorGame({
+  ranking,
+  currentUserId,
+  count,
+  onClose,
+  onCreate,
+}: {
+  ranking: ReturnType<typeof contributorRanking>;
+  currentUserId: string;
+  count: number;
+  onClose: () => void;
+  onCreate: () => void;
+}) {
+  const { level, next } = contributorLevel(count);
+  const myRank = ranking.findIndex((r) => r.authorId === currentUserId);
+  const top = ranking.slice(0, 10);
+  const pct = next ? Math.min(100, Math.round((count / next.min) * 100)) : 100;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="game-title" onClick={onClose}>
+      <div className="flex max-h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-surface shadow-2xl sm:max-h-[92dvh] sm:rounded-2xl max-sm:rounded-t-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-line px-5 py-3">
+          <h2 id="game-title" className="flex items-center gap-2 text-base font-semibold text-ink">
+            <Trophy className={`h-5 w-5 ${level ? level.tone : "text-muted"}`} strokeWidth={2} />
+            Contributeurs EasyPhysio
+          </h2>
+          <button type="button" onClick={onClose} aria-label="Fermer" className="rounded-full p-1.5 text-muted hover:bg-app-bg hover:text-ink">
+            <X className="h-5 w-5" strokeWidth={2} />
+          </button>
+        </div>
+        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className={`rounded-xl p-3 ${level ? level.bg : "bg-app-bg"}`}>
+            <p className="text-sm text-ink">
+              {level ? (
+                <>
+                  Palier <b className={level.tone}>{level.name}</b>
+                  {count >= 5 ? " · Contributeur EasyPhysio" : ""}
+                  {myRank >= 0 ? ` · ${myRank + 1}${myRank === 0 ? "er" : "e"} sur ${ranking.length}` : ""}
+                </>
+              ) : (
+                "Pas encore de palier : votre premier exercice publié vous donne le Bronze."
+              )}
+            </p>
+            {next && (
+              <>
+                <p className="mt-1 text-xs text-muted">
+                  {count} exercice{count > 1 ? "s" : ""} publié{count > 1 ? "s" : ""}. Encore {next.min - count} pour le palier {next.name}
+                  {next.min === 5 ? " et le titre de Contributeur" : ""}.
+                </p>
+                <span className="mt-2 block h-2 overflow-hidden rounded-full bg-surface" aria-hidden>
+                  <span className="block h-full rounded-full bg-ok transition-[width] duration-700" style={{ width: `${pct}%` }} />
+                </span>
+              </>
+            )}
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Classement</p>
+            {top.length === 0 ? (
+              <p className="mt-1 text-sm text-muted">Personne n&apos;est encore classé : la première place est à prendre.</p>
+            ) : (
+              <ol className="mt-2 flex flex-col gap-1">
+                {top.map((r, i) => {
+                  const lv = contributorLevel(r.count).level;
+                  return (
+                    <li key={r.authorId} className={`flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm ${r.authorId === currentUserId ? "bg-brand-soft" : ""}`}>
+                      <span className="w-5 shrink-0 text-right font-semibold tabular-nums text-muted">{i + 1}</span>
+                      <Trophy className={`h-3.5 w-3.5 shrink-0 ${lv ? lv.tone : "text-muted"}`} strokeWidth={2} aria-label={lv?.name} />
+                      <span className="min-w-0 flex-1 truncate text-ink">{r.authorId === currentUserId ? "Vous" : r.label}</span>
+                      <span className="shrink-0 tabular-nums text-muted">{r.count}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </div>
+
+          <p className="text-xs text-muted">
+            Chaque exercice que vous rendez public et qu&apos;EasyPhysio valide vous fait avancer. Paliers : Bronze (1), Argent (5),
+            Or (10), Platine (20).
+          </p>
+          <button type="button" onClick={onCreate} className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
+            Créer un exercice
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

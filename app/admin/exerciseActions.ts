@@ -8,7 +8,9 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { isAdminEmail } from "@/lib/admin";
 import { markKineExerciseSeen, reviewKineExercise } from "@/lib/db/admin";
-import { KINE_EXERCISE_REWARD } from "@/lib/exercise/kineExercises";
+// Plus aucune remise accordée (modèle du 2026-11-04) : un seuil impossible à
+// atteindre neutralise cette partie de internal.admin_review_exercise.
+const NO_FEE_WAIVER = { threshold: 1_000_000, months: 0 } as const;
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
@@ -29,7 +31,7 @@ export async function reviewExerciseAction(formData: FormData) {
   }
   let res: { published_count: number; waived_until: string | null };
   try {
-    res = await reviewKineExercise(id, decision as "publish" | "changes" | "decline", note, KINE_EXERCISE_REWARD.threshold, KINE_EXERCISE_REWARD.months);
+    res = await reviewKineExercise(id, decision as "publish" | "changes" | "decline", note, NO_FEE_WAIVER.threshold, NO_FEE_WAIVER.months);
   } catch (e) {
     console.error("reviewExerciseAction failed", e);
     redirect(`/admin?error=${encodeURIComponent("Vérification impossible : réessayez.")}#exercices-kines`);
@@ -38,7 +40,6 @@ export async function reviewExerciseAction(formData: FormData) {
   const params = new URLSearchParams({ exercice: decision });
   if (decision === "publish") {
     params.set("publies", String(res.published_count));
-    if (res.waived_until) params.set("remise", res.waived_until);
   }
   redirect(`/admin?${params.toString()}#exercices-kines`);
 }

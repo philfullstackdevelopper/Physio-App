@@ -40,10 +40,7 @@ export default async function ExercisesPage({
 
   // Créer un exercice (migration 0081) : ses patients (exercice sur mesure),
   // ses exercices déjà publiés et sa récompense éventuelle.
-  const [{ data: patientRows }, { data: waiverRow }] = await Promise.all([
-    supabase.from("patients").select("id, full_name").eq("instructor_id", user.id).order("full_name"),
-    supabase.from("instructor_fee_waivers").select("waived_until").eq("instructor_id", user.id).maybeSingle(),
-  ]);
+  const { data: patientRows } = await supabase.from("patients").select("id, full_name").eq("instructor_id", user.id).order("full_name");
   const publishedCount = (allExercises ?? []).filter((ex) => ex.created_by === user.id && ex.publication_status === "published").length;
 
   const libraryExercises: LibraryExercise[] = await Promise.all((allExercises ?? []).filter(isPickableExercise).map(async (ex) => ({
@@ -85,7 +82,6 @@ export default async function ExercisesPage({
             creator={{
               patients: (patientRows ?? []).map((p) => ({ id: p.id as string, name: (p.full_name as string | null) || "Patient sans nom" })),
               publishedCount,
-              waivedUntil: (waiverRow?.waived_until as string | null) ?? null,
               requestPublication: requestExercisePublication,
             }}
             hideExercise={hideExercise}
