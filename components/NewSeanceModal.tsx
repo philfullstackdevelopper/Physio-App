@@ -199,7 +199,7 @@ export default function NewSeanceModal({
                       <button
                         type="button"
                         onClick={() => toggle(id)}
-                        className="group relative flex h-full w-full flex-col items-center gap-1.5 rounded-xl border border-line bg-surface p-2.5 text-center text-sm text-ink transition-colors hover:border-danger/30"
+                        className="group relative flex w-full flex-1 flex-col items-center gap-1.5 rounded-xl border border-line bg-surface p-2.5 text-center text-sm text-ink transition-colors hover:border-danger/30"
                       >
                         <span className="absolute left-2 top-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-app-bg text-xs font-semibold text-muted">{i + 1}</span>
                         <ExerciseIllustration name={ex.name} className="h-16 w-full shrink-0 text-brand md:h-20" />
