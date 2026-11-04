@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { track } from "@/lib/analytics/track";
 import { joinWaitlist, type WaitlistState } from "@/app/waitlistActions";
 
 // Liste d'attente du lancement (Philippe, 2026-10-12) : un visiteur — surtout
@@ -55,6 +56,11 @@ export default function WaitlistForm() {
       window.clearTimeout(arrival);
     };
   }, []);
+
+  // Mesure d'audience : une inscription réussie (le rôle seulement, jamais l'e-mail).
+  useEffect(() => {
+    if (state.ok) track("liste_attente_inscription", { role });
+  }, [state.ok]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (state.ok) {
     return (

@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { isPhoneFormat } from "@/lib/phoneFormat";
 import Link from "next/link";
+import { track } from "@/lib/analytics/track";
 import { CalendarRange, Check, ChevronDown, ChevronLeft, ChevronUp, Dumbbell, Info, Plus, Repeat, Search, Trash2, X } from "lucide-react";
 import { levelNeighbours } from "@/lib/exercise/levelStep";
 import type { Recommendation } from "@/lib/exercise/variants";
@@ -480,7 +481,7 @@ export default function AdjustWorkoutModal({
             </div>
 
             {view === "exercises" && workout ? (
-              <form action={adjustAction} className="flex min-h-0 flex-1 flex-col">
+              <form action={adjustAction} onSubmit={() => track("seance_ajustee_patient")} className="flex min-h-0 flex-1 flex-col">
                 <input type="hidden" name="patient_id" value={patientId} />
                 <input type="hidden" name="workout_id" value={workout.id} />
                 {recId && <input type="hidden" name="rec_id" value={recId} />}

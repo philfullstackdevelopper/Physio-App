@@ -24,6 +24,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftRight, Check, LogOut, Sparkles, X } from "lucide-react";
+import { track } from "@/lib/analytics/track";
 import { DemoHrefContext, DemoModeContext } from "@/components/DemoContext";
 
 type Side = "kine" | "patient";
@@ -111,6 +112,9 @@ const mapHref = (href: string) => {
 export default function DemoShell({ side, children }: { side: Side; children: React.ReactNode }) {
   const router = useRouter();
   const current = useSearchParams().get("ecran") ?? "accueil";
+  useEffect(() => {
+    track("demo_ouverte", { espace: side });
+  }, [side]);
   const [toast, setToast] = useState<string | null>("Démo avec des données fictives : rien n'est enregistré.");
   // Guide ouvert d'office sur ordinateur (≥ 640 px), une fois par espace et
   // par visite ; replié sur téléphone, où il cacherait l'écran.

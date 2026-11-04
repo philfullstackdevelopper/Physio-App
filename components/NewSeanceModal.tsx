@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { Plus, X } from "lucide-react";
+import { track } from "@/lib/analytics/track";
 import { isPhoneFormat } from "@/lib/phoneFormat";
 import { type BodyPart } from "@/lib/exercise/category";
 import { type InjuryStage } from "@/lib/exercise/prescription";
@@ -112,7 +113,11 @@ export default function NewSeanceModal({
         onClick={(e) => e.stopPropagation()}
         className="flex h-[90vh] w-full max-w-6xl flex-col rounded-2xl bg-surface shadow-sm outline-none max-sm:h-dvh max-sm:max-w-none max-sm:rounded-none"
       >
-        <form action={createSeance} className="flex min-h-0 flex-1 flex-col">
+        <form
+          action={createSeance}
+          onSubmit={() => track(edit ? "seance_modifiee" : "seance_creee", { exercices: selected.length })}
+          className="flex min-h-0 flex-1 flex-col"
+        >
           {selected.map((id) => (
             <input key={id} type="hidden" name="exercise_ids" value={id} />
           ))}
