@@ -2,7 +2,7 @@
 // Abonnement patient — côté serveur (modèle définitif, Philippe 2026-11-04 ;
 // montants et règles : lib/billing/patientPlans.ts).
 //
-// - L'ACCÈS À LA PLATEFORME (3,99 € / mois) est un abonnement Stripe sur le
+// - L'ACCÈS À LA PLATEFORME (6,99 / 3,99 / 2,99 € par mois selon l'engagement) est un abonnement Stripe sur le
 //   compte d'EasyPhysio (accountId = null ici). Il est recopié dans la table
 //   `subscriptions` depuis le webhook, le retour de paiement et la relecture
 //   quand la période est dépassée (pour ne pas dépendre des seuls webhooks).
@@ -20,7 +20,7 @@ import type Stripe from "stripe";
 import { getStripe } from "./stripe";
 import { upsertFollowUp, upsertSubscription } from "@/lib/db/admin";
 import { hasValidSubscriptionSignature } from "./subscriptionSignature";
-import { ACCESS_PLAN_KEY, KINE_FOLLOW_UP_CENTS, PLATFORM_VAT_RATE, isLegacyPlanKey } from "./patientPlans";
+import { EARLY_ACCESS_PLAN_KEY, KINE_FOLLOW_UP_CENTS, PLATFORM_VAT_RATE, isPlatformOfferKey } from "./patientPlans";
 
 /** Clé de signature des abonnements qui vivent sur le compte d'EasyPhysio. */
 export const PLATFORM_SIGNATURE_ACCOUNT = "platform";
@@ -46,9 +46,12 @@ export async function syncPatientSubscription(sub: Stripe.Subscription, accountI
   }
   const userId = sub.metadata.user_id;
   const plan = sub.metadata.plan;
-  if (accountId === null ? plan !== ACCESS_PLAN_KEY : !isLegacyPlanKey(plan)) return null;
+  // Compte EasyPhysio : une des trois offres d'accès (ou l'accès à 3,99 € du
+  // 2026-11-04). Compte du kiné : formule de l'ancien modèle.
+  if (accountId === null ? !isPlatformOfferKey(plan) && plan !== EARLY_ACCESS_PLAN_KEY : !isPlatformOfferKey(plan)) return null;
 
-  let cancelAtPeriodEnd = !!sub.cancel_at_period_end;
+  // Résiliation en fin de mois (cancel_at_period_end) ou à la fin d'un engagement (cancel_at).
+  let cancelAtPeriodEnd = !!sub.cancel_at_period_end || !!sub.cancel_at;
   // Ancien modèle : on arrête le renouvellement (l'accès dure jusqu'à la fin
   // de la période déjà payée).
   if (accountId !== null && !cancelAtPeriodEnd && sub.status !== "canceled") {

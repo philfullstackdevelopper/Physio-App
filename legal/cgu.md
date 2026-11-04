@@ -55,17 +55,22 @@ sans ambiguïté que ce n'est jamais présenté comme un acte remboursé.)*
 Le patient souscrit deux services distincts, vendus par deux vendeurs
 distincts, payés en deux paiements et facturés sur deux documents :
 
-- **Accès à la plateforme EasyPhysio** : 3,99 € TTC par mois, vendu et
-  facturé par EasyPhysio (TVA 20 %), prélevé chaque mois d'abonnement,
-  que le kinésithérapeute intervienne ou non. Application, vidéos,
-  messagerie, hébergement des données de santé.
+- **Accès à la plateforme EasyPhysio** : vendu et facturé par EasyPhysio
+  (TVA 20 % incluse), prélevé chaque mois d'abonnement, que le
+  kinésithérapeute intervienne ou non. Application, vidéos, messagerie,
+  hébergement des données de santé. Trois offres : sans engagement
+  6,99 € / mois ; engagement 3 mois 3,99 € / mois ; engagement 6 mois
+  2,99 € / mois. L'engagement ne porte que sur l'accès ; à son terme,
+  l'accès continue au même prix, mois par mois, résiliable à tout moment.
+  Une résiliation pendant l'engagement prend effet à la fin de celui-ci.
 - **Programme du kinésithérapeute** : 6,00 € par mois, vendu par le
   kinésithérapeute, prélevé directement sur son compte, uniquement les
   mois où il met à jour le programme, après cette mise à jour ; note
   d'honoraires à son nom.
 
-Soit 9,99 € au plus par mois. 10 jours d'essai gratuit à la première
-souscription. Résiliable à tout moment (accès jusqu'à la fin du mois en
+Soit au plus 12,99 €, 9,99 € ou 8,99 € par mois selon l'offre. 10 jours
+d'essai gratuit à la première souscription. Accès immédiat : en cas de
+rétractation dans les 14 jours, seule la période déjà utilisée est due. Résiliable à tout moment (accès jusqu'à la fin du mois en
 cours, puis plus aucun prélèvement). Les montants font foi dans
 `lib/billing/patientPlans.ts`.
 

@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
-import { KINE_FOLLOW_UP_CENTS, KINE_NET_CENTS, PATIENT_MONTHLY_TOTAL_CENTS, PLATFORM_ACCESS_TTC_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
+import { HIGHEST_MONTHLY_TOTAL_CENTS, HIGHEST_PLATFORM_CENTS, LOWEST_MONTHLY_TOTAL_CENTS, LOWEST_PLATFORM_CENTS, KINE_FOLLOW_UP_CENTS, KINE_NET_CENTS, TRIAL_DAYS, eurosFR, offersSummaryFR } from "@/lib/billing/patientPlans";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 // Modèle définitif (2026-11-04) : lib/billing/patientPlans.ts.
-const PRICE_TEXT = `${eurosFR(PATIENT_MONTHLY_TOTAL_CENTS)} € par mois après ${TRIAL_DAYS} jours offerts : ${eurosFR(PLATFORM_ACCESS_TTC_CENTS)} € d'accès à l'appli, payés à EasyPhysio, et ${eurosFR(KINE_FOLLOW_UP_CENTS)} € pour le programme de votre kiné, payés directement à lui, seulement les mois où il met à jour votre programme`;
+const PRICE_TEXT = `Après ${TRIAL_DAYS} jours offerts, vous choisissez une offre : ${offersSummaryFR()} par mois. Chaque total réunit l'accès à l'appli (${eurosFR(LOWEST_PLATFORM_CENTS)} € à ${eurosFR(HIGHEST_PLATFORM_CENTS)} € selon l'engagement), payé chaque mois à EasyPhysio, et ${eurosFR(KINE_FOLLOW_UP_CENTS)} € pour le programme de votre kiné, payés directement à lui, seulement les mois où il met à jour votre programme`;
 
 const QUESTIONS = [
   {
@@ -41,7 +41,7 @@ const QUESTIONS = [
   },
   {
     question: "Je suis kiné : combien ça me coûte, et combien ça me rapporte ?",
-    answer: `Rien : EasyPhysio est gratuit pour vous, patients illimités. Chacun de vos patients vous paie ${eurosFR(KINE_FOLLOW_UP_CENTS)} € par mois où vous mettez à jour son programme, directement sur votre compte, avec la note d'honoraires à votre nom (${eurosFR(KINE_NET_CENTS)} € après frais de carte). EasyPhysio ne prend rien sur vos honoraires : le patient paie à part ${eurosFR(PLATFORM_ACCESS_TTC_CENTS)} € d'accès à l'appli. Avec 20 patients suivis, c'est ${eurosFR(20 * KINE_NET_CENTS)} € par mois pour vous.`,
+    answer: `Rien : EasyPhysio est gratuit pour vous, patients illimités. Chacun de vos patients vous paie ${eurosFR(KINE_FOLLOW_UP_CENTS)} € par mois où vous mettez à jour son programme, directement sur votre compte, avec la note d'honoraires à votre nom (${eurosFR(KINE_NET_CENTS)} € après frais de carte). EasyPhysio ne prend rien sur vos honoraires : le patient paie à part l'accès à l'appli (${eurosFR(LOWEST_PLATFORM_CENTS)} € à ${eurosFR(HIGHEST_PLATFORM_CENTS)} € selon son engagement, total de ${eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} € à ${eurosFR(HIGHEST_MONTHLY_TOTAL_CENTS)} €). Avec 20 patients suivis, c'est ${eurosFR(20 * KINE_NET_CENTS)} € par mois pour vous.`,
   },
   {
     question: "Je suis praticien : comment essayer avec mes patients ?",

@@ -1,7 +1,7 @@
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import DotCanvas from "@/components/DotCanvas";
-import { KINE_FOLLOW_UP_CENTS, PATIENT_MONTHLY_TOTAL_CENTS, PLATFORM_ACCESS_TTC_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
+import { HIGHEST_MONTHLY_TOTAL_CENTS, HIGHEST_PLATFORM_CENTS, LOWEST_MONTHLY_TOTAL_CENTS, LOWEST_PLATFORM_CENTS, KINE_FOLLOW_UP_CENTS, PLATFORM_OFFERS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
 
 // Renders legal/cgu.md for the app. Keep the two in sync by hand — this is
 // still a DRAFT pending legal review (see the banner below).
@@ -51,7 +51,7 @@ export default function CguPage() {
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>
-                <strong>l&apos;accès à la plateforme EasyPhysio</strong> ({eurosFR(PLATFORM_ACCESS_TTC_CENTS)} € TTC par mois),
+                <strong>l&apos;accès à la plateforme EasyPhysio</strong> ({eurosFR(LOWEST_PLATFORM_CENTS)} € à {eurosFR(HIGHEST_PLATFORM_CENTS)} € TTC par mois selon l&apos;offre),
                 vendu par EasyPhysio : application, vidéos, messagerie et hébergement sécurisé des données de santé ;
               </li>
               <li>
@@ -60,7 +60,7 @@ export default function CguPage() {
               </li>
             </ul>
             <p className="mt-2">
-              Soit {eurosFR(PATIENT_MONTHLY_TOTAL_CENTS)} € au plus par mois. EasyPhysio ne perçoit aucune part des
+              Soit de {eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} € à {eurosFR(HIGHEST_MONTHLY_TOTAL_CENTS)} € au plus par mois selon l&apos;offre choisie pour l&apos;accès : {PLATFORM_OFFERS.map((o) => `${o.label.toLowerCase()} ${eurosFR(o.platformCents)} €`).join(", ")}. L&apos;engagement ne porte que sur l&apos;accès à la plateforme ; à son terme, l&apos;accès continue au même prix, mois par mois, résiliable à tout moment. EasyPhysio ne perçoit aucune part des
               honoraires du kinésithérapeute, et le kinésithérapeute aucune part de l&apos;accès à la plateforme.
             </p>
           </section>

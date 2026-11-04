@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { isMissingStripeObject, refreshConnectStatus } from "@/lib/billing/connectStatus";
 import { upsertConnectAccount } from "@/lib/db/admin";
-import { ACCESS_PLAN_KEY, KINE_FOLLOW_UP_CENTS, isLegacyPlanKey } from "@/lib/billing/patientPlans";
+import { KINE_FOLLOW_UP_CENTS, isLegacySubscription, isPlatformOfferKey, isPlatformSubscription, platformOffer, type SubscriptionRow } from "@/lib/billing/patientPlans";
 import FacturationView, { type ConnectStatus, type SubscriberRow } from "./FacturationView";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
@@ -28,7 +28,7 @@ export default async function FacturationPage({
   const ids = (patients ?? []).map((p) => p.id as string);
   // Abonnements de SES patients seulement (règle subscriptions_instructor_read).
   const { data: subs } = ids.length
-    ? await supabase.from("subscriptions").select("user_id, plan, status, current_period_end, cancel_at_period_end").in("user_id", ids)
+    ? await supabase.from("subscriptions").select("user_id, plan, status, current_period_end, cancel_at_period_end, stripe_account_id").in("user_id", ids)
     : { data: [] };
 
   const nameOf = new Map((patients ?? []).map((p) => [p.id as string, (p.full_name as string | null) ?? "Patient"]));
@@ -36,8 +36,8 @@ export default async function FacturationPage({
   let monthlyCents = 0;
   const subscribers: SubscriberRow[] = [];
   for (const s of subs ?? []) {
-    const legacy = isLegacyPlanKey(s.plan);
-    if (s.plan !== ACCESS_PLAN_KEY && !legacy) continue;
+    const legacy = isLegacySubscription(s as unknown as SubscriptionRow);
+    if (!legacy && !isPlatformSubscription(s as unknown as SubscriptionRow)) continue;
     const live = (s.status === "active" || s.status === "trialing") && (!s.current_period_end || new Date(s.current_period_end as string) > now);
     const refused = ["past_due", "unpaid", "incomplete"].includes(s.status as string);
     if (!live && !refused) continue;
@@ -46,7 +46,13 @@ export default async function FacturationPage({
     subscribers.push({
       patientId: s.user_id as string,
       name: nameOf.get(s.user_id as string) ?? "Patient",
-      planLabel: legacy ? "Ancienne formule" : s.status === "trialing" ? "Essai gratuit" : "Suivi mensuel",
+      planLabel: legacy
+        ? "Ancienne formule"
+        : s.status === "trialing"
+          ? "Essai gratuit"
+          : isPlatformOfferKey(s.plan)
+            ? platformOffer(s.plan).label
+            : "Suivi mensuel",
       status: refused ? "refused" : s.cancel_at_period_end ? "cancelled" : "active",
       periodEnd: (s.current_period_end as string | null) ?? null,
     });

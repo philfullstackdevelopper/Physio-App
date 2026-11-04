@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { ACCESS_PLAN_KEY, PATIENT_MONTHLY_TOTAL_CENTS, TRIAL_DAYS, eurosFR, isLegacyPlanKey } from "@/lib/billing/patientPlans";
+import { LOWEST_MONTHLY_TOTAL_CENTS, TRIAL_DAYS, eurosFR, isLegacySubscription, isPlatformOfferKey, isPlatformSubscription, monthlyTotalCents, platformOffer, type SubscriptionRow } from "@/lib/billing/patientPlans";
 import CompteView, { type FollowUpSummary } from "./CompteView";
 
 // « Paramètres » du patient. Modèle définitif (2026-11-04, lib/billing/patientPlans.ts) :
@@ -17,11 +17,14 @@ export default async function CompteePage({
 
   const [{ data: patient }, { data: sub }] = await Promise.all([
     supabase.from("patients").select("full_name, instructors ( full_name )").eq("id", user.id).maybeSingle(),
-    supabase.from("subscriptions").select("plan, status, current_period_end, cancel_at_period_end").eq("user_id", user.id).maybeSingle(),
+    supabase.from("subscriptions").select("plan, status, current_period_end, cancel_at_period_end, stripe_account_id").eq("user_id", user.id).maybeSingle(),
   ]);
   const kine = patient?.instructors as unknown as { full_name: string | null } | null;
   const kineName = kine?.full_name ?? "votre kiné";
-  const known = !!sub && (sub.plan === ACCESS_PLAN_KEY || isLegacyPlanKey(sub.plan));
+  const row = (sub as unknown as SubscriptionRow | null) ?? null;
+  const legacy = isLegacySubscription(row);
+  const known = legacy || isPlatformSubscription(row);
+  const offer = known && !legacy && isPlatformOfferKey(sub!.plan) ? platformOffer(sub!.plan) : null;
   const live = known && (sub!.status === "active" || sub!.status === "trialing");
   const refused = known && ["past_due", "unpaid", "incomplete"].includes(sub!.status as string);
   const date = sub?.current_period_end
@@ -30,18 +33,18 @@ export default async function CompteePage({
 
   const summary: FollowUpSummary = {
     status: live ? "active" : refused ? "pending_card" : "none",
-    priceCents: PATIENT_MONTHLY_TOTAL_CENTS,
+    priceCents: offer ? monthlyTotalCents(offer) : LOWEST_MONTHLY_TOTAL_CENTS,
     cardLabel: null,
     kineName,
     line: live
-        ? sub!.cancel_at_period_end || isLegacyPlanKey(sub!.plan)
+        ? sub!.cancel_at_period_end || legacy
           ? `Accès jusqu'au ${date}`
           : sub!.status === "trialing"
             ? `Essai gratuit jusqu'au ${date}`
-            : `Actif · prochain mois le ${date}`
+            : `${offer ? offer.label : "Actif"} · prochain mois le ${date}`
         : refused
           ? "Le dernier paiement a été refusé"
-          : `${TRIAL_DAYS} jours offerts, puis ${eurosFR(PATIENT_MONTHLY_TOTAL_CENTS)} € par mois au plus (non remboursé)`,
+          : `${TRIAL_DAYS} jours offerts, puis dès ${eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} € par mois (non remboursé)`,
   };
 
   return <CompteView fullName={(patient?.full_name as string | null) ?? null} error={error} followUp={summary} />;

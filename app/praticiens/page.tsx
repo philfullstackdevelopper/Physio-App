@@ -12,11 +12,11 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import KineMockup from "@/components/KineMockup";
 import DotCanvas from "@/components/DotCanvas";
-import { KINE_FOLLOW_UP_CENTS, KINE_NET_CENTS, PATIENT_MONTHLY_TOTAL_CENTS, PLATFORM_ACCESS_TTC_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
+import { HIGHEST_MONTHLY_TOTAL_CENTS, HIGHEST_PLATFORM_CENTS, LOWEST_MONTHLY_TOTAL_CENTS, LOWEST_PLATFORM_CENTS, KINE_FOLLOW_UP_CENTS, KINE_NET_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
 
 // Modèle définitif du 2026-11-04 : gratuit pour le kiné ; 9,99 € par mois payés par les
 // patients. Montants : lib/billing/patientPlans.ts, jamais écrits en dur.
-const PATIENT_PRICES = `${eurosFR(PATIENT_MONTHLY_TOTAL_CENTS)} € par mois (${eurosFR(KINE_FOLLOW_UP_CENTS)} € pour vous, ${eurosFR(PLATFORM_ACCESS_TTC_CENTS)} € d'accès à l'appli)`;
+const PATIENT_PRICES = `de ${eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} € à ${eurosFR(HIGHEST_MONTHLY_TOTAL_CENTS)} € par mois selon leur engagement (${eurosFR(KINE_FOLLOW_UP_CENTS)} € pour vous + ${eurosFR(LOWEST_PLATFORM_CENTS)} € à ${eurosFR(HIGHEST_PLATFORM_CENTS)} € d'accès à l'appli)`;
 const KINE_SHARES = `${eurosFR(KINE_FOLLOW_UP_CENTS)} € par patient et par mois où vous mettez à jour son programme`;
 
 export const metadata: Metadata = {

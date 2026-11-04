@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CheckCircle2, ChevronRight, Circle, ExternalLink, Tag, Users } from "lucide-react";
 import SubmitButton from "@/components/SubmitButton";
 import PhoneFold from "@/components/PhoneFold";
-import { KINE_FOLLOW_UP_CENTS, KINE_NET_CENTS, PATIENT_MONTHLY_TOTAL_CENTS, PLATFORM_ACCESS_TTC_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
+import { HIGHEST_MONTHLY_TOTAL_CENTS, HIGHEST_PLATFORM_CENTS, LOWEST_MONTHLY_TOTAL_CENTS, LOWEST_PLATFORM_CENTS, KINE_FOLLOW_UP_CENTS, KINE_NET_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
 import { startConnectOnboarding } from "../connect/actions";
 
 // Page « Suivi & facturation » du kiné — modèle définitif (Philippe,
@@ -147,12 +147,12 @@ export default function FacturationView({
                     <td className="py-1.5 text-right font-semibold tabular-nums text-ok">{eur(KINE_FOLLOW_UP_CENTS)}</td>
                   </tr>
                   <tr>
-                    <td className="py-1.5 text-ink">Accès à l&apos;appli (payé à EasyPhysio)</td>
-                    <td className="py-1.5 text-right tabular-nums text-ink">{eur(PLATFORM_ACCESS_TTC_CENTS)}</td>
+                    <td className="py-1.5 text-ink">Accès à l&apos;appli (payé à EasyPhysio, selon l&apos;engagement)</td>
+                    <td className="py-1.5 text-right tabular-nums text-ink">{eurosFR(LOWEST_PLATFORM_CENTS)} à {eur(HIGHEST_PLATFORM_CENTS)}</td>
                   </tr>
                   <tr>
                     <td className="py-1.5 font-medium text-ink">Total pour le patient, par mois</td>
-                    <td className="py-1.5 text-right font-medium tabular-nums text-ink">{eur(PATIENT_MONTHLY_TOTAL_CENTS)}</td>
+                    <td className="py-1.5 text-right font-medium tabular-nums text-ink">{eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} à {eur(HIGHEST_MONTHLY_TOTAL_CENTS)}</td>
                   </tr>
                 </tbody>
               </table>

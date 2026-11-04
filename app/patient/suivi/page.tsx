@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { patientMustSubscribe, subscriptionNeedsRefresh, type SubscriptionRow } from "@/lib/billing/patientPlans";
+import { isLegacySubscription, isPlatformSubscription, patientMustSubscribe, subscriptionNeedsRefresh, type SubscriptionRow } from "@/lib/billing/patientPlans";
+import { getStripe } from "@/lib/billing/stripe";
 import { refreshPatientSubscription } from "@/lib/billing/patientSubscription";
 import SuiviView from "./SuiviView";
 
@@ -40,6 +41,20 @@ export default async function SuiviPage({
     sub = (await loadSub()).data;
   }
 
+  // Engagement et date de fin (si résilié) : lus chez Stripe pour l'abonnement d'accès en cours.
+  let commitUntil: string | null = null;
+  let endsAt: string | null = null;
+  const row = (sub as unknown as SubscriptionRow | null) ?? null;
+  if (row && isPlatformSubscription(row) && (row.status === "active" || row.status === "trialing") && sub?.stripe_subscription_id) {
+    try {
+      const live = await getStripe().subscriptions.retrieve(sub.stripe_subscription_id as string);
+      commitUntil = live.metadata?.commit_until ?? null;
+      endsAt = live.cancel_at ? new Date(live.cancel_at * 1000).toISOString() : null;
+    } catch (e) {
+      console.error("[patient/suivi] lecture de l'abonnement chez Stripe impossible :", e);
+    }
+  }
+
   const kineReady = ((kine?.status as string | null) ?? "approved") === "approved" && connect?.status === "active";
   const required = patientMustSubscribe({
     kineCanCharge: connect?.status === "active",
@@ -61,6 +76,9 @@ export default async function SuiviPage({
               status: sub.status as string,
               periodEnd: (sub.current_period_end as string | null) ?? null,
               cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+              legacy: isLegacySubscription(row),
+              commitUntil,
+              endsAt,
             }
           : null
       }

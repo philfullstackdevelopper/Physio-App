@@ -5,16 +5,26 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 import { requestOrigin } from "@/lib/requestOrigin";
-import { ACCESS_PLAN_KEY, KINE_FOLLOW_UP_CENTS, PLATFORM_ACCESS_TTC_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
+import {
+  KINE_FOLLOW_UP_CENTS,
+  TRIAL_DAYS,
+  commitmentEnd,
+  eurosFR,
+  isPlatformOfferKey,
+  isPlatformSubscription,
+  platformOffer,
+  type SubscriptionRow,
+} from "@/lib/billing/patientPlans";
 import { signedSubscriptionMetadata } from "@/lib/billing/subscriptionSignature";
 import { PLATFORM_SIGNATURE_ACCOUNT, platformVatRateId, refreshPatientSubscription } from "@/lib/billing/patientSubscription";
 
-// Modèle définitif (Philippe, 2026-11-04 ; lib/billing/patientPlans.ts) :
-// le patient souscrit UNE fois, sur le compte d'EasyPhysio, l'accès à la
-// plateforme (3,99 € / mois, 10 jours d'essai la première fois). Sa carte y est
-// enregistrée, puis copiée chez son kiné, qui prélève lui-même ses 6 € les mois
-// où il met à jour le programme (lib/billing/autoReview.ts). Résiliable à tout
-// moment : l'accès dure jusqu'à la fin du mois en cours.
+// Modèle définitif (Philippe, 2026-11-04 ; lib/billing/patientPlans.ts) : le
+// patient choisit une offre d'accès à la plateforme (sans engagement, 3 mois
+// ou 6 mois), payée chaque mois à EasyPhysio, sur le compte d'EasyPhysio
+// (10 jours d'essai la première fois). Sa carte y est enregistrée, puis copiée
+// chez son kiné, qui prélève lui-même ses 6 € les mois où il met à jour le
+// programme (lib/billing/autoReview.ts). L'engagement ne porte que sur
+// l'accès : une résiliation pendant l'engagement prend effet à sa fin.
 
 const fail = (msg: string): never => redirect(`/patient/suivi?error=${encodeURIComponent(msg)}`);
 
@@ -28,24 +38,31 @@ async function context() {
   const [{ data: kine }, { data: connect }, { data: sub }] = await Promise.all([
     supabase.from("instructors").select("status, full_name").eq("id", instructorId).maybeSingle(),
     supabase.from("instructor_connect_accounts").select("stripe_connect_account_id, status").eq("instructor_id", instructorId).maybeSingle(),
-    supabase.from("subscriptions").select("plan, status, stripe_subscription_id, stripe_customer_id, stripe_account_id").eq("user_id", user.id).maybeSingle(),
+    supabase
+      .from("subscriptions")
+      .select("plan, status, current_period_end, cancel_at_period_end, stripe_subscription_id, stripe_customer_id, stripe_account_id")
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ]);
   const accountId = connect?.status === "active" ? ((connect.stripe_connect_account_id as string | null) ?? null) : null;
   return { user, patient: patient!, kine, accountId, sub };
 }
 
 export async function startPlan(formData: FormData) {
+  const key = formData.get("plan");
+  if (!isPlatformOfferKey(key)) fail("Choisissez une offre.");
   if (formData.get("consent") !== "on") fail("Cochez la case pour accepter les deux montants et le prélèvement mensuel.");
   const { user, patient, kine, accountId, sub } = await context();
   if (((kine?.status as string | null) ?? "approved") !== "approved") fail("Votre kinésithérapeute ne propose pas de suivi pour le moment.");
   if (!accountId) fail("Votre kinésithérapeute n'a pas encore activé ses paiements en ligne. Prévenez-le, puis revenez ici.");
 
+  const offer = platformOffer(key as Parameters<typeof platformOffer>[0]);
   const stripe = getStripe();
   let url: string | null = null;
   try {
     // Abonnement d'accès en échec de paiement : on l'arrête avant d'en créer
     // un nouveau (un seul abonnement par patient).
-    const onPlatform = sub?.plan === ACCESS_PLAN_KEY && !sub?.stripe_account_id;
+    const onPlatform = isPlatformSubscription((sub as unknown as SubscriptionRow | null) ?? null);
     if (onPlatform && sub?.stripe_subscription_id && ["past_due", "unpaid", "incomplete"].includes(sub.status as string)) {
       await stripe.subscriptions.cancel(sub.stripe_subscription_id as string).catch(() => null);
     }
@@ -59,10 +76,16 @@ export async function startPlan(formData: FormData) {
       });
       customerId = c.id;
     }
-    // Essai gratuit seulement à la toute première souscription.
+    // Essai gratuit seulement à la toute première souscription ; l'engagement
+    // court à partir du premier mois payé.
     const firstTime = !sub;
+    const paidStart = new Date(Date.now() + (firstTime ? TRIAL_DAYS * 86_400_000 : 0));
+    const commitUntil = commitmentEnd(offer, paidStart);
     const base = await requestOrigin();
-    const metadata = signedSubscriptionMetadata(user.id, ACCESS_PLAN_KEY, PLATFORM_SIGNATURE_ACCOUNT);
+    const metadata = {
+      ...signedSubscriptionMetadata(user.id, offer.key, PLATFORM_SIGNATURE_ACCOUNT),
+      ...(commitUntil ? { commit_until: commitUntil } : {}),
+    };
     const kineName = (kine?.full_name as string | null) ?? "votre kinésithérapeute";
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -74,12 +97,12 @@ export async function startPlan(formData: FormData) {
           tax_rates: [await platformVatRateId()],
           price_data: {
             currency: "eur",
-            unit_amount: PLATFORM_ACCESS_TTC_CENTS,
+            unit_amount: offer.platformCents,
             tax_behavior: "inclusive",
             recurring: { interval: "month" },
             product_data: {
-              name: "Accès à la plateforme EasyPhysio",
-              description: "Hébergement de vos données de santé, application, vidéos et messagerie.",
+              name: `Accès à la plateforme EasyPhysio — ${offer.label.toLowerCase()}`,
+              description: "Application, vidéos, messagerie et hébergement sécurisé de vos données de santé.",
             },
           },
         },
@@ -111,14 +134,27 @@ function accountOf(sub: { stripe_account_id?: unknown } | null): string | null {
   return (sub?.stripe_account_id as string | null | undefined) ?? null;
 }
 
-/** Résilier : l'abonnement s'arrête à la fin du mois en cours (plus aucun prélèvement ensuite). */
+/**
+ * Résilier. Sans engagement (ou engagement terminé) : fin du mois en cours,
+ * plus aucun prélèvement ensuite. Pendant un engagement : la résiliation prend
+ * effet à la fin de l'engagement (les mois restants de l'accès sont dus ; les
+ * honoraires du kiné, eux, ne sont jamais dus sans mise à jour du programme).
+ */
 export async function cancelPlan() {
   const { sub } = await context();
   const id = sub?.stripe_subscription_id as string | undefined;
   if (!id) fail("Aucun abonnement en cours.");
   const account = accountOf(sub);
+  const stripe = getStripe();
   try {
-    await getStripe().subscriptions.update(id!, { cancel_at_period_end: true }, account ? { stripeAccount: account } : undefined);
+    const opts = account ? { stripeAccount: account } : undefined;
+    const live = await stripe.subscriptions.retrieve(id!, undefined, opts);
+    const commitUntil = !account ? live.metadata?.commit_until : undefined;
+    if (commitUntil && new Date(commitUntil) > new Date()) {
+      await stripe.subscriptions.update(id!, { cancel_at: Math.floor(new Date(commitUntil).getTime() / 1000) });
+    } else {
+      await stripe.subscriptions.update(id!, { cancel_at_period_end: true }, opts);
+    }
     await refreshPatientSubscription(id!, account);
   } catch (e) {
     console.error("cancelPlan:", e);
@@ -131,9 +167,9 @@ export async function cancelPlan() {
 export async function resumePlan() {
   const { sub } = await context();
   const id = sub?.stripe_subscription_id as string | undefined;
-  if (!id || sub?.plan !== ACCESS_PLAN_KEY || accountOf(sub)) fail("Aucun abonnement à reprendre.");
+  if (!id || accountOf(sub)) fail("Aucun abonnement à reprendre.");
   try {
-    await getStripe().subscriptions.update(id!, { cancel_at_period_end: false });
+    await getStripe().subscriptions.update(id!, { cancel_at_period_end: false, cancel_at: "" });
     await refreshPatientSubscription(id!, null);
   } catch (e) {
     console.error("resumePlan:", e);

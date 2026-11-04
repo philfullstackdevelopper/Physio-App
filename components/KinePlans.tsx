@@ -7,8 +7,10 @@ import { HandNote } from "@/components/HandDrawn";
 import {
   KINE_FOLLOW_UP_CENTS,
   KINE_NET_CENTS,
-  PATIENT_MONTHLY_TOTAL_CENTS,
-  PLATFORM_ACCESS_TTC_CENTS,
+  HIGHEST_MONTHLY_TOTAL_CENTS,
+  HIGHEST_PLATFORM_CENTS,
+  LOWEST_MONTHLY_TOTAL_CENTS,
+  LOWEST_PLATFORM_CENTS,
   TRIAL_DAYS,
   eurosFR,
 } from "@/lib/billing/patientPlans";
@@ -70,7 +72,7 @@ export default function KinePlans() {
           <Choice label="Patients suivis" options={PATIENT_CHOICES} value={patients} onChange={setPatients} render={(n) => String(n)} />
           <div className="text-sm leading-snug text-slate-600">
             <p>
-              Chaque patient paie {eurosFR(PATIENT_MONTHLY_TOTAL_CENTS)}&nbsp;€ par mois, après {TRIAL_DAYS} jours offerts, en deux parts&nbsp;:
+              Chaque patient paie de {eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} à {eurosFR(HIGHEST_MONTHLY_TOTAL_CENTS)}&nbsp;€ par mois selon son engagement, après {TRIAL_DAYS} jours offerts, en deux parts&nbsp;:
             </p>
             <ul className="mt-2 space-y-1">
               <li className="flex justify-between gap-3">
@@ -79,7 +81,7 @@ export default function KinePlans() {
               </li>
               <li className="flex justify-between gap-3">
                 <span>L&apos;accès à l&apos;appli, payé à EasyPhysio</span>
-                <span className="font-semibold tabular-nums text-slate-900">{eurosFR(PLATFORM_ACCESS_TTC_CENTS)}&nbsp;€</span>
+                <span className="font-semibold tabular-nums text-slate-900">{eurosFR(LOWEST_PLATFORM_CENTS)} à {eurosFR(HIGHEST_PLATFORM_CENTS)}&nbsp;€</span>
               </li>
             </ul>
             <p className="mt-2 text-xs text-slate-500">Vos honoraires ne sont prélevés que les mois où vous mettez à jour son programme.</p>
