@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 const field =
   "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 shadow-sm transition-colors focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
 
-const STEPS = ["Votre e-mail", "Mot de passe", "Votre programme"];
+const STEPS = ["E-mail", "Mot de passe", "Programme"];
 
 function initials(name: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -100,7 +100,7 @@ export default async function JoinPage({
                 {/* Les trois étapes, pour savoir où l'on va. */}
                 <ol className="mt-4 flex items-center gap-2 text-xs font-medium text-slate-500">
                   {STEPS.map((s, i) => (
-                    <li key={s} className="flex items-center gap-2">
+                    <li key={s} className="flex items-center gap-2 whitespace-nowrap">
                       <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${i === 0 ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-600"}`}>
                         {i + 1}
                       </span>
