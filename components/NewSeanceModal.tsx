@@ -178,8 +178,8 @@ export default function NewSeanceModal({
           {edit?.saved && !edit.error && (
             <p className={`mx-6 mt-3 rounded-xl bg-ok-soft px-4 py-2 text-sm font-medium text-ok max-sm:mx-4 ${hideOnAdd}`}>Séance enregistrée</p>
           )}
-          <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 max-sm:block max-sm:overflow-hidden max-sm:px-4 max-sm:py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
-            <section className={`flex min-h-0 flex-col rounded-xl border border-line bg-app-bg p-4 max-sm:h-full max-sm:border-0 max-sm:bg-transparent max-sm:p-0 ${hideOnAdd}`}>
+          <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 sm:max-md:flex sm:max-md:flex-col sm:max-md:*:shrink-0 max-sm:block max-sm:overflow-hidden max-sm:px-4 max-sm:py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
+            <section className={`flex min-h-0 flex-col sm:max-md:shrink-0 rounded-xl border border-line bg-app-bg p-4 max-sm:h-full max-sm:border-0 max-sm:bg-transparent max-sm:p-0 ${hideOnAdd}`}>
               {/* Titre « Exercices de la séance » retiré (Philippe, 2026-10-12) :
                   il prenait de la place sans rien apprendre. */}
               <p className="text-xs text-muted">
@@ -214,7 +214,7 @@ export default function NewSeanceModal({
               </ul>
             </section>
 
-            <div className={`sm:contents ${phoneTab === "add" ? "max-sm:grid max-sm:h-full max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[minmax(0,1fr)]" : "max-sm:hidden"}`}>
+            <div className={`sm:contents sm:max-md:block ${phoneTab === "add" ? "max-sm:grid max-sm:h-full max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[minmax(0,1fr)]" : "max-sm:hidden"}`}>
               <ExerciseLibraryPicker exercises={exercises} bodyParts={bodyParts} selectedIds={new Set(selected)} onToggle={toggle} />
             </div>
           </div>

@@ -489,10 +489,10 @@ export default function AdjustWorkoutModal({
 
                 {/* Sur desktop chaque colonne scrolle indépendamment (min-h-0 +
                     overflow-y-auto) ; sur mobile la grille entière scrolle. */}
-                <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 max-sm:block max-sm:overflow-hidden max-sm:px-4 max-sm:py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
+                <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 sm:max-md:flex sm:max-md:flex-col sm:max-md:*:shrink-0 max-sm:block max-sm:overflow-hidden max-sm:px-4 max-sm:py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
                   {/* Séance actuelle : un panneau à part, sur fond gris, pour
                       bien la distinguer de la bibliothèque à droite. */}
-                  <section className={`flex min-h-0 flex-col rounded-xl border border-line bg-app-bg p-4 max-sm:h-full max-sm:border-0 max-sm:bg-transparent max-sm:p-0 ${phoneTab === "current" ? "" : "max-sm:hidden"}`}>
+                  <section className={`flex min-h-0 flex-col sm:max-md:shrink-0 rounded-xl border border-line bg-app-bg p-4 max-sm:h-full max-sm:border-0 max-sm:bg-transparent max-sm:p-0 ${phoneTab === "current" ? "" : "max-sm:hidden"}`}>
                     <div className="flex items-baseline justify-between gap-2">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted">Séance actuelle</p>
                       <span className="text-xs text-muted">
@@ -553,7 +553,7 @@ export default function AdjustWorkoutModal({
                     </ul>
                   </section>
 
-                  <div className={`flex min-h-0 min-w-0 flex-col gap-3 ${phoneTab === "add" ? "max-sm:h-full" : "max-sm:hidden"}`}>
+                  <div className={`flex min-h-0 min-w-0 flex-col gap-3 sm:max-md:shrink-0 ${phoneTab === "add" ? "max-sm:h-full" : "max-sm:hidden"}`}>
                     {recommendations && recommendations.forWorkoutId === workout.id && (
                       <RecommendedChanges
                         items={recommendations.items}
