@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   PATIENT_PLANS,
   applicationFeePercent,
+  effectiveFeePercent,
+  feeIsWaived,
   patientMustSubscribe,
   platformShareCents,
   stripeFeeCents,
@@ -46,4 +48,15 @@ test("doit choisir une formule : toujours, sauf kiné sans Stripe ou suspendu, a
   assert.equal(patientMustSubscribe({ ...base, kineSuspended: true }), false);
   assert.equal(patientMustSubscribe({ ...base, freeAccessUntil: "2036-01-01T00:00:00Z" }), false);
   assert.equal(patientMustSubscribe({ ...base, subscription: active }), false);
+});
+
+test("récompense 5 exercices : 0 % jusqu'à la date incluse (jour de Paris), puis la part normale", () => {
+  const plan = PATIENT_PLANS[0];
+  const day = new Date("2026-12-31T22:30:00Z"); // 23 h 30 à Paris, le 31/12
+  assert.equal(feeIsWaived("2026-12-31", day), true);
+  assert.equal(feeIsWaived("2026-12-30", day), false);
+  assert.equal(feeIsWaived(null, day), false);
+  assert.equal(effectiveFeePercent(plan, "2026-12-31", day), 0);
+  assert.equal(effectiveFeePercent(plan, "2026-12-30", day), applicationFeePercent(plan));
+  assert.equal(feeIsWaived("2027-01-01", new Date("2026-12-31T23:30:00Z")), true); // déjà le 1er à Paris
 });

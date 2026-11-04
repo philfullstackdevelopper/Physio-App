@@ -436,3 +436,45 @@ export async function reviewKineExercise(
 export async function markKineExerciseSeen(exerciseId: string, seen: boolean): Promise<void> {
   await getPool().query("select internal.admin_mark_exercise_seen($1, $2)", [exerciseId, seen]);
 }
+
+
+/** Récompense « 5 exercices publiés » (migration 0081) : date jusqu'à laquelle
+ *  EasyPhysio ne prend rien sur les paiements des patients de ce kiné, ou null.
+ *  Serveur seulement (paiement des formules patient). */
+export async function feeWaivedUntil(instructorId: string): Promise<string | null> {
+  const client = await getPool().connect();
+  try {
+    await client.query("begin");
+    await client.query("select set_config('app.admin_bypass', 'review_exercise', true)");
+    const { rows } = await client.query(
+      "select to_char(waived_until, 'YYYY-MM-DD') as d from public.instructor_fee_waivers where instructor_id = $1",
+      [instructorId],
+    );
+    await client.query("commit");
+    return rows[0]?.d ?? null;
+  } catch (e) {
+    await client.query("rollback").catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+/** Même chose à partir du patient (webhooks Stripe : seul le patient est connu). */
+export async function feeWaivedUntilForPatient(patientId: string): Promise<string | null> {
+  const client = await getPool().connect();
+  let instructorId: string | null = null;
+  try {
+    await client.query("begin");
+    await client.query("select set_config('app.admin_bypass', 'admin_read', true)");
+    const { rows } = await client.query("select instructor_id from public.patients where id = $1", [patientId]);
+    await client.query("commit");
+    instructorId = rows[0]?.instructor_id ?? null;
+  } catch (e) {
+    await client.query("rollback").catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+  return instructorId ? feeWaivedUntil(instructorId) : null;
+}

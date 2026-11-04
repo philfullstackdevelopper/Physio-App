@@ -11,7 +11,10 @@ import type Stripe from "stripe";
 import { getStripe } from "./stripe";
 import { upsertSubscription } from "@/lib/db/admin";
 import { hasValidSubscriptionSignature } from "./subscriptionSignature";
-import { applicationFeePercent, isPatientPlanKey, patientPlan } from "./patientPlans";
+import { applicationFeePercent, effectiveFeePercent, isPatientPlanKey, patientPlan } from "./patientPlans";
+import { feeWaivedUntilForPatient } from "@/lib/db/admin";
+
+const near = (a: number, b: number) => Math.abs(a - b) < 0.005;
 
 /** Fin de période : sur l'abonnement ou, depuis les versions récentes de l'API, sur l'article. */
 function periodEndISO(sub: Stripe.Subscription): string | null {
@@ -31,12 +34,34 @@ export async function syncPatientSubscription(sub: Stripe.Subscription, accountI
   const plan = sub.metadata.plan;
   if (!isPatientPlanKey(plan)) return null;
 
-  // Part EasyPhysio attendue : un abonnement modifié à la main pour la retirer
-  // n'ouvre pas l'accès.
-  const fee = (sub as unknown as { application_fee_percent?: number | null }).application_fee_percent ?? null;
-  const feeOk = fee != null && Math.abs(fee - applicationFeePercent(patientPlan(plan))) < 0.005;
+  // Part EasyPhysio attendue : la part normale, ou 0 % pendant la récompense
+  // « 5 exercices publiés » du kiné (instructor_fee_waivers). Un abonnement
+  // modifié à la main pour la retirer n'ouvre pas l'accès.
+  const normal = applicationFeePercent(patientPlan(plan));
+  let waivedUntil: string | null = null;
+  try {
+    waivedUntil = await feeWaivedUntilForPatient(userId);
+  } catch (e) {
+    console.error("[abonnement] récompense illisible :", e);
+  }
+  const expected = effectiveFeePercent(patientPlan(plan), waivedUntil);
+  let fee = (sub as unknown as { application_fee_percent?: number | null }).application_fee_percent ?? null;
+  // Début ou fin de récompense : on met l'abonnement à jour chez Stripe, pour
+  // les prochaines échéances.
+  if (sub.status !== "canceled" && fee != null && !near(fee, expected) && (near(fee, normal) || near(fee, 0))) {
+    try {
+      const updated = await getStripe().subscriptions.update(sub.id, { application_fee_percent: expected }, { stripeAccount: accountId });
+      fee = (updated as unknown as { application_fee_percent?: number | null }).application_fee_percent ?? fee;
+      console.log(`[abonnement] ${sub.id} : part EasyPhysio passée à ${expected} % (récompense).`);
+    } catch (e) {
+      console.error("[abonnement] mise à jour de la part impossible :", e);
+    }
+  }
+  // Accepté : la part attendue, la part normale, ou 0 % si le kiné a eu la
+  // récompense (une mise à jour Stripe en échec ne coupe pas l'accès).
+  const feeOk = fee != null && (near(fee, expected) || near(fee, normal) || (near(fee, 0) && waivedUntil !== null));
   const status = feeOk || sub.status === "canceled" ? sub.status : "incomplete";
-  if (!feeOk) console.warn(`[abonnement] ${sub.id} : part EasyPhysio ${fee ?? "absente"} au lieu de ${applicationFeePercent(patientPlan(plan))} %.`);
+  if (!feeOk) console.warn(`[abonnement] ${sub.id} : part EasyPhysio ${fee ?? "absente"} au lieu de ${expected} %.`);
 
   await upsertSubscription({
     userId,

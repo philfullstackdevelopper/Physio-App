@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 import { requestOrigin } from "@/lib/requestOrigin";
-import { applicationFeePercent, isPatientPlanKey, patientPlan } from "@/lib/billing/patientPlans";
+import { effectiveFeePercent, isPatientPlanKey, patientPlan } from "@/lib/billing/patientPlans";
+import { feeWaivedUntil } from "@/lib/db/admin";
 import { signedSubscriptionMetadata } from "@/lib/billing/subscriptionSignature";
 import { refreshPatientSubscription } from "@/lib/billing/patientSubscription";
 
@@ -59,6 +60,9 @@ export async function startPlan(formData: FormData) {
       );
       customerId = c.id;
     }
+    // Récompense « 5 exercices publiés » du kiné : 0 % pour EasyPhysio
+    // pendant sa durée (remis à la normale par patientSubscription.ts).
+    const waivedUntil = await feeWaivedUntil(patient.instructor_id as string).catch(() => null);
     const base = await requestOrigin();
     const metadata = signedSubscriptionMetadata(user.id, p.key, accountId!);
     const session = await stripe.checkout.sessions.create(
@@ -76,7 +80,7 @@ export async function startPlan(formData: FormData) {
             },
           },
         ],
-        subscription_data: { application_fee_percent: applicationFeePercent(p), metadata },
+        subscription_data: { application_fee_percent: effectiveFeePercent(p, waivedUntil), metadata },
         metadata,
         locale: "fr",
         success_url: `${base}/patient/suivi/retour?session_id={CHECKOUT_SESSION_ID}`,

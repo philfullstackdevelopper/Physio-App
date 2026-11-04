@@ -54,6 +54,20 @@ export function applicationFeePercent(plan: PatientPlan): number {
   return Math.round((platformShareCents(plan) / plan.priceCents) * 10000) / 100;
 }
 
+/** Récompense « 5 exercices publiés » (lib/exercise/kineExercises.ts,
+ *  instructor_fee_waivers) : EasyPhysio ne prend rien jusqu'à cette date
+ *  incluse, jour de Paris. */
+export function feeIsWaived(waivedUntil: string | null | undefined, now: Date = new Date()): boolean {
+  if (!waivedUntil) return false;
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(now);
+  return today <= waivedUntil.slice(0, 10);
+}
+
+/** Part d'EasyPhysio à appliquer maintenant : 0 % pendant la récompense. */
+export function effectiveFeePercent(plan: PatientPlan, waivedUntil: string | null | undefined, now: Date = new Date()): number {
+  return feeIsWaived(waivedUntil, now) ? 0 : applicationFeePercent(plan);
+}
+
 /** Prix par mois, centimes (affichage « soit X € / mois »). */
 export function perMonthCents(plan: PatientPlan): number {
   return Math.round(plan.priceCents / plan.months);
