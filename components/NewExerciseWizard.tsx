@@ -19,7 +19,7 @@ import { X, Plus, Trash2, Camera, Upload, Globe, User, BookOpen, Check } from "l
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { EXERCISE_EQUIPMENT_LABELS, EXERCISE_EQUIPMENT_OPTIONS } from "@/lib/exercise/equipment";
 import { parseSteps } from "@/lib/exercise/steps";
-import { CONTRIBUTOR_THRESHOLD, similarExercises } from "@/lib/exercise/kineExercises";
+import { contributorTitle, nextContributorStep, similarExercises } from "@/lib/exercise/kineExercises";
 import { createKineExercise } from "@/app/dashboard/exercises/actions";
 import { FilmingTips, checkVideoFile, uploadKineVideo } from "@/components/KineVideoUpload";
 
@@ -170,7 +170,6 @@ export default function NewExerciseWizard({
     }
   };
 
-  const remaining = Math.max(0, CONTRIBUTOR_THRESHOLD - publishedCount);
   const chip =
     "flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors duration-150";
   const field =
@@ -454,27 +453,11 @@ export default function NewExerciseWizard({
                       Vous l&apos;utilisez dès maintenant. EasyPhysio le vérifie, puis lui crée gratuitement un dessin animé. Votre nom
                       s&apos;affichera comme auteur.
                     </span>
-                    {remaining === 0 ? (
-                      <span className="mt-1.5 block font-medium text-ok">
-                        Vous êtes Contributeur EasyPhysio ({publishedCount} exercices publiés) : vous figurez dans le classement des
-                        contributeurs de « Mes exercices ».
-                      </span>
-                    ) : (
-                      <span className="mt-1.5 block">
-                        <b>
-                          {publishedCount} exercice{publishedCount > 1 ? "s" : ""} public{publishedCount > 1 ? "s" : ""} validé
-                          {publishedCount > 1 ? "s" : ""} sur {CONTRIBUTOR_THRESHOLD}.
-                        </b>{" "}
-                        Encore {remaining}, et vous devenez Contributeur EasyPhysio, avec votre place dans le classement des principaux
-                        contributeurs.
-                        <span className="mt-1.5 block h-2 overflow-hidden rounded-full border border-line bg-surface" aria-hidden>
-                          <span
-                            className="block h-full bg-ok"
-                            style={{ width: `${Math.min(100, (publishedCount / CONTRIBUTOR_THRESHOLD) * 100)}%` }}
-                          />
-                        </span>
-                      </span>
-                    )}
+                    <span className="mt-1.5 block text-xs text-muted">
+                      {contributorTitle(publishedCount)
+                        ? `Vous êtes « ${contributorTitle(publishedCount)} » (${publishedCount} exercices publiés).`
+                        : `${publishedCount} exercice${publishedCount > 1 ? "s" : ""} publié${publishedCount > 1 ? "s" : ""}. ${nextContributorStep(publishedCount) ?? ""}`}
+                    </span>
                   </span>
                 </label>
               )}

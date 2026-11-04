@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
 import ExerciseLibraryGrid, { type LibraryExercise } from "@/components/ExerciseLibraryGrid";
 import { hideExercise, requestExercisePublication, unhideExercise } from "./actions";
-import type { PublicationStatus } from "@/lib/exercise/kineExercises";
+import { contributorRanking, type PublicationStatus } from "@/lib/exercise/kineExercises";
+import ContributionSummary from "@/components/ContributionSummary";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
 export default async function ExercisesPage({
@@ -42,6 +43,15 @@ export default async function ExercisesPage({
   // ses exercices déjà publiés et sa récompense éventuelle.
   const { data: patientRows } = await supabase.from("patients").select("id, full_name").eq("instructor_id", user.id).order("full_name");
   const publishedCount = (allExercises ?? []).filter((ex) => ex.created_by === user.id && ex.publication_status === "published").length;
+  const pendingCount = (allExercises ?? []).filter((ex) => ex.created_by === user.id && ex.publication_status === "pending").length;
+  // Contributeurs de la bibliothèque (exercices de kinés publiés), du plus prolifique au moins.
+  const contributors = contributorRanking(
+    (allExercises ?? []).map((ex) => ({
+      created_by: ex.created_by as string | null,
+      publication_status: ex.publication_status as PublicationStatus,
+      author_label: ex.author_label as string | null,
+    })),
+  ).map((r) => ({ id: r.authorId, label: r.label }));
 
   const libraryExercises: LibraryExercise[] = await Promise.all((allExercises ?? []).filter(isPickableExercise).map(async (ex) => ({
     id: ex.id,
@@ -65,7 +75,10 @@ export default async function ExercisesPage({
     <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
       <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
+          <div className="flex min-w-0 flex-col gap-1">
+            <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
+            <ContributionSummary contributors={contributors} published={publishedCount} pending={pendingCount} />
+          </div>
           <Link href="/dashboard/seances" className="text-sm font-medium text-brand hover:underline max-sm:hidden">← Mes séances</Link>
         </div>
 

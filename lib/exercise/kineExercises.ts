@@ -12,24 +12,32 @@ export type PublicationStatus = "private" | "pending" | "published" | "changes_r
  *  paiements du kiné. La table instructor_fee_waivers reste, inutilisée.) */
 export const CONTRIBUTOR_THRESHOLD = 5;
 
-/** Petit jeu (Philippe, 2026-11-04 : « discret mais visible, une espèce de
- *  petit jeu ») : des paliers selon le nombre d'exercices publiés. Argent =
- *  « Contributeur EasyPhysio ». */
-export const CONTRIBUTOR_LEVELS = [
-  { min: 1, name: "Bronze", tone: "text-amber-700", bg: "bg-amber-50" },
-  { min: CONTRIBUTOR_THRESHOLD, name: "Argent", tone: "text-slate-600", bg: "bg-slate-100" },
-  { min: 10, name: "Or", tone: "text-yellow-600", bg: "bg-yellow-50" },
-  { min: 20, name: "Platine", tone: "text-sky-700", bg: "bg-sky-50" },
-] as const;
+/** Reconnaissance sobre, sur le modèle de GitHub, Figma Community ou Stack
+ *  Overflow (Philippe, 2026-11-04 : « premium et pro », pas de jeu) : le kiné
+ *  est crédité sur ses exercices (« Proposé par »), et un titre discret
+ *  s'affiche à 5, 10 et 20 exercices publiés (comme les x2/x3 de GitHub). */
+export function contributorTitle(published: number): string | null {
+  if (published >= 20) return "Contributeur EasyPhysio ×20";
+  if (published >= 10) return "Contributeur EasyPhysio ×10";
+  if (published >= CONTRIBUTOR_THRESHOLD) return "Contributeur EasyPhysio";
+  return null;
+}
 
-export type ContributorLevel = (typeof CONTRIBUTOR_LEVELS)[number];
+/** La prochaine étape, en une phrase (infobulle), ou null après 20. */
+export function nextContributorStep(published: number): string | null {
+  const next = [CONTRIBUTOR_THRESHOLD, 10, 20].find((n) => published < n);
+  if (!next) return null;
+  const left = next - published;
+  const title = next === CONTRIBUTOR_THRESHOLD ? "Contributeur EasyPhysio" : `Contributeur EasyPhysio ×${next}`;
+  return `Encore ${left} exercice${left > 1 ? "s" : ""} publié${left > 1 ? "s" : ""} pour « ${title} ».`;
+}
 
-/** Palier atteint (null avant le 1er exercice publié) et palier suivant. */
-export function contributorLevel(count: number): { level: ContributorLevel | null; next: ContributorLevel | null } {
-  let level: ContributorLevel | null = null;
-  for (const l of CONTRIBUTOR_LEVELS) if (count >= l.min) level = l;
-  const next = CONTRIBUTOR_LEVELS.find((l) => count < l.min) ?? null;
-  return { level, next };
+/** Initiales d'un auteur (« J. Martin · Cabinet X » → « JM »). */
+export function authorInitials(label: string | null | undefined): string {
+  const name = (label ?? "").split("·")[0].replace(/^(dr|docteur)\.?\s+/i, "").trim();
+  const parts = name.split(/[\s.-]+/).filter(Boolean);
+  const letters = (parts.length >= 2 ? [parts[0], parts[parts.length - 1]] : parts).map((w) => w[0]?.toUpperCase() ?? "");
+  return letters.join("").slice(0, 2) || "K";
 }
 
 export interface ContributorRank {

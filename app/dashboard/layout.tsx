@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SignOutButton } from "@clerk/nextjs";
 import { MailCheck, ShieldAlert } from "lucide-react";
 import DashboardSidebar from "@/components/DashboardSidebar";
+import { contributorTitle } from "@/lib/exercise/kineExercises";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getInstructor } from "@/lib/dashboard/instructor";
@@ -81,11 +82,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
     );
   }
 
-  const unreadCount = await loadUnreadCount(supabase, user.id);
+  const [unreadCount, { count: publishedCount }] = await Promise.all([
+    loadUnreadCount(supabase, user.id),
+    // Titre « Contributeur EasyPhysio » sous le nom (migration 0081).
+    supabase
+      .from("exercises")
+      .select("id", { count: "exact", head: true })
+      .eq("created_by", user.id)
+      .eq("publication_status", "published"),
+  ]);
 
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
-      <DashboardSidebar instructorName={instructor.full_name ?? null} unreadCount={unreadCount} />
+      <DashboardSidebar
+        instructorName={instructor.full_name ?? null}
+        unreadCount={unreadCount}
+        contributorTitle={contributorTitle(publishedCount ?? 0)}
+      />
       {/* min-w-0 : sans ça, un contenu large (tableau, etc.) forcerait tout le
           flex row à s'élargir et entraînerait la sidebar dans le défilement
           horizontal de la page. Chaque page gère son propre overflow-x-auto

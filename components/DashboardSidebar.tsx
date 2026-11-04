@@ -4,7 +4,7 @@ import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import { useEffect, useRef, useState } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, UsersRound, MessageCircle, Dumbbell, ListChecks, Wallet, LogOut, CircleUserRound, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, UsersRound, MessageCircle, Dumbbell, ListChecks, Wallet, LogOut, CircleUserRound, ChevronLeft, BadgeCheck } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import { initials } from "@/lib/format/initials";
 
@@ -150,10 +150,13 @@ function backTarget(pathname: string): { href: string; label: string } | null {
 // gauche sur ordinateur (six destinations), en-tête + onglets sur téléphone.
 export default function DashboardSidebar({
   instructorName,
+  contributorTitle = null,
   unreadCount,
   pathnameOverride,
 }: {
   instructorName: string | null;
+  /** « Contributeur EasyPhysio » à partir de 5 exercices publiés (comme un statut sous un profil GitHub). */
+  contributorTitle?: string | null;
   unreadCount: number;
   /** Page de prévisualisation (/prototypes/kine-telephone) : quel onglet montrer actif. */
   pathnameOverride?: string;
@@ -196,6 +199,12 @@ export default function DashboardSidebar({
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{instructorName ?? "Praticien"}</p>
             <p className="text-xs text-white/60">Kinésithérapeute</p>
+            {contributorTitle && (
+              <Link href="/dashboard/exercises/contributeurs" className="mt-0.5 flex items-center gap-1 text-[11px] text-white/80 hover:text-white">
+                <BadgeCheck className="h-3 w-3 shrink-0" strokeWidth={2} />
+                <span className="truncate">{contributorTitle}</span>
+              </Link>
+            )}
           </div>
         </div>
         <SignOutOrExitDemo className={`mt-2 w-full ${linkClass(false)}`} before={<LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />} />
