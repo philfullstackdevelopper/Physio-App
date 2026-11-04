@@ -4,7 +4,8 @@ import { isPickableExercise } from "@/lib/exercise/filmedExercises";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
 import ExerciseLibraryGrid, { type LibraryExercise } from "@/components/ExerciseLibraryGrid";
-import { createExercise, hideExercise, unhideExercise } from "./actions";
+import { hideExercise, requestExercisePublication, unhideExercise } from "./actions";
+import type { PublicationStatus } from "@/lib/exercise/kineExercises";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
 export default async function ExercisesPage({
@@ -27,7 +28,7 @@ export default async function ExercisesPage({
   const { data: allExercises } = await supabase
     .from("exercises")
     .select(
-      "id, name, instructions, media_url, media_start_seconds, created_by, search_keywords, exercise_body_parts(body_part_id)",
+      "id, name, instructions, media_url, media_start_seconds, created_by, search_keywords, equipment, publication_status, patient_id, review_note, author_label, exercise_body_parts(body_part_id)",
     )
     .order("name");
 
@@ -36,6 +37,14 @@ export default async function ExercisesPage({
     .select("exercise_id")
     .eq("instructor_id", user.id);
   const hiddenIds = new Set((hiddenRows ?? []).map((r) => r.exercise_id as string));
+
+  // Créer un exercice (migration 0081) : ses patients (exercice sur mesure),
+  // ses exercices déjà publiés et sa récompense éventuelle.
+  const [{ data: patientRows }, { data: waiverRow }] = await Promise.all([
+    supabase.from("patients").select("id, full_name").eq("instructor_id", user.id).order("full_name"),
+    supabase.from("instructor_fee_waivers").select("waived_until").eq("instructor_id", user.id).maybeSingle(),
+  ]);
+  const publishedCount = (allExercises ?? []).filter((ex) => ex.created_by === user.id && ex.publication_status === "published").length;
 
   const libraryExercises: LibraryExercise[] = await Promise.all((allExercises ?? []).filter(isPickableExercise).map(async (ex) => ({
     id: ex.id,
@@ -47,6 +56,11 @@ export default async function ExercisesPage({
     search_keywords: ex.search_keywords ?? [],
     bodyPartIds: (ex.exercise_body_parts ?? []).map((t) => t.body_part_id),
     hidden: hiddenIds.has(ex.id),
+    equipment: (ex.equipment as string[] | null) ?? [],
+    publication_status: ((ex.publication_status as PublicationStatus | null) ?? (ex.created_by ? "private" : "published")),
+    patient_id: (ex.patient_id as string | null) ?? null,
+    review_note: (ex.review_note as string | null) ?? null,
+    author_label: (ex.author_label as string | null) ?? null,
   })));
 
   return (
@@ -68,7 +82,12 @@ export default async function ExercisesPage({
             exercises={libraryExercises}
             currentUserId={user.id}
             isAdmin={isAdminEmail(user.email)}
-            createExercise={createExercise}
+            creator={{
+              patients: (patientRows ?? []).map((p) => ({ id: p.id as string, name: (p.full_name as string | null) || "Patient sans nom" })),
+              publishedCount,
+              waivedUntil: (waiverRow?.waived_until as string | null) ?? null,
+              requestPublication: requestExercisePublication,
+            }}
             hideExercise={hideExercise}
             unhideExercise={unhideExercise}
           />

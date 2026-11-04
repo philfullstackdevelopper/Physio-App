@@ -7,6 +7,9 @@ import { getPool } from "@/lib/db/pool";
 import { listAllInstructors, listTestAccounts, listWaitlist, type TestAccountRow, type WaitlistRow } from "@/lib/db/admin";
 import Waitlist from "./Waitlist";
 import TestAccounts from "./TestAccounts";
+import KineExercises, { type AdminKineExercise } from "./KineExercises";
+import { listKineExercises } from "@/lib/db/admin";
+import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import { approveInstructor, invoiceLastMonth, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
 import { KINE_SUBSCRIPTION_TTC_CENTS, eurosFR, periodLabel, periodOf } from "@/lib/billing/reviewModel";
 
@@ -57,6 +60,35 @@ export default async function AdminPage({
     console.error("[admin] comptes de test : liste indisponible", e);
   }
 
+  // Exercices créés par les kinés (migration 0081) : même prudence.
+  let kineExercises: AdminKineExercise[] | null = null;
+  try {
+    const rows = await listKineExercises();
+    kineExercises = await Promise.all(
+      rows.map(async (r) => ({
+        id: r.id,
+        name: r.name,
+        instructions: r.instructions,
+        equipment: r.equipment ?? [],
+        videoUrl: await resolveMediaUrl(r.media_url),
+        createdAt: new Date(r.created_at).toISOString(),
+        status: r.publication_status,
+        submittedAt: r.submitted_at ? new Date(r.submitted_at).toISOString() : null,
+        reviewedAt: r.reviewed_at ? new Date(r.reviewed_at).toISOString() : null,
+        reviewNote: r.review_note,
+        forOnePatient: r.for_one_patient,
+        filmingConsentAt: r.filming_consent_at ? new Date(r.filming_consent_at).toISOString() : null,
+        seenAt: r.admin_seen_at ? new Date(r.admin_seen_at).toISOString() : null,
+        sourceName: r.source_name,
+        bodyParts: r.body_parts,
+        author: [r.author_name, r.author_cabinet].filter(Boolean).join(" · ") || "Kiné",
+        authorEmail: r.author_email,
+      })),
+    );
+  } catch (e) {
+    console.error("[admin] exercices des kinés : liste indisponible", e);
+  }
+
   return (
     <div>
       {/* Bilan de la dernière suspension (app/admin/actions.ts). */}
@@ -66,6 +98,17 @@ export default async function AdminPage({
         </p>
       )}
       {sp.error && <p className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{sp.error}</p>}
+      {/* Bilan de la dernière vérification d'exercice (exerciseActions.ts). */}
+      {sp.exercice && (
+        <p className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
+          {sp.exercice === "publish"
+            ? `Exercice publié : visible par tous les kinés. Son auteur en a maintenant ${sp.publies ?? "?"} de publié(s).`
+            : sp.exercice === "changes"
+              ? "Modification demandée : le kiné voit votre message dans la fiche de l'exercice."
+              : "Exercice gardé privé : il reste dans la banque du kiné, avec votre message."}
+          {sp.remise && ` Récompense : EasyPhysio ne prend rien sur les paiements de ses patients jusqu'au ${dateFmt.format(new Date(sp.remise))}.`}
+        </p>
+      )}
       {/* Bilan de la dernière facturation mensuelle. */}
       {sp.facture && (
         <p className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
@@ -245,6 +288,14 @@ export default async function AdminPage({
           );
         })}
       </ul>
+
+      {kineExercises ? (
+        <KineExercises rows={kineExercises} />
+      ) : (
+        <p className="mt-12 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+          Exercices des kinés : la base n&apos;est pas encore prête (migration 0081 non appliquée).
+        </p>
+      )}
 
       {waitlist ? (
         <Waitlist rows={waitlist} />

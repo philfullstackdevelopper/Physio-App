@@ -385,3 +385,54 @@ export async function instructorSubscriptions(
   const { rows } = await getPool().query("select * from internal.admin_instructor_subscriptions($1)", [instructorId]);
   return rows;
 }
+
+// Exercices créés par les kinés (migration 0081) — /admin seulement.
+// ---------------------------------------------------------------------------
+
+export interface KineExerciseRow {
+  id: string;
+  name: string;
+  instructions: string | null;
+  equipment: string[] | null;
+  media_url: string | null;
+  created_at: string;
+  publication_status: string;
+  submitted_at: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  for_one_patient: boolean;
+  filming_consent_at: string | null;
+  admin_seen_at: string | null;
+  source_name: string | null;
+  body_parts: string | null;
+  author_id: string;
+  author_name: string | null;
+  author_cabinet: string | null;
+  author_email: string | null;
+}
+
+export async function listKineExercises(): Promise<KineExerciseRow[]> {
+  const { rows } = await getPool().query("select * from internal.admin_list_kine_exercises()");
+  return rows;
+}
+
+/** Publier / demander une modification / garder privé. Renvoie le nombre
+ *  d'exercices publiés de l'auteur et sa date de remise éventuelle. */
+export async function reviewKineExercise(
+  exerciseId: string,
+  decision: "publish" | "changes" | "decline",
+  note: string,
+  rewardThreshold: number,
+  rewardMonths: number,
+): Promise<{ published_count: number; waived_until: string | null }> {
+  const { rows } = await getPool().query(
+    "select published_count, to_char(waived_until, 'YYYY-MM-DD') as waived_until from internal.admin_review_exercise($1, $2, $3, $4, $5)",
+    [exerciseId, decision, note, rewardThreshold, rewardMonths],
+  );
+  return rows[0] ?? { published_count: 0, waived_until: null };
+}
+
+/** « Dessin fait » (ou retiré de la liste « À dessiner »). */
+export async function markKineExerciseSeen(exerciseId: string, seen: boolean): Promise<void> {
+  await getPool().query("select internal.admin_mark_exercise_seen($1, $2)", [exerciseId, seen]);
+}

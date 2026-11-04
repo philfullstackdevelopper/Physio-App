@@ -9,14 +9,16 @@
 // exist, plus the existing video-upload control.
 // =============================================================================
 
-import { useMemo, useState } from "react";
-import { EXERCISE_EQUIPMENT_LABELS, EXERCISE_EQUIPMENT_OPTIONS } from "@/lib/exercise/equipment";
-import { MoreVertical, EyeOff, Eye, Info, Search } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { MoreVertical, EyeOff, Eye, Info, Search, Globe } from "lucide-react";
 import ExerciseInfoModal from "@/components/ExerciseInfoModal";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 import ExerciseVideoUpload from "@/components/ExerciseVideoUpload";
-import SubmitButton from "@/components/SubmitButton";
+import KineVideoUpload from "@/components/KineVideoUpload";
+import NewExerciseWizard, { type WizardPatient } from "@/components/NewExerciseWizard";
+import { STATUS_PILL, canRequestPublication, type PublicationStatus } from "@/lib/exercise/kineExercises";
 
 export interface BodyPart {
   id: string;
@@ -40,6 +42,20 @@ export interface LibraryExercise {
   /** Hidden by the CURRENT instructor from their own search — a personal
    *  filter, not a deletion (see migration 0037). */
   hidden: boolean;
+  /** Exercices créés par les kinés (migration 0081). */
+  equipment: string[];
+  publication_status: PublicationStatus;
+  patient_id: string | null;
+  review_note: string | null;
+  author_label: string | null;
+}
+
+/** Ce qu'il faut pour créer un exercice (absent dans les maquettes). */
+export interface LibraryCreator {
+  patients: WizardPatient[];
+  publishedCount: number;
+  waivedUntil: string | null;
+  requestPublication: (exerciseId: string) => Promise<{ ok: true } | { error: string }>;
 }
 
 /** Three-dot menu on an exercise card — hide/unhide, the only action for now. */
@@ -104,7 +120,7 @@ export default function ExerciseLibraryGrid({
   exercises,
   currentUserId,
   isAdmin = false,
-  createExercise,
+  creator,
   hideExercise,
   unhideExercise,
 }: {
@@ -112,12 +128,19 @@ export default function ExerciseLibraryGrid({
   exercises: LibraryExercise[];
   currentUserId: string;
   isAdmin?: boolean;
-  createExercise: (formData: FormData) => void | Promise<void>;
+  creator?: LibraryCreator;
   hideExercise: (formData: FormData) => void | Promise<void>;
   unhideExercise: (formData: FormData) => void | Promise<void>;
 }) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(bodyParts[0]?.id ?? null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  // « Créés par moi » : les exercices du kiné, avec leur statut.
+  const [mineOnly, setMineOnly] = useState(false);
+  const [publishMsg, setPublishMsg] = useState<string | null>(null);
+  const [publishing, startPublishing] = useTransition();
+  const patientName = useMemo(() => new Map((creator?.patients ?? []).map((p) => [p.id, p.name])), [creator]);
+  const mineCount = useMemo(() => exercises.filter((ex) => ex.created_by === currentUserId).length, [exercises, currentUserId]);
   const [showHidden, setShowHidden] = useState(false);
   // Exercice ouvert par le (i) : vidéo + consignes (Philippe, 2026-11-01).
   const [info, setInfo] = useState<LibraryExercise | null>(null);
@@ -133,7 +156,7 @@ export default function ExerciseLibraryGrid({
 
   function selectBodyPart(id: string) {
     setSelectedId(id);
-    setShowCreateForm(false);
+    setMineOnly(false);
     setQuery("");
   }
 
@@ -159,6 +182,11 @@ export default function ExerciseLibraryGrid({
   // matching exercise even with no keyword recorded for it.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    if (mineOnly) {
+      return exercises.filter(
+        (ex) => ex.created_by === currentUserId && (!q || ex.name.toLowerCase().includes(q) || ex.instructions?.toLowerCase().includes(q)),
+      );
+    }
     if (q) {
       return exercises.filter(
         (ex) =>
@@ -171,7 +199,51 @@ export default function ExerciseLibraryGrid({
     return selectedId
       ? exercises.filter((ex) => ex.bodyPartIds.includes(selectedId) && !ex.hidden)
       : [];
-  }, [exercises, selectedId, query]);
+  }, [exercises, selectedId, query, mineOnly, currentUserId]);
+
+  // Exercices de la plateforme et publiés : base de la recherche de doublons.
+  const wizardLibrary = useMemo(
+    () =>
+      exercises
+        .filter((ex) => ex.created_by === null || ex.publication_status === "published")
+        .map((ex) => ({
+          id: ex.id,
+          name: ex.name,
+          instructions: ex.instructions,
+          bodyPartIds: ex.bodyPartIds,
+          equipment: ex.equipment,
+          search_keywords: ex.search_keywords,
+          hasVideo: !!ex.media_url,
+        })),
+    [exercises],
+  );
+
+  const requestPublication = (exerciseId: string) => {
+    if (!creator) return;
+    setPublishMsg(null);
+    startPublishing(async () => {
+      const res = await creator.requestPublication(exerciseId);
+      if ("error" in res) {
+        setPublishMsg(res.error);
+        return;
+      }
+      setInfo((cur) => (cur && cur.id === exerciseId ? { ...cur, publication_status: "pending" } : cur));
+      setPublishMsg("Merci : votre exercice est envoyé à EasyPhysio pour vérification.");
+      router.refresh();
+    });
+  };
+
+  // Pastille d'un exercice : le statut des siens, l'auteur de ceux des autres kinés.
+  const pillFor = (ex: LibraryExercise): { label: string; tone: string } | null => {
+    if (ex.created_by === currentUserId) {
+      if (ex.patient_id) return { label: `Pour ${patientName.get(ex.patient_id) ?? "un patient"}`, tone: "bg-violet-50 text-violet-700" };
+      return STATUS_PILL[ex.publication_status] ?? STATUS_PILL.private;
+    }
+    if (ex.created_by && ex.publication_status === "published") {
+      return { label: ex.author_label ? `Proposé par ${ex.author_label}` : "Proposé par un kiné", tone: "bg-ok-soft text-ok" };
+    }
+    return null;
+  };
 
   return (
     <div className="mt-4 flex min-h-0 flex-1 flex-col max-sm:mt-3">
@@ -192,19 +264,33 @@ export default function ExerciseLibraryGrid({
             className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft max-sm:h-10 max-sm:rounded-xl max-sm:border-0 max-sm:shadow-soft"
           />
         </div>
-        {selectedId && (
+        {creator && mineCount > 0 && (
           <button
             type="button"
-            onClick={() => setShowCreateForm((v) => !v)}
-            aria-label="Ajouter un exercice"
+            onClick={() => setMineOnly((v) => !v)}
+            aria-pressed={mineOnly}
+            className={`shrink-0 rounded-lg border px-3 py-2 text-sm font-medium transition max-sm:h-10 max-sm:rounded-xl max-sm:px-3 ${
+              mineOnly ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
+            }`}
+          >
+            <span className="max-sm:hidden">Créés par moi · </span>
+            <span className="sm:hidden">Moi · </span>
+            {mineCount}
+          </button>
+        )}
+        {creator && (
+          <button
+            type="button"
+            onClick={() => setShowCreateForm(true)}
+            aria-label="Créer un exercice"
             className="shrink-0 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95 max-sm:h-10 max-sm:rounded-xl max-sm:px-3.5"
           >
-            +<span className="max-sm:hidden"> Ajouter un exercice</span>
+            +<span className="max-sm:hidden"> Créer un exercice</span>
           </button>
         )}
       </div>
 
-      {!query.trim() && (
+      {!query.trim() && !mineOnly && (
         // Téléphone : les catégories sur une seule ligne qui glisse au doigt,
         // au lieu de 3-4 lignes de pastilles avant le premier exercice.
         // Ordinateur (Philippe, 2026-10-12) : mêmes tuiles que le sélecteur
@@ -239,91 +325,17 @@ export default function ExerciseLibraryGrid({
       {/* Seule cette zone défile : recherche et catégories restent en place,
           la page ne dépasse jamais l'écran (audit 2026-10-10). */}
       <div className="mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain max-sm:-mx-1 max-sm:px-1 max-sm:pb-1 sm:-mr-2 sm:pr-2">
-      {selectedId && showCreateForm && (
-        <form
-          key={selectedId}
-          action={createExercise}
-          className="mb-4 rounded-xl border border-line bg-surface p-5"
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-ink">
-              Nouvel exercice — {bodyParts.find((bp) => bp.id === selectedId)?.label}
-            </h3>
-            <button
-              type="button"
-              onClick={() => setShowCreateForm(false)}
-              className="text-sm text-muted hover:text-ink"
-            >
-              Annuler
-            </button>
-          </div>
-          <div className="mt-3 flex flex-col gap-3">
-            <input
-              name="name"
-              required
-              placeholder="Nom de l'exercice"
-              className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-            />
-            <textarea
-              name="instructions"
-              placeholder="Instructions (optionnel)"
-              rows={2}
-              className="w-full rounded-lg border border-line px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
-            />
-          </div>
-
-          <p className="mt-4 text-xs font-medium text-muted">Zones du corps concernées</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {bodyParts.map((bp) => (
-              <label
-                key={bp.id}
-                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1 text-sm text-ink transition-colors duration-150 has-[:checked]:border-brand has-[:checked]:bg-brand-soft has-[:checked]:text-brand"
-              >
-                <input
-                  type="checkbox"
-                  name="body_part_ids"
-                  value={bp.id}
-                  defaultChecked={bp.id === selectedId}
-                  className="hidden"
-                />
-                {bp.label}
-              </label>
-            ))}
-          </div>
-
-          {/* Matériel indispensable (migration 0065) : sert à prévenir le kiné
-              quand un patient n'a pas ce matériel chez lui. */}
-          <p className="mt-4 text-xs font-medium text-muted">Matériel indispensable (laissez vide si aucun)</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {EXERCISE_EQUIPMENT_OPTIONS.map((id) => (
-              <label
-                key={id}
-                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1 text-sm text-ink transition-colors duration-150 has-[:checked]:border-brand has-[:checked]:bg-brand-soft has-[:checked]:text-brand"
-              >
-                <input type="checkbox" name="equipment" value={id} className="hidden" />
-                {EXERCISE_EQUIPMENT_LABELS[id]}
-              </label>
-            ))}
-          </div>
-
-          <SubmitButton
-            pendingText="Création…"
-            className="mt-4 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95"
-          >
-            Créer
-          </SubmitButton>
-        </form>
-      )}
-
       {/* Téléphone (Philippe, 2026-10-12) : même affichage que dans « Ajuster
           la séance » — blocs 2 par rangée, dessin plus grand, nom sur deux
           lignes ; les consignes restent sur ordinateur. */}
       <div className="grid grid-cols-1 gap-3 max-sm:grid-cols-2 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.length === 0 ? (
           <p className="col-span-full rounded-xl border border-line bg-surface p-6 text-center text-sm text-muted">
-            {query.trim()
-              ? `Aucun exercice ne correspond à « ${query.trim()} ».`
-              : "Aucun exercice dans cette catégorie pour le moment."}
+            {mineOnly
+              ? "Vous n'avez pas encore créé d'exercice."
+              : query.trim()
+                ? `Aucun exercice ne correspond à « ${query.trim()} ».`
+                : "Aucun exercice dans cette catégorie pour le moment."}
           </p>
         ) : (
           filtered.map((ex) => (
@@ -355,9 +367,14 @@ export default function ExerciseLibraryGrid({
               </div>
               <div className="sm:contents">
                 <p className="mt-2 font-medium text-ink max-sm:mt-1.5 max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:text-[13px] max-sm:leading-tight">{ex.name}</p>
-                {ex.created_by === currentUserId && (
-                  <span className="mt-1 inline-block text-xs text-brand max-sm:mt-0.5 max-sm:text-[11px]">Votre exercice</span>
-                )}
+                {(() => {
+                  const pill = pillFor(ex);
+                  return pill ? (
+                    <span className={`mt-1 inline-block max-w-full truncate rounded-full px-2 py-0.5 text-xs font-medium max-sm:mt-0.5 max-sm:text-[11px] ${pill.tone}`}>
+                      {pill.label}
+                    </span>
+                  ) : null;
+                })()}
               </div>
             </div>
           ))
@@ -370,12 +387,41 @@ export default function ExerciseLibraryGrid({
       {info && (
         <ExerciseInfoModal
           exercise={info}
-          onClose={() => setInfo(null)}
+          onClose={() => {
+            setInfo(null);
+            setPublishMsg(null);
+          }}
           footer={
-            info.created_by === currentUserId || (isAdmin && info.created_by === null) ? (
-              <ExerciseVideoUpload exerciseId={info.id} initialUrl={info.media_url} viaAdmin={info.created_by === null} />
+            info.created_by === currentUserId ? (
+              <div className="flex flex-col gap-3">
+                <OwnExerciseStatus
+                  ex={info}
+                  patientName={info.patient_id ? patientName.get(info.patient_id) ?? "un patient" : null}
+                  canPublish={!!creator && canRequestPublication(info)}
+                  publishing={publishing}
+                  message={publishMsg}
+                  onPublish={() => requestPublication(info.id)}
+                />
+                {info.publication_status !== "published" && (
+                  <KineVideoUpload exerciseId={info.id} hasVideo={!!info.media_url} onUploaded={() => router.refresh()} />
+                )}
+              </div>
+            ) : isAdmin && info.created_by === null ? (
+              <ExerciseVideoUpload exerciseId={info.id} initialUrl={info.media_url} viaAdmin />
             ) : undefined
           }
+        />
+      )}
+
+      {showCreateForm && creator && (
+        <NewExerciseWizard
+          bodyParts={bodyParts.map((bp) => ({ id: bp.id, label: bp.label }))}
+          library={wizardLibrary}
+          patients={creator.patients}
+          defaultBodyPartId={selectedId}
+          publishedCount={creator.publishedCount}
+          waivedUntil={creator.waivedUntil}
+          onClose={() => setShowCreateForm(false)}
         />
       )}
 
@@ -412,6 +458,62 @@ export default function ExerciseLibraryGrid({
         </div>
       )}
       </div>
+    </div>
+  );
+}
+
+/** Statut d'un exercice du kiné dans sa fiche : à qui il sert, où en est la
+ *  vérification, le message d'EasyPhysio, et « Rendre public ». */
+function OwnExerciseStatus({
+  ex,
+  patientName,
+  canPublish,
+  publishing,
+  message,
+  onPublish,
+}: {
+  ex: LibraryExercise;
+  patientName: string | null;
+  canPublish: boolean;
+  publishing: boolean;
+  message: string | null;
+  onPublish: () => void;
+}) {
+  const pill = STATUS_PILL[ex.publication_status] ?? STATUS_PILL.private;
+  const text = patientName
+    ? `Exercice réservé à ${patientName}. Vous le trouvez dans « Ajuster la séance » de ce patient.`
+    : ex.publication_status === "pending"
+      ? "EasyPhysio vérifie cet exercice. Vous pouvez déjà l'utiliser avec vos patients."
+      : ex.publication_status === "published"
+        ? "Publié : tous les kinés d'EasyPhysio peuvent l'utiliser. Il ne peut plus être modifié."
+        : ex.publication_status === "changes_requested"
+          ? "EasyPhysio vous demande une modification avant de le publier."
+          : ex.publication_status === "declined"
+            ? "EasyPhysio l'a gardé privé : il reste dans votre banque."
+            : "Dans votre banque, pour tous vos patients.";
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-line p-3">
+      <span className={`self-start rounded-full px-2 py-0.5 text-xs font-medium ${patientName ? "bg-violet-50 text-violet-700" : pill.tone}`}>
+        {patientName ? `Pour ${patientName}` : pill.label}
+      </span>
+      <p className="text-sm text-ink">{text}</p>
+      {ex.review_note && (
+        <p className="rounded-lg bg-app-bg p-2 text-sm text-ink">
+          <b>Message d&apos;EasyPhysio :</b> {ex.review_note}
+        </p>
+      )}
+      {canPublish && (
+        <button
+          type="button"
+          disabled={publishing}
+          onClick={onPublish}
+          className="inline-flex items-center gap-1.5 self-start rounded-lg border border-ok bg-ok-soft px-3 py-1.5 text-sm font-medium text-ok hover:brightness-95 disabled:opacity-60"
+        >
+          <Globe className="h-4 w-4" strokeWidth={2} />
+          {publishing ? "Envoi…" : ex.publication_status === "changes_requested" ? "Renvoyer pour vérification" : "Rendre public pour tous"}
+        </button>
+      )}
+      {message && <p className="text-sm text-muted">{message}</p>}
     </div>
   );
 }

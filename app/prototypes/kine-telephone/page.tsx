@@ -165,9 +165,12 @@ export default async function KineTelephonePrototype({
               equipment: e.equipment,
               search_keywords: [],
               hidden: false,
+              publication_status: "published" as const,
+              patient_id: null,
+              review_note: null,
+              author_label: null,
             }))}
             currentUserId="moi"
-            createExercise={noopVoid}
             hideExercise={noopVoid}
             unhideExercise={noopVoid}
           />
