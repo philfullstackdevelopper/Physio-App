@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CheckCircle2, ChevronRight, Circle, ExternalLink, Gift, Tag, Users, Wallet } from "lucide-react";
 import SubmitButton from "@/components/SubmitButton";
 import PhoneFold from "@/components/PhoneFold";
-import { PATIENT_PLANS, eurosFR, perMonthCents } from "@/lib/billing/patientPlans";
+import { PATIENT_PLANS, eurosFR } from "@/lib/billing/patientPlans";
 import { startConnectOnboarding } from "../connect/actions";
 import { setAccessMode } from "./actions";
 
@@ -187,7 +187,6 @@ export default function FacturationView({
                       <td className="py-1.5 font-medium text-ink">{p.label}</td>
                       <td className="py-1.5 tabular-nums text-ink">
                         {eur(p.priceCents)}
-                        {p.months > 1 && <span className="text-muted"> ({eur(perMonthCents(p))}/mois)</span>}
                       </td>
                       <td className="py-1.5 text-right font-semibold tabular-nums text-ok">{eur(p.kineCents)}</td>
                     </tr>

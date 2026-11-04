@@ -34,7 +34,7 @@ const TOUR: Record<Side, { ecran: string; title: string; hint: string }[]> = {
     { ecran: "accueil", title: "Tableau de bord", hint: "Qui va bien, qui est à surveiller." },
     { ecran: "patients", title: "Mes patients", hint: "Toute votre patientèle, triée." },
     { ecran: "fiche", title: "La fiche d'un patient", hint: "Sa frise semaine par semaine. Essayez « Ajuster / changer la séance »." },
-    { ecran: "revenus", title: "Suivi & facturation", hint: "Bilans du mois, votre tarif, vos documents, votre facture EasyPhysio." },
+    { ecran: "revenus", title: "Suivi & facturation", hint: "Vos patients abonnés, accès payant ou gratuit, vos versements." },
     { ecran: "seances", title: "Mes séances", hint: "Vos séances et la bibliothèque d'exercices." },
     { ecran: "messages", title: "Messages", hint: "Vos échanges avec les patients." },
   ],
