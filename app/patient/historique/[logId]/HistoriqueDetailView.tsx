@@ -12,6 +12,7 @@ export default function HistoriqueDetailView({
   dateLabel,
   feedback,
   exercises,
+  back = { href: "/patient/historique", label: "Historique" },
 }: {
   name: string;
   dateLabel: string;
@@ -19,14 +20,16 @@ export default function HistoriqueDetailView({
   feedback: { pain_score: number; notes: string | null } | null;
   /** skipped = exercice passé pendant la séance (exercise_results). */
   exercises: { name: string; skipped: boolean }[];
+  /** Lien retour : l'historique par défaut, l'accueil si on vient de la frise. */
+  back?: { href: string; label: string };
 }) {
   const anySkipped = exercises.some((e) => e.skipped);
   return (
     <main className="flex flex-col p-6 max-sm:h-[calc(100dvh-var(--phone-chrome))] max-sm:p-4 sm:h-dvh sm:p-8 short:sm:py-4">
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col">
-        <Link href="/patient/historique" className="flex items-center gap-1 self-start text-sm text-slate-500 hover:underline">
+        <Link href={back.href} className="flex items-center gap-1 self-start text-sm text-slate-500 hover:underline">
           <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-          Historique
+          {back.label}
         </Link>
 
         <h1 className="font-display mt-3 text-2xl font-semibold text-slate-900 short:mt-2">{name}</h1>

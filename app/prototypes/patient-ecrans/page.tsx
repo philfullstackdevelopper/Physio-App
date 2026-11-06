@@ -144,7 +144,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
           />
         ) : ecran === "suivi" ? (
           // Formules patient (2026-11-02) : la démo montre le choix des trois formules.
-          <SuiviView sp={{}} kineName="Julien Roux" kineReady subscription={null} demo />
+          <SuiviView sp={{}} kineName="Julien Roux" kineReady subscription={null} programmeReady demo />
         ) : ecran === "compte" ? (
           <CompteView
             fullName="Léa Martin"

@@ -73,6 +73,8 @@ export default function WeekProgramme({
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
 
   const scrollerRef = useRef<HTMLDivElement>(null);
+  // Liens cachés des jours à séance unique (voir openDay, plus bas).
+  const dayLinkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   // Téléphone : hauteur des cartes de la frise = toute la place disponible
   // jusqu'à la barre d'onglets (la boîte autour est en flex-1, on la mesure).
   const stripBoxRef = useRef<HTMLDivElement>(null);
@@ -275,6 +277,24 @@ export default function WeekProgramme({
     );
   }
 
+  // (Philippe, 2026-11-06 : audit, on allège) Un jour avec UNE seule séance
+  // ouvre directement son détail (/patient/historique/[logId]) au lieu d'un
+  // popup « Détail de la séance » qui ne faisait que renvoyer vers « Voir le
+  // détail ». Plusieurs séances le même jour : le popup reste, chacune avec
+  // son lien. On passe par un vrai lien <a> (masqué, cliqué par le code)
+  // plutôt que router.push : la démo (components/DemoShell.tsx) n'intercepte
+  // que les clics sur des liens pour les rediriger vers ses écrans fictifs.
+  // « ?depuis=accueil » : le lien retour de la page de détail ramène alors à
+  // l'accueil plutôt qu'à l'historique. (dayLinkRefs : déclaré plus haut,
+  // avant le « return » de la frise — règle des hooks.)
+  const openDay = (key: string) => {
+    if ((dayDetails[key] ?? []).length === 1) {
+      dayLinkRefs.current[key]?.click();
+      return;
+    }
+    setSelectedDayKey(selectedDayKey === key ? null : key);
+  };
+
   const dayItems: SegmentItem[] = days.map((d) => {
     const key = localDateKey(d.date);
     const sessions = dayDetails[key] ?? [];
@@ -285,7 +305,7 @@ export default function WeekProgramme({
       badge: isToday ? "Aujourd'hui" : undefined,
       disabled: sessions.length === 0,
       ringSelected: selectedDayKey === key,
-      onClick: () => setSelectedDayKey(selectedDayKey === key ? null : key),
+      onClick: () => openDay(key),
       ariaLabel: `${d.dayLabel} ${d.dateLabel}${d.hasSession ? ", séance réalisée" : ", non fait"}${isToday ? " — aujourd'hui" : ""}`,
       content: (
         <>
@@ -373,7 +393,7 @@ export default function WeekProgramme({
                 <button
                   type="button"
                   disabled={sessions.length === 0}
-                  onClick={() => setSelectedDayKey(selectedDayKey === key ? null : key)}
+                  onClick={() => openDay(key)}
                   aria-label={`${d.dayLabel} ${d.dateLabel}${d.hasSession ? ", séance réalisée" : ", non fait"}${isToday ? " — aujourd'hui" : ""}`}
                   className="flex w-full items-center gap-3 py-0.5 text-left"
                 >
@@ -402,7 +422,26 @@ export default function WeekProgramme({
         </ol>
       </section>
 
-      {selectedDayKey && selectedDaySessions.length > 0 && (
+      {/* Liens cachés des jours à séance unique (voir openDay). */}
+      {days.map((d) => {
+        const key = localDateKey(d.date);
+        const sessions = dayDetails[key] ?? [];
+        if (sessions.length !== 1) return null;
+        return (
+          <Link
+            key={key}
+            ref={(el) => {
+              dayLinkRefs.current[key] = el;
+            }}
+            href={`/patient/historique/${sessions[0].logId}?depuis=accueil`}
+            hidden
+            tabIndex={-1}
+            aria-hidden
+          />
+        );
+      })}
+
+      {selectedDayKey && selectedDaySessions.length > 1 && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-4"
           onClick={closeDayDetail}
@@ -410,12 +449,12 @@ export default function WeekProgramme({
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Détail de la séance"
+            aria-label="Séances du jour"
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-sm rounded-2xl bg-surface p-5 shadow-xl [animation:popIn_0.35s_ease-out_both]"
           >
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-base font-semibold text-ink">Détail de la séance</h2>
+              <h2 className="text-base font-semibold text-ink">Séances du jour</h2>
               <button
                 type="button"
                 aria-label="Fermer"
@@ -440,7 +479,7 @@ export default function WeekProgramme({
                     {s.notes && <li>« {s.notes} »</li>}
                   </ul>
                   <Link
-                    href={`/patient/historique/${s.logId}`}
+                    href={`/patient/historique/${s.logId}?depuis=accueil`}
                     className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline"
                   >
                     Voir le détail

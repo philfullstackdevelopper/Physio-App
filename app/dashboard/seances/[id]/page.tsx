@@ -1,4 +1,4 @@
-import { doseKindOf, loadFavoritesAndRecents } from "@/lib/exercise/kineLibraryExtras";
+import { doseKindOf, loadRecentExercises } from "@/lib/exercise/kineLibraryExtras";
 import { redirect } from "next/navigation";
 import { isPickableExercise } from "@/lib/exercise/filmedExercises";
 import { fitsPatient } from "@/lib/exercise/kineExercises";
@@ -71,7 +71,7 @@ export default async function SeanceEditorPage({
       bodyPartIds: (ex.exercise_body_parts ?? []).map((t) => t.body_part_id as string),
       doseKind: doseKindOf(ex.instructions as string | null),
     }));
-  const { favoriteIds, recentIds } = await loadFavoritesAndRecents(supabase, user.id);
+  const recentIds = await loadRecentExercises(supabase, user.id);
 
   // Même fenêtre que « Nouvelle séance » et « Ajuster la séance » (Philippe,
   // 2026-10-12) — l'ancienne page en liste de cases à cocher est remplacée.
@@ -83,7 +83,6 @@ export default async function SeanceEditorPage({
         exercises={pickerExercises}
         bodyParts={bodyParts ?? []}
         saveSeance={saveSeance}
-        favoriteIds={favoriteIds}
         recentIds={recentIds}
         edit={{
           workoutId: workout.id,

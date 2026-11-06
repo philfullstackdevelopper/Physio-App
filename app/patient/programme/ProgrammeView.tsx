@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Lightbulb, Target } from "lucide-react";
-import MountainScene from "@/components/MountainScene";
+import { ArrowRight, CalendarDays, Lightbulb } from "lucide-react";
 import ProgressRing from "@/components/ProgressRing";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { goalShortFor, type ExerciseDose } from "@/lib/exercise/prescription";
@@ -36,6 +35,15 @@ export type ProgrammeWorkout = {
 // (beaucoup d'exercices, petit écran), la page défile au lieu d'être coupée.
 // Sur téléphone, le sous-titre et le « Conseil du jour » sont masqués pour
 // que la séance tienne entière.
+//
+// (Philippe, 2026-11-06 : audit, on allège) La carte « Votre progression
+// cette semaine » de la colonne de droite (2e montagne, grands écrans) est
+// retirée : la progression de la semaine était montrée 3-4 fois (accueil,
+// anneau de la séance, cette carte). Restent l'anneau ici et la montagne de
+// l'accueil. Sans elle, la colonne de droite n'aurait plus tenu que le
+// « Conseil du jour » : la séance prend toute la largeur ; le conseil passe
+// dans la ligne de titre sur grand écran, et reste en bandeau sous la séance
+// sur tablette (comme avant).
 export default function ProgrammeView({
   week,
   workouts,
@@ -45,11 +53,6 @@ export default function ProgrammeView({
   workouts: ProgrammeWorkout[];
   tip: string;
 }) {
-  // Agrégat pour la colonne de droite — chaque séance plafonnée à son propre
-  // objectif, pour qu'en finir une en avance ne gonfle pas le ratio global.
-  const totalTarget = workouts.reduce((sum, w) => sum + (w.timesPerWeek ?? 0), 0);
-  const totalDone = workouts.reduce((sum, w) => sum + Math.min(w.doneThisWeek, w.timesPerWeek ?? Infinity), 0);
-
   return (
     <main className="flex min-h-[calc(100dvh-var(--phone-chrome))] flex-col p-4 max-sm:short:py-2 sm:min-h-dvh sm:p-6 short:sm:py-4">
       <div className="flex flex-1 flex-col">
@@ -58,6 +61,18 @@ export default function ProgrammeView({
             <h1 className="text-2xl font-semibold text-ink">Mon programme</h1>
             <p className="mt-0.5 hidden text-sm text-muted sm:block">Les séances que votre kiné vous a assignées cette semaine.</p>
           </div>
+          {/* Grand écran : le conseil du jour dans la ligne de titre (ne prend
+              aucune hauteur, la séance tient sur un écran). Tablette : en
+              bandeau sous la séance (plus bas). */}
+          {workouts.length > 0 && (
+            <p className="hidden min-w-0 max-w-xl flex-1 items-start gap-2 rounded-2xl border border-line bg-brand-soft px-3.5 py-2 text-xs text-ink/80 shadow-sm lg:flex">
+              <Lightbulb className="h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
+              <span className="line-clamp-2">
+                <span className="font-semibold text-ink">Conseil du jour · </span>
+                {tip}
+              </span>
+            </p>
+          )}
           <span className="flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm font-medium text-ink shadow-sm">
             <CalendarDays className="h-4 w-4 text-brand" strokeWidth={1.75} />
             Semaine {week}
@@ -69,8 +84,8 @@ export default function ProgrammeView({
             Votre praticien n&apos;a pas encore configuré votre programme. Revenez bientôt !
           </p>
         ) : (
-          <div className="mt-4 grid flex-1 gap-4 max-sm:short:mt-2 lg:grid-cols-[1fr_300px]">
-            <div className="flex flex-col gap-4">
+          <div className="mt-4 flex flex-1 flex-col gap-4 max-sm:short:mt-2">
+            <div className="flex flex-1 flex-col gap-4">
               {workouts.map((workout) => {
                 const target = workout.timesPerWeek ?? 0;
                 const done = workout.doneThisWeek;
@@ -148,41 +163,13 @@ export default function ProgrammeView({
               })}
             </div>
 
-            <div className="flex flex-col gap-4">
-              <section className="hidden items-start gap-3 rounded-2xl border border-line bg-brand-soft p-4 shadow-sm sm:flex">
-                <Lightbulb className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
-                <div>
-                  <p className="text-sm font-semibold text-ink">Conseil du jour</p>
-                  <p className="mt-1 text-sm text-ink/80">{tip}</p>
-                </div>
-              </section>
-
-              <section className="hidden flex-1 flex-col rounded-2xl border border-line bg-surface p-4 shadow-sm lg:flex">
-                <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-                  <Target className="h-4 w-4 text-brand" strokeWidth={1.75} />
-                  Votre progression cette semaine
-                </p>
-                <p className="mt-2 text-sm text-muted">
-                  {totalTarget > 0
-                    ? `${totalDone} / ${totalTarget} séance${totalTarget > 1 ? "s" : ""} réalisée${totalDone > 1 ? "s" : ""}`
-                    : `${totalDone} séance${totalDone > 1 ? "s" : ""} réalisée${totalDone > 1 ? "s" : ""} cette semaine.`}
-                </p>
-                {totalTarget > 0 && (
-                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-app-bg">
-                    <div
-                      className="h-full rounded-full bg-brand transition-[width]"
-                      style={{ width: `${Math.round(Math.min(totalDone / totalTarget, 1) * 100)}%` }}
-                    />
-                  </div>
-                )}
-                {/* La montagne remplit la place restante de la colonne. */}
-                <MountainScene
-                  variant="goal"
-                  progress={totalTarget > 0 ? Math.min(totalDone / totalTarget, 1) : 0}
-                  className={`mt-4 min-h-20 w-full flex-1 ${totalTarget > 0 && totalDone >= totalTarget ? "text-ok" : "text-brand"}`}
-                />
-              </section>
-            </div>
+            <section className="hidden items-start gap-3 rounded-2xl border border-line bg-brand-soft p-4 shadow-sm sm:flex lg:hidden short:sm:py-3">
+              <Lightbulb className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
+              <div>
+                <p className="text-sm font-semibold text-ink">Conseil du jour</p>
+                <p className="mt-1 text-sm text-ink/80">{tip}</p>
+              </div>
+            </section>
           </div>
         )}
       </div>

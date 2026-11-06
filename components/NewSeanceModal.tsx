@@ -29,11 +29,9 @@ export default function NewSeanceModal({
   createSeance,
   returnTo,
   edit,
-  favoriteIds,
   recentIds,
 }: {
-  /** Étoiles et exercices récents du kiné (migration 0083). */
-  favoriteIds?: string[];
+  /** Exercices de ses dernières séances (« Récents »). */
   recentIds?: string[];
   onClose: () => void;
   conditions: { id: string; name: string }[];
@@ -239,7 +237,6 @@ export default function NewSeanceModal({
                 bodyParts={bodyParts}
                 selectedIds={new Set(selected)}
                 onToggle={toggle}
-                favoriteIds={favoriteIds}
                 recentIds={recentIds}
               />
             </div>

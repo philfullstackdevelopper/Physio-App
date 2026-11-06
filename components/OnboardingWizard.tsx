@@ -7,7 +7,13 @@ import type { InjuryStage } from "@/lib/exercise/prescription";
 import type { EquipmentId } from "@/lib/exercise/equipment";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 
-const STEP_LABELS = ["Votre situation", "Votre profil", "Équipement", "Validation"] as const;
+// (Philippe, 2026-11-06 : audit, on allège) 3 étapes au lieu de 4 : l'ancienne
+// étape « Validation » ne tenait que la case de consentement aux données de
+// santé (et restait vide en modification, quand ce consentement est déjà
+// donné). La case vit maintenant en bas de l'étape « Équipement », dont le
+// bouton final enregistre. Elle reste distincte des CGU, même texte, même
+// champ envoyé (health_data_consent), toujours obligatoire.
+const STEP_LABELS = ["Votre situation", "Votre profil", "Équipement"] as const;
 
 const fieldClass =
   "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 shadow-sm transition-colors focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
@@ -101,7 +107,7 @@ export default function OnboardingWizard({
     <div className="flex min-h-0 flex-col">
       {/* Step indicator — no sidebar app-nav here on purpose: onboarding isn't
           done yet, so app/patient/layout.tsx hasn't unlocked the real nav.
-          Knowing there are exactly 4 short steps (not an open-ended form) is
+          Knowing there are exactly 3 short steps (not an open-ended form) is
           the actual ask — how long this will take. */}
       <ol className="flex shrink-0 items-center justify-center gap-2 sm:gap-3">
         {STEP_LABELS.map((label, i) => (
@@ -277,14 +283,8 @@ export default function OnboardingWizard({
               </label>
             ))}
           </div>
-        </div>
 
-        {/* Étape 4 : Validation */}
-        <div ref={(el) => { stepRefs.current[3] = el; }} hidden={step !== 3} className="flex flex-col gap-4">
-          <p className="text-sm leading-relaxed text-slate-600">
-            Dernière étape : votre accord pour que votre kinésithérapeute suive votre situation. Vous pourrez modifier
-            toutes ces informations à tout moment depuis votre compte.
-          </p>
+          {/* Consentement aux données de santé (ex-étape 4, voir STEP_LABELS). */}
           {needsConsent && (
             <label className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 text-sm text-slate-600">
               <input

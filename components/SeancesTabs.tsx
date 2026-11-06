@@ -372,13 +372,11 @@ export default function SeancesTabs({
   exercises,
   bodyParts,
   returnTo,
-  favoriteIds,
   recentIds,
 }: {
   exercises: PickerExercise[];
   bodyParts: BodyPart[];
-  /** Étoiles et exercices récents du kiné (migration 0083). */
-  favoriteIds?: string[];
+  /** Exercices de ses dernières séances (« Récents »). */
   recentIds?: string[];
   /** Fiche patient d'où vient le kiné (« Créer une séance »), validée côté serveur. */
   returnTo?: string;
@@ -607,7 +605,6 @@ export default function SeancesTabs({
               stages={stages}
               exercises={exercises}
               bodyParts={bodyParts}
-              favoriteIds={favoriteIds}
               recentIds={recentIds}
               createSeance={createSeance}
               returnTo={returnTo}

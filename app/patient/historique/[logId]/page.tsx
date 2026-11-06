@@ -14,10 +14,16 @@ type LogDetail = {
 
 export default async function HistoriqueDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ logId: string }>;
+  searchParams: Promise<{ depuis?: string }>;
 }) {
   const { logId } = await params;
+  // Ouvert depuis la frise de l'accueil (components/WeekProgramme.tsx,
+  // « ?depuis=accueil ») : le lien retour y ramène ; sinon, à l'historique.
+  const { depuis } = await searchParams;
+  const back = depuis === "accueil" ? { href: "/patient", label: "Accueil" } : undefined;
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
@@ -75,6 +81,7 @@ export default async function HistoriqueDetailPage({
           : null
       }
       exercises={exercises}
+      back={back}
     />
   );
 }

@@ -84,6 +84,7 @@ export default function PaywallVideo({
   error,
   reminderLabel,
   firstChargeLabel,
+  programmeReady,
   demo,
 }: {
   kineName: string;
@@ -94,6 +95,8 @@ export default function PaywallVideo({
   reminderLabel: string;
   /** « 14 nov. » : premier prélèvement. */
   firstChargeLabel: string;
+  /** Le kiné a déjà attribué une séance : sinon, pas de « programme prêt ». */
+  programmeReady: boolean;
   demo: boolean;
 }) {
   const [index, setIndex] = useState(DEFAULT_INDEX);
@@ -122,7 +125,9 @@ export default function PaywallVideo({
       <div className="flex flex-col justify-center px-5 pb-5 max-md:-mt-6 md:px-12 md:py-8 short:md:py-4">
         <form action={demo ? undefined : startPlan} className="relative mx-auto w-full max-w-md">
           <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl short:md:text-2xl">
-            Votre programme est prêt.
+            {/* (Philippe, 2026-11-06 : audit, on allège) « prêt » seulement si
+                le kiné a déjà attribué une séance ; sinon un titre neutre. */}
+            {programmeReady ? "Votre programme est prêt." : `Votre suivi avec ${kineName}.`}
           </h1>
           <p className="mt-1 text-sm text-slate-400">
             {trial ? `${TRIAL_DAYS} jours offerts, puis la durée de votre choix.` : "Choisissez la durée qui vous convient."}
@@ -202,7 +207,9 @@ export default function PaywallVideo({
           </SubmitButton>
           <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-500">
             <Lock className="h-3 w-3 shrink-0" strokeWidth={2} />
-            {trial ? `Aucun débit avant le ${firstChargeLabel} · ` : ""}Résiliable à tout moment ·{" "}
+            {/* (Philippe, 2026-11-06 : audit, on allège) « Résiliable à tout
+                moment » retiré d'ici : déjà dit sous le prix. */}
+            {trial ? `Aucun débit avant le ${firstChargeLabel} · ` : ""}
             <Link href="/patient/compte" className="hover:text-slate-300 hover:underline">
               Mes données
             </Link>

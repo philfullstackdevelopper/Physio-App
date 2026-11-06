@@ -75,7 +75,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     { count: unreadCount },
     { data: resultRows },
     { data: seenRow },
-    { data: favoriteRows, error: favoriteError },
   ] = await Promise.all([
     supabase.from("conditions").select("id, name").order("name"),
     supabase.from("patient_profiles").select("declared_body_part_ids, injury_stage, rehab_progress, history, date_of_birth, height_cm, weight_kg, activity_level, equipment, updated_at").eq("id", id).maybeSingle(),
@@ -93,8 +92,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     // une erreur (migration pas encore passée) laisse simplement ces infos vides.
     supabase.from("exercise_results").select("workout_log_id, exercise_name, position, status, pain, difficulty, created_at").eq("patient_id", id),
     supabase.from("patients").select("feedback_seen_at").eq("id", id).maybeSingle(),
-    // Étoiles du kiné (migration 0083) ; table absente = pas d'étoiles.
-    supabase.from("instructor_favorite_exercises").select("exercise_id").eq("instructor_id", user.id),
   ]);
 
   const conditionName = (cid: string | null) => conditions?.find((c) => c.id === cid)?.name;
@@ -214,7 +211,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       .flatMap((w) => [...w.workout_exercises].sort((a, b) => a.position - b.position).map((we) => we.exercises?.id))
       .filter((x): x is string => !!x),
   )].slice(0, 24);
-  const favoriteIds = favoriteError ? undefined : (favoriteRows ?? []).map((r) => r.exercise_id as string);
 
   // Modale « Choisir une séance » : tout le pool ; la frise retire elle-même la
   // séance déjà effective pour la semaine sélectionnée (KineWeekProgramme).
@@ -393,7 +389,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
         addableWorkouts={addableWorkouts}
         patientConditionId={(patient.condition_id as string | null) ?? null}
         patientStage={stage}
-        favoriteIds={favoriteIds}
         recentIds={recentIds}
         saveAsMineAction={duplicateSeance}
         adjustAction={adjustPatientWorkout}

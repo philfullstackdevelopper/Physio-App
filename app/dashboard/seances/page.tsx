@@ -1,4 +1,4 @@
-import { doseKindOf, loadFavoritesAndRecents } from "@/lib/exercise/kineLibraryExtras";
+import { doseKindOf, loadRecentExercises } from "@/lib/exercise/kineLibraryExtras";
 import { createClient } from "@/lib/supabase/server";
 import { isPickableExercise, isPickableSeance } from "@/lib/exercise/filmedExercises";
 import { fitsPatient } from "@/lib/exercise/kineExercises";
@@ -74,7 +74,7 @@ export default async function SeancesPage({
       bodyPartIds: ((ex.exercise_body_parts as { body_part_id: string }[] | null) ?? []).map((t) => t.body_part_id),
       doseKind: doseKindOf(ex.instructions as string | null),
     }));
-  const { favoriteIds, recentIds } = await loadFavoritesAndRecents(supabase, user.id);
+  const recentIds = await loadRecentExercises(supabase, user.id);
   const conditionName = (cid: string | null) => conditions?.find((c) => c.id === cid)?.name;
 
   // Zones du corps d'une séance (Philippe, 2026-10-10 : filtrer « Mes séances »
@@ -180,7 +180,6 @@ export default async function SeancesPage({
           <SeancesTabs
             openNewSeance={nouvelle === "1"}
             exercises={pickerExercises}
-            favoriteIds={favoriteIds}
             recentIds={recentIds}
             bodyParts={(bodyParts ?? []) as BodyPart[]}
             returnTo={returnTo}

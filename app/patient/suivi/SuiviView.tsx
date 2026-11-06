@@ -44,6 +44,8 @@ export type SuiviViewProps = {
   /** Pas encore d'accès : l'appli s'ouvre une fois l'abonnement souscrit. */
   required?: boolean;
   subscription: SuiviSubscription | null;
+  /** Le kiné a déjà attribué au moins une séance (titre du paywall). */
+  programmeReady?: boolean;
   /** Démo : les boutons ne mènent nulle part. */
   demo?: boolean;
 };
@@ -80,7 +82,7 @@ function commitmentText(offer: PlatformOffer): string {
 const daysFromNow = (n: number) => new Date(Date.now() + n * 86_400_000);
 const shortDay = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
-export default function SuiviView({ sp, kineName, kineReady, required = false, subscription, demo = false }: SuiviViewProps) {
+export default function SuiviView({ sp, kineName, kineReady, required = false, subscription, programmeReady = false, demo = false }: SuiviViewProps) {
   const known = !!subscription && (isPlatformOfferKey(subscription.plan) || subscription.plan === EARLY_ACCESS_PLAN_KEY);
   const legacy = known && !!subscription!.legacy;
   const offer = known && isPlatformOfferKey(subscription!.plan) && !legacy ? platformOffer(subscription!.plan) : null;
@@ -99,6 +101,7 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
         error={sp.error}
         reminderLabel={shortDay(daysFromNow(TRIAL_DAYS - 2))}
         firstChargeLabel={shortDay(daysFromNow(TRIAL_DAYS))}
+        programmeReady={programmeReady}
         demo={demo}
       />
     );

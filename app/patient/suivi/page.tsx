@@ -25,11 +25,15 @@ export default async function SuiviPage({
       .select("plan, status, current_period_end, cancel_at_period_end, stripe_subscription_id, stripe_account_id")
       .eq("user_id", user.id)
       .maybeSingle();
-  const [{ data: kine }, subRes] = await Promise.all([
+  // (Philippe, 2026-11-06 : audit, on allège) « Votre programme est prêt » ne
+  // s'affiche que si le kiné a déjà attribué une séance (une ligne dans
+  // patient_recommended_workouts, lisible par le patient pour lui-même).
+  const [{ data: kine }, subRes, { count: assignedCount }] = await Promise.all([
     instructorId
       ? supabase.from("instructors").select("full_name, status").eq("id", instructorId).maybeSingle()
       : Promise.resolve({ data: null }),
     loadSub(),
+    supabase.from("patient_recommended_workouts").select("workout_id", { count: "exact", head: true }).eq("patient_id", user.id),
   ]);
   let sub = subRes.data;
   // Période payée dépassée sans nouvelles de Stripe : on relit l'abonnement.
@@ -65,6 +69,7 @@ export default async function SuiviPage({
       kineName={(kine?.full_name as string | null) ?? "votre kiné"}
       kineReady={kineReady}
       required={required}
+      programmeReady={(assignedCount ?? 0) > 0}
       subscription={
         sub
           ? {

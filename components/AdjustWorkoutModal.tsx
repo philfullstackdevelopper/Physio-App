@@ -186,7 +186,6 @@ function SeanceComposer({
   onDoseEdit,
   onInfo,
   extra,
-  favoriteIds,
   recentIds,
 }: {
   title: string;
@@ -205,7 +204,6 @@ function SeanceComposer({
   onDoseEdit: () => void;
   onInfo: (ex: { id: string; name: string }) => void;
   extra?: ReactNode;
-  favoriteIds?: string[];
   recentIds?: string[];
 }) {
   const inSeance = useMemo(() => new Set(exercises.map((e) => e.id)), [exercises]);
@@ -291,7 +289,6 @@ function SeanceComposer({
             onToggle={(id) => setAddIds((set) => toggled(set, id))}
             patientEquipment={patientEquipment}
             patientFirstName={patientFirstName}
-            favoriteIds={favoriteIds}
             recentIds={recentIds}
           />
         </div>
@@ -329,7 +326,6 @@ export default function AdjustWorkoutModal({
   weekStartDate,
   weekLabel,
   recommendations,
-  favoriteIds,
   recentIds,
   saveAsMineAction,
 }: {
@@ -364,8 +360,7 @@ export default function AdjustWorkoutModal({
   adjustAction: (formData: FormData) => Promise<void>;
   assignAction: (formData: FormData) => void;
   removeAction: (formData: FormData) => void;
-  /** Étoiles et exercices récents du kiné (migration 0083). */
-  favoriteIds?: string[];
+  /** Exercices de ses dernières séances (« Récents »). */
   recentIds?: string[];
 }) {
   const [open, setOpen] = useState(false);
@@ -800,7 +795,6 @@ export default function AdjustWorkoutModal({
                       phoneTab={phoneTab}
                       onDoseEdit={() => setDoseEdited(true)}
                       onInfo={setInfo}
-                      favoriteIds={favoriteIds}
                       recentIds={recentIds}
                       extra={
                         recommendations && recommendations.forWorkoutId === workout.id ? (
@@ -963,7 +957,6 @@ export default function AdjustWorkoutModal({
                     phoneTab={phoneTab}
                     onDoseEdit={() => setDoseEdited(true)}
                     onInfo={setInfo}
-                    favoriteIds={favoriteIds}
                     recentIds={recentIds}
                   />
 

@@ -8,10 +8,10 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Flame, CheckCircle2, Check, Play, Repeat2, Dumbbell, Timer, X, ArrowRight, ShieldAlert, SkipForward } from "lucide-react";
+import { CheckCircle2, Check, Play, Repeat2, Dumbbell, Timer, X, ArrowRight, ShieldAlert, SkipForward } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { goalPartsFor, goalTextFor, type ExerciseDose, type GoalParts, type Prescription } from "@/lib/exercise/prescription";
-import { fetchStreak } from "@/lib/exercise/streak";
+import { sessionPainScore } from "@/lib/exercise/sessionPain";
 import { getYoutubeEmbedId, isVideoFileUrl, isImageFileUrl } from "@/lib/exercise/media";
 import { parseSteps } from "@/lib/exercise/steps";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
@@ -414,7 +414,8 @@ export default function WorkoutSession({
   // celebrate — without this, the animation would never be visible since the
   // button unmounts the instant onExerciseDone fires.
   const [completing, setCompleting] = useState(false);
-  const [streak, setStreak] = useState<number | null>(null);
+  // (Philippe, 2026-11-06 : audit, on allège) Plus de badge « N jours
+  // d'affilée » avec la flamme en fin de séance : trop « jeu ».
   // The workout_logs row id for THIS completed session, once saved — lets the
   // end-of-session feedback link to exactly this session (not a guess by
   // timestamp), so the patient's history can show what they felt for it.
@@ -427,9 +428,12 @@ export default function WorkoutSession({
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const savedLogIdRef = useRef<string | null>(null);
-  // Ressenti de fin de séance (patient_feedback). S'ajoute au ressenti
-  // facultatif noté exercice par exercice (exercise_results, plus bas).
-  const [pain, setPain] = useState<number | null>(null);
+  // Ressenti de fin de séance (patient_feedback). (Philippe, 2026-11-06 :
+  // audit, on allège) La question « douleur du moment » (1–10) est
+  // supprimée : la douleur de séance est la plus forte douleur notée
+  // exercice par exercice (sessionPainScore), enregistrée automatiquement à
+  // la fin de la séance. Reste le mot libre, « Envoyer à mon kiné ».
+  const feedbackIdRef = useRef<string | null>(null);
   const [note, setNote] = useState("");
   const [fbSent, setFbSent] = useState(false);
   const [fbBusy, setFbBusy] = useState(false);
@@ -454,7 +458,7 @@ export default function WorkoutSession({
   const finish = async (latest?: Record<number, ExerciseResult>) => {
     const allResults = latest ?? results;
     // Log the completed workout (RLS: patient can insert their own logs),
-    // then recompute the daily streak to celebrate it. A failed insert must
+    // then the per-exercise results and the session pain. A failed insert must
     // NOT show the success celebration — the patient needs to know their
     // session wasn't actually recorded, and can retry.
     if (savingRef.current) return;
@@ -502,12 +506,24 @@ export default function WorkoutSession({
           resultsSavedRef.current = true;
         }
       }
-      // La série de jours n'est qu'un bonus d'affichage : son échec ne doit
-      // pas faire croire que la séance n'est pas enregistrée.
-      try {
-        setStreak(await fetchStreak(supabase, patientId));
-      } catch {
-        /* série non affichée cette fois-ci */
+      // Douleur de séance pour le kiné (stat « Douleur », courbe, frein de
+      // phase, alertes) : la plus forte douleur notée exercice par exercice.
+      // Aucune douleur notée → pas de ligne (pain_score est NOT NULL).
+      // Comme le suivi par exercice, son échec ne bloque pas la fin de séance.
+      const finalPain = sessionPainScore(Object.values(allResults).map((r) => r.pain));
+      if (!feedbackIdRef.current && savedLogIdRef.current && finalPain != null) {
+        const { data: fb } = await supabase
+          .from("patient_feedback")
+          .insert({
+            patient_id: patientId,
+            workout_id: workoutId,
+            workout_log_id: savedLogIdRef.current,
+            pain_score: finalPain,
+            completed: true,
+          })
+          .select("id")
+          .single();
+        if (fb) feedbackIdRef.current = fb.id as string;
       }
     } catch {
       setSaveError(true);
@@ -520,8 +536,14 @@ export default function WorkoutSession({
 
   const [fbError, setFbError] = useState(false);
 
+  // Douleur de séance calculée depuis les douleurs notées par exercice.
+  const sessionPain = sessionPainScore(Object.values(results).map((r) => r.pain));
+
+  // « Envoyer à mon kiné » : ajoute le mot libre à la ligne de ressenti de
+  // la séance (créée à la fin de séance, ou ici si cet envoi avait échoué).
   const saveFeeling = async () => {
-    if (pain == null) return;
+    const notes = note.trim();
+    if (!notes || sessionPain == null) return;
     setFbBusy(true);
     setFbError(false);
     if (demo) {
@@ -531,15 +553,28 @@ export default function WorkoutSession({
     }
     try {
       const supabase = createClient();
-      const { error } = await supabase.from("patient_feedback").insert({
-        patient_id: patientId,
-        workout_id: workoutId,
-        workout_log_id: logId,
-        pain_score: pain,
-        notes: note.trim() || null,
-        completed: true,
-      });
-      if (error) throw error;
+      if (feedbackIdRef.current) {
+        const { error } = await supabase
+          .from("patient_feedback")
+          .update({ notes })
+          .eq("id", feedbackIdRef.current);
+        if (error) throw error;
+      } else {
+        const { data: fb, error } = await supabase
+          .from("patient_feedback")
+          .insert({
+            patient_id: patientId,
+            workout_id: workoutId,
+            workout_log_id: logId,
+            pain_score: sessionPain,
+            notes,
+            completed: true,
+          })
+          .select("id")
+          .single();
+        if (error || !fb) throw error ?? new Error("insert failed");
+        feedbackIdRef.current = fb.id as string;
+      }
       setFbSent(true);
     } catch {
       setFbError(true);
@@ -644,44 +679,25 @@ export default function WorkoutSession({
             : `${total} exercice${total > 1 ? "s" : ""} complété${total > 1 ? "s" : ""}`}{" "}
           — « {workoutName} »
         </p>
-        {streak != null && streak > 0 && (
-          <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900">
-            <Flame className="h-4 w-4 text-blue-600" strokeWidth={2} />
-            {streak} jour{streak > 1 ? "s" : ""} d&apos;affilée
-          </div>
-        )}
+        {/* (Philippe, 2026-11-06 : audit, on allège) Badge « N jours
+            d'affilée » et question « douleur du moment » (1–10) retirés. */}
 
-        {/* Post-session feeling → helps the physio recalibrate */}
-        {!fbSent ? (
+        {/* Post-session feeling → helps the physio recalibrate. Affiché
+            seulement si une douleur a été notée pendant la séance : sans
+            elle, aucune ligne de ressenti ne peut être enregistrée
+            (pain_score NOT NULL) ; le patient garde la messagerie. */}
+        {sessionPain == null ? null : !fbSent ? (
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-left">
-            <p className="text-sm font-medium text-slate-800">Comment vous sentez-vous ?</p>
-            <p id="pain-scale-hint" className="text-xs text-slate-500">Votre douleur du moment (1 = aucune, 10 = très forte)</p>
-            {/* Lecteurs d'écran : un groupe nommé, et la note choisie annoncée
-                comme « enfoncée » (audit du 2026-10-08). */}
-            <div role="group" aria-labelledby="pain-scale-hint" className="mt-2 flex flex-wrap gap-1.5">
-              {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  aria-pressed={pain === n}
-                  aria-label={`Douleur ${n} sur 10`}
-                  onClick={() => setPain(n)}
-                  className={`h-9 w-9 rounded-full text-sm font-medium ${
-                    pain === n
-                      ? "bg-blue-600 text-white"
-                      : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
+            <label htmlFor="session-note" className="block text-sm font-medium text-slate-800">
+              Comment vous sentez-vous ?
+            </label>
             <textarea
+              id="session-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              placeholder="Un mot sur votre ressenti (optionnel)…"
-              className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
+              placeholder="Un mot sur votre ressenti…"
+              className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
             />
             {fbError && (
               <p className="mt-3 text-sm text-red-700">
@@ -690,7 +706,7 @@ export default function WorkoutSession({
             )}
             <button
               onClick={saveFeeling}
-              disabled={pain == null || fbBusy}
+              disabled={!note.trim() || fbBusy}
               className="mt-4 w-full rounded-lg bg-blue-600 py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {fbBusy ? "Envoi…" : "Envoyer à mon kiné"}

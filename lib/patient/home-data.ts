@@ -57,8 +57,9 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
       .maybeSingle(),
     supabase.from("patients").select("full_name, condition_id, trial_ends_at, created_at").eq("id", userId).maybeSingle(),
     // Le ressenti de fin de séance (patient_feedback : douleur/difficulté)
-    // alimente le frein de phase ci-dessous. La douleur notée exercice par
-    // exercice (exercise_results) n'entre pas dans ce calcul.
+    // alimente le frein de phase ci-dessous. Depuis le 2026-11-06, sa douleur
+    // est la plus forte douleur notée exercice par exercice pendant la séance
+    // (lib/exercise/sessionPain.ts), plus une question à part.
     supabase
       .from("patient_feedback")
       .select("pain_score, difficulty, created_at")

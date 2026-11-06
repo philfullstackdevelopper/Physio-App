@@ -86,14 +86,12 @@ export default function KineWeekProgramme({
   recommendations,
   patientConditionId = null,
   patientStage = null,
-  favoriteIds,
   recentIds,
   saveAsMineAction,
 }: {
   saveAsMineAction?: (formData: FormData) => void;
   patientConditionId?: string | null;
   patientStage?: string | null;
-  favoriteIds?: string[];
   recentIds?: string[];
   /** « Changements recommandés » de la fenêtre « Ajuster la séance ». */
   recommendations?: { forWorkoutId: string; items: Recommendation[] } | null;
@@ -519,7 +517,6 @@ export default function KineWeekProgramme({
               weekLabel={`${selectedWeek.label} · ${selectedWeek.rangeLabel}`}
               patientConditionId={patientConditionId}
               patientStage={patientStage}
-              favoriteIds={favoriteIds}
               recentIds={recentIds}
               saveAsMineAction={saveAsMineAction}
             />

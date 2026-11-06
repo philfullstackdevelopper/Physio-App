@@ -53,7 +53,7 @@ export default function OnboardingView({
         {/* Avant : carte plus haute que l'écran coupée sans pouvoir défiler —
             bouton « Suivant » compris, ce qui bloquait l'onboarding (Philippe,
             2026-10-01). Maintenant la colonne a une hauteur bornée, la carte
-            est calée en haut (pas centrée : sinon la barre des 4 étapes bougeait
+            est calée en haut (pas centrée : sinon la barre des étapes bougeait
             d'une étape à l'autre, la carte n'ayant pas la même hauteur) et
             seuls ses champs défilent. */}
         <div className="flex min-h-0 flex-1 flex-col p-4 py-6 sm:p-6 lg:py-[8vh] short:py-3">
@@ -68,8 +68,11 @@ export default function OnboardingView({
               sa zone de champs qui défile (OnboardingWizard). */}
           <div className="mx-auto flex max-h-full min-h-0 w-full max-w-2xl flex-col">
             <div className="text-center">
-              <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl short:text-xl">
-                <span className="text-blue-700">EasyPhysio ·</span>{" "}Votre situation
+              {/* (Philippe, 2026-11-06 : audit, on allège) « EasyPhysio ·
+                  Votre situation » répétait le nom de l'étape 1, affiché
+                  juste dessous par l'indicateur d'étapes. */}
+              <h1 className="font-display text-2xl font-semibold tracking-tight text-blue-700 sm:text-3xl short:text-xl">
+                EasyPhysio
               </h1>
             </div>
 
