@@ -427,7 +427,8 @@ export default function WorkoutSession({
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const savedLogIdRef = useRef<string | null>(null);
-  // End-of-session feeling capture — the only feedback this app collects.
+  // Ressenti de fin de séance (patient_feedback). S'ajoute au ressenti
+  // facultatif noté exercice par exercice (exercise_results, plus bas).
   const [pain, setPain] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [fbSent, setFbSent] = useState(false);
@@ -801,10 +802,9 @@ export default function WorkoutSession({
               grand, et l'exercice à droite (Philippe, 2026-11-02). */}
           <div className="flex flex-col sm:grid sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start sm:gap-x-6">
           <div className="sm:col-start-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
-            Exercice {idx + 1} sur {total}
-          </p>
-          <h2 className="font-display mt-1 text-2xl font-semibold text-slate-900 short:mt-0 short:text-xl">
+          {/* « Exercice N sur M » retiré : le « N/M » de l'en-tête suffit
+              (Philippe, 2026-11-06 : audit, on allège). */}
+          <h2 className="font-display text-2xl font-semibold text-slate-900 short:text-xl">
             {current.name}
           </h2>
           <div className="mt-2 short:mt-1">

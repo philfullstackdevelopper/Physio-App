@@ -4,7 +4,7 @@
 // composants (ProgrammeView, WorkoutSession) dans la même coquille que
 // app/patient/layout.tsx. Aucune donnée réelle, aucune requête. Pas lié
 // depuis l'appli.
-//   ?ecran=programme | seance | historique | seance-du-jour | informations | historique-detail | onboarding | progres | compte | suivi | cabinet (formulaire kiné de secours)
+//   ?ecran=programme | seance | historique | informations | historique-detail | onboarding | progres | compte | suivi | cabinet (formulaire kiné de secours)
 
 import SuiviView from "@/app/patient/suivi/SuiviView";
 import PatientNav from "@/components/PatientNav";
@@ -21,7 +21,6 @@ import ProgresView from "@/app/patient/progres/ProgresView";
 import CompteView from "@/app/patient/compte/CompteView";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import SignupOnboardingView from "@/app/signup/onboarding/SignupOnboardingView";
-import SeanceDuJourView from "@/app/patient/seance-du-jour/SeanceDuJourView";
 import { DEMO_BODY_PARTS } from "@/app/prototypes/kine-telephone/mock";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import { buildHistoryWeeks } from "@/lib/patient/historyWeeks";
@@ -149,7 +148,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
         ) : ecran === "compte" ? (
           <CompteView
             fullName="Léa Martin"
-            followUp={{ status: "active", priceCents: 1999, cardLabel: null, kineName: "Julien Roux", line: "3 mois · renouvelée le 4 février" }}
+            followUp={{ status: "active", line: "3 mois · renouvelée le 4 février" }}
           />
         ) : ecran === "informations" ? (
           <InformationsView
@@ -171,23 +170,10 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
             name="Renforcement du genou, niveau 2"
             dateLabel="lundi 28 septembre à 18:15"
             feedback={{ pain_score: 3, notes: "Un peu raide au début, mieux à la fin." }}
-            exercises={[...EXERCISES.map(([name]) => name), "Quad Set", "Heel Slide", "Banded Clamshell"]}
+            exercises={[...EXERCISES.map(([name]) => name), "Quad Set", "Heel Slide", "Banded Clamshell"].map((name) => ({ name, skipped: false }))}
           />
         ) : ecran === "historique" ? (
           <HistoriqueView weeks={demoHistoryWeeks()} />
-        ) : ecran === "seance-du-jour" ? (
-          <SeanceDuJourView
-            activeWorkout={{
-              id: "demo-seance",
-              name: "Renforcement du genou, niveau 2",
-              description: "Renforcement doux des quadriceps et des fessiers.",
-              duration_minutes: 20,
-              times_per_week: 3,
-              workout_exercises: EXERCISES.map(([name], i) => ({ position: i, exercises: { name } })),
-            }}
-            doneToday
-            weekComplete={false}
-          />
         ) : ecran === "seance" ? (
           // Même enveloppe que app/patient/[workoutId]/seance/page.tsx.
           <main className="p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:p-4 max-sm:short:py-2 sm:min-h-dvh sm:p-8 short:sm:py-3">

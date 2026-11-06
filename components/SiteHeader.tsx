@@ -9,10 +9,10 @@ import { LogoLockup } from "@/components/Logo";
 import { SIGNUPS_OPEN, WAITLIST_HREF } from "@/lib/launchFlags";
 
 // Un en-tête plein mais aéré (Philippe, 2026-10-07 : d'abord « too much
-// information », puis « fill out the header a bit more ») : les 5 sections,
-// sans le texte « Connecté·e en tant que … ».
+// information », puis « fill out the header a bit more ») : les sections,
+// sans le texte « Connecté·e en tant que … ». « Comment ça marche » retiré :
+// la section n'existe plus sur l'accueil (Philippe, 2026-11-06 : audit, on allège).
 const NAV_LINKS = [
-  { href: "/#comment-ca-marche", label: "Comment ça marche" },
   { href: "/#cote-kine", label: "Praticiens" },
   { href: "/#comparaison", label: "Comparaison" },
   { href: "/#formules", label: "Tarifs" },

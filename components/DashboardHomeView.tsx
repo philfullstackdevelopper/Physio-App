@@ -117,8 +117,9 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
             <>
               <div className="flex items-center justify-between px-1">
                 <h2 className="text-sm font-semibold text-ink">À traiter</h2>
+                {/* Sans le nombre : la 4e case l'affiche déjà (Philippe, 2026-11-06 : audit, on allège). */}
                 <Link href="/dashboard/patients?filtre=surveiller" className="text-xs font-medium text-brand">
-                  Voir tout{h.surveillerCount > PHONE_ROWS ? ` (${h.surveillerCount})` : ""}
+                  Voir tout
                 </Link>
               </div>
               <ul className="mt-2 overflow-hidden rounded-2xl bg-surface shadow-soft">

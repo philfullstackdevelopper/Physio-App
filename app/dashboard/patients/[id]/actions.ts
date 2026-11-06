@@ -182,6 +182,11 @@ export async function assignCondition(formData: FormData) {
 // week's row rather than wiping the patient's whole history: other weeks'
 // assignments must stay in place for resolveWorkoutForWeek to keep resolving
 // them correctly.
+//
+// Exercices ajoutés / retirés / doses modifiées AVANT d'appliquer (Philippe,
+// 2026-11-05 : « pouvoir y ajouter / enlever ce qui les arrange au moment
+// d'assigner ») : la séance attribuée devient aussitôt la copie personnelle
+// du patient, exactement comme « Ajuster la séance » juste après.
 export async function addRecommendedWorkout(formData: FormData) {
   const supabase = await createClient();
   const { user } = await requireApprovedInstructor(supabase);
@@ -214,20 +219,30 @@ export async function addRecommendedWorkout(formData: FormData) {
   const rawCount = Number(formData.get("week_count") ?? "");
   const weekCount = Number.isInteger(rawCount) && rawCount >= 1 && rawCount <= 52 ? rawCount : null;
 
-  const { error } = await supabase
+  const { data: rec, error } = await supabase
     .from("patient_recommended_workouts")
     .upsert(
       { patient_id: patientId, workout_id: workoutId, week_start_date: weekStartDate, week_count: weekCount },
       { onConflict: "patient_id,week_start_date" },
-    );
+    )
+    .select("id")
+    .single();
   if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
 
   // Patient en suivi mensuel : attribuer une séance valide le bilan du mois.
   await recordMonthlyReviewIfDue({ supabase, instructorId: user.id, patientId, note: `Séance attribuée : ${workout!.name as string}` });
 
+  let adjusted = false;
+  if (rec && hasSeanceChanges(formData)) {
+    const result = await applySeanceChanges({ supabase, userId: user.id, patientId, workoutId, recId: rec.id as string, formData });
+    if ("error" in result) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(result.error)}`);
+    adjusted = result.changed;
+  }
+
   revalidatePath(`/dashboard/patients/${patientId}`);
   revalidatePath("/dashboard/facturation");
-  redirect(`/dashboard/patients/${patientId}`);
+  revalidatePath("/patient");
+  redirect(`/dashboard/patients/${patientId}${adjusted ? "?adjusted=1" : ""}`);
 }
 
 // Unassigns the patient's recommended workout, with no replacement.
@@ -261,33 +276,87 @@ export async function adjustPatientWorkout(formData: FormData) {
   // same séance can be assigned at two different periods (two rows), and
   // adjusting one of them must not silently repoint the other.
   const recId = String(formData.get("rec_id") ?? "");
+
+  if (!patientId || !workoutId || !recId) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Séance introuvable.")}`);
+  if (!hasSeanceChanges(formData)) redirect(`/dashboard/patients/${patientId}`);
+
+  const result = await applySeanceChanges({ supabase, userId: user.id, patientId, workoutId, recId, formData });
+  if ("error" in result) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(result.error)}`);
+
+  revalidatePath(`/dashboard/patients/${patientId}`);
+  revalidatePath("/patient");
+  redirect(`/dashboard/patients/${patientId}${result.changed ? "?adjusted=1" : ""}`);
+}
+
+/** Le formulaire porte-t-il des retraits, ajouts ou doses ? Modifier les
+ *  séries/répétitions compte aussi comme un ajustement (migration 0080). */
+function hasSeanceChanges(formData: FormData): boolean {
+  return (
+    formData.getAll("remove_ids").some(Boolean) ||
+    formData.getAll("add_ids").some(Boolean) ||
+    [...formData.keys()].some((k) => k.startsWith("dose_"))
+  );
+}
+
+/** Applique retraits / ajouts / doses à la séance attribuée (ligne `recId`) :
+ *  copie personnelle du patient d'abord si besoin, puis la nouvelle liste,
+ *  un message au patient et le bilan du mois. Partagé par « Ajuster la
+ *  séance » et l'attribution d'une séance modifiée avant d'être appliquée. */
+async function applySeanceChanges({
+  supabase,
+  userId,
+  patientId,
+  workoutId,
+  recId,
+  formData,
+}: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  userId: string;
+  patientId: string;
+  workoutId: string;
+  recId: string;
+  formData: FormData;
+}): Promise<{ error: string } | { changed: boolean }> {
   const removeIds = formData.getAll("remove_ids").map(String).filter(Boolean);
   const addIds = formData.getAll("add_ids").map(String).filter(Boolean);
-
-  const fail = (msg: string): never => redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(msg)}`);
-  if (!patientId || !workoutId || !recId) return fail("Séance introuvable.");
-  // Doses envoyées par la fenêtre (une par exercice affiché) : modifier les
-  // séries/répétitions compte aussi comme un ajustement (migration 0080).
-  const hasDoseFields = [...formData.keys()].some((k) => k.startsWith("dose_"));
-  if (removeIds.length === 0 && addIds.length === 0 && !hasDoseFields) return redirect(`/dashboard/patients/${patientId}`);
 
   const { data: patient } = await supabase
     .from("patients")
     .select("id")
     .eq("id", patientId)
-    .eq("instructor_id", user.id)
+    .eq("instructor_id", userId)
     .maybeSingle();
-  if (!patient) return fail("Patient introuvable.");
+  if (!patient) return { error: "Patient introuvable." };
 
   const { data: workout } = await supabase
     .from("workouts")
     .select("id, name, description, condition_id, stage, duration_minutes, times_per_week, patient_id")
     .eq("id", workoutId)
     .maybeSingle();
-  if (!workout) return fail("Séance introuvable.");
-  if (workout.patient_id && workout.patient_id !== patientId) return fail("Séance introuvable.");
+  if (!workout) return { error: "Séance introuvable." };
+  if (workout.patient_id && workout.patient_id !== patientId) return { error: "Séance introuvable." };
+
+  // La nouvelle liste est calculée AVANT de créer la copie : rien n'est
+  // écrit si la séance resterait vide ou inchangée.
+  // select("*") : lit aussi les doses (migration 0080).
+  const { data: sourceRows } = await supabase.from("workout_exercises").select("*").eq("workout_id", workout.id);
+  const current = (sourceRows ?? []).map((r) => ({ exerciseId: r.exercise_id as string, position: r.position as number }));
+  const oldDose = new Map((sourceRows ?? []).map((r) => [r.exercise_id as string, doseColumnsFromRow(r)]));
+  const next = applyAdjustment(current, removeIds, addIds);
+  if (next.length === 0) return { error: "Une séance doit garder au moins un exercice." };
+
+  // Dose de chaque exercice : celle saisie dans la fenêtre si l'exercice y
+  // figurait (vide = règle habituelle), sinon celle d'avant.
+  const doseFor = (exId: string): DoseColumns =>
+    formData.has(`dose_sets_${exId}`) ? doseColumnsFromForm(formData, exId) : (oldDose.get(exId) ?? {});
+  const sameDose = (a: DoseColumns, b: DoseColumns) => a.sets === b.sets && a.reps === b.reps && a.hold_seconds === b.hold_seconds;
+  const dosesChanged = next.filter((s) => oldDose.has(s.exerciseId) && !sameDose(oldDose.get(s.exerciseId)!, doseFor(s.exerciseId))).length;
+  const removedCount = current.filter((s) => removeIds.includes(s.exerciseId)).length;
+  const addedCount = next.length - (current.length - removedCount);
+  if (removedCount + addedCount + dosesChanged === 0) return { changed: false };
 
   let targetId = workout.id as string;
+  let copied = false;
 
   if (workout.patient_id !== patientId) {
     const { data: copy, error: copyError } = await supabase
@@ -299,32 +368,15 @@ export async function adjustPatientWorkout(formData: FormData) {
         stage: workout.stage,
         duration_minutes: workout.duration_minutes,
         times_per_week: workout.times_per_week,
-        created_by: user.id,
+        created_by: userId,
         patient_id: patientId,
         source_workout_id: workout.id,
       })
       .select("id")
       .single();
-    if (copyError || !copy) return fail(copyError?.message ?? "Impossible de créer la séance du patient.");
+    if (copyError || !copy) return { error: copyError?.message ?? "Impossible de créer la séance du patient." };
     targetId = copy.id as string;
-
-    // select("*") : recopie aussi les doses si la migration 0080 est passée.
-    const { data: originalRows } = await supabase
-      .from("workout_exercises")
-      .select("*")
-      .eq("workout_id", workout.id);
-    if (originalRows && originalRows.length) {
-      const { error: copyExercisesError } = await supabase.from("workout_exercises").insert(
-        originalRows.map((r) => ({ workout_id: targetId, exercise_id: r.exercise_id, position: r.position, ...doseColumnsFromRow(r) })),
-      );
-      if (copyExercisesError) {
-        // (Philippe, 2026-10-07 : la copie venait d'être créée — on la
-        // retire, comme dans les autres chemins d'échec ci-dessous, pour ne
-        // pas laisser une séance personnelle orpheline.)
-        await supabase.from("workouts").delete().eq("id", targetId);
-        return fail(copyExercisesError.message);
-      }
-    }
+    copied = true;
 
     const { data: repointed, error: recError } = await supabase
       .from("patient_recommended_workouts")
@@ -336,67 +388,43 @@ export async function adjustPatientWorkout(formData: FormData) {
       // would repoint the wrong assignment.
       .eq("workout_id", workout.id)
       .select("id");
-    if (recError) {
+    if (recError || !repointed || repointed.length === 0) {
       await supabase.from("workouts").delete().eq("id", targetId);
-      return fail(recError.message);
-    }
-    if (!repointed || repointed.length === 0) {
-      await supabase.from("workouts").delete().eq("id", targetId);
-      return fail("Cette séance n'est pas recommandée à ce patient.");
+      return { error: recError?.message ?? "Cette séance n'est pas recommandée à ce patient." };
     }
   }
 
-  const { data: currentRows } = await supabase
+  // Copie neuve = vide : on y écrit directement la nouvelle liste. Sinon on
+  // remplace la liste de la séance personnelle existante.
+  if (!copied) await supabase.from("workout_exercises").delete().eq("workout_id", targetId);
+  const { error: insertError } = await supabase
     .from("workout_exercises")
-    .select("*")
-    .eq("workout_id", targetId);
-  const current = (currentRows ?? []).map((r) => ({ exerciseId: r.exercise_id as string, position: r.position as number }));
-  const oldDose = new Map((currentRows ?? []).map((r) => [r.exercise_id as string, doseColumnsFromRow(r)]));
-  const next = applyAdjustment(current, removeIds, addIds);
-  if (next.length === 0) return fail("Une séance doit garder au moins un exercice.");
-
-  // Dose de chaque exercice : celle saisie dans la fenêtre si l'exercice y
-  // figurait (vide = règle habituelle), sinon celle d'avant.
-  const doseFor = (exId: string): DoseColumns =>
-    formData.has(`dose_sets_${exId}`) ? doseColumnsFromForm(formData, exId) : (oldDose.get(exId) ?? {});
-  const sameDose = (a: DoseColumns, b: DoseColumns) => a.sets === b.sets && a.reps === b.reps && a.hold_seconds === b.hold_seconds;
-  const dosesChanged = next.filter((s) => oldDose.has(s.exerciseId) && !sameDose(oldDose.get(s.exerciseId)!, doseFor(s.exerciseId))).length;
-
-  const removedCount = current.filter((s) => removeIds.includes(s.exerciseId)).length;
-  const addedCount = next.length - (current.length - removedCount);
-  if (removedCount + addedCount + dosesChanged === 0) return redirect(`/dashboard/patients/${patientId}`);
-
-  await supabase.from("workout_exercises").delete().eq("workout_id", targetId);
-  if (next.length) {
-    const { error: insertError } = await supabase
-      .from("workout_exercises")
-      .insert(next.map((s) => ({ workout_id: targetId, exercise_id: s.exerciseId, position: s.position, ...doseFor(s.exerciseId) })));
-    if (insertError) {
+    .insert(next.map((s) => ({ workout_id: targetId, exercise_id: s.exerciseId, position: s.position, ...doseFor(s.exerciseId) })));
+  if (insertError) {
+    if (copied) {
+      // La recommandation revient sur la séance d'origine, la copie part.
+      await supabase.from("patient_recommended_workouts").update({ workout_id: workout.id }).eq("id", recId);
+      await supabase.from("workouts").delete().eq("id", targetId);
+    } else {
       // Pas de transaction ici : on vient de vider la table, donc on
       // réinsère les lignes précédentes en meilleur effort (compensating
       // write) pour ne pas laisser la séance vide si l'insertion échoue.
       await supabase
         .from("workout_exercises")
         .insert(current.map((s) => ({ workout_id: targetId, exercise_id: s.exerciseId, position: s.position, ...(oldDose.get(s.exerciseId) ?? {}) })));
-      return fail(insertError.message);
     }
+    return { error: insertError.message };
   }
 
-  if (removedCount + addedCount + dosesChanged > 0) {
-    const message = adjustmentMessage(workout.name, removedCount, addedCount, dosesChanged);
-    await supabase.from("patient_messages").insert({
-      patient_id: patientId,
-      instructor_id: user.id,
-      sender: "instructor",
-      body: message,
-    });
-    // Patient en suivi mensuel : ajuster la séance valide le bilan du mois.
-    await recordMonthlyReviewIfDue({ supabase, instructorId: user.id, patientId, note: message });
-    revalidatePath("/dashboard/facturation");
-  }
-
-  revalidatePath(`/dashboard/patients/${patientId}`);
-  revalidatePath("/patient");
-  revalidatePath("/patient/seance-du-jour");
-  redirect(`/dashboard/patients/${patientId}?adjusted=1`);
+  const message = adjustmentMessage(workout.name, removedCount, addedCount, dosesChanged);
+  await supabase.from("patient_messages").insert({
+    patient_id: patientId,
+    instructor_id: userId,
+    sender: "instructor",
+    body: message,
+  });
+  // Patient en suivi mensuel : ajuster la séance valide le bilan du mois.
+  await recordMonthlyReviewIfDue({ supabase, instructorId: userId, patientId, note: message });
+  revalidatePath("/dashboard/facturation");
+  return { changed: true };
 }

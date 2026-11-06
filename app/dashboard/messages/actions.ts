@@ -6,16 +6,11 @@ import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { friendlyDbError } from "@/lib/format/dbError";
 
-const TABS = new Set(["all", "unread", "follow_up"]);
-
-// Adresse de retour vers la boîte de réception, en gardant l'onglet et la
-// recherche du kiné (audit du 2026-10-08 : ils se perdaient, et l'onglet
-// était recopié tel quel, sans contrôle, dans l'adresse).
+// Adresse de retour vers la boîte de réception, en gardant la recherche du
+// kiné (audit du 2026-10-08 : elle se perdait).
 function inboxUrl(formData: FormData, patientId: string, extra?: Record<string, string>): string {
   const params = new URLSearchParams();
   if (patientId) params.set("patient", patientId);
-  const tab = String(formData.get("tab") ?? "");
-  if (TABS.has(tab) && tab !== "all") params.set("tab", tab);
   const q = String(formData.get("q") ?? "").trim().slice(0, 100);
   if (q) params.set("q", q);
   for (const [k, v] of Object.entries(extra ?? {})) params.set(k, v);
@@ -68,27 +63,4 @@ export async function markConversationRead(patientId: string) {
     .is("read_by_instructor_at", null);
 
   revalidatePath("/dashboard", "layout");
-}
-
-// « Ajouter un suivi » / « Retirer le suivi » : marque-page sur la
-// conversation d'un patient (patients.follow_up_at). La politique RLS
-// existante limite la mise à jour aux patients du kiné connecté.
-export async function toggleFollowUp(formData: FormData) {
-  const supabase = await createClient();
-  await requireApprovedInstructor(supabase);
-
-  const patientId = String(formData.get("patient_id") ?? "");
-  const on = formData.get("follow_up") === "1";
-  if (!patientId) redirect("/dashboard/messages");
-
-  const { error } = await supabase
-    .from("patients")
-    .update({ follow_up_at: on ? new Date().toISOString() : null })
-    .eq("id", patientId);
-  if (error) {
-    redirect(inboxUrl(formData, patientId, { error: friendlyDbError(error) }));
-  }
-
-  revalidatePath("/dashboard/messages");
-  redirect(inboxUrl(formData, patientId));
 }

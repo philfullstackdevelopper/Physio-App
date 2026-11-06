@@ -11,6 +11,7 @@ import SubmitButton from "@/components/SubmitButton";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import ExerciseLibraryPicker, { type PickerExercise } from "@/components/ExerciseLibraryPicker";
 import DoseInputs from "@/components/DoseInputs";
+import { phaseDoseFor } from "@/lib/exercise/phasePlan";
 import type { ExerciseDose } from "@/lib/exercise/prescription";
 
 // « Nouvelle séance » en fenêtre (Philippe, 2026-10-02) : même disposition que
@@ -28,7 +29,12 @@ export default function NewSeanceModal({
   createSeance,
   returnTo,
   edit,
+  favoriteIds,
+  recentIds,
 }: {
+  /** Étoiles et exercices récents du kiné (migration 0083). */
+  favoriteIds?: string[];
+  recentIds?: string[];
   onClose: () => void;
   conditions: { id: string; name: string }[];
   stages: [InjuryStage, string][];
@@ -65,6 +71,9 @@ export default function NewSeanceModal({
   );
   // Ordre de clic conservé : c'est l'ordre des exercices dans la séance.
   const [selected, setSelected] = useState<string[]>(edit?.exerciseIds ?? []);
+  // Phase choisie : un exercice ajouté reçoit la dose de cette phase (proposition 5).
+  const [stage, setStage] = useState<string>(edit?.stage ?? "");
+  const initialIds = new Set(edit?.exerciseIds ?? []);
   // Téléphone (Philippe, 2026-10-12 : même optimisation que « Ajuster la
   // séance », plus d'espace perdu en haut) : la fenêtre prend tout l'écran et
   // se déroule en deux temps — d'abord le nom, la condition, la phase et les
@@ -143,7 +152,7 @@ export default function NewSeanceModal({
                 </option>
               ))}
             </select>
-            <select name="stage" defaultValue={edit?.stage ?? ""} aria-label="Phase" className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
+            <select name="stage" value={stage} onChange={(e) => setStage(e.target.value)} aria-label="Phase" className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
               <option value="">Phase (toutes)</option>
               {stages.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -212,7 +221,12 @@ export default function NewSeanceModal({
                         <X className="absolute right-2 top-2 h-4 w-4 shrink-0 text-muted group-hover:text-danger" strokeWidth={2} />
                       </button>
                       {/* Séries × répétitions / maintien de CET exercice (vide = 3 × 8-12). */}
-                      <DoseInputs exerciseId={id} exerciseName={ex.name} dose={edit?.doses?.[id] ?? null} />
+                      {initialIds.has(id) ? (
+                        <DoseInputs exerciseId={id} exerciseName={ex.name} dose={edit?.doses?.[id] ?? null} />
+                      ) : (
+                        // Exercice ajouté : dose de la phase pré-remplie, le kiné ne change que ce qui diffère.
+                        <DoseInputs key={`${id}-${stage}`} exerciseId={id} exerciseName={ex.name} dose={phaseDoseFor(stage, ex.doseKind)} />
+                      )}
                     </li>
                   );
                 })}
@@ -220,7 +234,14 @@ export default function NewSeanceModal({
             </section>
 
             <div className={`sm:contents sm:max-md:block ${phoneTab === "add" ? "max-sm:grid max-sm:h-full max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[minmax(0,1fr)]" : "max-sm:hidden"}`}>
-              <ExerciseLibraryPicker exercises={exercises} bodyParts={bodyParts} selectedIds={new Set(selected)} onToggle={toggle} />
+              <ExerciseLibraryPicker
+                exercises={exercises}
+                bodyParts={bodyParts}
+                selectedIds={new Set(selected)}
+                onToggle={toggle}
+                favoriteIds={favoriteIds}
+                recentIds={recentIds}
+              />
             </div>
           </div>
 

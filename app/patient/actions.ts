@@ -35,24 +35,6 @@ export async function acceptTerms(): Promise<{ error: string | null; accepted?: 
   return { error: null, accepted: true };
 }
 
-// Patient marks every unread message from their instructor as read (the
-// kiné then sees the double check mark on those messages).
-export async function markMessageRead() {
-  const supabase = await createClient();
-  const user = await requireUser(supabase);
-
-  await supabase
-    .from("patient_messages")
-    .update({ read_at: new Date().toISOString() })
-    .eq("patient_id", user.id)
-    .eq("sender", "instructor")
-    .is("read_at", null);
-
-  revalidatePath("/patient");
-  revalidatePath("/patient/messages");
-  redirect("/patient/messages");
-}
-
 // Ouvrir la page Messages suffit à lire les messages du kiné (audit du
 // 2026-10-08) : avant, le badge et l'accusé de lecture côté kiné restaient
 // tant que le patient n'avait pas appuyé sur « Marquer comme lu ». Appelée

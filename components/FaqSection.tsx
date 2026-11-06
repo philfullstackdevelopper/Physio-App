@@ -3,10 +3,14 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
-import { HIGHEST_MONTHLY_TOTAL_CENTS, HIGHEST_PLATFORM_CENTS, LOWEST_MONTHLY_TOTAL_CENTS, LOWEST_PLATFORM_CENTS, KINE_FOLLOW_UP_CENTS, KINE_NET_CENTS, TRIAL_DAYS, eurosFR, offersSummaryFR } from "@/lib/billing/patientPlans";
+import { HIGHEST_PLATFORM_CENTS, LOWEST_PLATFORM_CENTS, KINE_FOLLOW_UP_CENTS, TRIAL_DAYS, eurosFR, offersSummaryFR } from "@/lib/billing/patientPlans";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 
 // Modèle définitif (2026-11-04) : lib/billing/patientPlans.ts.
+// Audit du 2026-11-06 (Philippe : on allège) : question « Je suis kiné : combien
+// ça me coûte… » retirée (le bloc Tarifs de l'accueil y répond), plus de
+// « validé par notre équipe » (validation automatique depuis le 2026-11-02) ni
+// de « les vidéos arrivent » (les exercices proposés sont filmés).
 const PRICE_TEXT = `Après ${TRIAL_DAYS} jours offerts, vous choisissez une offre : ${offersSummaryFR()} par mois. Chaque total réunit l'accès à l'appli (${eurosFR(LOWEST_PLATFORM_CENTS)} € à ${eurosFR(HIGHEST_PLATFORM_CENTS)} € selon l'engagement), payé chaque mois à EasyPhysio, et ${eurosFR(KINE_FOLLOW_UP_CENTS)} € pour le programme de votre kiné, payés directement à lui, seulement les mois où il met à jour votre programme`;
 
 const QUESTIONS = [
@@ -18,7 +22,7 @@ const QUESTIONS = [
   {
     question: "Puis-je faire mes exercices seul(e), sans risque ?",
     answer:
-      "Chaque exercice est montré par un dessin animé et des consignes écrites (les vidéos arrivent). Pendant la séance, un rappel vous dit de vous arrêter en cas de douleur vive. À la fin, vous notez votre douleur, et votre kiné la voit.",
+      "Chaque exercice est montré en vidéo ou en dessin animé, avec des consignes écrites. Pendant la séance, un rappel vous dit de vous arrêter en cas de douleur vive. À la fin, vous notez votre douleur, et votre kiné la voit.",
   },
   {
     question: "Comment mon kiné peut-il me suivre à distance ?",
@@ -40,17 +44,13 @@ const QUESTIONS = [
     answer: `${PRICE_TEXT}. Vous recevez deux factures distinctes, et vous pouvez résilier à tout moment depuis l'appli. Acte non remboursé par l'Assurance Maladie.`,
   },
   {
-    question: "Je suis kiné : combien ça me coûte, et combien ça me rapporte ?",
-    answer: `Rien : EasyPhysio est gratuit pour vous, patients illimités. Chacun de vos patients vous paie ${eurosFR(KINE_FOLLOW_UP_CENTS)} € par mois où vous mettez à jour son programme, directement sur votre compte, avec la note d'honoraires à votre nom (${eurosFR(KINE_NET_CENTS)} € après frais de carte). EasyPhysio ne prend rien sur vos honoraires : le patient paie à part l'accès à l'appli (${eurosFR(LOWEST_PLATFORM_CENTS)} € à ${eurosFR(HIGHEST_PLATFORM_CENTS)} € selon son engagement, total de ${eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} € à ${eurosFR(HIGHEST_MONTHLY_TOTAL_CENTS)} €). Avec 20 patients suivis, c'est ${eurosFR(20 * KINE_NET_CENTS)} € par mois pour vous.`,
-  },
-  {
     question: "Je suis praticien : comment essayer avec mes patients ?",
     // Avant le lancement (lib/launchFlags.ts), la première phrase annonce la
     // liste d'attente ; la suite décrit ce qui se passera à l'ouverture.
     answer:
       (SIGNUPS_OPEN ? "" : "EasyPhysio est en phase de test : inscrivez-vous sur la liste d'attente en bas de cette page, nous vous écrivons à l'ouverture. Ensuite, ") +
       (SIGNUPS_OPEN ? "Créez" : "créez") +
-      " votre compte praticien (validé par notre équipe avant le premier accès), composez un premier programme depuis la bibliothèque d'exercices, connectez votre compte Stripe pour être payé directement par vos patients, puis invitez-les. Ils recevront leur accès sans rien installer d'autre que l'app sur leur téléphone.",
+      " votre compte praticien, composez un premier programme depuis la bibliothèque d'exercices, connectez votre compte Stripe pour être payé directement par vos patients, puis invitez-les. Ils recevront leur accès sans rien installer d'autre que l'app sur leur téléphone.",
   },
 ];
 

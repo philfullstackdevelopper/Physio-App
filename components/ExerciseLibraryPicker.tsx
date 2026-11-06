@@ -1,7 +1,8 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
-import { Check, Dumbbell, Info, Plus, Search } from "lucide-react";
+import { Check, Clock, Dumbbell, Info, Plus, Search, Star } from "lucide-react";
+import { setFavoriteExercise } from "@/app/dashboard/exercises/favoriteActions";
 import { type BodyPart } from "@/lib/exercise/category";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
@@ -15,6 +16,8 @@ export type PickerExercise = {
   searchKeywords?: string[] | null;
   /** Matériel indispensable (exercises.equipment, migration 0065). Vide = aucun. */
   equipment?: string[] | null;
+  /** Répétitions, maintien ou durée : seuls les exercices en répétitions reçoivent la dose de la phase. */
+  doseKind?: "reps" | "hold" | "duration";
 };
 
 // La colonne de droite « Ajouter un exercice », partagée par les deux fenêtres
@@ -38,6 +41,14 @@ export type PickerExercise = {
 // les exercices faisables d'abord, ceux pour lesquels il lui manque du
 // matériel tout en bas sous un intertitre — comme les inscriptions en attente
 // au bas de « Mes patients ». Ils restent sélectionnables : le kiné décide.
+//
+// Favoris et récents (Philippe, 2026-11-05, migration 0083) : quand la page
+// fournit `favoriteIds`, chaque exercice porte une étoile et deux cases
+// « Favoris » et « Récents » passent en tête des catégories (ouvertes par
+// défaut quand elles ne sont pas vides).
+const FAV = "__favoris";
+const RECENT = "__recents";
+
 export default function ExerciseLibraryPicker({
   exercises,
   bodyParts,
@@ -45,7 +56,13 @@ export default function ExerciseLibraryPicker({
   onToggle,
   patientEquipment = null,
   patientFirstName,
+  favoriteIds,
+  recentIds = [],
 }: {
+  /** Étoiles du kiné ; absent = pas de favoris dans cette fenêtre. */
+  favoriteIds?: string[];
+  /** Exercices de ses dernières séances, du plus récent au plus ancien. */
+  recentIds?: string[];
   exercises: PickerExercise[];
   bodyParts: BodyPart[];
   selectedIds: Set<string>;
@@ -65,10 +82,32 @@ export default function ExerciseLibraryPicker({
     return counts;
   }, [exercises]);
 
+  const withFavorites = favoriteIds !== undefined;
+  const [favs, setFavs] = useState<Set<string>>(() => new Set(favoriteIds ?? []));
+  const available = useMemo(() => new Set(exercises.map((e) => e.id)), [exercises]);
+  const favCount = [...favs].filter((id) => available.has(id)).length;
+  const recentList = useMemo(() => recentIds.filter((id) => available.has(id)), [recentIds, available]);
+  // L'étoile change tout de suite ; elle revient en arrière si l'enregistrement échoue.
+  const toggleFavorite = async (id: string) => {
+    const on = !favs.has(id);
+    const flip = (value: boolean) =>
+      setFavs((prev) => {
+        const next = new Set(prev);
+        if (value) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+    flip(on);
+    const res = await setFavoriteExercise(id, on).catch(() => ({ error: "réseau" }));
+    if ("error" in res) flip(!on);
+  };
+
   const [q, setQ] = useState("");
-  const [bodyPartId, setBodyPartId] = useState<string | null>(
-    () => bodyParts.find((bp) => (countByBodyPart.get(bp.id) ?? 0) > 0)?.id ?? bodyParts[0]?.id ?? null,
-  );
+  const [bodyPartId, setBodyPartId] = useState<string | null>(() => {
+    if (withFavorites && (favoriteIds ?? []).some((id) => available.has(id))) return FAV;
+    if (withFavorites && recentList.length > 0) return RECENT;
+    return bodyParts.find((bp) => (countByBodyPart.get(bp.id) ?? 0) > 0)?.id ?? bodyParts[0]?.id ?? null;
+  });
   const query = q.trim().toLowerCase();
   // Exercice dont la démonstration est ouverte (petit bouton (i) de chaque ligne).
   const [info, setInfo] = useState<{ id: string; name: string } | null>(null);
@@ -78,13 +117,17 @@ export default function ExerciseLibraryPicker({
       ? exercises.filter(
           (ex) => ex.name.toLowerCase().includes(query) || (ex.searchKeywords ?? []).some((k) => k.toLowerCase().includes(query)),
         )
-      : bodyPartId
-        ? exercises.filter((ex) => ex.bodyPartIds.includes(bodyPartId))
-        : [];
+      : bodyPartId === FAV
+        ? exercises.filter((ex) => favs.has(ex.id))
+        : bodyPartId === RECENT
+          ? recentList.map((id) => exercises.find((ex) => ex.id === id)).filter((ex): ex is PickerExercise => !!ex)
+          : bodyPartId
+            ? exercises.filter((ex) => ex.bodyPartIds.includes(bodyPartId))
+            : [];
     // Faisables d'abord, « matériel manquant » ensuite (ordre alphabétique conservé dans chaque groupe).
     const blocked = (ex: PickerExercise) => missingEquipment(ex.equipment, patientEquipment).length > 0;
     return [...base.filter((ex) => !blocked(ex)), ...base.filter(blocked)];
-  }, [exercises, bodyPartId, query, patientEquipment]);
+  }, [exercises, bodyPartId, query, patientEquipment, favs, recentList]);
   // Premier exercice « matériel manquant » : l'intertitre se place juste avant.
   const firstBlockedId = filtered.find((ex) => missingEquipment(ex.equipment, patientEquipment).length > 0)?.id ?? null;
 
@@ -119,9 +162,38 @@ export default function ExerciseLibraryPicker({
       )}
       {!query && (
         <div
-          style={{ gridTemplateColumns: `repeat(${bodyParts.length}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${bodyParts.length + (withFavorites ? 2 : 0)}, minmax(0, 1fr))` }}
           className="mt-2 flex gap-1 overflow-x-auto max-sm:-mx-4 max-sm:gap-2 max-sm:px-4 max-sm:pb-1 max-sm:[scrollbar-width:none] md:grid md:overflow-visible"
         >
+          {withFavorites &&
+            (
+              [
+                [FAV, "Favoris", Star, favCount],
+                [RECENT, "Récents", Clock, recentList.length],
+              ] as const
+            ).map(([key, label, Icon, count]) => {
+              const active = bodyPartId === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  title={
+                    key === FAV
+                      ? count > 0
+                        ? `${count} favori${count > 1 ? "s" : ""}`
+                        : "Touchez l'étoile d'un exercice pour le retrouver ici"
+                      : `${count} exercice${count > 1 ? "s" : ""} de vos dernières séances`
+                  }
+                  onClick={() => setBodyPartId(key)}
+                  className={`flex w-20 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border px-1 py-0.5 text-center text-[10px] font-medium leading-tight transition-colors max-sm:w-[5.5rem] max-sm:gap-1 max-sm:rounded-2xl max-sm:px-1.5 max-sm:py-2 max-sm:text-xs md:w-auto md:min-w-0 ${
+                    active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 shrink-0 max-sm:h-8 max-sm:w-8 ${active ? "text-brand" : "text-muted"}`} strokeWidth={1.75} />
+                  <span className="line-clamp-2">{label}</span>
+                </button>
+              );
+            })}
           {bodyParts.map((bp) => {
             const active = bp.id === bodyPartId;
             const count = countByBodyPart.get(bp.id) ?? 0;
@@ -146,7 +218,13 @@ export default function ExerciseLibraryPicker({
       <div className="mt-2 max-h-80 overflow-y-auto pr-1 max-sm:max-h-none max-sm:min-h-0 max-sm:flex-1 md:min-h-0 md:max-h-none md:flex-1">
         {filtered.length === 0 && (
           <p className="text-sm text-muted">
-            {query ? `Aucun exercice ne correspond à « ${q.trim()} ».` : "Aucun exercice dans cette catégorie."}
+            {query
+              ? `Aucun exercice ne correspond à « ${q.trim()} ».`
+              : bodyPartId === FAV
+                ? "Aucun favori pour l'instant : touchez l'étoile d'un exercice pour le retrouver ici."
+                : bodyPartId === RECENT
+                  ? "Les exercices de vos prochaines séances apparaîtront ici."
+                  : "Aucun exercice dans cette catégorie."}
           </p>
         )}
         {/* Blocs (dessin au-dessus du nom) sur tous les formats : 2 par rangée
@@ -200,6 +278,18 @@ export default function ExerciseLibraryPicker({
                   )}
                   {marked ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Plus className="h-4 w-4 shrink-0 text-brand" strokeWidth={2} />}
                 </button>
+                {withFavorites && (
+                  <button
+                    type="button"
+                    onClick={() => toggleFavorite(ex.id)}
+                    aria-pressed={favs.has(ex.id)}
+                    aria-label={`${favs.has(ex.id) ? "Retirer des favoris" : "Ajouter aux favoris"} : ${ex.name}`}
+                    title={favs.has(ex.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
+                    className="absolute left-1 top-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-warn-soft hover:text-warn focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                  >
+                    <Star className={`h-4 w-4 ${favs.has(ex.id) ? "fill-warn text-warn" : ""}`} strokeWidth={1.75} />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setInfo({ id: ex.id, name: ex.name })}

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { LOWEST_MONTHLY_TOTAL_CENTS, TRIAL_DAYS, eurosFR, isLegacySubscription, isPlatformOfferKey, isPlatformSubscription, monthlyTotalCents, platformOffer, type SubscriptionRow } from "@/lib/billing/patientPlans";
+import { LOWEST_MONTHLY_TOTAL_CENTS, TRIAL_DAYS, eurosFR, isLegacySubscription, isPlatformOfferKey, isPlatformSubscription, platformOffer, type SubscriptionRow } from "@/lib/billing/patientPlans";
 import CompteView, { type FollowUpSummary } from "./CompteView";
 
 // « Paramètres » du patient. Modèle définitif (2026-11-04, lib/billing/patientPlans.ts) :
@@ -16,11 +16,9 @@ export default async function CompteePage({
   const user = await requireUser(supabase);
 
   const [{ data: patient }, { data: sub }] = await Promise.all([
-    supabase.from("patients").select("full_name, instructors ( full_name )").eq("id", user.id).maybeSingle(),
+    supabase.from("patients").select("full_name").eq("id", user.id).maybeSingle(),
     supabase.from("subscriptions").select("plan, status, current_period_end, cancel_at_period_end, stripe_account_id").eq("user_id", user.id).maybeSingle(),
   ]);
-  const kine = patient?.instructors as unknown as { full_name: string | null } | null;
-  const kineName = kine?.full_name ?? "votre kiné";
   const row = (sub as unknown as SubscriptionRow | null) ?? null;
   const legacy = isLegacySubscription(row);
   const known = legacy || isPlatformSubscription(row);
@@ -33,9 +31,6 @@ export default async function CompteePage({
 
   const summary: FollowUpSummary = {
     status: live ? "active" : refused ? "pending_card" : "none",
-    priceCents: offer ? monthlyTotalCents(offer) : LOWEST_MONTHLY_TOTAL_CENTS,
-    cardLabel: null,
-    kineName,
     line: live
         ? sub!.cancel_at_period_end || legacy
           ? `Accès jusqu'au ${date}`

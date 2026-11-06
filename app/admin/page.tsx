@@ -11,10 +11,8 @@ import KineExercises, { type AdminKineExercise } from "./KineExercises";
 import { listKineExercises } from "@/lib/db/admin";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import AdminSummary, { sinceLabel, type AdminTodo } from "./AdminSummary";
-import { KINE_SUBSCRIPTION_BILLING } from "@/lib/launchFlags";
 import { CONTRIBUTOR_THRESHOLD } from "@/lib/exercise/kineExercises";
-import { approveInstructor, invoiceLastMonth, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
-import { KINE_SUBSCRIPTION_TTC_CENTS, eurosFR, periodLabel, periodOf } from "@/lib/billing/reviewModel";
+import { approveInstructor, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
 
 const STATUS_LABEL: Record<string, { label: string; tone: string }> = {
   approved: { label: "Actif", tone: "bg-emerald-50 text-emerald-700" },
@@ -126,7 +124,7 @@ export default async function AdminPage({
       key: "stripe",
       label: "Paiements non activés",
       count: noStripe.length,
-      detail: "Kinés qui ont des patients mais pas encore activé Stripe : leurs patients entrent sans payer.",
+      detail: "Kinés qui ont des patients mais pas encore activé Stripe : leurs honoraires ne peuvent pas encore être prélevés.",
       href: "#praticiens",
     },
     {
@@ -164,28 +162,6 @@ export default async function AdminPage({
               : "Exercice gardé privé : il reste dans la banque du kiné, avec votre message."}
           {sp.exercice === "publish" && Number(sp.publies ?? 0) === CONTRIBUTOR_THRESHOLD && " Il devient Contributeur EasyPhysio (5 exercices publiés)."}
         </p>
-      )}
-      {/* Bilan de la dernière facturation mensuelle. */}
-      {sp.facture && (
-        <p className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
-          Facturation de {periodLabel(sp.facture)} : {sp.factures ?? 0} facture(s) envoyée(s), {sp.offerts ?? 0} premier(s) mois offert(s)
-          {Number(sp.deja ?? 0) > 0 ? `, ${sp.deja} déjà facturé(s)` : ""}.
-          {Number(sp.sans_moyen ?? 0) > 0 && ` ${sp.sans_moyen} kiné(s) sans moyen de paiement : leur facture reste « à régler » sur leur page Suivi & facturation.`}
-          {Number(sp.erreurs ?? 0) > 0 && ` ${sp.erreurs} erreur(s) — voir les journaux, puis relancer.`}
-        </p>
-      )}
-
-      {/* Abonnement EasyPhysio des kinés (secours de la tâche automatique du 1er).
-          Arrêté le 2026-11-02 (KINE_SUBSCRIPTION_BILLING) : masqué tant qu'il ne sert pas. */}
-      {KINE_SUBSCRIPTION_BILLING && (
-      <form action={invoiceLastMonth} className="mb-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">Facturer les kinés — {periodLabel(periodOf(new Date()))}</p>
-          <p className="text-xs text-slate-500">Abonnement de {eurosFR(KINE_SUBSCRIPTION_TTC_CENTS)} € TTC par mois (ou 3, 6, 12 mois et cabinets), d&apos;avance, prélevé automatiquement. Premier mois offert sur la formule mensuelle. Se fait tout seul le 1er du mois ; un mois n&apos;est jamais facturé deux fois.</p>
-        </div>
-        <input type="hidden" name="period" value={periodOf(new Date())} />
-        <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Lancer la facturation</button>
-      </form>
       )}
 
       {/* Exercices des kinés juste après « À traiter » : c'est la file la plus active. */}

@@ -107,12 +107,14 @@ export default function Home() {
                 Essayer la démo
                 <ArrowRight className="h-4 w-4" strokeWidth={2} />
               </Link>
-              <a
-                href="#liste-attente"
+              {/* Inscriptions ouvertes : même cible que le bouton PC (Philippe,
+                  2026-11-06 : audit, on allège — plus de « Être prévenu »). */}
+              <Link
+                href={SIGNUPS_OPEN ? "/signup/kine" : "#liste-attente"}
                 className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
               >
-                Être prévenu
-              </a>
+                {SIGNUPS_OPEN ? "Créer un compte" : "Être prévenu"}
+              </Link>
             </div>
             <p className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:160ms] mt-3 max-w-lg text-base leading-relaxed text-slate-600 max-sm:hidden sm:mt-5 sm:text-lg lg:short:mt-3 lg:short:text-base phone-land:mt-2 phone-land:text-sm">
               Vos patients suivent chez eux le programme que vous avez choisi, guidés pas à pas.
@@ -188,12 +190,9 @@ export default function Home() {
             <KinePhonePreview />
           </div>
 
-          {/* Lien vers la démo complète, visible partout (2026-10-16). */}
-          <p className="mt-4 text-center text-sm sm:mt-6 sm:short:mt-2">
-            <Link href="/demo" className="font-semibold text-blue-700 underline-offset-4 hover:underline">
-              Essayer l&apos;appli dans votre navigateur, sans compte →
-            </Link>
-          </p>
+          {/* Lien « Essayer l'appli dans votre navigateur » retiré : la démo
+              est déjà proposée dans le hero (Philippe, 2026-11-06 : audit, on
+              allège — un seul bouton par section). */}
 
           {/* Masqué sur téléphone et écran peu haut : le header garde son bouton « Créer un compte ». */}
           <div className="mt-10 hidden text-center sm:block sm:short:hidden">
@@ -282,9 +281,8 @@ export default function Home() {
             «&nbsp;Et moi, comment je suis payé&nbsp;?&nbsp;»
           </h2>
 
-          <p className="mx-auto mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 max-sm:hidden">
-            EasyPhysio est gratuit pour vous. Vos patients paient l'accès à l'appli, et vos honoraires vous sont versés directement.
-          </p>
+          {/* Paragraphe d'intro retiré : KinePlans dit déjà la même chose
+              (Philippe, 2026-11-06 : audit, on allège). */}
           <FitToViewport className="mt-10 sm:short:mt-5 phone-land:mt-2">
             <KinePlans />
           </FitToViewport>

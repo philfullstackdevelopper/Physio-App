@@ -13,7 +13,7 @@ import ExerciseGridButton from "@/components/ExerciseGridButton";
 import { recommendVariants, type VariantSeance } from "@/lib/exercise/variants";
 import { relativeDay } from "@/lib/format/relativeDay";
 import { initials } from "@/lib/format/initials";
-import { STAGE_LABELS, doseFromRow, type InjuryStage } from "@/lib/exercise/prescription";
+import { STAGE_LABELS, doseFromRow, goalPartsFor, type InjuryStage } from "@/lib/exercise/prescription";
 import { ageFromDob } from "@/lib/exercise/patientProfile";
 import { EQUIPMENT_LABELS, type EquipmentId } from "@/lib/exercise/equipment";
 import { type AddableWorkout } from "@/components/AdjustWorkoutModal";
@@ -30,6 +30,7 @@ import {
   deletePatient,
 } from "./actions";
 import { getPatientThread, sendPatientMessage } from "../actions";
+import { duplicateSeance } from "../../seances/actions";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
 type WorkoutExercise = {
@@ -42,7 +43,7 @@ type WorkoutExercise = {
 };
 type Workout = {
   id: string; name: string; description: string | null; duration_minutes: number | null; times_per_week: number | null;
-  stage: string | null; created_by: string | null; condition_id: string | null; patient_id: string | null;
+  stage: string | null; created_by: string | null; condition_id: string | null; patient_id: string | null; created_at?: string | null;
   workout_exercises: WorkoutExercise[];
 };
 
@@ -61,7 +62,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || "ce patient";
 
   const WORKOUT_FIELDS =
-    "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, patient_id, workout_exercises ( position, sets, reps, hold_seconds, exercises ( id, name, equipment, exercise_body_parts ( body_part_id ) ) )";
+    "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, patient_id, created_at, workout_exercises ( position, sets, reps, hold_seconds, exercises ( id, name, equipment, exercise_body_parts ( body_part_id ) ) )";
   const since30 = new Date(now.getTime() - 30 * 86_400_000).toISOString();
 
   // Tout l'historique du patient (séances + ressentis) est chargé une fois :
@@ -74,6 +75,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     { count: unreadCount },
     { data: resultRows },
     { data: seenRow },
+    { data: favoriteRows, error: favoriteError },
   ] = await Promise.all([
     supabase.from("conditions").select("id, name").order("name"),
     supabase.from("patient_profiles").select("declared_body_part_ids, injury_stage, rehab_progress, history, date_of_birth, height_cm, weight_kg, activity_level, equipment, updated_at").eq("id", id).maybeSingle(),
@@ -83,7 +85,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     supabase.from("workouts").select(WORKOUT_FIELDS).eq("created_by", user.id),
     supabase.from("workouts").select(WORKOUT_FIELDS).is("created_by", null),
     supabase.from("patient_recommended_workouts").select("id, week_start_date, week_count, workout_id, created_at").eq("patient_id", id).order("week_start_date", { ascending: false }),
-    supabase.from("exercises").select("id, name, created_by, equipment, patient_id, exercise_body_parts(body_part_id)").order("name"),
+    supabase.from("exercises").select("id, name, created_by, equipment, patient_id, search_keywords, instructions, exercise_body_parts(body_part_id)").order("name"),
     supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
     supabase.from("body_parts").select("id, slug, label, position").order("position"),
     supabase.from("patient_messages").select("id", { count: "exact", head: true }).eq("patient_id", id).eq("sender", "patient").is("read_by_instructor_at", null),
@@ -91,9 +93,14 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     // une erreur (migration pas encore passée) laisse simplement ces infos vides.
     supabase.from("exercise_results").select("workout_log_id, exercise_name, position, status, pain, difficulty, created_at").eq("patient_id", id),
     supabase.from("patients").select("feedback_seen_at").eq("id", id).maybeSingle(),
+    // Étoiles du kiné (migration 0083) ; table absente = pas d'étoiles.
+    supabase.from("instructor_favorite_exercises").select("exercise_id").eq("instructor_id", user.id),
   ]);
 
   const conditionName = (cid: string | null) => conditions?.find((c) => c.id === cid)?.name;
+  // Répétitions, maintien ou durée (lu dans la consigne) : seuls les exercices
+  // en répétitions reçoivent la dose de la phase quand on les ajoute.
+  const doseKindById = new Map((allExercises ?? []).map((e) => [e.id as string, goalPartsFor((e.instructions as string | null) ?? null).kind]));
   const stage = (profile?.injury_stage as InjuryStage | null) ?? null;
 
   // Séances : les miennes (hors copies d'autres patients), la plateforme, et les copies de CE patient.
@@ -115,13 +122,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   );
   const activeRec = recommended.find((r) => r.workout.id === activeWorkoutId) ?? null;
   const active = activeRec?.workout ?? null;
-  const activeExercises = active
-    ? [...active.workout_exercises]
-        .sort((a, b) => a.position - b.position)
-        .map((we) => we.exercises)
-        .filter((e): e is NonNullable<typeof e> => !!e)
-        .map((e) => ({ id: e.id, name: e.name }))
-    : [];
 
   // Stats.
   const completed = (allLogs ?? []).map((l) => l.completed_at as string);
@@ -177,10 +177,11 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       name: r.workout.name,
       conditionId: r.workout.condition_id ?? null,
       stage: r.workout.stage ?? null,
+      isPatientCopy: r.workout.patient_id === id,
       exercises: [...r.workout.workout_exercises]
         .sort((a, b) => a.position - b.position)
         .filter((we) => !!we.exercises)
-        .map((we) => ({ id: we.exercises!.id, name: we.exercises!.name, equipment: we.exercises!.equipment ?? [], dose: doseFromRow(we) })),
+        .map((we) => ({ id: we.exercises!.id, name: we.exercises!.name, equipment: we.exercises!.equipment ?? [], dose: doseFromRow(we), doseKind: doseKindById.get(we.exercises!.id) })),
     };
   }
   const warning = programmeWarning({
@@ -190,21 +191,30 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     exerciseCountByWorkoutId: Object.fromEntries(Object.values(workoutSummaries).map((w) => [w.id, w.exercises.length])),
   });
 
-  // Modale « Ajuster » : exercices ajoutables = tous − masqués − déjà dans la séance.
-  // v1 : calculé pour la séance de la SEMAINE COURANTE uniquement. Si le kiné
-  // ajuste une autre semaine dont la séance est différente, la liste peut
-  // proposer un exercice déjà présent (applyAdjustment l'ignore alors) ou
-  // masquer un exercice absent de cette séance-là — acceptable pour l'instant.
+  // Fenêtre de séance : exercices ajoutables = tous − masqués. Ceux déjà dans
+  // la séance affichée sont retirés par la fenêtre elle-même (SeanceComposer).
   const hiddenIds = new Set((hiddenRows ?? []).map((r) => r.exercise_id as string));
-  const inActive = new Set(activeExercises.map((e) => e.id));
   const addableExercises = (allExercises ?? [])
-    .filter((e) => !hiddenIds.has(e.id) && !inActive.has(e.id) && isPickableExercise(e) && fitsPatient(e, id))
+    .filter((e) => !hiddenIds.has(e.id) && isPickableExercise(e) && fitsPatient(e, id))
     .map((e) => ({
       id: e.id as string,
       name: e.name as string,
       equipment: (e.equipment as string[] | null) ?? [],
       bodyPartIds: (e.exercise_body_parts ?? []).map((t) => t.body_part_id as string),
+      // Noms des exercices plateforme en anglais : la recherche en français passe par ces mots-clés.
+      searchKeywords: (e.search_keywords as string[] | null) ?? null,
+      doseKind: doseKindById.get(e.id as string),
     }));
+
+  // « Récents » : les exercices des séances que le kiné a composées ou
+  // ajustées dernièrement (les plus récentes d'abord), sans doublon.
+  const recentIds = [...new Set(
+    [...own]
+      .sort((a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")))
+      .flatMap((w) => [...w.workout_exercises].sort((a, b) => a.position - b.position).map((we) => we.exercises?.id))
+      .filter((x): x is string => !!x),
+  )].slice(0, 24);
+  const favoriteIds = favoriteError ? undefined : (favoriteRows ?? []).map((r) => r.exercise_id as string);
 
   // Modale « Choisir une séance » : tout le pool ; la frise retire elle-même la
   // séance déjà effective pour la semaine sélectionnée (KineWeekProgramme).
@@ -239,6 +249,10 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       conditionName: conditionName(w.condition_id) ?? null,
       editHref: w.created_by === user.id ? `/dashboard/seances/${w.id}` : null,
       exerciseNames: [...w.workout_exercises].sort((a, b) => a.position - b.position).map((we) => we.exercises?.name).filter((n): n is string => !!n),
+      exercises: [...w.workout_exercises]
+        .sort((a, b) => a.position - b.position)
+        .filter((we) => !!we.exercises)
+        .map((we) => ({ id: we.exercises!.id, name: we.exercises!.name, equipment: we.exercises!.equipment ?? [], dose: doseFromRow(we), doseKind: doseKindById.get(we.exercises!.id) })),
       // Union of every one of this séance's exercises' tagged body parts —
       // lets the picker filter a séance by area without forcing it into a
       // single category (see lib/exercise/category.ts's primaryBodyPart,
@@ -304,7 +318,6 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       <PatientActionsMenu
         patientId={patient.id}
         patientName={firstName}
-        redirectTo={`/dashboard/patients/${patient.id}`}
         deletePatient={deletePatient}
         messages={{
           patient: { id: patient.id, name: (patient.full_name as string | null) ?? "Patient", initials: initials(patient.full_name as string | null) },
@@ -378,6 +391,11 @@ export default async function PatientDetailPage({ params, searchParams }: { para
         addableExercises={addableExercises}
         bodyParts={bodyParts ?? []}
         addableWorkouts={addableWorkouts}
+        patientConditionId={(patient.condition_id as string | null) ?? null}
+        patientStage={stage}
+        favoriteIds={favoriteIds}
+        recentIds={recentIds}
+        saveAsMineAction={duplicateSeance}
         adjustAction={adjustPatientWorkout}
         assignAction={addRecommendedWorkout}
         removeAction={removeRecommendedWorkout}

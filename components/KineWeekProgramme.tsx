@@ -32,6 +32,7 @@ import { SegmentRow, runViewTransition as runSharedViewTransition, type SegmentI
 import type { Recommendation } from "@/lib/exercise/variants";
 import AdjustWorkoutModal, { type AddableExercise, type AddableWorkout, type ModalExercise } from "@/components/AdjustWorkoutModal";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
+import { nextSeance, PHASE_NUMBER, PHASE_PASS, isStage } from "@/lib/exercise/phasePlan";
 import { useIsPhone, type SessionDetail } from "@/components/WeekProgramme";
 
 export interface KineAssignment {
@@ -51,6 +52,8 @@ export interface KineWorkoutSummary {
   /** Pour « plus facile / plus difficile » (lib/exercise/levelStep.ts). */
   conditionId?: string | null;
   stage?: string | null;
+  /** Copie personnelle de ce patient (« Ajuster la séance »). */
+  isPatientCopy?: boolean;
 }
 
 /** Seuil de douleur à partir duquel une semaine passe en rouge sur la frise.
@@ -81,7 +84,17 @@ export default function KineWeekProgramme({
   assignAction,
   removeAction,
   recommendations,
+  patientConditionId = null,
+  patientStage = null,
+  favoriteIds,
+  recentIds,
+  saveAsMineAction,
 }: {
+  saveAsMineAction?: (formData: FormData) => void;
+  patientConditionId?: string | null;
+  patientStage?: string | null;
+  favoriteIds?: string[];
+  recentIds?: string[];
   /** « Changements recommandés » de la fenêtre « Ajuster la séance ». */
   recommendations?: { forWorkoutId: string; items: Recommendation[] } | null;
   weeks: WeekInfo[];
@@ -398,6 +411,20 @@ export default function KineWeekProgramme({
   // N° de la semaine où l'attribution commence (pour « semaines X à Y »).
   const assignmentStartWeek = startedWeekNumber ?? selectedWeek.weekNumber;
 
+  // « Séance suivante » (Philippe, 2026-11-05, proposition 2) : la séance B
+  // après la A, ou la 1re séance de la phase suivante, en un clic. Le critère
+  // pour quitter la phase actuelle est rappelé quand on change de phase.
+  const current = selectedMeta.workout;
+  const next = current
+    ? nextSeance({ id: current.id, name: current.name, conditionId: current.conditionId ?? null, stage: current.stage ?? null }, addableWorkouts)
+    : null;
+  const nextChangesPhase = !!next && !!current && next.stage !== current.stage;
+  const nextLabel = next && isStage(next.stage) && nextChangesPhase ? `Passer en phase ${PHASE_NUMBER[next.stage]}` : "Séance suivante";
+  // Téléphone : libellé court mais explicite (Philippe, 2026-11-06 : une
+  // flèche seule ne disait pas qu'on passe à la séance d'après).
+  const nextShortLabel = next && isStage(next.stage) && nextChangesPhase ? `Phase ${PHASE_NUMBER[next.stage]}` : "Suivante";
+  const passCriterion = nextChangesPhase && isStage(current?.stage) ? PHASE_PASS[current.stage] : null;
+
   return (
     // data-week-open : sur téléphone, globals.css masque alors la barre
     // Douleur / Adhérence / Dernière de la fiche (data-hide-when-week-open) —
@@ -452,8 +479,11 @@ export default function KineWeekProgramme({
               PARTIR de cette semaine. « Ajuster » / « Retirer » agissent sur
               l'assignation effective, même si elle a commencé plus tôt —
               retirer cette ligne fait revenir la précédente (voulu). */}
-          <div className="flex flex-wrap items-center gap-3 max-sm:w-full max-sm:flex-nowrap max-sm:justify-between max-sm:rounded-xl max-sm:bg-app-bg max-sm:px-3 max-sm:py-2">
-            <div className="text-right max-sm:min-w-0 max-sm:text-left">
+          {/* Téléphone (2026-11-06) : avec « Séance suivante », le nom de la
+              séance passe sur sa propre ligne et les boutons dessous, sinon il
+              était tronqué à quelques lettres. */}
+          <div className={`flex flex-wrap items-center gap-3 max-sm:w-full max-sm:justify-between max-sm:rounded-xl max-sm:bg-app-bg max-sm:px-3 max-sm:py-2 ${next ? "max-sm:gap-y-2" : "max-sm:flex-nowrap"}`}>
+            <div className={`text-right max-sm:min-w-0 max-sm:text-left ${next ? "max-sm:basis-full" : ""}`}>
               <p className="text-xs font-medium text-muted">Séance cette semaine</p>
               <p className={`text-sm max-sm:truncate ${selectedMeta.workout ? "font-semibold text-ink" : "italic text-muted"}`}>
                 {selectedMeta.workout ? selectedMeta.workout.name : "Aucune séance"}
@@ -487,7 +517,30 @@ export default function KineWeekProgramme({
               recommendations={recommendations}
               weekStartDate={selectedWeek.startDateKey}
               weekLabel={`${selectedWeek.label} · ${selectedWeek.rangeLabel}`}
+              patientConditionId={patientConditionId}
+              patientStage={patientStage}
+              favoriteIds={favoriteIds}
+              recentIds={recentIds}
+              saveAsMineAction={saveAsMineAction}
             />
+            {next && (
+              <form action={assignAction} className="shrink-0">
+                <input type="hidden" name="patient_id" value={patientId} />
+                <input type="hidden" name="week_start_date" value={selectedWeek.startDateKey} />
+                <button
+                  type="submit"
+                  name="workout_id"
+                  value={next.id}
+                  title={`${next.name}${passCriterion ? ` — critère pour passer : ${passCriterion}` : ""}`}
+                  aria-label={nextLabel}
+                  className="inline-flex items-center gap-1 rounded-full border border-brand/40 px-3.5 py-2 text-sm font-medium text-brand transition-colors hover:bg-brand-soft max-sm:gap-0.5 max-sm:px-2.5 max-sm:text-xs"
+                >
+                  <span className="max-sm:hidden">{nextLabel}</span>
+                  <span className="sm:hidden">{nextShortLabel}</span>
+                  <ChevronRight className="h-4 w-4" strokeWidth={2} />
+                </button>
+              </form>
+            )}
           </div>
         </div>
 

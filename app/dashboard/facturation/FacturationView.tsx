@@ -7,10 +7,11 @@ import { startConnectOnboarding } from "../connect/actions";
 
 // Page « Suivi & facturation » du kiné — modèle définitif (Philippe,
 // 2026-11-04 ; lib/billing/patientPlans.ts) : l'appli est GRATUITE pour le
-// kiné. Chaque patient paie 9,99 € par mois : 6,00 € d'honoraires versés
-// directement sur le compte Stripe du kiné (les mois où il met à jour le
-// programme) et 3,99 € d'accès à la plateforme, payés à EasyPhysio. Tient
-// sur un écran : trois colonnes sur ordinateur, cartes repliables sur téléphone.
+// kiné. Chaque patient paie une formule mensuelle : les honoraires du kiné,
+// versés directement sur son compte Stripe (les mois où il met à jour le
+// programme), et l'accès à la plateforme, payé à EasyPhysio. Montants : jamais
+// ici, toujours dans lib/billing/patientPlans.ts. Tient sur un écran : trois
+// colonnes sur ordinateur, cartes repliables sur téléphone.
 
 export type ConnectStatus = "active" | "onboarding" | "not_started";
 
@@ -25,10 +26,6 @@ export type SubscriberRow = {
 const eur = (cents: number) => `${eurosFR(cents)} €`;
 const shortDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "");
 
-const SAVED: Record<string, string> = {
-  acces: "Accès de vos patients enregistré.",
-};
-
 const CARD = "rounded-2xl border border-line bg-surface p-4 sm:p-5 max-sm:border-0 max-sm:shadow-soft max-sm:short:p-3";
 
 export default function FacturationView({
@@ -37,7 +34,6 @@ export default function FacturationView({
   monthlyCents,
   patientCount,
   error,
-  saved,
 }: {
   connectStatus: ConnectStatus;
   subscribers: SubscriberRow[];
@@ -45,7 +41,6 @@ export default function FacturationView({
   monthlyCents: number;
   patientCount: number;
   error?: string;
-  saved?: string;
 }) {
   const active = subscribers.filter((s) => s.status !== "refused");
   return (
@@ -59,12 +54,6 @@ export default function FacturationView({
         </div>
 
         {error && <p className="mt-2 rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger">{error}</p>}
-        {saved && (
-          <p className="mt-2 flex items-center gap-1.5 rounded-xl bg-ok-soft px-4 py-2 text-sm text-ok">
-            <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-            {SAVED[saved] ?? "Enregistré."}
-          </p>
-        )}
 
         <div className="mt-3 grid grid-cols-1 gap-3 max-sm:mt-2 max-sm:gap-2 md:grid-cols-2 lg:grid-cols-3">
           {/* ── Colonne 1 : patients abonnés ─────────────────────────── */}
@@ -209,11 +198,6 @@ function ConnectCard({ status }: { status: ConnectStatus }) {
         <div>
           <p className={`text-sm font-medium ${s.titleClass}`}>{s.title}</p>
           <p className="text-xs text-muted">{s.text}</p>
-          {status !== "active" && (
-            <p className="mt-1 text-xs text-muted">
-              En attendant, vos patients entrent dans l&apos;appli sans payer.
-            </p>
-          )}
         </div>
       </div>
       <div className="mt-2">

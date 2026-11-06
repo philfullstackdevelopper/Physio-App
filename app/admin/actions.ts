@@ -7,7 +7,6 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { setInstructorStatus } from "@/lib/db/admin";
 import { isAdminEmail } from "@/lib/admin";
 import { suspendInstructor } from "@/lib/billing/suspendInstructor";
-import { runMonthlyInvoicing } from "@/lib/billing/platformInvoice";
 
 // Approving/rejecting ANOTHER instructor's row needs a privileged write: the
 // instructors RLS policy only lets a user read/write their OWN row
@@ -61,31 +60,4 @@ export async function reactivateInstructor(formData: FormData) {
   if (!id) return;
   await setInstructorStatus(id, "approved");
   revalidatePath("/admin");
-}
-
-// Secours de la facturation automatique (tâche planifiée du 1er du mois) :
-// abonnement (durée choisie, d'avance) à chaque kiné validé, premier mois offert sur la formule mensuelle,
-// jamais deux fois le même mois (lib/billing/platformInvoice.ts). Le bilan
-// revient dans l'URL.
-export async function invoiceLastMonth(formData: FormData) {
-  await requireAdmin();
-  const period = String(formData.get("period") ?? "");
-  if (!/^\d{4}-\d{2}-01$/.test(period)) redirect(`/admin?error=${encodeURIComponent("Mois invalide.")}`);
-  let q: string;
-  try {
-    const r = await runMonthlyInvoicing(period);
-    q = new URLSearchParams({
-      facture: period,
-      factures: String(r.invoiced.filter((i) => !i.free).length),
-      offerts: String(r.invoiced.filter((i) => i.free).length),
-      sans_moyen: String(r.missingPaymentMethod.length),
-      deja: String(r.alreadyDone.length),
-      erreurs: String(r.errors.length),
-    }).toString();
-  } catch (e) {
-    console.error("invoiceLastMonth:", e);
-    q = `error=${encodeURIComponent("Facturation impossible (la migration 0071 est-elle appliquée ?).")}`;
-  }
-  revalidatePath("/admin");
-  redirect(`/admin?${q}`);
 }

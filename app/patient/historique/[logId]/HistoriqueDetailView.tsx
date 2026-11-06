@@ -17,8 +17,10 @@ export default function HistoriqueDetailView({
   dateLabel: string;
   /** Ressenti enregistré pour CETTE séance ; null s'il n'y en a pas. */
   feedback: { pain_score: number; notes: string | null } | null;
-  exercises: string[];
+  /** skipped = exercice passé pendant la séance (exercise_results). */
+  exercises: { name: string; skipped: boolean }[];
 }) {
+  const anySkipped = exercises.some((e) => e.skipped);
   return (
     <main className="flex flex-col p-6 max-sm:h-[calc(100dvh-var(--phone-chrome))] max-sm:p-4 sm:h-dvh sm:p-8 short:sm:py-4">
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col">
@@ -38,12 +40,17 @@ export default function HistoriqueDetailView({
             </div>
           )}
 
-          <h2 className="text-sm font-medium text-slate-700">Exercices réalisés</h2>
+          <h2 className="text-sm font-medium text-slate-700">{anySkipped ? "Exercices de la séance" : "Exercices réalisés"}</h2>
           <ol className="mt-3 space-y-2">
-            {exercises.map((exerciseName, i) => (
+            {exercises.map((ex, i) => (
               <li key={i} className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm short:p-3">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} />
-                <p className="flex-1 font-medium text-slate-900">{exerciseName}</p>
+                {/* Exercice passé : « Passé » en gris à la place de la coche. */}
+                {ex.skipped ? (
+                  <span className="mt-0.5 shrink-0 text-xs font-medium text-slate-400">Passé</span>
+                ) : (
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} />
+                )}
+                <p className={`flex-1 font-medium ${ex.skipped ? "text-slate-500" : "text-slate-900"}`}>{ex.name}</p>
               </li>
             ))}
           </ol>

@@ -1,3 +1,4 @@
+import { doseKindOf, loadFavoritesAndRecents } from "@/lib/exercise/kineLibraryExtras";
 import { createClient } from "@/lib/supabase/server";
 import { isPickableExercise, isPickableSeance } from "@/lib/exercise/filmedExercises";
 import { fitsPatient } from "@/lib/exercise/kineExercises";
@@ -59,7 +60,7 @@ export default async function SeancesPage({
   // l'éditeur de séance), sans les exercices que ce kiné a masqués.
   const [{ data: bodyParts }, { data: exerciseRows }, { data: hiddenExerciseRows }] = await Promise.all([
     supabase.from("body_parts").select("id, slug, label, position").order("position"),
-    supabase.from("exercises").select("id, name, created_by, equipment, search_keywords, patient_id, exercise_body_parts(body_part_id)").order("name"),
+    supabase.from("exercises").select("id, name, created_by, equipment, search_keywords, patient_id, instructions, exercise_body_parts(body_part_id)").order("name"),
     supabase.from("instructor_hidden_exercises").select("exercise_id").eq("instructor_id", user.id),
   ]);
   const hiddenExerciseIds = new Set((hiddenExerciseRows ?? []).map((r) => r.exercise_id as string));
@@ -71,7 +72,9 @@ export default async function SeancesPage({
       searchKeywords: (ex.search_keywords as string[] | null) ?? null,
       equipment: (ex.equipment as string[] | null) ?? [],
       bodyPartIds: ((ex.exercise_body_parts as { body_part_id: string }[] | null) ?? []).map((t) => t.body_part_id),
+      doseKind: doseKindOf(ex.instructions as string | null),
     }));
+  const { favoriteIds, recentIds } = await loadFavoritesAndRecents(supabase, user.id);
   const conditionName = (cid: string | null) => conditions?.find((c) => c.id === cid)?.name;
 
   // Zones du corps d'une séance (Philippe, 2026-10-10 : filtrer « Mes séances »
@@ -177,6 +180,8 @@ export default async function SeancesPage({
           <SeancesTabs
             openNewSeance={nouvelle === "1"}
             exercises={pickerExercises}
+            favoriteIds={favoriteIds}
+            recentIds={recentIds}
             bodyParts={(bodyParts ?? []) as BodyPart[]}
             returnTo={returnTo}
             error={error}

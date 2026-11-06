@@ -41,7 +41,6 @@ export default function PatientActionsMenu({
 }: {
   patientId: string;
   patientName: string;
-  redirectTo: string;
   deletePatient: (formData: FormData) => Promise<void>;
   /** "button" (default) = la pill « Gérer » de la fiche patient. "icon" = un
    *  bouton compact (mêmes dimensions que le bouton Messages) pour une ligne
@@ -143,10 +142,8 @@ export default function PatientActionsMenu({
       }
     >
       <div className="flex items-center justify-between gap-3 px-3 pb-2 pt-1.5">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-ink">{patientName}</p>
-          <p className="text-xs text-muted">Suivi actif</p>
-        </div>
+        {/* Plus de sous-titre « Suivi actif », affiché pour tout le monde (Philippe, 2026-11-06 : audit, on allège). */}
+        <p className="min-w-0 truncate text-sm font-semibold text-ink">{patientName}</p>
         {layout.sheet && (
           <button type="button" onClick={() => setOpen(false)} aria-label="Fermer" className="rounded-lg p-1.5 text-muted hover:bg-app-bg hover:text-ink">
             <X className="h-4 w-4" strokeWidth={1.75} />

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight, CreditCard, Download, LogOut, ShieldCheck, Trash2, User } from "lucide-react";
 import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import { deleteMyAccount } from "./actions";
+import { KINE_FOLLOW_UP_CENTS, LOWEST_PLATFORM_CENTS, eurosFR } from "@/lib/billing/patientPlans";
 
 // Affichage seul de « Paramètres » du patient (les données viennent de
 // page.tsx) — séparé pour pouvoir le prévisualiser avec des données fictives
@@ -9,14 +10,9 @@ import { deleteMyAccount } from "./actions";
 // d'écran du 2026-10-10. Les formulaires gardent leurs vraies actions.
 
 export type FollowUpSummary = {
-  status: "none" | "pending_card" | "active" | "stopped";
-  priceCents: number;
-  /** Le kiné a fixé son tarif à 0 € : suivi offert, rien à payer. */
-  free?: boolean;
-  cardLabel: string | null;
-  kineName: string | null;
-  /** Formules patient (2026-11-02) : texte de la carte calculé par page.tsx. */
-  line?: string;
+  status: "none" | "pending_card" | "active";
+  /** Texte de la carte, calculé par page.tsx (modèle du 2026-11-04). */
+  line: string;
 };
 
 export interface CompteViewProps {
@@ -26,33 +22,14 @@ export interface CompteViewProps {
   followUp: FollowUpSummary;
 }
 
-const euros = (cents: number) => (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 });
-
-// Nouveau modèle (2026-10-24) : plus d'abonnement patient — l'appli est
-// offerte par le kiné. La carte « Suivi mensuel » résume le suivi payé au
-// kiné (programme mensuel) et mène à /patient/suivi pour le gérer.
+// La carte « Mon suivi » résume l'abonnement (modèle du 2026-11-04,
+// lib/billing/patientPlans.ts) et mène à /patient/suivi. Les cas des anciens
+// modèles (suivi offert, carte à terminer, suivi arrêté), que page.tsx ne
+// produit plus, sont retirés (Philippe, 2026-11-06 : audit, on allège).
 function followUpText(f: FollowUpSummary): { title: string; line: string; badge: string; badgeClass: string; cta: string } {
-  const kine = f.kineName ?? "votre kiné";
-  // Formules patient (2026-11-02) : page.tsx fournit la ligne ; même carte.
-  if (f.line) {
-    if (f.free) return { title: "Mon suivi", line: f.line, badge: "Offert", badgeClass: "bg-ok-soft text-ok", cta: "Voir" };
-    if (f.status === "active") return { title: "Mon suivi", line: f.line, badge: "Actif", badgeClass: "bg-ok-soft text-ok", cta: "Gérer" };
-    if (f.status === "pending_card") return { title: "Mon suivi", line: f.line, badge: "Paiement refusé", badgeClass: "bg-danger-soft text-danger", cta: "Régler" };
-    return { title: "Mon suivi", line: f.line, badge: "Non activé", badgeClass: "bg-app-bg text-muted", cta: "Activer" };
-  }
-  if (f.free && f.status !== "active") {
-    return { title: "Suivi mensuel", line: `Offert par ${kine} : rien à payer`, badge: "Offert", badgeClass: "bg-ok-soft text-ok", cta: "Voir" };
-  }
-  if (f.status === "active") {
-    return { title: "Suivi mensuel actif", line: `${euros(f.priceCents)} € par mois · ${f.cardLabel ?? "carte enregistrée"}`, badge: "Actif", badgeClass: "bg-ok-soft text-ok", cta: "Gérer mon suivi" };
-  }
-  if (f.status === "pending_card") {
-    return { title: "Suivi mensuel", line: "Carte pas encore enregistrée", badge: "À terminer", badgeClass: "bg-warn-soft text-warn", cta: "Terminer" };
-  }
-  if (f.status === "stopped") {
-    return { title: "Suivi mensuel arrêté", line: `Vous pouvez le reprendre avec ${kine}`, badge: "Arrêté", badgeClass: "bg-app-bg text-muted", cta: "Reprendre" };
-  }
-  return { title: "Suivi mensuel", line: `Programme mensuel avec ${kine}, ${euros(f.priceCents)} € par mois (non remboursé)`, badge: "Non activé", badgeClass: "bg-app-bg text-muted", cta: "Découvrir" };
+  if (f.status === "active") return { title: "Mon suivi", line: f.line, badge: "Actif", badgeClass: "bg-ok-soft text-ok", cta: "Gérer" };
+  if (f.status === "pending_card") return { title: "Mon suivi", line: f.line, badge: "Paiement refusé", badgeClass: "bg-danger-soft text-danger", cta: "Régler" };
+  return { title: "Mon suivi", line: f.line, badge: "Non activé", badgeClass: "bg-app-bg text-muted", cta: "Activer" };
 }
 
 export default function CompteView({
@@ -81,7 +58,7 @@ export default function CompteView({
         )}
 
         <div className="mt-4 grid gap-3 sm:mt-6 sm:gap-5 short:sm:mt-3 short:sm:gap-3 lg:grid-cols-[3fr_2fr]">
-          {/* Suivi mensuel (nouveau modèle, 2026-10-24) */}
+          {/* Mon suivi (modèle du 2026-11-04) */}
           <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6 short:sm:p-4">
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2 font-medium text-ink">
@@ -91,10 +68,10 @@ export default function CompteView({
               <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${f.badgeClass}`}>{f.badge}</span>
             </div>
             <p className="mt-3 text-sm text-muted sm:mt-4">{f.line}</p>
+            {/* Modèle du 2026-11-04 : deux paiements distincts (l'ancienne phrase
+                « EasyPhysio ne prend rien » était fausse — Philippe, 2026-11-06). */}
             <p className="mt-2 text-sm text-muted">
-              {followUp.free
-                ? "Votre programme et l'appli vous sont offerts par votre kiné."
-                : "Un programme mensuel avec votre kiné, payé directement à lui, seulement le mois où il ajuste votre programme. EasyPhysio ne prend rien."}
+              Deux paiements séparés : l&apos;accès à l&apos;appli, payé à EasyPhysio (dès {eurosFR(LOWEST_PLATFORM_CENTS)} € par mois), et le programme de votre kiné ({eurosFR(KINE_FOLLOW_UP_CENTS)} €), payé directement à lui le mois où il le met à jour.
             </p>
             <Link
               href="/patient/suivi"

@@ -42,7 +42,10 @@ const TOUR: Record<Side, { ecran: string; title: string; hint: string }[]> = {
   ],
   patient: [
     { ecran: "accueil", title: "Accueil", hint: "Le programme de la semaine en un coup d'œil." },
-    { ecran: "seance-du-jour", title: "La séance du jour", hint: "Les exercices guidés, un par un." },
+    // Ancienne étape « La séance du jour » : la page /patient/seance-du-jour
+    // n'existe plus, le parcours montre la vraie séance guidée (Philippe,
+    // 2026-11-06 : audit, on allège).
+    { ecran: "seance", title: "La séance guidée", hint: "Les exercices guidés, un par un." },
     { ecran: "progres", title: "Mes progrès", hint: "La frise et l'évolution de la douleur." },
     { ecran: "messages", title: "Messages", hint: "Écrire à son kiné." },
     { ecran: "suivi", title: "L'abonnement", hint: "10 jours d'essai, puis l'accès à l'appli et le programme de son kiné." },
@@ -85,7 +88,6 @@ function patientScreen(url: URL): string | null {
     "/patient/compte/informations": "informations",
     "/patient/compte/changer-offre": "compte",
     "/patient/historique": "historique",
-    "/patient/seance-du-jour": "seance-du-jour",
     "/patient/abonnement": "suivi",
     "/patient/onboarding": "onboarding",
   };

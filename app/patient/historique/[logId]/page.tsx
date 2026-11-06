@@ -36,13 +36,28 @@ export default async function HistoriqueDetailPage({
 
   // Feedback recorded for THIS specific session, not just "around that time" —
   // linked by workout_log_id (older sessions predating that link show none).
-  const { data: sessionFeedback } = await supabase
-    .from("patient_feedback")
-    .select("pain_score, notes")
-    .eq("workout_log_id", logId)
-    .maybeSingle();
+  // Avec, le suivi par exercice (exercise_results, migration 0080) : fait ou
+  // passé. Avant, tout était coché « fait », même un exercice passé
+  // (Philippe, 2026-11-06 : audit, on corrige).
+  const [{ data: sessionFeedback }, { data: resultRows }] = await Promise.all([
+    supabase.from("patient_feedback").select("pain_score, notes").eq("workout_log_id", logId).maybeSingle(),
+    supabase
+      .from("exercise_results")
+      .select("exercise_name, position, status")
+      .eq("workout_log_id", logId)
+      .eq("patient_id", user.id)
+      .order("position"),
+  ]);
 
-  const exercises = [...(log.workouts?.workout_exercises ?? [])].sort((a, b) => a.position - b.position);
+  // Séance enregistrée avec son suivi par exercice : la liste vient de là
+  // (ce qui a vraiment été proposé ce jour-là). Séance plus ancienne, sans
+  // suivi : la liste actuelle de la séance, tout coché, comme avant.
+  const exercises =
+    resultRows && resultRows.length > 0
+      ? resultRows.map((r) => ({ name: r.exercise_name as string, skipped: r.status === "skipped" }))
+      : [...(log.workouts?.workout_exercises ?? [])]
+          .sort((a, b) => a.position - b.position)
+          .map((we) => ({ name: we.exercises?.name ?? "Exercice", skipped: false }));
 
   return (
     <HistoriqueDetailView
@@ -59,7 +74,7 @@ export default async function HistoriqueDetailPage({
           ? { pain_score: sessionFeedback.pain_score as number, notes: (sessionFeedback.notes as string | null) ?? null }
           : null
       }
-      exercises={exercises.map((we) => we.exercises?.name ?? "Exercice")}
+      exercises={exercises}
     />
   );
 }

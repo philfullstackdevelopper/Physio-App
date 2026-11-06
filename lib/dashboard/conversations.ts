@@ -12,17 +12,14 @@ export interface ConversationRow {
   initials: string;
   /** « Prothèse genou · Phase 1 », ou null si aucune condition. */
   conditionLabel: string | null;
-  followUp: boolean;
   lastBody: string | null;
   lastAt: string | null;
   lastSender: "instructor" | "patient" | null;
   unread: number;
 }
 
-export type ConversationTab = "all" | "unread" | "follow_up";
-
 export function buildConversations(input: {
-  patients: { id: string; full_name: string | null; condition_id: string | null; follow_up_at: string | null }[];
+  patients: { id: string; full_name: string | null; condition_id: string | null }[];
   profiles: { id: string; injury_stage: string | null }[];
   conditions: { id: string; name: string }[];
   messages: { patient_id: string; body: string; created_at: string; sender: string; read_by_instructor_at: string | null }[];
@@ -45,7 +42,6 @@ export function buildConversations(input: {
       name: p.full_name ?? "Patient",
       initials: initials(p.full_name),
       conditionLabel,
-      followUp: p.follow_up_at !== null,
       lastBody: last?.body ?? null,
       lastAt: last?.created_at ?? null,
       lastSender: (last?.sender as "instructor" | "patient" | undefined) ?? null,
@@ -63,12 +59,13 @@ export function buildConversations(input: {
 
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-/** Onglet + recherche par nom (sans accents ni casse). Ordre conservé. */
-export function filterConversations(rows: ConversationRow[], tab: ConversationTab, query: string): ConversationRow[] {
+/**
+ * Recherche par nom (sans accents ni casse). Ordre conservé. Les onglets
+ * Tous / Non lus / Avec suivi et le signet « suivi » ont été retirés
+ * (Philippe, 2026-11-06 : audit, on allège) — la colonne
+ * patients.follow_up_at reste en base, plus lue.
+ */
+export function filterConversations(rows: ConversationRow[], query: string): ConversationRow[] {
   const q = fold(query.trim());
-  return rows.filter((r) => {
-    if (tab === "unread" && r.unread === 0) return false;
-    if (tab === "follow_up" && !r.followUp) return false;
-    return q === "" || fold(r.name).includes(q);
-  });
+  return rows.filter((r) => q === "" || fold(r.name).includes(q));
 }

@@ -7,6 +7,7 @@ import { buildDashboardHome } from "@/lib/dashboard/homeData";
 import { buildPatientRows } from "@/lib/dashboard/patientRows";
 import { buildConversations } from "@/lib/dashboard/conversations";
 import type { UnreadMessageRow } from "@/lib/dashboard/unreadMessages";
+import { STAGE_LABELS } from "@/lib/exercise/prescription";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
 import type { SessionDetail } from "@/components/WeekProgramme";
 
@@ -20,9 +21,9 @@ export function mockData(now = new Date()) {
     { id: "c-genou", name: "Prothèse de genou" },
     { id: "c-epaule", name: "Épaule douloureuse" },
   ];
-  const people: { id: string; name: string; cond: string | null; stage: string | null; created: number; sessions: number[]; pain?: number[]; invite?: boolean; lapsed?: boolean; followUp?: boolean }[] = [
+  const people: { id: string; name: string; cond: string | null; stage: string | null; created: number; sessions: number[]; pain?: number[]; invite?: boolean; lapsed?: boolean }[] = [
     { id: "p1", name: "Léa Martin", cond: "c-lomb", stage: "subacute", created: 40, sessions: [0, 2, 4, 6, 9, 11], pain: [3, 3, 2] },
-    { id: "p2", name: "Thomas Bernard", cond: "c-genou", stage: "acute", created: 30, sessions: [1, 3, 8], pain: [7, 6, 7], followUp: true },
+    { id: "p2", name: "Thomas Bernard", cond: "c-genou", stage: "acute", created: 30, sessions: [1, 3, 8], pain: [7, 6, 7] },
     { id: "p3", name: "Camille Dubois", cond: "c-epaule", stage: "recovery", created: 60, sessions: [12, 15], pain: [2, 2] },
     { id: "p4", name: "Julien Moreau", cond: "c-lomb", stage: "acute", created: 20, sessions: [0, 1, 3, 5], pain: [4, 3] },
     { id: "p5", name: "Sophie Laurent", cond: "c-genou", stage: "subacute", created: 50, sessions: [2, 5, 7, 10], pain: [3, 2], lapsed: true },
@@ -37,7 +38,6 @@ export function mockData(now = new Date()) {
     created_at: ago(p.created),
     terms_accepted_at: p.invite ? null : ago(p.created - 1),
     payment_lapsed_at: p.lapsed ? ago(3) : null,
-    follow_up_at: p.followUp ? ago(1) : null,
   }));
   const profiles = people.filter((p) => !p.invite).map((p) => ({ id: p.id, injury_stage: p.stage, health_data_consent_at: ago(p.created - 1) }));
   const logs = people.flatMap((p) => p.sessions.map((d, i) => ({ id: `${p.id}-l${i}`, patient_id: p.id, completed_at: ago(d, 2) })));
@@ -150,6 +150,8 @@ const SEANCE_BY_CONDITION: Record<string, string> = {
 
 type FichePatient = ReturnType<ReturnType<typeof mockData>["patientInfo"]>;
 
+const DEMO_CONDITION_IDS: Record<string, string> = { "Prothèse de genou": "c-genou", "Lombalgie chronique": "c-dos", "Épaule douloureuse": "c-epaule" };
+
 export function mockFiche(now = new Date(), patient?: FichePatient) {
   const created = new Date(now.getTime() - 30 * DAY);
   const weeks = buildWeeks(created.toISOString(), now);
@@ -160,7 +162,12 @@ export function mockFiche(now = new Date(), patient?: FichePatient) {
     "Épaule douloureuse": ["Codman Pendulum", "Band Shoulder External Rotation", "Wall Slides", "Side-Lying External Rotation"],
   };
   const names = (patient?.conditionName && byCondition[patient.conditionName]) || DEMO_EXERCISES.slice(0, 4).map((e) => e.name);
-  const exercises = names.map((name, i) => ({ id: `e${i + 1}`, name }));
+  // Mêmes identifiants que la bibliothèque de la démo (a0, a1…) : un exercice déjà
+  // dans la séance n'y est pas reproposé.
+  const exercises = names.map((name, i) => {
+    const idx = DEMO_EXERCISES.findIndex((e) => e.name === name);
+    return { id: idx >= 0 ? `a${idx}` : `e${i + 1}`, name };
+  });
   // Sans patient : Thomas Bernard (douleur élevée la semaine dernière). Avec un
   // patient : ses séances fictives, la douleur la plus récente en premier.
   const history: (readonly [number, number])[] = patient
@@ -184,13 +191,18 @@ export function mockFiche(now = new Date(), patient?: FichePatient) {
     currentWeekNumber: currentWeekNumber(weeks, now),
     dayDetails,
     assignments: [{ id: "r1", workoutId: "w1", weekStartDate: weeks[0].startDateKey, weekCount: null }],
-    workoutsById: { w1: { id: "w1", name: seanceName, exercises } },
+    // Pathologie et phase de la séance : « Séance suivante » et le filtre « Par pathologie » de la démo.
+    workoutsById: { w1: { id: "w1", name: seanceName, exercises, conditionId: DEMO_CONDITION_IDS[patient?.conditionName ?? ""] ?? "c-genou", stage: "acute" } },
+    patientConditionId: DEMO_CONDITION_IDS[patient?.conditionName ?? ""] ?? "c-genou",
+    patientStage: "acute" as const,
     bodyParts: DEMO_BODY_PARTS,
     addableExercises: DEMO_EXERCISES.map((e, i) => ({ id: `a${i}`, name: e.name, bodyPartIds: e.bodyPartIds, equipment: e.equipment })),
-    addableWorkouts: [
-      ["Genou, phase 1", "Prothèse de genou", "bp-genou"], ["Genou, phase 2", "Prothèse de genou", "bp-genou"], ["Genou, retour au sport", "Prothèse de genou", "bp-genou"],
-      ["Lombaires, mobilité du matin", "Lombalgie chronique", "bp-dos"], ["Lombaires, gainage doux", "Lombalgie chronique", "bp-dos"], ["Épaule, retour au geste", "Épaule douloureuse", "bp-epaule"],
-    ].map(([name, conditionName, bp], i) => ({ id: `aw${i}`, name, description: "Renforcement progressif, sans douleur.", durationMinutes: 20, timesPerWeek: 3, stageLabel: "Phase " + ((i % 3) + 1), conditionName, editHref: i === 0 ? "/dashboard/seances/x" : null, exerciseNames: exercises.map((e) => e.name), bodyPartIds: [bp] })),
+    addableWorkouts: (
+      [
+        ["Genou, phase 1 · B", "Prothèse de genou", "bp-genou", "acute"], ["Genou, phase 2", "Prothèse de genou", "bp-genou", "subacute"], ["Genou, retour au sport", "Prothèse de genou", "bp-genou", "return_to_sport"],
+        ["Lombaires, mobilité du matin", "Lombalgie chronique", "bp-dos", "subacute"], ["Lombaires, gainage doux", "Lombalgie chronique", "bp-dos", "recovery"], ["Épaule, retour au geste", "Épaule douloureuse", "bp-epaule", "recovery"],
+      ] as const
+    ).map(([name, conditionName, bp, stage], i) => ({ id: `aw${i}`, name, description: "Renforcement progressif, sans douleur.", durationMinutes: 20, timesPerWeek: 3, conditionId: DEMO_CONDITION_IDS[conditionName], stage, stageLabel: STAGE_LABELS[stage], conditionName, editHref: i === 0 ? "/dashboard/seances/x" : null, exerciseNames: exercises.map((e) => e.name), exercises, bodyPartIds: [bp] })),
     stats: {
       painLatest: patient ? patient.painLatest : 7,
       painPrevious: patient ? patient.painPrevious : 6,

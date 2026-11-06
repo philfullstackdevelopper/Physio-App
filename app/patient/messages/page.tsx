@@ -1,7 +1,7 @@
-import { MailCheck, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { markMessageRead, markMessagesSeenOnOpen, sendPatientMessage } from "../actions";
+import { markMessagesSeenOnOpen, sendPatientMessage } from "../actions";
 import MarkThreadRead from "@/components/MarkThreadRead";
 import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
 import MessageComposer from "@/components/MessageComposer";
@@ -83,22 +83,10 @@ export default async function MessagesPage({
             </div>
           </header>
 
-          {/* Ouvrir la page = lire les messages (audit du 2026-10-08). */}
+          {/* Ouvrir la page = lire les messages (audit du 2026-10-08). Le
+              bandeau « Marquer comme lu » qui doublait cette lecture
+              automatique est retiré (Philippe, 2026-11-06 : audit, on allège). */}
           {unreadFromKine > 0 && <MarkThreadRead patientId={user.id} action={markMessagesSeenOnOpen} />}
-          {unreadFromKine > 0 && (
-            <form
-              action={markMessageRead}
-              className="flex items-center justify-between gap-3 border-b border-line bg-brand-soft px-5 py-2.5"
-            >
-              <p className="flex items-center gap-2 text-sm text-brand">
-                <MailCheck className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                {unreadFromKine} nouveau{unreadFromKine > 1 ? "x" : ""} message{unreadFromKine > 1 ? "s" : ""} de {instructorName}
-              </p>
-              <button type="submit" className="shrink-0 text-sm font-medium text-brand hover:underline">
-                Marquer comme lu
-              </button>
-            </form>
-          )}
 
           {/* Colonne inversée = le fil s'ouvre sur le dernier message, comme une messagerie. */}
           <div className="flex min-h-0 flex-1 flex-col-reverse overflow-y-auto px-5 py-4 max-sm:px-3 sm:bg-app-bg/50">

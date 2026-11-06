@@ -1,8 +1,0 @@
-{
-  "jobs": [
-    {
-      "command": "0 6 1 * * node scripts/cron-facturation.mjs",
-      "size": "S"
-    }
-  ]
-}

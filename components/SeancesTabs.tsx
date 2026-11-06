@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Dumbbell, Trash2, MoreVertical, Pencil, EyeOff, Eye, Plus } from "lucide-react";
+import { Search, Dumbbell, Trash2, Pencil, EyeOff, Eye, Plus } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 import NewSeanceModal from "@/components/NewSeanceModal";
@@ -35,84 +35,40 @@ type ListItem = {
 
 // Helper matching ExerciseLibraryGrid's runAction — calls a server action
 // with a small FormData built from a single field, without needing a real
-// <form> submit (used inside the dropdown menu below).
+// <form> submit.
 function runAction(action: (formData: FormData) => void, field: string, value: string) {
   const fd = new FormData();
   fd.set(field, value);
   action(fd);
 }
 
-// Three-dot menu on a template card — "Modifier" forks the read-only
-// template into the instructor's own editable copy (duplicateSeance already
-// opens that copy's editor), "Masquer"/"Réafficher" toggles it out of this
-// instructor's own list only. Mirrors ExerciseCardMenu's idiom exactly.
-function TemplateCardMenu({
+// Masquer / réafficher une séance modèle dans la liste de CE kiné seulement.
+// « Modifier » est sorti du menu (Philippe, 2026-11-05) : c'est un bouton
+// visible sur la carte. Le menu ⋮ n'avait plus qu'une ligne : remplacé par
+// un seul petit bouton œil (Philippe, 2026-11-06 : audit, on allège).
+function TemplateHideButton({
   templateId,
   hidden,
-  duplicateSeance,
   hideTemplateWorkout,
   unhideTemplateWorkout,
 }: {
   templateId: string;
   hidden?: boolean;
-  duplicateSeance: (formData: FormData) => void;
   hideTemplateWorkout: (formData: FormData) => void;
   unhideTemplateWorkout: (formData: FormData) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const label = hidden ? "Réafficher" : "Supprimer de ma liste";
   return (
-    <div className="relative shrink-0 max-sm:absolute max-sm:right-1 max-sm:top-1 max-sm:rounded-full max-sm:bg-surface/90">
+    <div className="shrink-0 max-sm:absolute max-sm:right-1 max-sm:top-1 max-sm:rounded-full max-sm:bg-surface/90">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Options"
-        className="rounded p-1 text-muted hover:bg-app-bg hover:text-ink"
+        onClick={() => runAction(hidden ? unhideTemplateWorkout : hideTemplateWorkout, "workout_id", templateId)}
+        aria-label={label}
+        title={label}
+        className={`rounded p-1 text-muted ${hidden ? "hover:bg-app-bg hover:text-ink" : "hover:bg-danger-soft hover:text-danger"}`}
       >
-        <MoreVertical className="h-4 w-4" strokeWidth={2} />
+        {hidden ? <Eye className="h-4 w-4" strokeWidth={2} /> : <EyeOff className="h-4 w-4" strokeWidth={2} />}
       </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-line bg-surface py-1 shadow-sm max-sm:z-[45]">
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                runAction(duplicateSeance, "template_id", templateId);
-              }}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-app-bg"
-            >
-              <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-              Modifier
-            </button>
-            {hidden ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  runAction(unhideTemplateWorkout, "workout_id", templateId);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-app-bg"
-              >
-                <Eye className="h-3.5 w-3.5" strokeWidth={2} />
-                Réafficher
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  runAction(hideTemplateWorkout, "workout_id", templateId);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-danger hover:bg-danger-soft"
-              >
-                <EyeOff className="h-3.5 w-3.5" strokeWidth={2} />
-                Supprimer de ma liste
-              </button>
-            )}
-          </div>
-        </>
-      )}
     </div>
   );
 }
@@ -198,29 +154,21 @@ const CARD_GRID = "grid grid-cols-1 gap-3 max-sm:grid-cols-2 max-sm:gap-2 sm:gri
 // via the same matching already solved for the exercise library — no
 // separate cover-image field or asset needed. Falls back to the plain
 // dumbbell placeholder only when the séance has no exercises yet.
+// Même taille que l'illustration d'une carte exercice (h-24). Plus de badge
+// « Personnalisée » : l'onglet le dit déjà (Philippe, 2026-11-06 : audit, on allège).
 function SeanceThumb({
-  badge,
   stage,
   leadExerciseName,
-  size = "cover",
 }: {
-  badge?: "mine" | "template";
   stage?: InjuryStage | null;
   leadExerciseName?: string;
-  /** "cover" (default): full-bleed, proportional (aspect-[4/3]) — used by the
-   *  "Séances prévues" template cards. "inset": fixed h-28, matching
-   *  ExerciseIllustration's own sizing on the exercises page exactly, so a
-   *  "Mes séances personnalisées" card renders the same size as an exercise
-   *  card. */
-  size?: "cover" | "inset";
 }) {
-  const boxClass = `${size === "inset" ? "h-24 w-full rounded-lg" : "aspect-[4/3] rounded-t-xl"} max-sm:aspect-auto max-sm:h-16 max-sm:w-full`;
   return (
-    <div className={`relative ${boxClass} bg-surface`}>
+    <div className="relative h-24 w-full rounded-lg bg-surface max-sm:h-16">
       {leadExerciseName ? (
         <ExerciseIllustration
           name={leadExerciseName}
-          className={`h-full w-full text-brand ${size === "inset" ? "" : "p-4 max-sm:p-0"}`}
+          className="h-full w-full text-brand"
           animate={false}
           still="middle"
         />
@@ -228,16 +176,6 @@ function SeanceThumb({
         <div className="flex h-full w-full items-center justify-center">
           <Dumbbell className="h-8 w-8 text-muted" strokeWidth={1.5} />
         </div>
-      )}
-      {badge === "mine" && (
-        <span className="absolute left-2 top-2 rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-medium text-muted max-sm:hidden">
-          Personnalisée
-        </span>
-      )}
-      {badge === "template" && (
-        <span className="absolute left-2 top-2 rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-medium text-muted max-sm:hidden">
-          Plateforme
-        </span>
       )}
       {stage && (
         <span
@@ -270,10 +208,17 @@ function PathologyCard({
   hideTemplateWorkout: (formData: FormData) => void;
   unhideTemplateWorkout: (formData: FormData) => void;
 }) {
-  const byStage = new Map(seances.filter((t) => t.stage).map((t) => [t.stage as InjuryStage, t]));
+  // Plusieurs séances par phase possibles (séances A / B des modèles) : la
+  // case de phase ouvre la première, des lettres permettent de passer aux autres.
+  const byStageAll = new Map<InjuryStage, ListItem[]>();
+  for (const t of [...seances].sort((a, b) => a.name.localeCompare(b.name, "fr"))) {
+    if (t.stage) byStageAll.set(t.stage as InjuryStage, [...(byStageAll.get(t.stage as InjuryStage) ?? []), t]);
+  }
+  const byStage = new Map([...byStageAll].map(([s, list]) => [s, list[0]]));
   const first = PHASES.find((ph) => byStage.has(ph));
   const [picked, setPicked] = useState<string>(first ? byStage.get(first)!.id : seances[0].id);
   const current = seances.find((t) => t.id === picked) ?? seances[0];
+  const sameStage = current.stage ? (byStageAll.get(current.stage as InjuryStage) ?? []) : [];
   const noStage = seances.filter((t) => !t.stage);
   return (
     <div className={`flex flex-col overflow-hidden rounded-xl border border-line bg-surface max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-soft ${current.hidden ? "opacity-60" : ""}`}>
@@ -292,10 +237,9 @@ function PathologyCard({
       <div className="flex flex-1 flex-col gap-2 p-3 max-sm:p-2">
         <div className="flex items-start justify-between gap-2">
           <p className="min-w-0 font-medium text-ink max-sm:line-clamp-2 max-sm:text-[13px] max-sm:leading-tight">{condition}</p>
-          <TemplateCardMenu
+          <TemplateHideButton
             templateId={current.id}
             hidden={current.hidden}
-            duplicateSeance={duplicateSeance}
             hideTemplateWorkout={hideTemplateWorkout}
             unhideTemplateWorkout={unhideTemplateWorkout}
           />
@@ -304,7 +248,7 @@ function PathologyCard({
           <div role="group" aria-label={`Niveaux — ${condition}`} className="grid grid-cols-4 gap-1">
             {PHASES.map((ph, i) => {
               const t = byStage.get(ph);
-              const on = t?.id === current.id;
+              const on = !!t && current.stage === ph;
               return (
                 <button
                   key={ph}
@@ -338,10 +282,37 @@ function PathologyCard({
             ))}
           </div>
         )}
+        {sameStage.length > 1 && (
+          <div role="group" aria-label="Séances de cette phase" className="flex gap-1">
+            {sameStage.map((t, i) => (
+              <button
+                key={t.id}
+                type="button"
+                aria-pressed={t.id === current.id}
+                title={t.name}
+                onClick={() => setPicked(t.id)}
+                className={`h-6 min-w-6 rounded-md px-1.5 text-[11px] font-bold ${t.id === current.id ? "bg-brand text-white" : "bg-app-bg text-ink hover:bg-brand-soft"}`}
+              >
+                {String.fromCharCode(65 + i)}
+              </button>
+            ))}
+          </div>
+        )}
         <p className="text-xs text-muted max-sm:hidden">
           {current.stageLabel ?? "Toutes phases"} · {current.exerciseCount ?? current.exerciseNames?.length ?? 0} exercice{(current.exerciseCount ?? current.exerciseNames?.length ?? 0) > 1 ? "s" : ""}
         </p>
         <ExerciseNamesList names={current.exerciseNames} />
+        {/* Modifier une séance de la plateforme = en faire sa propre copie,
+            ouverte aussitôt dans l'éditeur (ajouter / retirer des exercices). */}
+        <button
+          type="button"
+          onClick={() => runAction(duplicateSeance, "template_id", current.id)}
+          title="Crée votre version de cette séance dans Mes séances, à modifier librement"
+          className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-brand/40 hover:bg-brand-soft hover:text-brand"
+        >
+          <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+          Modifier
+        </button>
       </div>
     </div>
   );
@@ -352,7 +323,9 @@ function CardMeta({ s }: { s: ListItem }) {
     <>
       <p className="mt-0.5 line-clamp-1 text-sm text-muted max-sm:text-[11px]">
         {s.conditionName ?? "—"}
-        {s.stageLabel && <span> · {s.stageLabel}</span>}
+        {/* La phase est déjà dans la pastille du dessin (cachée sur téléphone) :
+            le texte ne la répète que sur téléphone. */}
+        {s.stageLabel && <span className="sm:hidden"> · {s.stageLabel}</span>}
         {s.extra && <span className="text-muted"> · {s.extra}</span>}
       </p>
       <ExerciseNamesList names={s.exerciseNames} />
@@ -399,9 +372,14 @@ export default function SeancesTabs({
   exercises,
   bodyParts,
   returnTo,
+  favoriteIds,
+  recentIds,
 }: {
   exercises: PickerExercise[];
   bodyParts: BodyPart[];
+  /** Étoiles et exercices récents du kiné (migration 0083). */
+  favoriteIds?: string[];
+  recentIds?: string[];
   /** Fiche patient d'où vient le kiné (« Créer une séance »), validée côté serveur. */
   returnTo?: string;
   /** Arrivée via « Créer une séance » (fenêtre Changer de séance de la fiche
@@ -629,6 +607,8 @@ export default function SeancesTabs({
               stages={stages}
               exercises={exercises}
               bodyParts={bodyParts}
+              favoriteIds={favoriteIds}
+              recentIds={recentIds}
               createSeance={createSeance}
               returnTo={returnTo}
             />
@@ -659,12 +639,7 @@ export default function SeancesTabs({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <Link href={`/dashboard/seances/${s.id}`} className="min-w-0 flex-1">
-                      <SeanceThumb
-                        badge="mine"
-                        stage={s.stage}
-                        leadExerciseName={s.leadExerciseName}
-                        size="inset"
-                      />
+                      <SeanceThumb stage={s.stage} leadExerciseName={s.leadExerciseName} />
                     </Link>
                     <span className="max-sm:absolute max-sm:right-1 max-sm:top-1 max-sm:rounded-full max-sm:bg-surface/90 sm:contents">
                       <DeleteSeanceButton

@@ -1,29 +1,26 @@
 import { createClient } from "@/lib/supabase/server";
-import { buildConversations, type ConversationTab } from "@/lib/dashboard/conversations";
+import { buildConversations } from "@/lib/dashboard/conversations";
 import KineMessagesView from "@/components/KineMessagesView";
 import type { ThreadMessage } from "@/components/MessageThread";
-import { markConversationRead, sendInboxMessage, toggleFollowUp } from "./actions";
+import { markConversationRead, sendInboxMessage } from "./actions";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
-const TABS: ConversationTab[] = ["all", "unread", "follow_up"];
-
 // Boîte de réception du kiné : une conversation par patient, plein écran,
-// liste à gauche (onglets, recherche, nouveau message) et fil à droite
-// (séparateurs de jour, accusés de lecture, suivi). Affichage : KineMessagesView.
+// liste à gauche (recherche, nouveau message) et fil à droite (séparateurs
+// de jour, accusés de lecture). Affichage : KineMessagesView.
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ patient?: string; error?: string; tab?: string; q?: string }>;
+  searchParams: Promise<{ patient?: string; error?: string; q?: string }>;
 }) {
-  const { patient: patientParam, error, tab: tabParam, q = "" } = await searchParams;
-  const tab: ConversationTab = TABS.includes(tabParam as ConversationTab) ? (tabParam as ConversationTab) : "all";
+  const { patient: patientParam, error, q = "" } = await searchParams;
   const supabase = await createClient();
   // Validation du compte vérifiée ICI aussi (audit du 2026-10-08) : le
   // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
   const { user } = await requireApprovedInstructor(supabase);
 
   const [{ data: patients }, { data: profiles }, { data: conditions }, { data: messages }, { data: unreadMessages }] = await Promise.all([
-    supabase.from("patients").select("id, full_name, condition_id, follow_up_at").eq("instructor_id", user.id),
+    supabase.from("patients").select("id, full_name, condition_id").eq("instructor_id", user.id),
     supabase.from("patient_profiles").select("id, injury_stage"),
     supabase.from("conditions").select("id, name"),
     supabase
@@ -90,12 +87,10 @@ export default async function MessagesPage({
       selected={selected}
       explicitlyOpened={explicitlyOpened}
       thread={thread}
-      tab={tab}
       q={q}
       error={error}
       markConversationRead={markConversationRead}
       sendInboxMessage={sendInboxMessage}
-      toggleFollowUp={toggleFollowUp}
     />
   );
 }

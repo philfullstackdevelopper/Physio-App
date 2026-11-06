@@ -102,11 +102,9 @@ export default async function KineTelephonePrototype({
         selected={selected}
         explicitlyOpened={ecran === "conversation"}
         thread={selected ? d.threadFor(selected.patientId) : d.thread}
-        tab="all"
         q=""
         markConversationRead={noopVoid}
         sendInboxMessage={noopVoid}
-        toggleFollowUp={noopVoid}
       />
     );
   } else if (ecran === "informations") {
@@ -243,6 +241,10 @@ export default async function KineTelephonePrototype({
       <NewPatientView
         open
         addPatientAction={noopVoid}
+        seanceGroups={[
+          { condition: "Lombalgie chronique", seances: [{ id: "d1", label: "Phase 2 · Lombaires, mobilité du matin" }, { id: "d2", label: "Phase 3 · Lombaires, gainage doux" }] },
+          { condition: "Prothèse de genou", seances: [{ id: "d3", label: "Phase 1 · Genou, renforcement doux" }] },
+        ]}
         qr={<JoinQrCard instructorId="demo" open demoPath="/demo/patient?ecran=onboarding" />}
       />
     );
@@ -301,7 +303,6 @@ export default async function KineTelephonePrototype({
           <PatientActionsMenu
             patientId={p.id}
             patientName={p.firstName}
-            redirectTo="/prototypes/kine-telephone?ecran=fiche"
             deletePatient={noopVoid}
             messages={{ patient: { id: p.id, name: p.name, initials: p.initials }, unreadCount: p.unread ? 1 : 0, getThread: noopResult, sendMessage: noopResult }}
           />
@@ -319,6 +320,8 @@ export default async function KineTelephonePrototype({
             addableExercises={f.addableExercises}
             bodyParts={f.bodyParts}
             addableWorkouts={f.addableWorkouts}
+            patientConditionId={f.patientConditionId}
+            patientStage={f.patientStage}
             adjustAction={noopVoid}
             assignAction={noopVoid}
             removeAction={noopVoid}

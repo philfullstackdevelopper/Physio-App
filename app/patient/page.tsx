@@ -68,7 +68,7 @@ export default async function PatientDashboard() {
   // "Mon programme" summary card, top right of Accueil since 2026-10-01
   // (was at the bottom, Philippe 2026-09-08): a quick "what's left this week" recap that links through to
   // the full /patient/programme page, same numbers loadPatientHome already
-  // computes for "séance du jour" — no separate query needed.
+  // computes — no separate query needed.
   const target = home.activeWorkout?.times_per_week ?? null;
   const remaining = target !== null ? Math.max(target - home.weekCount, 0) : null;
   // Hiker's spot on the mountain path (MountainScene's `progress`, 0–1):

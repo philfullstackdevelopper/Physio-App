@@ -11,11 +11,9 @@ export default function PatientsPageView({ children }: { children: React.ReactNo
   return (
     <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
       <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col p-6 max-sm:px-4 max-sm:pb-3 max-sm:pt-2 sm:p-8 short:sm:py-5">
-        <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4 max-sm:flex-nowrap max-sm:items-center">
-          <div>
-            <h1 className="text-2xl font-semibold text-ink">Mes patients</h1>
-            <p className="mt-1 text-sm text-muted max-sm:hidden">Suivez tous vos patients et intervenez en quelques clics.</p>
-          </div>
+        <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-center justify-between gap-4 max-sm:flex-nowrap">
+          {/* Sous-titre de remplissage retiré (Philippe, 2026-11-06 : audit, on allège). */}
+          <h1 className="text-2xl font-semibold text-ink">Mes patients</h1>
           <Link
             href="/dashboard/patients/new"
             aria-label="Ajouter un patient"

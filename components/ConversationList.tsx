@@ -7,7 +7,7 @@
 //    bleu clair ;
 //  - puis « Conversations » : les autres échanges, du plus récent au plus ancien.
 // Plus d'onglets Tous / Non lus / Avec suivi : le premier groupe EST le filtre
-// utile ; le suivi reste visible par son signet sur la ligne.
+// utile (signet « suivi » retiré aussi, Philippe, 2026-11-06 : audit, on allège).
 // Les patients sans aucun échange n'encombrent plus la liste : on leur écrit
 // par le crayon « Nouveau message ».
 // Le filtrage (recherche par nom) se fait côté client sur les lignes déjà
@@ -16,7 +16,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Bookmark, SquarePen } from "lucide-react";
+import { SquarePen } from "lucide-react";
 import { filterConversations, type ConversationRow } from "@/lib/dashboard/conversations";
 import { relativeDay } from "@/lib/format/relativeDay";
 
@@ -31,7 +31,7 @@ export default function ConversationList({
 }) {
   const [showNew, setShowNew] = useState(false);
 
-  const withMessages = useMemo(() => filterConversations(rows, "all", query).filter((c) => c.lastBody !== null), [rows, query]);
+  const withMessages = useMemo(() => filterConversations(rows, query).filter((c) => c.lastBody !== null), [rows, query]);
   const toReply = withMessages.filter((c) => c.unread > 0);
   const others = withMessages.filter((c) => c.unread === 0);
   const allPatients = useMemo(() => [...rows].sort((a, b) => a.name.localeCompare(b.name, "fr")), [rows]);
@@ -67,10 +67,7 @@ export default function ConversationList({
             {c.initials}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-1.5">
-              <span className={`truncate text-[15px] leading-tight text-ink sm:text-sm ${waiting ? "font-semibold" : "font-medium"}`}>{c.name}</span>
-              {c.followUp && <Bookmark className="h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2} aria-label="Avec suivi" />}
-            </span>
+            <span className={`block truncate text-[15px] leading-tight text-ink sm:text-sm ${waiting ? "font-semibold" : "font-medium"}`}>{c.name}</span>
             <span className={`mt-0.5 block truncate text-sm sm:text-[13px] ${waiting ? "text-ink" : "text-muted"}`}>
               {c.lastSender === "instructor" ? `Vous : ${c.lastBody}` : c.lastBody}
             </span>

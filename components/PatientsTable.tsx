@@ -341,7 +341,6 @@ export default function PatientsTable({
                             trigger="icon"
                             patientId={r.id}
                             patientName={r.name}
-                            redirectTo="/dashboard/patients"
                             deletePatient={deletePatient}
                           />
                         </span>
@@ -427,7 +426,6 @@ export default function PatientsTable({
                     trigger="icon"
                     patientId={r.id}
                     patientName={r.name}
-                    redirectTo="/dashboard/patients"
                     deletePatient={deletePatient}
                   />
                 </li>

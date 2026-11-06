@@ -2,10 +2,9 @@ import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isProfileComplete } from "@/lib/exercise/patientProfile";
 import { type InjuryStage } from "@/lib/exercise/prescription";
-import { computeStreak } from "@/lib/exercise/streak";
-import { stageWithFeedback, careWeek, type Rating } from "@/lib/exercise/stageProgress";
+import { stageWithFeedback, type Rating } from "@/lib/exercise/stageProgress";
 import { resolveWorkoutForWeek } from "@/lib/exercise/activeRecommendation";
-import { thisWeekStartDateKey } from "@/lib/patient/weeks";
+import { buildWeeks, currentWeekNumber, thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { startOfTodayISO, startOfWeekISO, daysAgoISO } from "@/lib/week";
 
 export type Workout = {
@@ -24,6 +23,9 @@ export interface PatientHome {
   fullName: string | null;
   conditionName: string | null;
   stage: InjuryStage;
+  /** « Semaine N » affichée (carte de l'Accueil, Mon programme) : la même
+   *  numérotation que la frise des semaines et que le kiné, comptée depuis la
+   *  création du compte (lib/patient/weeks.ts). */
   week: number;
   decision: ReturnType<typeof stageWithFeedback>;
   /** The one workout the patient should do right now — null if the kiné
@@ -37,12 +39,13 @@ export interface PatientHome {
   weekCount: number;
   /** Active workout completed today. */
   doneToday: boolean;
-  streak: number;
 }
 
-/** Shared load for the patient home surfaces (dashboard + séance du jour):
+/** Shared load for the patient home surfaces (Accueil + Mon programme):
  *  profile -> stage -> the kiné's ordered recommendations -> which one is
- *  active -> streak, in one place so the surfaces can never disagree.
+ *  active, in one place so the surfaces can never disagree. (La série de
+ *  jours d'affilée calculée ici n'était lue par aucune page : retirée —
+ *  Philippe, 2026-11-06 : audit, on allège.)
  *  Redirects to onboarding if the profile isn't complete yet. */
 export async function loadPatientHome(supabase: SupabaseClient, userId: string): Promise<PatientHome> {
   const since = daysAgoISO(14);
@@ -52,9 +55,10 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
       .select("condition_id, injury_stage, date_of_birth, height_cm, weight_kg, activity_level, updated_at, stage_declared_at")
       .eq("id", userId)
       .maybeSingle(),
-    supabase.from("patients").select("full_name, condition_id, trial_ends_at").eq("id", userId).maybeSingle(),
-    // The only feedback kept product-wide: one post-session pain/difficulty
-    // rating (patient_feedback). Feeds the stage brake below.
+    supabase.from("patients").select("full_name, condition_id, trial_ends_at, created_at").eq("id", userId).maybeSingle(),
+    // Le ressenti de fin de séance (patient_feedback : douleur/difficulté)
+    // alimente le frein de phase ci-dessous. La douleur notée exercice par
+    // exercice (exercise_results) n'entre pas dans ce calcul.
     supabase
       .from("patient_feedback")
       .select("pain_score, difficulty, created_at")
@@ -91,7 +95,11 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
     difficulties: rated(feedbackRows ?? [], "difficulty"),
   });
   const stage = decision.stage;
-  const week = careWeek(declaredStage, stageDeclaredAt);
+  // « Semaine N » affichée = numérotation de la frise (depuis la création du
+  // compte), plus careWeek() : deux « Semaine » différentes sur le même écran
+  // (Philippe, 2026-11-06 : audit, on corrige). La progression de phase
+  // ci-dessus ne change pas.
+  const week = currentWeekNumber(buildWeeks((patient?.created_at as string | undefined) ?? new Date().toISOString()));
 
   const [{ data: condition }, { data: recRows }] = await Promise.all([
     assignedConditionId
@@ -127,7 +135,6 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
     ? { ...activeFound, workout_exercises: [...activeFound.workout_exercises].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) }
     : null;
 
-  const streak = computeStreak((logs ?? []).map((l) => l.completed_at as string));
   const todayISO = startOfTodayISO();
   const doneToday = activeWorkout
     ? (logs ?? []).some((l) => l.workout_id === activeWorkout.id && (l.completed_at as string) >= todayISO)
@@ -150,6 +157,5 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
     weekComplete,
     weekCount,
     doneToday,
-    streak,
   };
 }

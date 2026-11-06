@@ -12,6 +12,7 @@ import { requestOrigin } from "@/lib/requestOrigin";
 import type { ThreadMessage } from "@/components/MessageThread";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { deleteAppUserById } from "@/lib/db/admin";
+import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 
 // Instructor invites a new patient by email. Creates the patient's Clerk
 // account invitation (they choose their own password from the e-mail), and
@@ -137,6 +138,23 @@ export async function addPatient(formData: FormData) {
         ? "Cette adresse e-mail est déjà utilisée par un autre compte EasyPhysio."
         : "Impossible d'enregistrer le patient : " + friendlyDbError(patientError);
     redirect(`/dashboard/patients/new?error=${encodeURIComponent(message)}`);
+  }
+
+  // Première séance choisie dans le formulaire (facultatif, proposition 4) :
+  // attribuée dès cette semaine, et sa pathologie devient celle du patient.
+  // Une séance invisible pour ce kiné ou propre à un autre patient est
+  // ignorée ; un échec ici n'annule pas l'invitation déjà partie — le kiné
+  // choisira la séance depuis la fiche.
+  const workoutId = String(formData.get("workout_id") ?? "");
+  if (workoutId) {
+    const { data: workout } = await supabase.from("workouts").select("id, condition_id, patient_id").eq("id", workoutId).maybeSingle();
+    if (workout && workout.patient_id === null) {
+      if (workout.condition_id) await supabase.from("patients").update({ condition_id: workout.condition_id }).eq("id", appId);
+      const { error: recError } = await supabase
+        .from("patient_recommended_workouts")
+        .insert({ patient_id: appId, workout_id: workout.id, week_start_date: thisWeekStartDateKey(), week_count: null });
+      if (recError) console.error("addPatient: première séance non attribuée", recError);
+    }
   }
 
   revalidatePath("/dashboard/patients");

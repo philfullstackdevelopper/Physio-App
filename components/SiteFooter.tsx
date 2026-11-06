@@ -5,8 +5,8 @@ import { SIGNUPS_OPEN, WAITLIST_HREF } from "@/lib/launchFlags";
 const COLUMNS = [
   {
     title: "Produit",
+    // « Comment ça marche » retiré : la section n'existe plus (Philippe, 2026-11-06 : audit, on allège).
     links: [
-      { href: "/#comment-ca-marche", label: "Comment ça marche" },
       { href: "/#comparaison", label: "Comparaison" },
       { href: "/#tarifs", label: "Tarifs" },
     ],

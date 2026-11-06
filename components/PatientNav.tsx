@@ -21,7 +21,7 @@ const LINKS = [
 // de l'Accueil y mène, et sa page reste rattachée à l'onglet Accueil. Le menu
 // latéral sur ordinateur garde ses 5 entrées, inchangé.
 const MOBILE_LINKS: { href: string; label: string; icon: typeof Home; exact?: boolean; alsoActive?: string[] }[] = [
-  { href: "/patient", label: "Accueil", icon: Home, exact: true, alsoActive: ["/patient/programme", "/patient/seance-du-jour"] },
+  { href: "/patient", label: "Accueil", icon: Home, exact: true, alsoActive: ["/patient/programme"] },
   { href: "/patient/progres", label: "Progrès", icon: TrendingUp },
   { href: "/patient/messages", label: "Messages", icon: MessageCircle },
   { href: "/patient/compte", label: "Paramètres", icon: Settings },
