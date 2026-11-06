@@ -8,13 +8,13 @@ import PatientEcransPrototype from "@/app/prototypes/patient-ecrans/page";
 export const metadata = { title: "Démo · espace patient" };
 export const dynamic = "force-dynamic";
 
-export default async function DemoPatientPage({ searchParams }: { searchParams: Promise<{ ecran?: string }> }) {
-  const { ecran = "accueil" } = await searchParams;
+export default async function DemoPatientPage({ searchParams }: { searchParams: Promise<{ ecran?: string; depuis?: string }> }) {
+  const { ecran = "accueil", depuis } = await searchParams;
   const screen =
     ecran === "accueil"
       ? AccueilPatientPrototype()
       : ecran === "messages"
         ? MessagesPatientPrototype()
-        : await PatientEcransPrototype({ searchParams: Promise.resolve({ ecran }) });
+        : await PatientEcransPrototype({ searchParams: Promise.resolve({ ecran, depuis }) });
   return <DemoShell side="patient">{screen}</DemoShell>;
 }

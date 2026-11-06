@@ -102,7 +102,9 @@ function demoHref(url: URL): string | null {
   const kine = url.pathname.startsWith("/dashboard") ? kineScreen(url) : null;
   if (kine) return `/demo/kine?ecran=${kine}`;
   const patient = url.pathname.startsWith("/patient") ? patientScreen(url) : null;
-  return patient ? `/demo/patient?ecran=${patient}` : null;
+  // Détail d'une séance ouvert depuis la frise de l'accueil : le retour dit « Accueil », comme dans l'appli.
+  const depuis = patient === "historique-detail" && url.searchParams.get("depuis") === "accueil" ? "&depuis=accueil" : "";
+  return patient ? `/demo/patient?ecran=${patient}${depuis}` : null;
 }
 
 // « Dans un iframe ? » ne change jamais pendant la visite : rien à écouter.

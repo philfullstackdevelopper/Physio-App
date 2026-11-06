@@ -338,29 +338,21 @@ export default function Home() {
             </div>
             )}
 
-            {/* Liste d'attente (Philippe, 2026-10-12). */}
-            <div
-              className={
-                SIGNUPS_OPEN
-                  ? "mx-auto mt-8 max-w-md border-t border-white/10 pt-6 sm:short:mt-5 sm:short:pt-4 phone-land:mt-4 phone-land:pt-3"
-                  : "mx-auto mt-8 max-w-md sm:short:mt-5 phone-land:mt-4"
-              }
-            >
-              {SIGNUPS_OPEN && (
-                <p className="mb-3 text-sm font-medium text-white">
-                  Pas encore prêt&nbsp;? Laissez votre e-mail, nous vous prévenons au lancement.
-                </p>
-              )}
-              <WaitlistForm />
-              {!SIGNUPS_OPEN && (
+            {/* Liste d'attente (Philippe, 2026-10-12) : seulement tant que les
+                inscriptions sont fermées. Inscriptions ouvertes, l'inscription est
+                gratuite, le formulaire faisait doublon (Philippe, 2026-11-06 :
+                audit, on allège). La liste déjà collectée reste dans /admin. */}
+            {!SIGNUPS_OPEN && (
+              <div className="mx-auto mt-8 max-w-md sm:short:mt-5 phone-land:mt-4">
+                <WaitlistForm />
                 <p className="mt-5 text-sm text-slate-400">
                   Vous avez déjà un compte&nbsp;?{" "}
                   <Link href="/login" className="font-medium text-white underline-offset-4 hover:underline">
                     Se connecter
                   </Link>
                 </p>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </section>
         </Reveal>

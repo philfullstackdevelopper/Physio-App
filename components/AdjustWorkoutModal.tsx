@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { isPhoneFormat } from "@/lib/phoneFormat";
 import Link from "next/link";
 import { track } from "@/lib/analytics/track";
-import { CalendarRange, Check, ChevronDown, ChevronLeft, ChevronUp, Dumbbell, Info, Plus, Repeat, Search, Trash2, X } from "lucide-react";
+import { CalendarRange, Check, ChevronDown, ChevronLeft, Dumbbell, Info, Plus, Repeat, Search, Trash2, X } from "lucide-react";
 import { levelNeighbours, STAGE_ORDER } from "@/lib/exercise/levelStep";
 import { PHASE_NUMBER, phaseDoseFor, type Stage } from "@/lib/exercise/phasePlan";
 import type { Recommendation } from "@/lib/exercise/variants";
@@ -416,7 +416,6 @@ export default function AdjustWorkoutModal({
       )
     : { easier: null, harder: null };
   const easierWorkout = addableWorkouts.find((w) => w.id === level.easier) ?? null;
-  const harderWorkout = addableWorkouts.find((w) => w.id === level.harder) ?? null;
   // Une dose (séries × répétitions) modifiée compte comme un changement.
   const [doseEdited, setDoseEdited] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -693,38 +692,25 @@ export default function AdjustWorkoutModal({
                       />
                     </label>
                   )}
-                  {/* Un niveau plus facile / plus difficile (Philippe, 2026-11-02) :
-                      la séance de la même condition, phase voisine, à partir de
-                      cette semaine. Formulaire à part (hors du formulaire
-                      « Enregistrer » plus bas). */}
-                  {view === "exercises" && workout && (easierWorkout || harderWorkout) && (
+                  {/* Un niveau plus facile (Philippe, 2026-11-02) : la séance de la
+                      même condition, phase précédente, à partir de cette semaine.
+                      « Plus difficile » retiré le 2026-11-06 (audit, on allège) :
+                      « Passer en phase N » sur la fiche fait la même chose.
+                      Formulaire à part (hors du formulaire « Enregistrer »). */}
+                  {view === "exercises" && workout && easierWorkout && (
                     <form action={assignAction} onSubmit={close} className="flex items-center gap-1 max-sm:hidden">
                       <input type="hidden" name="patient_id" value={patientId} />
                       {weekStartDate && <input type="hidden" name="week_start_date" value={weekStartDate} />}
-                      {easierWorkout && (
-                        <button
-                          type="submit"
-                          name="workout_id"
-                          value={easierWorkout.id}
-                          title={`Plus facile : « ${easierWorkout.name} »${easierWorkout.stageLabel ? ` (${easierWorkout.stageLabel})` : ""}`}
-                          className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-app-bg"
-                        >
-                          <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.25} />
-                          Plus facile
-                        </button>
-                      )}
-                      {harderWorkout && (
-                        <button
-                          type="submit"
-                          name="workout_id"
-                          value={harderWorkout.id}
-                          title={`Plus difficile : « ${harderWorkout.name} »${harderWorkout.stageLabel ? ` (${harderWorkout.stageLabel})` : ""}`}
-                          className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-app-bg"
-                        >
-                          <ChevronUp className="h-3.5 w-3.5" strokeWidth={2.25} />
-                          Plus difficile
-                        </button>
-                      )}
+                      <button
+                        type="submit"
+                        name="workout_id"
+                        value={easierWorkout.id}
+                        title={`Plus facile : « ${easierWorkout.name} »${easierWorkout.stageLabel ? ` (${easierWorkout.stageLabel})` : ""}`}
+                        className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-app-bg"
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.25} />
+                        Plus facile
+                      </button>
                     </form>
                   )}
                   {view === "exercises" && workout && addableWorkouts.length > 0 && (

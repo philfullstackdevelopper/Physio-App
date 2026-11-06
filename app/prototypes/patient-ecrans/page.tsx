@@ -82,8 +82,8 @@ async function noop() {
   "use server";
 }
 
-export default async function PatientEcransPrototype({ searchParams }: { searchParams: Promise<{ ecran?: string }> }) {
-  const { ecran = "programme" } = await searchParams;
+export default async function PatientEcransPrototype({ searchParams }: { searchParams: Promise<{ ecran?: string; depuis?: string }> }) {
+  const { ecran = "programme", depuis } = await searchParams;
 
   const workouts: ProgrammeWorkout[] = [
     {
@@ -171,6 +171,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
             dateLabel="lundi 28 septembre à 18:15"
             feedback={{ pain_score: 3, notes: "Un peu raide au début, mieux à la fin." }}
             exercises={[...EXERCISES.map(([name]) => name), "Quad Set", "Heel Slide", "Banded Clamshell"].map((name) => ({ name, skipped: false }))}
+            back={depuis === "accueil" ? { href: "/patient", label: "Accueil" } : undefined}
           />
         ) : ecran === "historique" ? (
           <HistoriqueView weeks={demoHistoryWeeks()} />
