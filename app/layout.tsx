@@ -5,7 +5,12 @@ import { easyPhysioFR } from "@/lib/clerk/localization";
 import CookieBanner from "@/components/CookieBanner";
 import { siteConfig } from "@/lib/site";
 import AppBridge from "@/components/AppBridge";
+import { appStoreId } from "@/lib/app/storeLinks";
 import "./globals.css";
+
+// Bannière Safari « Ouvrir dans l'App Store » sur iPhone, une fois l'appli
+// publiée (APP_STORE_URL, lib/app/storeLinks.ts).
+const iosAppId = appStoreId();
 
 // A distinctive humanist sans instead of the ubiquitous default-template
 // font — keeps the UI from reading as a generic scaffolded app.
@@ -43,6 +48,7 @@ export const metadata: Metadata = {
     title: `${siteConfig.name} · ${siteConfig.tagline}`,
     description: siteConfig.description,
   },
+  ...(iosAppId ? { itunes: { appId: iosAppId } } : {}),
 };
 
 // viewport-fit: cover lets the patient bottom nav (PatientNav) pad itself

@@ -50,6 +50,7 @@ npx eas-cli submit --platform android
 
 - `APPLE_TEAM_ID` : identifiant d'équipe Apple (10 caractères, page « Membership » du compte développeur).
 - `ANDROID_CERT_SHA256` : empreinte SHA-256 du certificat de l'appli (Google Play Console → Intégrité de l'appli → Signature).
+- `APP_STORE_URL` et `PLAY_STORE_URL` : adresses de l'appli dans les magasins, une fois publiée (ex. `https://apps.apple.com/fr/app/easyphysio/id1234567890`). Elles font apparaître l'écran « Votre programme est prêt — téléchargez l'appli » à la fin de l'inscription du patient sur le site (`/patient/appli`, seulement le bon magasin selon son téléphone) et la bannière « Ouvrir dans l'App Store » de Safari. **Redéployer** le site après les avoir renseignées.
 - `EXPO_ACCESS_TOKEN` (facultatif) : jeton d'accès Expo, pour des envois de notifications signés.
 
 Sans `APPLE_TEAM_ID` et `ANDROID_CERT_SHA256`, ces liens s'ouvrent simplement dans le navigateur.

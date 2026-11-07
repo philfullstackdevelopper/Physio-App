@@ -137,7 +137,7 @@ export default function OnboardingWizard({
         action={async (formData) => {
           const result = await saveAction(formData);
           // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- chargement complet VOULU : la navigation interne pouvait laisser un écran blanc.
-          if (result?.ok) window.location.assign("/patient");
+          if (result?.ok) window.location.assign("/patient/appli");
         }}
         className="mt-6 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 short:mt-3 short:p-5">
         {/* Zone qui défile : les champs de l'étape. -mx-1 px-1 py-1 : de quoi
