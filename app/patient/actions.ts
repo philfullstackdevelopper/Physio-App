@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { friendlyDbError } from "@/lib/format/dbError";
+import { notifyNewMessage } from "@/lib/push/notify";
 
 // First step of patient onboarding, gated in app/patient/layout.tsx.
 // patients_update_by_instructor is the only ordinary UPDATE policy on
@@ -85,6 +86,7 @@ export async function sendPatientMessage(formData: FormData) {
     body,
   });
   if (error) redirect(`/patient/messages?error=${encodeURIComponent(friendlyDbError(error))}`);
+  await notifyNewMessage({ patientId: user.id, instructorId: patient!.instructor_id as string, sender: "patient" });
 
   revalidatePath("/patient");
   revalidatePath("/patient/messages");

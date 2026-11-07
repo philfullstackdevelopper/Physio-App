@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { friendlyDbError } from "@/lib/format/dbError";
+import { notifyNewMessage } from "@/lib/push/notify";
 
 // Adresse de retour vers la boîte de réception, en gardant la recherche du
 // kiné (audit du 2026-10-08 : elle se perdait).
@@ -37,6 +38,7 @@ export async function sendInboxMessage(formData: FormData) {
     body,
   });
   if (error) fail(friendlyDbError(error));
+  await notifyNewMessage({ patientId, instructorId: user.id, sender: "instructor" });
 
   revalidatePath("/dashboard/messages");
   revalidatePath("/dashboard");

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { LOWEST_MONTHLY_TOTAL_CENTS, TRIAL_DAYS, eurosFR, isLegacySubscription, isPlatformOfferKey, isPlatformSubscription, platformOffer, type SubscriptionRow } from "@/lib/billing/patientPlans";
+import { nativeAppPlatform } from "@/lib/app/nativeAppServer";
 import CompteView, { type FollowUpSummary } from "./CompteView";
 
 // « Paramètres » du patient. Modèle définitif (2026-11-04, lib/billing/patientPlans.ts) :
@@ -42,5 +43,7 @@ export default async function CompteePage({
           : `${TRIAL_DAYS} jours offerts, puis dès ${eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} € par mois (non remboursé)`,
   };
 
-  return <CompteView fullName={(patient?.full_name as string | null) ?? null} error={error} followUp={summary} />;
+  // Appli mobile : pas de carte « Mon suivi » avec ses prix (règles d'Apple / Google).
+  const inApp = !!(await nativeAppPlatform());
+  return <CompteView fullName={(patient?.full_name as string | null) ?? null} error={error} followUp={summary} inApp={inApp} />;
 }

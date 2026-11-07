@@ -8,7 +8,7 @@ import { listAllInstructors, listTestAccounts, listWaitlist, type TestAccountRow
 import Waitlist from "./Waitlist";
 import TestAccounts from "./TestAccounts";
 import KineExercises, { type AdminKineExercise } from "./KineExercises";
-import { listKineExercises } from "@/lib/db/admin";
+import { listAccountDeletions, listKineExercises, type AccountDeletionRow } from "@/lib/db/admin";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import AdminSummary, { sinceLabel, type AdminTodo } from "./AdminSummary";
 import { CONTRIBUTOR_THRESHOLD } from "@/lib/exercise/kineExercises";
@@ -62,6 +62,14 @@ export default async function AdminPage({
   }
 
   // Exercices créés par les kinés (migration 0081) : même prudence.
+  // Demandes de suppression de compte kiné (migration 0083) : même prudence.
+  let deletions: AccountDeletionRow[] = [];
+  try {
+    deletions = await listAccountDeletions();
+  } catch (e) {
+    console.error("[admin] demandes de suppression : liste indisponible", e);
+  }
+
   let kineExercises: AdminKineExercise[] | null = null;
   try {
     const rows = await listKineExercises();
@@ -97,6 +105,14 @@ export default async function AdminPage({
   const approved = all.filter((k) => k.status === "approved");
   const noStripe = approved.filter((k) => k.patient_count > 0 && k.connect_status !== "active");
   const todos: AdminTodo[] = [
+    {
+      key: "deletion",
+      label: "Comptes à supprimer",
+      count: deletions.length,
+      detail: "Kinés qui ont demandé la suppression de leur compte (à traiter sous 30 jours).",
+      href: "#suppressions",
+      urgent: true,
+    },
     {
       key: "review",
       label: "Exercices à vérifier",
@@ -332,6 +348,28 @@ export default async function AdminPage({
           );
         })}
       </ul>
+
+      {deletions.length > 0 && (
+        <section id="suppressions" className="mt-12 scroll-mt-6">
+          <h2 className="font-display text-xl font-semibold text-slate-900">Demandes de suppression de compte</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            À traiter sous 30 jours : prévenir le kiné, organiser la suite pour ses patients, puis supprimer ou suspendre le compte.
+          </p>
+          <ul className="mt-4 space-y-2">
+            {deletions.map((d) => (
+              <li key={d.instructor_id} className="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+                <p className="font-medium text-slate-900">
+                  {d.full_name || "—"} <span className="font-normal text-slate-500">· {d.email}</span>
+                </p>
+                <p className="mt-0.5 text-slate-500">
+                  Demandé le {dateFmt.format(new Date(d.requested_at))} · {d.patient_count} patient{d.patient_count > 1 ? "s" : ""}
+                </p>
+                {d.reason && <p className="mt-1 text-slate-700">« {d.reason} »</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {waitlist ? (
         <Waitlist rows={waitlist} />

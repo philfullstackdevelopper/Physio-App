@@ -6,6 +6,7 @@
 // existe aussi mais n'y est pas listée.
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ChevronRight, Dumbbell, ListChecks, Wallet } from "lucide-react";
 import { initials } from "@/lib/format/initials";
 
@@ -15,7 +16,7 @@ const TILES = [
   { href: "/dashboard/facturation", label: "Suivi & facturation", hint: "Bilans du mois, tarif, documents", icon: Wallet, tone: "bg-ok-soft text-ok" },
 ];
 
-export default function KineInfosView({ instructorName }: { instructorName: string | null }) {
+export default function KineInfosView({ instructorName, footer }: { instructorName: string | null; footer?: ReactNode }) {
   return (
     <main className="min-h-screen max-sm:min-h-0">
       <div className="mx-auto max-w-xl px-4 pb-4 pt-2 sm:px-8 sm:py-6">
@@ -47,6 +48,7 @@ export default function KineInfosView({ instructorName }: { instructorName: stri
             </Link>
           ))}
         </nav>
+        {footer}
       </div>
     </main>
   );

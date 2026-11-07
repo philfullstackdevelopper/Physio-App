@@ -20,6 +20,8 @@ export interface CompteViewProps {
   error?: string;
   notice?: string | null;
   followUp: FollowUpSummary;
+  /** Appli mobile : pas de carte « Mon suivi » (prix et paiement interdits dans l'appli). */
+  inApp?: boolean;
 }
 
 // La carte « Mon suivi » résume l'abonnement (modèle du 2026-11-04,
@@ -37,13 +39,14 @@ export default function CompteView({
   error,
   notice,
   followUp,
+  inApp = false,
 }: CompteViewProps) {
   const f = followUpText(followUp);
   return (
     // Téléphone (Philippe, 2026-10-04 : tout sur un écran, plus efficace) :
     // cartes resserrées, textes secondaires masqués. Dès sm : deux cartes.
     <main className="bg-app-bg p-4 pt-5 max-sm:bg-transparent max-sm:pt-2 max-sm:flex max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:flex-col sm:min-h-dvh sm:p-8 short:sm:py-4">
-      <PhoneSettings fullName={fullName} error={error} notice={notice ?? null} f={f} />
+      <PhoneSettings fullName={fullName} error={error} notice={notice ?? null} f={f} inApp={inApp} />
 
       <div className="mx-auto max-w-7xl max-sm:hidden max-sm:flex max-sm:w-full max-sm:flex-1 max-sm:flex-col max-sm:justify-between">
         <h1 className="text-xl font-semibold text-ink sm:text-2xl">Paramètres</h1>
@@ -59,6 +62,7 @@ export default function CompteView({
 
         <div className="mt-4 grid gap-3 sm:mt-6 sm:gap-5 short:sm:mt-3 short:sm:gap-3 lg:grid-cols-[3fr_2fr]">
           {/* Mon suivi (modèle du 2026-11-04) */}
+          {!inApp && (
           <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6 short:sm:p-4">
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2 font-medium text-ink">
@@ -81,6 +85,7 @@ export default function CompteView({
               <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Link>
           </section>
+          )}
 
           {/* Mon compte */}
           <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6 short:sm:p-4">
@@ -161,11 +166,13 @@ function PhoneSettings({
   error,
   notice,
   f,
+  inApp,
 }: {
   fullName: string | null;
   error?: string;
   notice: string | null;
   f: ReturnType<typeof followUpText>;
+  inApp: boolean;
 }) {
   return (
     <div className="flex flex-1 flex-col gap-3 short:gap-2 sm:hidden">
@@ -193,6 +200,7 @@ function PhoneSettings({
         <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
       </Link>
 
+      {!inApp && (
       <section>
         <h2 className="mb-1.5 px-1 text-sm font-semibold text-ink short:hidden">Suivi mensuel</h2>
         <Link href="/patient/suivi" className="flex items-center gap-3 rounded-2xl bg-surface p-3.5 shadow-soft short:p-2.5">
@@ -207,6 +215,7 @@ function PhoneSettings({
           <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
         </Link>
       </section>
+      )}
 
       <section>
         <h2 className="mb-1.5 px-1 text-sm font-semibold text-ink short:hidden">Mes données</h2>

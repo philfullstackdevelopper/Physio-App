@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { easyPhysioFR } from "@/lib/clerk/localization";
 import CookieBanner from "@/components/CookieBanner";
 import { siteConfig } from "@/lib/site";
+import AppBridge from "@/components/AppBridge";
 import "./globals.css";
 
 // A distinctive humanist sans instead of the ubiquitous default-template
@@ -69,7 +70,11 @@ export default function RootLayout({
           data-new-gr-c-s-check-loaded. N'agit que sur les attributs de
           <body> lui-même, pas sur ses enfants. */}
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <ClerkProvider localization={easyPhysioFR}>{children}</ClerkProvider>
+        <ClerkProvider localization={easyPhysioFR}>
+          {children}
+          {/* Appli mobile : notifications (ne fait rien dans un navigateur). */}
+          <AppBridge />
+        </ClerkProvider>
         <CookieBanner />
       </body>
     </html>

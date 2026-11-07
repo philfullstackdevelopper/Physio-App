@@ -459,3 +459,29 @@ export async function joinPatientByLink(params: { instructorId: string; appId: s
   ]);
   return rows[0]?.r ?? "ERROR";
 }
+
+// ---------------------------------------------------------------------------
+// Demandes de suppression de compte kiné (migration 0083).
+// ---------------------------------------------------------------------------
+
+export async function requestAccountDeletion(instructorId: string, reason: string): Promise<void> {
+  await getPool().query("select internal.request_account_deletion($1, $2)", [instructorId, reason]);
+}
+
+export async function cancelAccountDeletion(instructorId: string): Promise<void> {
+  await getPool().query("select internal.cancel_account_deletion($1)", [instructorId]);
+}
+
+export type AccountDeletionRow = {
+  instructor_id: string;
+  requested_at: string;
+  reason: string | null;
+  full_name: string | null;
+  email: string | null;
+  patient_count: number;
+};
+
+export async function listAccountDeletions(): Promise<AccountDeletionRow[]> {
+  const { rows } = await getPool().query<AccountDeletionRow>("select * from internal.admin_list_account_deletions()");
+  return rows;
+}

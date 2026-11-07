@@ -4,6 +4,8 @@ import { isLegacySubscription, isPlatformSubscription, patientMustSubscribe, sub
 import { getStripe } from "@/lib/billing/stripe";
 import { refreshPatientSubscription } from "@/lib/billing/patientSubscription";
 import SuiviView from "./SuiviView";
+import AppAccessNotice from "./AppAccessNotice";
+import { nativeAppPlatform } from "@/lib/app/nativeAppServer";
 
 // « Mon suivi » côté patient : choisir, voir ou résilier sa formule
 // (modèle définitif du 2026-11-04 : 3,99 € d'accès + 6 € du kiné). C'est aussi l'écran où
@@ -62,6 +64,17 @@ export default async function SuiviPage({
     freeAccessUntil: (patient?.trial_ends_at as string | null) ?? null,
     subscription: (sub as unknown as SubscriptionRow | null) ?? null,
   });
+
+  // Appli mobile : ni prix ni paiement (règles d'Apple / Google), seulement l'état de l'accès.
+  if (await nativeAppPlatform()) {
+    return (
+      <AppAccessNotice
+        active={!required}
+        kineName={(kine?.full_name as string | null) ?? "Votre kiné"}
+        until={endsAt}
+      />
+    );
+  }
 
   return (
     <SuiviView

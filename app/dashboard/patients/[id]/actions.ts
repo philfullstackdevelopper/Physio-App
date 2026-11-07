@@ -14,6 +14,7 @@ import { getStripe } from "@/lib/billing/stripe";
 import { resolveAppUserId, precreateAppUserId } from "@/lib/auth/user-map";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { doseColumnsFromForm, doseColumnsFromRow, type DoseColumns } from "@/lib/exercise/doseForm";
+import { notifyNewMessage } from "@/lib/push/notify";
 
 // PatientActionsMenu is used both on the patient detail page and inline in
 // the "Mes patients" table, so its forms carry where to land afterwards.
@@ -423,6 +424,7 @@ async function applySeanceChanges({
     sender: "instructor",
     body: message,
   });
+  await notifyNewMessage({ patientId, instructorId: userId, sender: "instructor" });
   // Patient en suivi mensuel : ajuster la séance valide le bilan du mois.
   await recordMonthlyReviewIfDue({ supabase, instructorId: userId, patientId, note: message });
   revalidatePath("/dashboard/facturation");

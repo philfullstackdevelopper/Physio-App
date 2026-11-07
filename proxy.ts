@@ -1,5 +1,6 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { isAppPath, nativePlatformFromUserAgent } from "@/lib/app/nativeApp";
 
 // Next.js 16 renamed Middleware → Proxy (same job: runs before each request).
 // clerkMiddleware() makes the Clerk session available to Server Components and
@@ -23,6 +24,14 @@ export default clerkMiddleware(async (auth, req) => {
   const host = (req.headers.get("host") ?? "").split(":")[0].toLowerCase();
   if (ALIAS_HOSTS.has(host)) {
     return NextResponse.redirect(`https://${MAIN_HOST}${req.nextUrl.pathname}${req.nextUrl.search}`, 301);
+  }
+
+  // Appli mobile (lib/app/nativeApp.ts) : pas de pages vitrine (accueil,
+  // tarifs, démo) dans l'appli, on ouvre directement l'espace de la personne.
+  // Seulement les pages (pas les vidéos, images ou appels de données).
+  const isPage = (req.headers.get("accept") ?? "").includes("text/html");
+  if (isPage && nativePlatformFromUserAgent(req.headers.get("user-agent")) && !isAppPath(req.nextUrl.pathname)) {
+    return NextResponse.redirect(new URL("/apres-connexion", req.url));
   }
 
   // Already signed in and asking for the login page (any « Se connecter »

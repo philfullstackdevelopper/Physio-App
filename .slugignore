@@ -1,0 +1,3 @@
+# Fichiers qui ne partent pas sur le serveur Scalingo (site web).
+# L'appli mobile est construite à part, par Expo (voir mobile/README.md).
+mobile

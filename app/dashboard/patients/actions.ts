@@ -13,6 +13,7 @@ import type { ThreadMessage } from "@/components/MessageThread";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { deleteAppUserById } from "@/lib/db/admin";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
+import { notifyNewMessage } from "@/lib/push/notify";
 
 // Instructor invites a new patient by email. Creates the patient's Clerk
 // account invitation (they choose their own password from the e-mail), and
@@ -288,6 +289,7 @@ export async function sendPatientMessage(formData: FormData): Promise<{ ok: true
     body,
   });
   if (error) return { error: friendlyDbError(error) };
+  await notifyNewMessage({ patientId, instructorId: user.id, sender: "instructor" });
 
   revalidatePath("/dashboard/messages");
   revalidatePath("/dashboard");

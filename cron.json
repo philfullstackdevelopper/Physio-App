@@ -1,0 +1,8 @@
+{
+  "jobs": [
+    {
+      "command": "0 17 * * * node scripts/cron-rappels.mjs",
+      "size": "S"
+    }
+  ]
+}
