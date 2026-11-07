@@ -1,7 +1,9 @@
 // Liens qui ouvrent directement l'appli mobile (« universal links » chez Apple,
 // « App Links » chez Google) au lieu du navigateur, quand elle est installée :
-// invitation et QR code du kiné, connexion, espaces kiné et patient. Les pages
-// vitrine restent dans le navigateur.
+// connexion, espaces kiné et patient. Les pages vitrine restent dans le
+// navigateur, et SURTOUT l'invitation / QR code du kiné (/rejoindre,
+// /invitation) : le patient s'inscrit et paie sur le site, jamais dans
+// l'appli (règles d'Apple), puis télécharge l'appli et s'y connecte.
 //
 // Les deux fichiers publiés sous /.well-known/ ont besoin d'identifiants que
 // Philippe obtient en créant ses comptes développeur :
@@ -14,4 +16,4 @@
 
 export const APP_BUNDLE_ID = "fr.easyphysio.app";
 
-export const APP_LINK_PATHS = ["/rejoindre/*", "/invitation/*", "/login*", "/patient*", "/dashboard*", "/apres-connexion"];
+export const APP_LINK_PATHS = ["/login*", "/patient*", "/dashboard*", "/apres-connexion"];
