@@ -1,0 +1,78 @@
+{
+  "expo": {
+    "name": "EasyPhysio",
+    "slug": "easyphysio",
+    "scheme": "easyphysio",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#f5f7fb",
+    "ios": {
+      "bundleIdentifier": "fr.easyphysio.app",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "associatedDomains": ["applinks:easyphysio.fr"],
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "EasyPhysio utilise l'appareil photo pour filmer vos exercices et les ajouter à votre bibliothèque.",
+        "NSMicrophoneUsageDescription": "EasyPhysio utilise le micro uniquement pendant l'enregistrement d'une vidéo d'exercice.",
+        "NSPhotoLibraryUsageDescription": "EasyPhysio accède à vos vidéos pour que vous puissiez choisir celle d'un exercice.",
+        "NSFaceIDUsageDescription": "EasyPhysio utilise Face ID pour protéger l'accès à vos données de santé."
+      }
+    },
+    "android": {
+      "package": "fr.easyphysio.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["CAMERA", "RECORD_AUDIO", "USE_BIOMETRIC", "USE_FINGERPRINT", "POST_NOTIFICATIONS"],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "easyphysio.fr", "pathPrefix": "/login" },
+            { "scheme": "https", "host": "easyphysio.fr", "pathPrefix": "/patient" },
+            { "scheme": "https", "host": "easyphysio.fr", "pathPrefix": "/dashboard" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "plugins": [
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#f5f7fb"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#155dfc"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "EasyPhysio utilise Face ID pour protéger l'accès à vos données de santé."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {}
+    }
+  }
+}
