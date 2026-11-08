@@ -9,7 +9,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, Check, Play, Repeat2, Dumbbell, Timer, X, ArrowRight, ShieldAlert, SkipForward } from "lucide-react";
+import { CheckCircle2, Check, Play, Repeat2, Dumbbell, Timer, X, ArrowRight, ShieldAlert, SkipForward, Maximize2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { goalPartsFor, goalTextFor, type ExerciseDose, type GoalParts, type Prescription } from "@/lib/exercise/prescription";
 import { sessionPainScore } from "@/lib/exercise/sessionPain";
@@ -75,6 +75,18 @@ function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string;
     v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
   };
 
+  // Plein écran (Philippe, 2026-11-08 : « avoir les vidéos en grand ») : lance
+  // la lecture et agrandit la vidéo. iPhone : lecteur plein écran d'Apple
+  // (webkitEnterFullscreen) ; ailleurs, plein écran standard.
+  const fullscreen = () => {
+    const v = videoRef.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
+    if (!v) return;
+    if (v.ended || v.currentTime < startSeconds) v.currentTime = startSeconds;
+    v.play().then(() => setPlaying(true)).catch(() => {});
+    if (typeof v.requestFullscreen === "function") v.requestFullscreen().catch(() => v.webkitEnterFullscreen?.());
+    else v.webkitEnterFullscreen?.();
+  };
+
   return (
     // Le cadre prend la forme de la vidéo elle-même (verticale ou horizontale,
     // Philippe, 2026-11-01). Hauteur plafonnée (--mh) pour tenir sur un écran :
@@ -109,6 +121,15 @@ function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string;
           <Play className="ml-0.5 h-4 w-4" strokeWidth={2} fill="currentColor" />
         </span>
       )}
+      <button
+        type="button"
+        onClick={fullscreen}
+        aria-label={t("fullscreenAria")}
+        title={t("fullscreenTitle")}
+        className="absolute right-2 bottom-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white transition-colors hover:bg-black/65 focus-visible:outline-2 focus-visible:outline-white"
+      >
+        <Maximize2 className="h-4 w-4" strokeWidth={2} />
+      </button>
     </div>
   );
 }

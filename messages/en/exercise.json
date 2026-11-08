@@ -134,7 +134,9 @@
     "upNext": "Up next",
     "nextExercise": "Next exercise",
     "finishSession": "Finish the session",
-    "doneExercise": "I’ve finished this exercise"
+    "doneExercise": "I’ve finished this exercise",
+    "fullscreenAria": "View the video full screen",
+    "fullscreenTitle": "Full screen"
   },
   "illustration": {
     "aria": "Demonstration: {name}",
