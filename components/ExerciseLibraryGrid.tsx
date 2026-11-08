@@ -21,6 +21,7 @@ import KineVideoUpload from "@/components/KineVideoUpload";
 import NewExerciseWizard, { type WizardPatient } from "@/components/NewExerciseWizard";
 import { STATUS_PILL, canRequestPublication, statusPillLabel, type PublicationStatus } from "@/lib/exercise/kineExercises";
 import ContributorCredit from "@/components/ContributorCredit";
+import { exerciseNameMatches } from "@/lib/exercise/exerciseNames";
 
 export interface BodyPart {
   id: string;
@@ -190,14 +191,14 @@ export default function ExerciseLibraryGrid({
     const q = query.trim().toLowerCase();
     if (mineOnly) {
       return exercises.filter(
-        (ex) => ex.created_by === currentUserId && (!q || ex.name.toLowerCase().includes(q) || ex.instructions?.toLowerCase().includes(q)),
+        (ex) => ex.created_by === currentUserId && (!q || exerciseNameMatches(ex.name, q) || ex.instructions?.toLowerCase().includes(q)),
       );
     }
     if (q) {
       return exercises.filter(
         (ex) =>
           !ex.hidden &&
-          (ex.name.toLowerCase().includes(q) ||
+          (exerciseNameMatches(ex.name, q) ||
             ex.instructions?.toLowerCase().includes(q) ||
             ex.search_keywords.some((k) => k.toLowerCase().includes(q))),
       );

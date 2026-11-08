@@ -8,6 +8,7 @@ import BodyPartIllustration from "@/components/BodyPartIllustration";
 import ExerciseInfoModal from "@/components/ExerciseInfoModal";
 import { useTranslations } from "next-intl";
 import { equipmentLabels, equipmentListLabel, missingEquipment, type EquipmentId } from "@/lib/exercise/equipment";
+import { exerciseNameMatches } from "@/lib/exercise/exerciseNames";
 
 export type PickerExercise = {
   id: string;
@@ -97,7 +98,7 @@ export default function ExerciseLibraryPicker({
   const filtered = useMemo(() => {
     const base = query
       ? exercises.filter(
-          (ex) => ex.name.toLowerCase().includes(query) || (ex.searchKeywords ?? []).some((k) => k.toLowerCase().includes(query)),
+          (ex) => exerciseNameMatches(ex.name, query) || (ex.searchKeywords ?? []).some((k) => k.toLowerCase().includes(query)),
         )
       : bodyPartId === RECENT
         ? recentList.map((id) => exercises.find((ex) => ex.id === id)).filter((ex): ex is PickerExercise => !!ex)

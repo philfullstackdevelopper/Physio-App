@@ -23,6 +23,7 @@ import { addWeeksToKey } from "@/lib/exercise/activeRecommendation";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import DoseInputs from "@/components/DoseInputs";
 import type { ExerciseDose } from "@/lib/exercise/prescription";
+import { exerciseNameMatches } from "@/lib/exercise/exerciseNames";
 
 /** Le petit (i) d'une carte d'exercice : ouvre sa vidéo et ses consignes
  *  (Philippe, 2026-11-01). Posé À CÔTÉ du bouton de la carte (un bouton ne
@@ -524,7 +525,7 @@ export default function AdjustWorkoutModal({
   const filteredWorkouts = useMemo(() => {
     if (templateQuery) {
       return addableWorkouts.filter(
-        (w) => w.name.toLowerCase().includes(templateQuery) || w.exerciseNames.some((n) => n.toLowerCase().includes(templateQuery)),
+        (w) => w.name.toLowerCase().includes(templateQuery) || w.exerciseNames.some((n) => exerciseNameMatches(n, templateQuery)),
       );
     }
     // The category tiles only render once there's enough séances to be worth

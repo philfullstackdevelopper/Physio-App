@@ -27,6 +27,7 @@ import { demoBodyParts, type DemoT } from "@/app/prototypes/kine-telephone/mock"
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import { buildHistoryWeeks } from "@/lib/patient/historyWeeks";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
+import { exerciseNameFor } from "@/lib/exercise/exerciseNames";
 
 export async function generateMetadata() {
   const t = await getTranslations("demo.meta");
@@ -59,7 +60,7 @@ function demoHistoryWeeks(t: DemoT, locale: Locale, labels: { weekOf: (date: str
   const now = new Date();
   const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7), 18, 15);
   const at = (weeksAgo: number, day: number) => new Date(monday.getTime() + (day - weeksAgo * 7) * 86_400_000).toISOString();
-  const workout = { name: t("kneeL2"), timesPerWeek: 3, exercises: EXERCISE_LIST.map(([name]) => name) };
+  const workout = { name: t("kneeL2"), timesPerWeek: 3, exercises: EXERCISE_LIST.map(([name]) => exerciseNameFor(name, locale)) };
   const done: [number, number][] = [[0, 0], [1, 0], [1, 2], [1, 4], [2, 1], [2, 3], [3, 2]];
   return buildHistoryWeeks({
     now,
@@ -106,7 +107,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
       timesPerWeek: 3,
       doneThisWeek: 1,
       isActive: true,
-      exercises: EXERCISES.map(([name, instructions], i) => ({ id: `ex${i}`, name, instructions, categoryLabel: t("kneeLeg") })),
+      exercises: EXERCISES.map(([name, instructions], i) => ({ id: `ex${i}`, name: exerciseNameFor(name, locale), instructions, categoryLabel: t("kneeLeg") })),
     },
   ];
 
@@ -182,7 +183,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
             name={t("kneeL2")}
             dateLabel={t("historyDate")}
             feedback={{ pain_score: 3, notes: t("historyNotes") }}
-            exercises={[...EXERCISES.map(([name]) => name), "Quad Set", "Heel Slide", "Banded Clamshell"].map((name) => ({ name, skipped: false }))}
+            exercises={[...EXERCISES.map(([name]) => name), "Quad Set", "Heel Slide", "Banded Clamshell"].map((name) => ({ name: exerciseNameFor(name, locale), skipped: false }))}
             back={depuis === "accueil" ? { href: "/patient", label: t("backHome") } : undefined}
           />
         ) : ecran === "historique" ? (
@@ -197,7 +198,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
                 workoutName={t("kneeL2")}
                 exercises={await Promise.all(
                   EXERCISES.map(async ([name, instructions, video]) => ({
-                    name,
+                    name: exerciseNameFor(name, locale),
                     instructions,
                     mediaUrl: await resolveMediaUrl(`r2:${video}`),
                     mediaStartSeconds: 0,

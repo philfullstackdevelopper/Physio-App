@@ -32,6 +32,7 @@ import { KINE_FOLLOW_UP_CENTS } from "@/lib/billing/patientPlans";
 const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
 import { STAGE_LABELS, stageLabel, stageShort, type InjuryStage } from "@/lib/exercise/prescription";
 import { DEMO_EXERCISES, demoBodyParts, demoExercises, mockData, mockFiche } from "./mock";
+import { exerciseNameFor } from "@/lib/exercise/exerciseNames";
 import { noopPublish, noopResult, noopVoid } from "./actions";
 
 export async function generateMetadata() {
@@ -140,7 +141,7 @@ export default async function KineTelephonePrototype({
       />
     );
   } else if (ecran === "seances") {
-    const names = DEMO_EXERCISES.slice(0, 4).map((e) => e.name);
+    const names = DEMO_EXERCISES.slice(0, 4).map((e) => exerciseNameFor(e.name, i18n.locale));
     const zones = DEMO_BODY_PARTS.filter((b) => ["bp-genou", "bp-dos", "bp-epaule"].includes(b.id));
     // name / cond : clés de demo.samples.seances / demo.samples.conditions.
     const item = (id: string, name: string, cond: string, stage: InjuryStage, lead: number) => ({
@@ -204,7 +205,7 @@ export default async function KineTelephonePrototype({
             bodyParts={bodyParts}
             exercises={[...demoExercises(t).map((e, i) => ({
               id: `ex${i}`,
-              name: e.name,
+              name: exerciseNameFor(e.name, i18n.locale),
               instructions: e.instructions,
               media_url: null,
               media_start_seconds: 0,
@@ -273,7 +274,7 @@ export default async function KineTelephonePrototype({
     };
     const id = seance && seances[seance] ? seance : "s1";
     const [name, conditionId, stage] = seances[id];
-    const pickable = DEMO_EXERCISES.map((e, i) => ({ id: `demo-ex-${i}`, name: e.name, searchKeywords: null, equipment: e.equipment, bodyPartIds: e.bodyPartIds }));
+    const pickable = DEMO_EXERCISES.map((e, i) => ({ id: `demo-ex-${i}`, name: exerciseNameFor(e.name, i18n.locale), searchKeywords: null, equipment: e.equipment, bodyPartIds: e.bodyPartIds }));
     screen = (
       <main className="min-h-screen max-sm:min-h-0">
         <EditSeanceModal
