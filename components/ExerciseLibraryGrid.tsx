@@ -11,6 +11,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { MoreVertical, EyeOff, Eye, Info, Search, Globe } from "lucide-react";
 import ExerciseInfoModal from "@/components/ExerciseInfoModal";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
@@ -18,7 +19,7 @@ import BodyPartIllustration from "@/components/BodyPartIllustration";
 import ExerciseVideoUpload from "@/components/ExerciseVideoUpload";
 import KineVideoUpload from "@/components/KineVideoUpload";
 import NewExerciseWizard, { type WizardPatient } from "@/components/NewExerciseWizard";
-import { STATUS_PILL, canRequestPublication, type PublicationStatus } from "@/lib/exercise/kineExercises";
+import { STATUS_PILL, canRequestPublication, statusPillLabel, type PublicationStatus } from "@/lib/exercise/kineExercises";
 import ContributorCredit from "@/components/ContributorCredit";
 
 export interface BodyPart {
@@ -71,12 +72,13 @@ function ExerciseCardMenu({
   onUnhide: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("exercise.library");
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Options"
+        aria-label={t("options")}
         className="rounded p-1 text-muted hover:bg-app-bg hover:text-ink"
       >
         <MoreVertical className="h-4 w-4" strokeWidth={2} />
@@ -95,7 +97,7 @@ function ExerciseCardMenu({
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-app-bg"
               >
                 <Eye className="h-3.5 w-3.5" strokeWidth={2} />
-                Réafficher
+                {t("unhide")}
               </button>
             ) : (
               <button
@@ -107,7 +109,7 @@ function ExerciseCardMenu({
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-app-bg"
               >
                 <EyeOff className="h-3.5 w-3.5" strokeWidth={2} />
-                Masquer cet exercice
+                {t("hide")}
               </button>
             )}
           </div>
@@ -135,6 +137,8 @@ export default function ExerciseLibraryGrid({
   unhideExercise: (formData: FormData) => void | Promise<void>;
 }) {
   const router = useRouter();
+  const t = useTranslations("exercise.library");
+  const tStatus = useTranslations("exercise.publicationStatus");
   const [selectedId, setSelectedId] = useState<string | null>(bodyParts[0]?.id ?? null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   // « Créés par moi » : les exercices du kiné, avec leur statut.
@@ -230,7 +234,7 @@ export default function ExerciseLibraryGrid({
         return;
       }
       setInfo((cur) => (cur && cur.id === exerciseId ? { ...cur, publication_status: "pending" } : cur));
-      setPublishMsg("Merci : votre exercice est envoyé à EasyPhysio pour vérification.");
+      setPublishMsg(t("publishSent"));
       router.refresh();
     });
   };
@@ -238,8 +242,9 @@ export default function ExerciseLibraryGrid({
   // Pastille d'un exercice : le statut des siens, l'auteur de ceux des autres kinés.
   const pillFor = (ex: LibraryExercise): { label: string; tone: string } | null => {
     if (ex.created_by === currentUserId) {
-      if (ex.patient_id) return { label: `Pour ${patientName.get(ex.patient_id) ?? "un patient"}`, tone: "bg-violet-50 text-violet-700" };
-      return STATUS_PILL[ex.publication_status] ?? STATUS_PILL.private;
+      if (ex.patient_id) return { label: t("forPatient", { name: patientName.get(ex.patient_id) ?? t("aPatient") }), tone: "bg-violet-50 text-violet-700" };
+      const status = STATUS_PILL[ex.publication_status] ? ex.publication_status : "private";
+      return { label: statusPillLabel(status, tStatus), tone: STATUS_PILL[status].tone };
     }
     return null;
   };
@@ -259,7 +264,7 @@ export default function ExerciseLibraryGrid({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Rechercher parmi ${exercises.length - hiddenCount} exercices…`}
+            placeholder={t("searchPlaceholder", { count: exercises.length - hiddenCount })}
             className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft max-sm:h-10 max-sm:rounded-xl max-sm:border-0 max-sm:shadow-soft"
           />
         </div>
@@ -272,8 +277,8 @@ export default function ExerciseLibraryGrid({
               mineOnly ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
             }`}
           >
-            <span className="max-sm:hidden">Créés par moi · </span>
-            <span className="sm:hidden">Moi · </span>
+            <span className="max-sm:hidden">{t("createdByMe")} · </span>
+            <span className="sm:hidden">{t("me")} · </span>
             {mineCount}
           </button>
         )}
@@ -281,10 +286,10 @@ export default function ExerciseLibraryGrid({
           <button
             type="button"
             onClick={() => setShowCreateForm(true)}
-            aria-label="Créer un exercice"
+            aria-label={t("createExercise")}
             className="shrink-0 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark active:scale-95 max-sm:h-10 max-sm:rounded-xl max-sm:px-3.5"
           >
-            +<span className="max-sm:hidden"> Créer un exercice</span>
+            +<span className="max-sm:hidden"> {t("createExercise")}</span>
           </button>
         )}
       </div>
@@ -331,10 +336,10 @@ export default function ExerciseLibraryGrid({
         {filtered.length === 0 ? (
           <p className="col-span-full rounded-xl border border-line bg-surface p-6 text-center text-sm text-muted">
             {mineOnly
-              ? "Vous n'avez pas encore créé d'exercice."
+              ? t("noneCreated")
               : query.trim()
-                ? `Aucun exercice ne correspond à « ${query.trim()} ».`
-                : "Aucun exercice dans cette catégorie pour le moment."}
+                ? t("noMatch", { query: query.trim() })
+                : t("emptyCategory")}
           </p>
         ) : (
           filtered.map((ex) => (
@@ -351,8 +356,8 @@ export default function ExerciseLibraryGrid({
                   <button
                     type="button"
                     onClick={() => setInfo(ex)}
-                    aria-label={`Voir la démonstration : ${ex.name}`}
-                    title="Voir la démonstration"
+                    aria-label={t("seeDemoAria", { name: ex.name })}
+                    title={t("seeDemo")}
                     className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
                   >
                     <Info className="h-4 w-4" strokeWidth={1.75} />
@@ -398,7 +403,7 @@ export default function ExerciseLibraryGrid({
               <div className="flex flex-col gap-3">
                 <OwnExerciseStatus
                   ex={info}
-                  patientName={info.patient_id ? patientName.get(info.patient_id) ?? "un patient" : null}
+                  patientName={info.patient_id ? patientName.get(info.patient_id) ?? t("aPatient") : null}
                   canPublish={!!creator && canRequestPublication(info)}
                   publishing={publishing}
                   message={publishMsg}
@@ -434,7 +439,7 @@ export default function ExerciseLibraryGrid({
             onClick={() => setShowHidden((v) => !v)}
             className="text-sm font-medium text-muted hover:text-ink hover:underline"
           >
-            {showHidden ? "Masquer la liste" : `${hiddenCount} exercice${hiddenCount > 1 ? "s" : ""} masqué${hiddenCount > 1 ? "s" : ""} — afficher`}
+            {showHidden ? t("hideList") : t("hiddenCount", { count: hiddenCount })}
           </button>
           {showHidden && (
             <ul className="mt-3 space-y-1.5">
@@ -451,7 +456,7 @@ export default function ExerciseLibraryGrid({
                       onClick={() => runAction(unhideExercise, ex.id)}
                       className="shrink-0 text-xs font-medium text-brand hover:underline"
                     >
-                      Réafficher
+                      {t("unhide")}
                     </button>
                   </li>
                 ))}
@@ -481,27 +486,30 @@ function OwnExerciseStatus({
   message: string | null;
   onPublish: () => void;
 }) {
-  const pill = STATUS_PILL[ex.publication_status] ?? STATUS_PILL.private;
+  const t = useTranslations("exercise.library");
+  const tStatus = useTranslations("exercise.publicationStatus");
+  const status = STATUS_PILL[ex.publication_status] ? ex.publication_status : "private";
+  const pill = { label: statusPillLabel(status, tStatus), tone: STATUS_PILL[status].tone };
   const text = patientName
-    ? `Exercice réservé à ${patientName}. Vous le trouvez dans « Ajuster la séance » de ce patient.`
+    ? t("statusForPatient", { name: patientName })
     : ex.publication_status === "pending"
-      ? "EasyPhysio vérifie cet exercice. Vous pouvez déjà l'utiliser avec vos patients."
+      ? t("statusPending")
       : ex.publication_status === "published"
-        ? "Publié : tous les kinés d'EasyPhysio peuvent l'utiliser. Il ne peut plus être modifié."
+        ? t("statusPublished")
         : ex.publication_status === "changes_requested"
-          ? "EasyPhysio vous demande une modification avant de le publier."
+          ? t("statusChangesRequested")
           : ex.publication_status === "declined"
-            ? "EasyPhysio l'a gardé privé : il reste dans votre banque."
-            : "Dans votre banque, pour tous vos patients.";
+            ? t("statusDeclined")
+            : t("statusPrivate");
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line p-3">
       <span className={`self-start rounded-full px-2 py-0.5 text-xs font-medium ${patientName ? "bg-violet-50 text-violet-700" : pill.tone}`}>
-        {patientName ? `Pour ${patientName}` : pill.label}
+        {patientName ? t("forPatient", { name: patientName }) : pill.label}
       </span>
       <p className="text-sm text-ink">{text}</p>
       {ex.review_note && (
         <p className="rounded-lg bg-app-bg p-2 text-sm text-ink">
-          <b>Message d&apos;EasyPhysio :</b> {ex.review_note}
+          <b>{t("reviewNote")}</b> {ex.review_note}
         </p>
       )}
       {canPublish && (
@@ -512,7 +520,7 @@ function OwnExerciseStatus({
           className="inline-flex items-center gap-1.5 self-start rounded-lg border border-ok bg-ok-soft px-3 py-1.5 text-sm font-medium text-ok hover:brightness-95 disabled:opacity-60"
         >
           <Globe className="h-4 w-4" strokeWidth={2} />
-          {publishing ? "Envoi…" : ex.publication_status === "changes_requested" ? "Renvoyer pour vérification" : "Rendre public pour tous"}
+          {publishing ? t("sending") : ex.publication_status === "changes_requested" ? t("resubmit") : t("makePublic")}
         </button>
       )}
       {message && <p className="text-sm text-muted">{message}</p>}

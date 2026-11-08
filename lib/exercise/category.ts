@@ -12,7 +12,24 @@
 // already correctly maintained (every exercise has at least one).
 // =============================================================================
 
+import type { Locale } from "../../i18n/locales.ts";
+
 export type BodyPart = { id: string; slug: string; label: string; position: number };
+
+/** Libellé d'une zone du corps dans la langue de l'interface. En français :
+ *  le libellé de la base (`body_parts.label`), inchangé ; ailleurs : la
+ *  traduction rangée par slug (`t` = traducteur next-intl « exercise.bodyParts »),
+ *  ou le libellé de la base si la zone est inconnue. Pas d'import des fichiers
+ *  de messages ici : les fichiers de lib/exercise restent lisibles par node:test. */
+export function bodyPartLabel(
+  bp: Pick<BodyPart, "slug" | "label">,
+  locale: Locale,
+  t: ((key: string) => string) & { has?: (key: string) => boolean },
+): string {
+  if (locale === "fr") return bp.label;
+  if (t.has && !t.has(bp.slug)) return bp.label;
+  return t(bp.slug);
+}
 
 /**
  * Which of an exercise's tagged body parts to group it under when a picker

@@ -19,6 +19,8 @@ import Link from "next/link";
 import { SquarePen } from "lucide-react";
 import { filterConversations, type ConversationRow } from "@/lib/dashboard/conversations";
 import { relativeDay } from "@/lib/format/relativeDay";
+import { useTranslations } from "next-intl";
+import { useLibI18n } from "@/lib/dashboard/useLibI18n";
 
 export default function ConversationList({
   rows,
@@ -29,6 +31,8 @@ export default function ConversationList({
   selectedId: string | null;
   query: string;
 }) {
+  const t = useTranslations("dashboard.messages");
+  const i18n = useLibI18n();
   const [showNew, setShowNew] = useState(false);
 
   const withMessages = useMemo(() => filterConversations(rows, query).filter((c) => c.lastBody !== null), [rows, query]);
@@ -69,11 +73,11 @@ export default function ConversationList({
           <span className="min-w-0 flex-1">
             <span className={`block truncate text-[15px] leading-tight text-ink sm:text-sm ${waiting ? "font-semibold" : "font-medium"}`}>{c.name}</span>
             <span className={`mt-0.5 block truncate text-sm sm:text-[13px] ${waiting ? "text-ink" : "text-muted"}`}>
-              {c.lastSender === "instructor" ? `Vous : ${c.lastBody}` : c.lastBody}
+              {c.lastSender === "instructor" ? t("you", { body: c.lastBody ?? "" }) : c.lastBody}
             </span>
           </span>
           <span className="flex shrink-0 flex-col items-end gap-1">
-            <span className={`text-xs sm:text-[11px] ${waiting ? "font-medium text-brand" : "text-muted"}`}>{c.lastAt ? relativeDay(c.lastAt) : ""}</span>
+            <span className={`text-xs sm:text-[11px] ${waiting ? "font-medium text-brand" : "text-muted"}`}>{c.lastAt ? relativeDay(c.lastAt, undefined, i18n) : ""}</span>
             {c.unread > 0 && (
               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">
                 {c.unread}
@@ -89,12 +93,12 @@ export default function ConversationList({
     <div className="flex h-full min-h-0 flex-col">
       <div className="relative flex items-center justify-between px-4 pb-2 pt-3 max-sm:px-1 max-sm:pt-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-          {toReply.length > 0 ? `À répondre · ${toReply.length}` : "Conversations"}
+          {toReply.length > 0 ? t("toReply", { count: toReply.length }) : t("conversations")}
         </p>
         <button
           type="button"
           onClick={() => setShowNew((v) => !v)}
-          aria-label="Nouveau message"
+          aria-label={t("newMessage")}
           aria-expanded={showNew}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-brand hover:bg-brand/15 sm:h-8 sm:w-8"
         >
@@ -102,9 +106,9 @@ export default function ConversationList({
         </button>
         {showNew && (
           <div className="absolute right-3 top-12 z-10 w-64 rounded-xl bg-surface p-1 shadow-lg ring-1 ring-line">
-            <p className="px-3 py-2 text-xs font-medium text-muted">Écrire à un patient</p>
+            <p className="px-3 py-2 text-xs font-medium text-muted">{t("writeTo")}</p>
             {allPatients.length === 0 ? (
-              <p className="px-3 pb-2 text-sm text-muted">Aucun patient pour l&apos;instant.</p>
+              <p className="px-3 pb-2 text-sm text-muted">{t("noPatient")}</p>
             ) : (
               <ul className="max-h-64 overflow-y-auto">
                 {allPatients.map((r) => (
@@ -133,16 +137,16 @@ export default function ConversationList({
       <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3 max-sm:px-0.5 max-sm:pt-0.5 sm:gap-1.5">
         {toReply.map((c) => row(c, true))}
         {toReply.length > 0 && others.length > 0 && (
-          <li className="px-1 pb-0.5 pt-3 text-xs font-semibold uppercase tracking-wide text-muted">Conversations</li>
+          <li className="px-1 pb-0.5 pt-3 text-xs font-semibold uppercase tracking-wide text-muted">{t("conversations")}</li>
         )}
         {others.map((c) => row(c, false))}
         {toReply.length === 0 && others.length === 0 && (
           <li className="px-6 py-10 text-center text-sm text-muted">
             {query
-              ? "Aucune conversation ne correspond."
+              ? t("noMatch")
               : rows.length === 0
-                ? "Aucun patient pour l'instant."
-                : "Pas encore de conversation. Utilisez le crayon pour écrire à un patient."}
+                ? t("noPatient")
+                : t("noConversation")}
           </li>
         )}
       </ul>

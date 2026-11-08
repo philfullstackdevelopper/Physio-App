@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { SignOutButton } from "@clerk/nextjs";
 import { MailCheck, ShieldAlert } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { contributorTitle } from "@/lib/exercise/kineExercises";
 import { createClient } from "@/lib/supabase/server";
@@ -39,6 +40,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   if (status !== "approved") {
     const pending = status === "pending";
+    const t = await getTranslations("dashboard.layout");
     return (
       <main className="flex min-h-screen items-center justify-center bg-app-bg p-4">
         <div className="w-full max-w-sm rounded-3xl border border-line bg-white p-8 text-center shadow-sm">
@@ -54,35 +56,35 @@ export default async function DashboardLayout({ children }: { children: React.Re
             )}
           </span>
           <h1 className="mt-4 text-2xl font-semibold text-ink">
-            {pending ? "Compte en cours de validation" : status === "suspended" ? "Compte suspendu" : "Compte non validé"}
+            {pending ? t("pendingTitle") : status === "suspended" ? t("suspendedTitle") : t("rejectedTitle")}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             {pending
-              ? "Nous vérifions chaque nouveau compte praticien avant de l'activer. Revenez bientôt."
+              ? t("pendingBody")
               : status === "suspended"
-                ? "Votre accès à EasyPhysio a été suspendu. Contactez-nous si vous pensez qu'il s'agit d'une erreur."
-                : "Votre demande n'a pas été validée. Contactez-nous si vous pensez qu'il s'agit d'une erreur."}
+                ? t("suspendedBody")
+                : t("rejectedBody")}
           </p>
           <SignOutButton redirectUrl="/login">
             <button
               type="button"
               className="mt-6 w-full rounded-xl border border-line py-2.5 text-sm font-medium text-muted transition hover:bg-app-bg"
             >
-              Se déconnecter
+              {t("signOut")}
             </button>
           </SignOutButton>
           <Link
             href="/"
             className="mt-3 block text-center text-sm text-muted underline-offset-2 hover:text-ink hover:underline"
           >
-            Retour à l&apos;accueil
+            {t("backHome")}
           </Link>
         </div>
       </main>
     );
   }
 
-  const [unreadCount, { count: publishedCount }] = await Promise.all([
+  const [unreadCount, { count: publishedCount }, tContributor] = await Promise.all([
     loadUnreadCount(supabase, user.id),
     // Titre « Contributeur EasyPhysio » sous le nom (migration 0081).
     supabase
@@ -90,6 +92,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .select("id", { count: "exact", head: true })
       .eq("created_by", user.id)
       .eq("publication_status", "published"),
+    getTranslations("exercise.contributor"),
   ]);
 
   return (
@@ -97,7 +100,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <DashboardSidebar
         instructorName={instructor.full_name ?? null}
         unreadCount={unreadCount}
-        contributorTitle={contributorTitle(publishedCount ?? 0)}
+        contributorTitle={contributorTitle(publishedCount ?? 0, tContributor)}
       />
       {/* min-w-0 : sans ça, un contenu large (tableau, etc.) forcerait tout le
           flex row à s'élargir et entraînerait la sidebar dans le défilement

@@ -4,6 +4,7 @@ import KineMessagesView from "@/components/KineMessagesView";
 import type { ThreadMessage } from "@/components/MessageThread";
 import { markConversationRead, sendInboxMessage } from "./actions";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
+import { getTranslations } from "next-intl/server";
 
 // Boîte de réception du kiné : une conversation par patient, plein écran,
 // liste à gauche (recherche, nouveau message) et fil à droite (séparateurs
@@ -47,7 +48,7 @@ export default async function MessagesPage({
     profiles: profiles ?? [],
     conditions: conditions ?? [],
     messages: allMessages,
-  });
+  }, await getTranslations("exercise.stageShort"));
 
   const selectedId =
     patientParam && conversations.some((c) => c.patientId === patientParam)

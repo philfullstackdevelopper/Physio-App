@@ -3,9 +3,10 @@
 // aujourd'hui ») et le tableau des patients (colonne Signal). Une seule
 // priorité : douleur > inactivité > à jour. Les deux vues ne peuvent pas se
 // contredire parce qu'elles appellent cette fonction.
+// Langue : `t` = traducteur de « dashboard.lib », facultatif (français sinon).
 // =============================================================================
 
-import { daysBetween } from "../format/relativeDay.ts";
+import { daysBetween, type Tr } from "../format/relativeDay.ts";
 
 export const INACTIVE_DAYS = 7;
 
@@ -31,12 +32,18 @@ export interface Signal {
   days: number | null;
 }
 
-export function computeSignal({ concerning, severe, lastPain, lastSessionAt, createdAt, now = new Date() }: SignalInput): Signal {
+export function computeSignal(
+  { concerning, severe, lastPain, lastSessionAt, createdAt, now = new Date() }: SignalInput,
+  t?: Tr,
+): Signal {
   if (concerning) {
     const score = lastPain != null ? Math.round(lastPain) : null;
     return {
       kind: "pain",
-      label: score != null ? `Douleur signalée ${score}/10` : "Douleur signalée",
+      label:
+        score != null
+          ? t ? t("signal.painScore", { score }) : `Douleur signalée ${score}/10`
+          : t ? t("signal.pain") : "Douleur signalée",
       severe,
       score,
       days: null,
@@ -51,9 +58,9 @@ export function computeSignal({ concerning, severe, lastPain, lastSessionAt, cre
     // bien une séance dans son programme) : on parle de séances FAITES, et on
     // distingue « n'en a plus fait depuis N jours » de « n'en a jamais fait ».
     const label = lastSessionAt
-      ? `Dernière séance faite il y a ${days} jours`
-      : `Aucune séance faite depuis l'inscription (${days} j)`;
+      ? t ? t("signal.lastSessionDaysAgo", { days }) : `Dernière séance faite il y a ${days} jours`
+      : t ? t("signal.noSessionSinceSignup", { days }) : `Aucune séance faite depuis l'inscription (${days} j)`;
     return { kind: "inactive", label, severe: false, score: null, days };
   }
-  return { kind: "ok", label: "À jour", severe: false, score: null, days: null };
+  return { kind: "ok", label: t ? t("signal.ok") : "À jour", severe: false, score: null, days: null };
 }

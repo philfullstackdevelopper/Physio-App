@@ -6,6 +6,7 @@
 
 import { resolveAssignmentForWeek } from "@/lib/exercise/activeRecommendation";
 import type { WeekInfo } from "@/lib/patient/weeks";
+import type { Tr } from "../format/relativeDay.ts";
 
 /** Au-delà de ce nombre de semaines avec la même séance, sans rien de prévu
  *  ensuite, on invite à faire évoluer la séance. Règle simple, à affiner avec
@@ -28,23 +29,28 @@ export function programmeWarning({
   currentWeekNumber: number;
   assignments: { workoutId: string; weekStartDate: string; weekCount?: number | null }[];
   exerciseCountByWorkoutId: Record<string, number>;
-}): { label: string; detail: string } | null {
+}, t?: Tr): { label: string; detail: string } | null {
+  // `t` = traducteur de « dashboard.lib » (facultatif ; français sinon).
   const currentWeek = weeks[currentWeekNumber - 1] ?? weeks[weeks.length - 1];
   if (!currentWeek) return null;
   const currentKey = currentWeek.startDateKey;
   const current = resolveAssignmentForWeek(assignments, currentKey);
   if (!current || (exerciseCountByWorkoutId[current.workoutId] ?? 0) === 0) {
     return {
-      label: "Aucune séance cette semaine",
-      detail: "Aucune séance n'est assignée cette semaine — ouvrez la semaine en cours pour en choisir une.",
+      label: t ? t("programmeWarning.noneLabel") : "Aucune séance cette semaine",
+      detail: t
+        ? t("programmeWarning.noneDetail")
+        : "Aucune séance n'est assignée cette semaine — ouvrez la semaine en cours pour en choisir une.",
     };
   }
   const hasFuture = assignments.some((a) => a.weekStartDate > currentKey);
   const age = weeksBetween(current.weekStartDate, currentKey) + 1;
   if (!hasFuture && age >= STALE_AFTER_WEEKS) {
     return {
-      label: `Même séance depuis ${age} semaines`,
-      detail: `La même séance est en place depuis ${age} semaines et rien n'est prévu ensuite — pensez à la faire évoluer dans les semaines à venir.`,
+      label: t ? t("programmeWarning.staleLabel", { weeks: age }) : `Même séance depuis ${age} semaines`,
+      detail: t
+        ? t("programmeWarning.staleDetail", { weeks: age })
+        : `La même séance est en place depuis ${age} semaines et rien n'est prévu ensuite — pensez à la faire évoluer dans les semaines à venir.`,
     };
   }
   return null;

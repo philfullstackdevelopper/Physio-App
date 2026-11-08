@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslations } from "next-intl";
 import { ArrowRight, CalendarDays, Check, Home, MessageCircle, Settings, TrendingUp, Play, CheckCircle2 } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
@@ -82,20 +83,21 @@ export function usePhoneDemo(active: boolean) {
 /** Barre d'onglets du vrai téléphone patient (PatientNav) — absente pendant
  *  la séance guidée, comme dans l'appli. « Mon programme » reste sous Accueil. */
 export function DemoTabBar({ screen }: { screen: Screen }) {
+  const t = useTranslations("demo.phone");
   if (screen >= 2) return null;
   const tabs = [
-    { icon: Home, label: "Accueil", active: true },
-    { icon: TrendingUp, label: "Progrès" },
-    { icon: MessageCircle, label: "Messages", dot: true },
-    { icon: Settings, label: "Paramètres" },
+    { icon: Home, label: t("tabHome"), active: true },
+    { icon: TrendingUp, label: t("tabProgress") },
+    { icon: MessageCircle, label: t("tabMessages"), dot: true },
+    { icon: Settings, label: t("tabSettings") },
   ];
   return (
     <div className="absolute inset-x-0 bottom-0 flex border-t border-slate-100 bg-white/95 pb-2 pt-1.5 backdrop-blur">
-      {tabs.map((t) => (
-        <span key={t.label} className={`relative flex flex-1 flex-col items-center gap-0.5 text-[8px] ${t.active ? "font-semibold text-blue-600" : "font-medium text-slate-400"}`}>
-          <t.icon className="h-3.5 w-3.5" strokeWidth={t.active ? 2.2 : 1.7} />
-          {t.label}
-          {t.dot && <span className="absolute right-[26%] top-0 h-1.5 w-1.5 rounded-full bg-red-500" />}
+      {tabs.map((tab) => (
+        <span key={tab.label} className={`relative flex flex-1 flex-col items-center gap-0.5 text-[8px] ${tab.active ? "font-semibold text-blue-600" : "font-medium text-slate-400"}`}>
+          <tab.icon className="h-3.5 w-3.5" strokeWidth={tab.active ? 2.2 : 1.7} />
+          {tab.label}
+          {tab.dot && <span className="absolute right-[26%] top-0 h-1.5 w-1.5 rounded-full bg-red-500" />}
         </span>
       ))}
     </div>
@@ -166,6 +168,7 @@ function AppTopBar() {
 const CARD = "rounded-xl bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_6px_20px_rgba(15,23,42,0.05)]";
 
 export function HomeScreen({ tap }: { tap: boolean }) {
+  const t = useTranslations("demo.phone");
   return (
     <>
       <AppTopBar />
@@ -175,30 +178,30 @@ export function HomeScreen({ tap }: { tap: boolean }) {
             frise « Mon programme, semaine par semaine ». */}
         <p className="mt-2.5 flex items-baseline gap-1.5 text-[14px] font-semibold text-slate-900">
           <span className="flex items-center gap-1">
-            Bonjour Léa <WavingHand className="h-4 w-4" />
+            {t("hello", { name: "Léa" })} <WavingHand className="h-4 w-4" />
           </span>
-          <span className="text-[8px] font-normal text-slate-500">Mercredi 7 octobre</span>
+          <span className="text-[8px] font-normal text-slate-500">{t("homeDate")}</span>
         </p>
 
         <div className="relative mt-2 overflow-hidden rounded-[18px] bg-gradient-to-r from-[#155dfc] to-[#1447c9] px-3 pb-3 pt-2.5 shadow-lg shadow-blue-600/25">
           <MountainScene variant="goal" progress={1 / 3} className="pointer-events-none absolute -bottom-0.5 left-0 h-12 w-[4.5rem] text-white/90" />
           <div className="relative pl-14">
-            <p className="text-[7.5px] font-semibold uppercase tracking-wide text-white/75">Semaine 5</p>
-            <p className="mt-0.5 text-[10.5px] font-semibold leading-tight text-white">Renforcement global, niveau 2</p>
-            <p className="mt-0.5 text-[8px] text-white/85">2 séances à réaliser · 20 minutes environ</p>
+            <p className="text-[7.5px] font-semibold uppercase tracking-wide text-white/75">{t("week", { n: 5 })}</p>
+            <p className="mt-0.5 text-[10.5px] font-semibold leading-tight text-white">{t("workoutName")}</p>
+            <p className="mt-0.5 text-[8px] text-white/85">{t("workoutSubtitle")}</p>
             <div className="mt-1.5 flex items-center gap-1.5">
               <div className="flex flex-1 gap-1">
                 <span className="h-1 flex-1 rounded-full bg-white" />
                 <span className="h-1 flex-1 rounded-full bg-white/25" />
                 <span className="h-1 flex-1 rounded-full bg-white/25" />
               </div>
-              <span className="text-[7.5px] font-semibold text-white">1/3 séances</span>
+              <span className="text-[7.5px] font-semibold text-white">{t("sessionsCount")}</span>
             </div>
             <span
               className="relative mt-2 flex items-center justify-center gap-1 overflow-hidden rounded-full bg-white py-1.5 text-[10px] font-semibold text-blue-600 transition-transform duration-150"
               style={{ transform: tap ? "scale(0.95)" : "scale(1)" }}
             >
-              Voir mon programme <ArrowRight className="h-3 w-3" strokeWidth={2.2} />
+              {t("seeProgramme")} <ArrowRight className="h-3 w-3" strokeWidth={2.2} />
               <Tap on={tap} />
             </span>
           </div>
@@ -207,18 +210,18 @@ export function HomeScreen({ tap }: { tap: boolean }) {
         {/* La frise, sans titre au-dessus (Philippe, 2026-10-07 : « la frise
             parle d'elle-même ») : semaine en cours en vert, « Vous êtes ici ». */}
         <div className="relative mt-8 flex">
-          <span className="absolute -top-4 left-[30%] -translate-x-1/2 rounded-full bg-blue-600 px-1.5 py-px text-[7px] font-semibold text-white">Vous êtes ici</span>
+          <span className="absolute -top-4 left-[30%] -translate-x-1/2 rounded-full bg-blue-600 px-1.5 py-px text-[7px] font-semibold text-white">{t("youAreHere")}</span>
           <div
             className="flex h-[150px] w-[64%] shrink-0 flex-col items-center justify-center gap-1 bg-emerald-50 text-emerald-600 shadow-sm"
             style={{ clipPath: "polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)", borderRadius: 14 }}
           >
             <span className="flex items-center gap-1 text-[14px] font-semibold">
-              Semaine 5 <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
+              {t("week", { n: 5 })} <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
             </span>
-            <span className="text-[8px] opacity-90">(5 oct. – 11 oct.)</span>
-            <span className="mt-1 text-[8px] font-medium">Séances réalisées</span>
+            <span className="text-[8px] opacity-90">{t("weekRange")}</span>
+            <span className="mt-1 text-[8px] font-medium">{t("sessionsDone")}</span>
             <span className="mt-1.5 flex gap-0.5">
-              {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
+              {t("dayLetters").split("").map((d, i) => (
                 <span key={i} className={`flex h-3.5 w-3.5 items-center justify-center rounded-full text-[6px] font-semibold ${i === 0 ? "bg-emerald-500 text-white" : "border border-emerald-300 bg-white/60"}`}>
                   {d}
                 </span>
@@ -229,8 +232,8 @@ export function HomeScreen({ tap }: { tap: boolean }) {
             className="-ml-2.5 flex h-[150px] flex-1 flex-col items-center justify-center gap-1 bg-white pl-3 text-slate-400 shadow-sm"
             style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%, 12px 50%)", borderRadius: 14 }}
           >
-            <span className="text-[14px] font-semibold">Sem</span>
-            <span className="text-[8px]">(12 oct</span>
+            <span className="text-[14px] font-semibold">{t("weekShort")}</span>
+            <span className="text-[8px]">{t("nextWeekStart")}</span>
           </div>
         </div>
       </div>
@@ -241,23 +244,26 @@ export function HomeScreen({ tap }: { tap: boolean }) {
 // Les dessins bleus (Philippe, 2026-10-31 : garder les illustrations ici, la
 // vidéo de Jules se voit en grand sur l'écran suivant). Le 1er exercice est
 // celui de l'écran de séance.
+// `name` : nom de la banque (sert à trouver le dessin) ; `label` : clé du
+// nom affiché (demo.phone.exercises.<label>).
 const PROGRAMME = [
-  { name: "Pallof Press", label: "Pallof press" },
-  { name: "Glute Bridge", label: "Pont fessier" },
-  { name: "Postural Core Bracing", label: "Gainage postural" },
-  { name: "Quadruped Scapular Stability", label: "Quadrupédie" },
+  { name: "Pallof Press", label: "pallof" },
+  { name: "Glute Bridge", label: "bridge" },
+  { name: "Postural Core Bracing", label: "coreBracing" },
+  { name: "Quadruped Scapular Stability", label: "quadruped" },
 ];
 
 export function ProgrammeScreen({ tap }: { tap: boolean }) {
+  const t = useTranslations("demo.phone");
   const c = 2 * Math.PI * 15;
   return (
     <>
       <AppTopBar />
       <div className="px-3.5">
         <div className="mt-2.5 flex items-center justify-between">
-          <p className="text-[15px] font-semibold text-slate-900">Mon programme</p>
+          <p className="text-[15px] font-semibold text-slate-900">{t("myProgramme")}</p>
           <span className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[8px] font-medium text-slate-700">
-            <CalendarDays className="h-2.5 w-2.5 text-blue-600" strokeWidth={2} /> Semaine 5
+            <CalendarDays className="h-2.5 w-2.5 text-blue-600" strokeWidth={2} /> {t("week", { n: 5 })}
           </span>
         </div>
 
@@ -269,21 +275,21 @@ export function ProgrammeScreen({ tap }: { tap: boolean }) {
             </svg>
             <div className="min-w-0">
               <span className="inline-flex rounded-full bg-blue-600/15 px-1.5 py-px text-[6.5px] font-semibold uppercase tracking-wide text-blue-600">
-                Séance en cours
+                {t("currentSession")}
               </span>
-              <p className="mt-0.5 truncate text-[10.5px] font-semibold leading-tight text-slate-900">Renforcement global, niv. 2</p>
-              <p className="text-[8px] text-slate-500">1 / 3 cette semaine · 20 min</p>
+              <p className="mt-0.5 truncate text-[10.5px] font-semibold leading-tight text-slate-900">{t("workoutNameShort")}</p>
+              <p className="text-[8px] text-slate-500">{t("thisWeek")}</p>
             </div>
           </div>
 
           <p className="mt-2.5 text-[8.5px] font-semibold text-slate-900">
-            Vos exercices <span className="font-normal text-slate-500">· 4</span>
+            {t("yourExercises")} <span className="font-normal text-slate-500">· 4</span>
           </p>
           <div className="mt-1.5 grid grid-cols-2 gap-1.5">
             {PROGRAMME.map((ex) => (
               <div key={ex.name} className="flex flex-col items-center gap-1 rounded-lg bg-[#f5f7fb] p-1.5">
                 <ExerciseIllustration name={ex.name} animate className="h-14 w-full rounded-md bg-white text-blue-600" />
-                <span className="text-[8px] font-medium text-slate-700">{ex.label}</span>
+                <span className="text-[8px] font-medium text-slate-700">{t(`exercises.${ex.label}`)}</span>
               </div>
             ))}
           </div>
@@ -292,7 +298,7 @@ export function ProgrammeScreen({ tap }: { tap: boolean }) {
             className="relative mt-2.5 flex items-center justify-center gap-1 overflow-hidden rounded-full bg-blue-600 py-2 text-[10px] font-semibold text-white shadow-sm transition-transform duration-150"
             style={{ transform: tap ? "scale(0.95)" : "scale(1)" }}
           >
-            Démarrer cette séance <ArrowRight className="h-3 w-3" strokeWidth={2.2} />
+            {t("startSession")} <ArrowRight className="h-3 w-3" strokeWidth={2.2} />
             <Tap on={tap} />
           </span>
         </div>
@@ -302,6 +308,7 @@ export function ProgrammeScreen({ tap }: { tap: boolean }) {
 }
 
 function SessionVideo({ playing }: { playing: boolean }) {
+  const t = useTranslations("demo.phone");
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     const v = ref.current;
@@ -320,16 +327,17 @@ function SessionVideo({ playing }: { playing: boolean }) {
       muted
       playsInline
       preload="none"
-      aria-label="Démonstration filmée : Pallof press"
+      aria-label={t("videoLabel", { name: t("exercises.pallof") })}
       className="h-full w-full object-cover"
     />
   );
 }
 
 function SessionHeader() {
+  const t = useTranslations("demo.phone");
   return (
     <div className="flex items-center gap-2 px-3.5 pt-3">
-      <span className="text-[8.5px] text-slate-400">Quitter</span>
+      <span className="text-[8.5px] text-slate-400">{t("quit")}</span>
       <div className="flex flex-1 gap-1">
         {[0, 1, 2, 3].map((i) => (
           <span key={i} className={`h-1 flex-1 rounded-full ${i === 0 ? "bg-blue-200" : "bg-slate-200"}`} />
@@ -341,12 +349,13 @@ function SessionHeader() {
 }
 
 export function SessionScreen({ tap, playing }: { tap: boolean; playing: boolean }) {
+  const t = useTranslations("demo.phone");
   return (
     <>
       <SessionHeader />
       <div className={`${CARD} mx-3.5 mt-3 p-3`}>
-        <p className="text-[7.5px] font-medium uppercase tracking-wide text-blue-600">Exercice 1</p>
-        <p className="font-display mt-0.5 text-[15px] font-semibold text-slate-900">Pallof press</p>
+        <p className="text-[7.5px] font-medium uppercase tracking-wide text-blue-600">{t("exerciseN", { n: 1 })}</p>
+        <p className="font-display mt-0.5 text-[15px] font-semibold text-slate-900">{t("exercises.pallof")}</p>
         {/* La vidéo de démonstration de Jules, en grand (Philippe, 2026-10-31) :
             Pallof press, choisi par Philippe (2026-11-01) : salle lumineuse, joli
             fond, filmé à la verticale, donc il remplit une case haute sans être recadré. Bouton lecture centré, puis lecture avec sa barre. */}
@@ -373,11 +382,11 @@ export function SessionScreen({ tap, playing }: { tap: boolean; playing: boolean
           )}
         </div>
         <p className="mt-2.5 text-[8.5px] leading-relaxed text-slate-600">
-          Élastique attaché sur le côté : poussez les mains devant vous sans laisser le buste tourner, puis ramenez.
+          {t("pallofInstructions")}
         </p>
-        <p className="mt-2 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[8px] font-medium text-blue-700">3 séries · 12 répétitions</p>
+        <p className="mt-2 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[8px] font-medium text-blue-700">{t("setsReps")}</p>
         <span className="mt-3 flex items-center justify-center gap-1 rounded-lg bg-blue-600 py-2.5 text-[10.5px] font-semibold text-white">
-          <Check className="h-3.5 w-3.5" strokeWidth={2} /> J&apos;ai terminé cet exercice
+          <Check className="h-3.5 w-3.5" strokeWidth={2} /> {t("doneExercise")}
         </span>
       </div>
     </>

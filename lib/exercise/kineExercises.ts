@@ -3,6 +3,10 @@
 // vérification par EasyPhysio dans /admin. Règles d'accès : migration
 // supabase/migrations/0081_kine_exercises.sql.
 
+/** Traducteur « exercise.contributor » (next-intl) fourni par l'appelant ;
+ *  absent = français. Pas d'import JSON ici : fichier testé par node:test. */
+type Tr = (key: string, values?: Record<string, string | number>) => string;
+
 export type PublicationStatus = "private" | "pending" | "published" | "changes_requested" | "declined";
 
 /** Récompense (Philippe, 2026-11-04) : à 5 exercices publiés, le kiné devient
@@ -16,18 +20,22 @@ export const CONTRIBUTOR_THRESHOLD = 5;
  *  Overflow (Philippe, 2026-11-04 : « premium et pro », pas de jeu) : le kiné
  *  est crédité sur ses exercices (« Proposé par »), et un titre discret
  *  s'affiche à 5, 10 et 20 exercices publiés (comme les x2/x3 de GitHub). */
-export function contributorTitle(published: number): string | null {
-  if (published >= 20) return "Contributeur EasyPhysio ×20";
-  if (published >= 10) return "Contributeur EasyPhysio ×10";
-  if (published >= CONTRIBUTOR_THRESHOLD) return "Contributeur EasyPhysio";
+export function contributorTitle(published: number, t?: Tr): string | null {
+  if (published >= 20) return t ? t("titleTimes", { n: 20 }) : "Contributeur EasyPhysio ×20";
+  if (published >= 10) return t ? t("titleTimes", { n: 10 }) : "Contributeur EasyPhysio ×10";
+  if (published >= CONTRIBUTOR_THRESHOLD) return t ? t("title") : "Contributeur EasyPhysio";
   return null;
 }
 
 /** La prochaine étape, en une phrase (infobulle), ou null après 20. */
-export function nextContributorStep(published: number): string | null {
+export function nextContributorStep(published: number, t?: Tr): string | null {
   const next = [CONTRIBUTOR_THRESHOLD, 10, 20].find((n) => published < n);
   if (!next) return null;
   const left = next - published;
+  if (t) {
+    const tTitle = next === CONTRIBUTOR_THRESHOLD ? t("title") : t("titleTimes", { n: next });
+    return t("nextStep", { count: left, title: tTitle });
+  }
   const title = next === CONTRIBUTOR_THRESHOLD ? "Contributeur EasyPhysio" : `Contributeur EasyPhysio ×${next}`;
   return `Encore ${left} exercice${left > 1 ? "s" : ""} publié${left > 1 ? "s" : ""} pour « ${title} ».`;
 }
@@ -51,11 +59,13 @@ export interface ContributorRank {
 export function contributorRanking(
   exercises: { created_by: string | null; publication_status: PublicationStatus; author_label: string | null }[],
   limit = Number.POSITIVE_INFINITY,
+  /** Nom affiché d'un auteur sans libellé (« Un kiné » en français). */
+  unknownLabel = "Un kiné",
 ): ContributorRank[] {
   const byAuthor = new Map<string, ContributorRank>();
   for (const ex of exercises) {
     if (!ex.created_by || ex.publication_status !== "published") continue;
-    const cur = byAuthor.get(ex.created_by) ?? { authorId: ex.created_by, label: ex.author_label || "Un kiné", count: 0, contributor: false };
+    const cur = byAuthor.get(ex.created_by) ?? { authorId: ex.created_by, label: ex.author_label || unknownLabel, count: 0, contributor: false };
     cur.count += 1;
     if (ex.author_label) cur.label = ex.author_label;
     byAuthor.set(ex.created_by, cur);
@@ -85,6 +95,12 @@ export const STATUS_PILL: Record<PublicationStatus, { label: string; tone: strin
   changes_requested: { label: "À corriger", tone: "bg-danger-soft text-danger" },
   declined: { label: "Gardé privé", tone: "bg-app-bg text-muted" },
 };
+
+/** Libellé de la pastille dans la langue de l'interface (`t` = traducteur
+ *  « exercise.publicationStatus » ; absent = STATUS_PILL, en français). */
+export function statusPillLabel(status: PublicationStatus, t?: (key: string) => string): string {
+  return t ? t(status) : STATUS_PILL[status].label;
+}
 
 /** Un exercice que le kiné peut (encore) proposer à tous. */
 export function canRequestPublication(ex: { publication_status: PublicationStatus; patient_id: string | null }): boolean {

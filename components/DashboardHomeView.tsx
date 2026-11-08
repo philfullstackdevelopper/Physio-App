@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ArrowDown, ArrowUp, CheckCircle2, ChevronRight, Minus } from "lucide-react";
 import type { DashboardHome, Tile } from "@/lib/dashboard/homeData";
 import type { UnreadMessageRow } from "@/lib/dashboard/unreadMessages";
+import { useTranslations } from "next-intl";
+import { useLibI18n } from "@/lib/dashboard/useLibI18n";
 import { relativeDay } from "@/lib/format/relativeDay";
 import { initials } from "@/lib/format/initials";
 
@@ -17,13 +19,14 @@ const UNREAD_LIMIT = 4;
 const PHONE_ROWS = 3;
 
 function Delta({ tile }: { tile: Tile }) {
+  const t = useTranslations("dashboard.home");
   if (tile.delta === null) return null;
-  if (tile.delta === 0) return <span className="flex items-center gap-1 text-xs text-muted"><Minus className="h-3 w-3" strokeWidth={2} />= hier</span>;
+  if (tile.delta === 0) return <span className="flex items-center gap-1 text-xs text-muted"><Minus className="h-3 w-3" strokeWidth={2} />{t("sameAsYesterday")}</span>;
   const up = tile.delta > 0;
   return (
     <span className={`flex items-center gap-1 text-xs ${up ? "text-ok" : "text-danger"}`}>
       {up ? <ArrowUp className="h-3 w-3" strokeWidth={2} /> : <ArrowDown className="h-3 w-3" strokeWidth={2} />}
-      {Math.abs(tile.delta)} vs hier
+      {t("vsYesterday", { n: Math.abs(tile.delta) })}
     </span>
   );
 }
@@ -66,13 +69,15 @@ function PhoneSquare({ value, label, tone, tile, href }: { value: number; label:
 }
 
 export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome; unreadRows: UnreadMessageRow[] }) {
+  const t = useTranslations("dashboard.home");
+  const i18n = useLibI18n();
   const nothingToFollow = unreadRows.length === 0 && h.toTreat.length === 0;
 
   return (
     <main className="min-h-screen max-sm:min-h-0">
       <div className="mx-auto max-w-7xl px-4 pb-4 pt-2 sm:px-8 sm:py-6">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-baseline justify-between gap-2 max-sm:flex-col max-sm:gap-0.5">
-          <h1 className="text-2xl font-semibold text-ink">Bonjour {h.firstName}</h1>
+          <h1 className="text-2xl font-semibold text-ink">{t("hello", { name: h.firstName })}</h1>
           <p className="text-sm text-muted first-letter:uppercase sm:first-letter:normal-case">{h.todayLabel}</p>
         </div>
 
@@ -80,10 +85,10 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
             2026-10-02). La 4e case résume les patients à suivre et ouvre la
             liste filtrée ; la barre et les listes ci-dessous sont réservées
             aux écrans plus larges. */}
-        <section aria-label="Aujourd'hui" className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-4 grid grid-cols-2 gap-3 sm:hidden">
-          <PhoneSquare value={h.sessionsToday.value} label="Séances faites aujourd'hui" tone="ok" tile={h.sessionsToday} />
-          <PhoneSquare value={h.painToday.value} label="Douleurs signalées" tone="danger" tile={h.painToday} />
-          <PhoneSquare value={h.patientCount} label="Patients suivis" tone="ink" href="/dashboard/patients" />
+        <section aria-label={t("today")} className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-4 grid grid-cols-2 gap-3 sm:hidden">
+          <PhoneSquare value={h.sessionsToday.value} label={t("sessionsToday")} tone="ok" tile={h.sessionsToday} />
+          <PhoneSquare value={h.painToday.value} label={t("painReports")} tone="danger" tile={h.painToday} />
+          <PhoneSquare value={h.patientCount} label={t("patientsFollowed")} tone="ink" href="/dashboard/patients" />
           <Link
             href="/dashboard/patients?filtre=surveiller"
             className={`flex aspect-square flex-col justify-between rounded-2xl p-4 shadow-soft transition-[color,background-color,transform] duration-150 active:scale-[0.97] ${
@@ -93,11 +98,11 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
             <p className={`text-4xl font-semibold tabular-nums ${h.surveillerCount > 0 ? "text-warn" : "text-ink"}`}>{h.surveillerCount}</p>
             <div>
               <p className="flex items-center gap-1 text-sm font-medium text-ink">
-                Patients à suivre <ChevronRight className="h-4 w-4 shrink-0" strokeWidth={2} />
+                {t("toFollow")} <ChevronRight className="h-4 w-4 shrink-0" strokeWidth={2} />
               </p>
               {unreadRows.length > 0 && (
                 <p className="mt-0.5 text-xs text-muted">
-                  {unreadRows.length} message{unreadRows.length > 1 ? "s" : ""} non lu{unreadRows.length > 1 ? "s" : ""}
+                  {t("unreadCount", { count: unreadRows.length })}
                 </p>
               )}
             </div>
@@ -110,16 +115,16 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
             « propre et agréable »). Sur un petit téléphone, rien de plus : la
             4e case mène déjà à la liste, et l'écran ne doit pas défiler. */}
         <section
-          aria-label="À traiter"
+          aria-label={t("toTreat")}
           className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:200ms] mt-5 hidden max-sm:[@media(min-height:760px)]:block"
         >
           {h.toTreat.length > 0 ? (
             <>
               <div className="flex items-center justify-between px-1">
-                <h2 className="text-sm font-semibold text-ink">À traiter</h2>
+                <h2 className="text-sm font-semibold text-ink">{t("toTreat")}</h2>
                 {/* Sans le nombre : la 4e case l'affiche déjà (Philippe, 2026-11-06 : audit, on allège). */}
                 <Link href="/dashboard/patients?filtre=surveiller" className="text-xs font-medium text-brand">
-                  Voir tout
+                  {t("seeAll")}
                 </Link>
               </div>
               <ul className="mt-2 overflow-hidden rounded-2xl bg-surface shadow-soft">
@@ -143,8 +148,8 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
           ) : unreadRows.length > 0 ? (
             <>
               <div className="flex items-center justify-between px-1">
-                <h2 className="text-sm font-semibold text-ink">Messages non lus</h2>
-                <Link href="/dashboard/messages" className="text-xs font-medium text-brand">Voir tout</Link>
+                <h2 className="text-sm font-semibold text-ink">{t("unreadMessages")}</h2>
+                <Link href="/dashboard/messages" className="text-xs font-medium text-brand">{t("seeAll")}</Link>
               </div>
               <ul className="mt-2 overflow-hidden rounded-2xl bg-surface shadow-soft">
                 {unreadRows.slice(0, PHONE_ROWS).map((m) => (
@@ -168,28 +173,28 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ok-soft text-ok">
                 <CheckCircle2 className="h-5 w-5" strokeWidth={1.75} />
               </span>
-              Tout est à jour : aucun patient ne demande votre attention.
+              {t("allClear")}
             </p>
           )}
         </section>
 
         {/* 1 — Aujourd'hui : les chiffres du jour, en une barre fine. */}
         <section
-          aria-label="Aujourd'hui"
+          aria-label={t("today")}
           className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-4 hidden divide-line rounded-xl border border-line bg-surface sm:grid sm:grid-cols-3 sm:divide-x"
         >
-          <StatTile value={h.sessionsToday.value} label="Séances faites aujourd'hui" tone="ok" tile={h.sessionsToday} />
-          <StatTile value={h.painToday.value} label="Douleurs signalées" tone="danger" tile={h.painToday} />
-          <StatTile value={h.patientCount} label="Patients suivis" tone="ink" />
+          <StatTile value={h.sessionsToday.value} label={t("sessionsToday")} tone="ok" tile={h.sessionsToday} />
+          <StatTile value={h.painToday.value} label={t("painReports")} tone="danger" tile={h.painToday} />
+          <StatTile value={h.patientCount} label={t("patientsFollowed")} tone="ink" />
         </section>
 
         {/* 2 — Patients à suivre : ce qui demande une action, priorité clinique
             d'abord. « À traiter » et « Messages non lus » côte à côte dès lg. */}
         <section className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:200ms] mt-4 hidden rounded-xl border border-line bg-surface p-5 sm:block">
-          <h2 className="text-lg font-semibold text-ink">Patients à suivre</h2>
+          <h2 className="text-lg font-semibold text-ink">{t("toFollow")}</h2>
 
           {nothingToFollow ? (
-            <p className="mt-3 text-sm text-muted">Aucun patient ne nécessite d&apos;attention pour l&apos;instant.</p>
+            <p className="mt-3 text-sm text-muted">{t("nothingToFollow")}</p>
           ) : (
             // minmax(0,1fr) : sans lui, une ligne longue élargissait la colonne
             // au-delà de l'écran sur iPad en portrait (audit 2026-10-10).
@@ -197,10 +202,10 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
               {h.toTreat.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-medium uppercase tracking-wide text-muted">À traiter</h3>
+                    <h3 className="text-xs font-medium uppercase tracking-wide text-muted">{t("toTreat")}</h3>
                     {h.surveillerCount > TO_TREAT_LIMIT && (
                       <Link href="/dashboard/patients?filtre=surveiller" className="text-xs font-medium text-brand hover:underline">
-                        Voir tout ({h.surveillerCount})
+                        {t("seeAllCount", { count: h.surveillerCount })}
                       </Link>
                     )}
                   </div>
@@ -218,7 +223,7 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
-                              {r.severe && <span className="h-1.5 w-1.5 rounded-full bg-danger animate-[gentlePulse_2.4s_ease-in-out_infinite]" title="Situation sévère" />}
+                              {r.severe && <span className="h-1.5 w-1.5 rounded-full bg-danger animate-[gentlePulse_2.4s_ease-in-out_infinite]" title={t("severe")} />}
                               {r.name}
                             </span>
                             <span className={`block text-xs ${r.kind === "pain" ? "text-danger" : "text-warn"}`}>{r.label}</span>
@@ -235,10 +240,10 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
               {unreadRows.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-medium uppercase tracking-wide text-muted">Messages non lus</h3>
+                    <h3 className="text-xs font-medium uppercase tracking-wide text-muted">{t("unreadMessages")}</h3>
                     {unreadRows.length > UNREAD_LIMIT && (
                       <Link href="/dashboard/messages" className="text-xs font-medium text-brand hover:underline">
-                        Voir tout
+                        {t("seeAll")}
                       </Link>
                     )}
                   </div>
@@ -256,7 +261,7 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
                             <span className="block text-sm font-semibold text-ink">{m.patientName}</span>
                             <span className="block truncate text-xs text-muted">{m.body}</span>
                           </span>
-                          <span className="shrink-0 text-xs text-muted">{relativeDay(m.createdAt)}</span>
+                          <span className="shrink-0 text-xs text-muted">{relativeDay(m.createdAt, undefined, i18n)}</span>
                         </Link>
                       </li>
                     ))}

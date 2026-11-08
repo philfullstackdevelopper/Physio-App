@@ -3,6 +3,8 @@ import { ArrowRight, HeartPulse, Stethoscope } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import SignupClosed from "@/components/SignupClosed";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
+import { getTranslations } from "next-intl/server";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 // Entry point for "Créer un compte" everywhere on the marketing site — a
 // full-bleed, two-way split rather than a small in-page toggle: the whole
@@ -12,9 +14,11 @@ import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 // "praticien" and skip straight to /signup/kine — this page is only for the
 // genuinely ambiguous "Créer un compte" buttons and the /login "no account
 // yet" link.
-export default function SignupChooserPage() {
+export default async function SignupChooserPage() {
   // Avant le lancement : pas de création de compte (lib/launchFlags.ts).
   if (!SIGNUPS_OPEN) return <SignupClosed />;
+  const t = await getTranslations("auth.signupChooser");
+  const tShared = await getTranslations("auth.shared");
   return (
     <main className="relative min-h-dvh bg-slate-950">
       <Link
@@ -23,6 +27,10 @@ export default function SignupChooserPage() {
       >
         <LogoLockup height={40} tone="light" />
       </Link>
+      {/* Choix de la langue, en face du logo. */}
+      <div className="absolute right-4 top-6 z-10 lg:right-8 lg:top-10">
+        <LanguageSwitcher tone="light" />
+      </div>
 
       {/* Téléphone / tablette : les deux moitiés tiennent ensemble sur un
           écran, sans défiler (audit 2026-10-10) — marges et pastille réduites. */}
@@ -39,15 +47,13 @@ export default function SignupChooserPage() {
             <Stethoscope className="h-9 w-9 max-sm:h-7 max-sm:w-7" strokeWidth={1.5} />
           </span>
           <h2 className="font-display relative text-3xl font-semibold text-white max-sm:text-2xl sm:text-4xl phone-land:text-2xl">
-            Je suis
-            <br />
-            kinésithérapeute
+            {t.rich("kineTitle", { br: () => <br /> })}
           </h2>
           <p className="relative max-w-xs text-sm leading-relaxed text-blue-100/70">
-            Prescrire des exercices, suivre mes patients et leur progression.
+            {t("kineDesc")}
           </p>
           <span className="relative mt-2 inline-flex items-center gap-2 rounded-full bg-blue-600 max-lg:mt-0 px-6 py-2.5 text-sm font-medium text-white transition-colors group-hover:bg-blue-500">
-            Continuer <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            {tShared("continue")} <ArrowRight className="h-4 w-4" strokeWidth={2} />
           </span>
         </Link>
 
@@ -63,23 +69,21 @@ export default function SignupChooserPage() {
             <HeartPulse className="h-9 w-9 max-sm:h-7 max-sm:w-7" strokeWidth={1.5} />
           </span>
           <h2 className="font-display relative text-3xl font-semibold text-white max-sm:text-2xl sm:text-4xl phone-land:text-2xl">
-            Je suis
-            <br />
-            patient·e
+            {t.rich("patientTitle", { br: () => <br /> })}
           </h2>
           <p className="relative max-w-xs text-sm leading-relaxed text-emerald-100/70">
-            Suivre mon programme, faire mes exercices et voir ma progression.
+            {t("patientDesc")}
           </p>
           <span className="relative mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-600 max-lg:mt-0 px-6 py-2.5 text-sm font-medium text-white transition-colors group-hover:bg-emerald-500">
-            Continuer <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            {tShared("continue")} <ArrowRight className="h-4 w-4" strokeWidth={2} />
           </span>
         </Link>
       </div>
 
       <p className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 text-center text-sm text-white/50 lg:bottom-8">
-        Déjà un compte ?{" "}
+        {tShared("haveAccount")}{" "}
         <Link href="/login" className="font-medium text-white underline underline-offset-2 hover:no-underline">
-          Se connecter
+          {tShared("signIn")}
         </Link>
       </p>
     </main>

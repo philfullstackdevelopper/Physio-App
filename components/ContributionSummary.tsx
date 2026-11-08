@@ -4,6 +4,7 @@
 // « Contributeur EasyPhysio » à partir de 5 — sans barre ni trophée.
 import Link from "next/link";
 import { BadgeCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { AuthorAvatar } from "@/components/ContributorCredit";
 import { contributorTitle, nextContributorStep } from "@/lib/exercise/kineExercises";
 
@@ -17,8 +18,10 @@ export default function ContributionSummary({
   published: number;
   pending: number;
 }) {
-  const title = contributorTitle(published);
-  const next = nextContributorStep(published);
+  const t = useTranslations("exercise.contributors");
+  const tContributor = useTranslations("exercise.contributor");
+  const title = contributorTitle(published, tContributor);
+  const next = nextContributorStep(published, tContributor);
   const shown = contributors.slice(0, 5);
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
@@ -36,15 +39,13 @@ export default function ContributionSummary({
           </span>
         )}
         <span className="underline-offset-2 group-hover:underline">
-          {contributors.length === 0
-            ? "Contributeurs"
-            : `Bibliothèque enrichie par ${contributors.length} kiné${contributors.length > 1 ? "s" : ""}`}
+          {contributors.length === 0 ? t("title") : t("enrichedBy", { count: contributors.length })}
         </span>
       </Link>
       {(published > 0 || pending > 0) && (
         <span className="tabular-nums sm:border-l sm:border-line sm:pl-3" title={next ?? undefined}>
-          {published} publié{published > 1 ? "s" : ""}
-          {pending > 0 ? ` · ${pending} en vérification` : ""}
+          {t("publishedCount", { count: published })}
+          {pending > 0 ? t("pendingCount", { count: pending }) : ""}
         </span>
       )}
       {title && (

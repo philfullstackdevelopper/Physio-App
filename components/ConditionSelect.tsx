@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 // Saves on change instead of a separate « Changer » button. A first condition
 // is saved straight away; replacing an existing one asks for an inline
@@ -14,6 +15,7 @@ export default function ConditionSelect({
   currentConditionId: string | null;
   conditions: { id: string; name: string }[];
 }) {
+  const t = useTranslations("exercise.conditionSelect");
   const [value, setValue] = useState(currentConditionId ?? "");
   const confirming = currentConditionId !== null && value !== currentConditionId;
 
@@ -30,21 +32,21 @@ export default function ConditionSelect({
         // plus longue et déborde de la bulle « Condition à renseigner ».
         className="w-full min-w-0 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm text-ink"
       >
-        <option value="" disabled={!currentConditionId}>Choisir une condition…</option>
+        <option value="" disabled={!currentConditionId}>{t("placeholder")}</option>
         {conditions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
       </select>
       {confirming && (
         <span className="flex items-center gap-1">
-          <span className="text-xs text-muted">Les séances recommandées seront retirées.</span>
+          <span className="text-xs text-muted">{t("willClear")}</span>
           <button type="submit" className="rounded-md bg-danger px-2 py-1 text-xs font-medium text-white transition hover:opacity-90">
-            Confirmer
+            {t("confirm")}
           </button>
           <button
             type="button"
             onClick={() => setValue(currentConditionId)}
             className="rounded-md px-2 py-1 text-xs font-medium text-muted transition hover:text-ink"
           >
-            Annuler
+            {t("cancel")}
           </button>
         </span>
       )}

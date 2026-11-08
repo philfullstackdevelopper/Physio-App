@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Info } from "lucide-react";
 import { headers } from "next/headers";
+import { getTranslations } from "next-intl/server";
 import PatientNav from "@/components/PatientNav";
 import PatientAppOpening from "@/components/PatientAppOpening";
 import PatientWelcomeGate from "@/components/PatientWelcomeGate";
@@ -138,6 +139,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
   // d'onglets), donc pas de marge du bas non plus — sinon bande vide en bas
   // du téléphone (Philippe, 2026-10-07). Même test que PatientNav.
   const inGuidedSession = pathname.endsWith("/seance");
+  const t = await getTranslations("patient");
 
   return (
     <div className="flex min-h-screen flex-col bg-app-bg text-ink max-sm:bg-phone-bg sm:flex-row">
@@ -154,10 +156,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
         {kineSuspended && !inGuidedSession && (
           <p className="m-4 mb-0 flex items-start gap-2 rounded-2xl border border-warn/30 bg-warn-soft p-3 text-sm text-warn sm:mx-8 sm:mt-6">
             <Info className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} />
-            <span>
-              {kine?.full_name ?? "Votre kiné"} n&apos;exerce plus sur EasyPhysio. Plus aucun prélèvement : vous gardez
-              l&apos;accès gratuit à votre programme et à vos données.
-            </span>
+            <span>{t("layout.kineSuspended", { name: kine?.full_name ?? t("common.yourKineCap") })}</span>
           </p>
         )}
         {children}

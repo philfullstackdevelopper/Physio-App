@@ -2,6 +2,9 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useLocale, useTranslations } from "next-intl";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 import { isPhoneFormat } from "@/lib/phoneFormat";
 import Link from "next/link";
 import { track } from "@/lib/analytics/track";
@@ -25,12 +28,13 @@ import type { ExerciseDose } from "@/lib/exercise/prescription";
  *  (Philippe, 2026-11-01). Posé À CÔTÉ du bouton de la carte (un bouton ne
  *  peut pas en contenir un autre), en haut à droite. */
 function InfoButton({ name, onOpen }: { name: string; onOpen: () => void }) {
+  const t = useTranslations("exercise.adjust");
   return (
     <button
       type="button"
       onClick={onOpen}
-      aria-label={`Voir la démonstration : ${name}`}
-      title="Voir la démonstration"
+      aria-label={t("seeDemoAria", { name })}
+      title={t("seeDemo")}
       className="absolute right-1 top-1 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface/80 text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
     >
       <Info className="h-4 w-4" strokeWidth={1.75} />
@@ -94,17 +98,18 @@ function RecommendedChanges({
   addIds: Set<string>;
   onSwap: (r: Recommendation, on: boolean) => void;
 }) {
+  const t = useTranslations("exercise.adjust");
   if (items.length === 0) return null;
   return (
-    <section aria-label="Changements recommandés" className="shrink-0 rounded-xl border border-line bg-surface p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted">Changements recommandés</p>
+    <section aria-label={t("recommendedChanges")} className="shrink-0 rounded-xl border border-line bg-surface p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t("recommendedChanges")}</p>
       <ul className="mt-2 max-h-44 space-y-1.5 overflow-y-auto pr-1">
         {items.map((r) => {
           const on = removeIds.has(r.forId) && addIds.has(r.alt.id);
           return (
             <li key={`${r.forId}-${r.alt.id}`} className="flex items-center gap-2 rounded-lg bg-app-bg px-2.5 py-1.5 text-sm">
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${r.kind === "easier" ? "bg-ok-soft text-ok" : "bg-brand-soft text-brand-dark"}`}>
-                {r.kind === "easier" ? "Plus facile" : "Plus difficile"}
+                {r.kind === "easier" ? t("easier") : t("harder")}
               </span>
               <span className="min-w-0 flex-1 truncate text-ink" title={`${r.forName} → ${r.alt.name}`}>
                 <span className="text-muted">{r.forName}</span>
@@ -118,7 +123,7 @@ function RecommendedChanges({
                 onClick={() => onSwap(r, !on)}
                 className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${on ? "bg-ok text-white" : "border border-line bg-surface text-ink hover:bg-app-bg"}`}
               >
-                {on ? "Remplacé" : "Remplacer"}
+                {on ? t("replaced") : t("replace")}
               </button>
             </li>
           );
@@ -131,10 +136,11 @@ function RecommendedChanges({
 /** Pastilles « Jusqu'à quand ? » : « Sans limite » par défaut, puis 1 à 12
  *  semaines (Philippe, 2026-11-05, proposition 3 : plus d'écran à part). */
 function DurationPills({ value, onChange, summary }: { value: string; onChange: (v: string) => void; summary: ReactNode }) {
+  const t = useTranslations("exercise.adjust");
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:[scrollbar-width:none]">
-      <span className="shrink-0 text-sm font-medium text-ink">Jusqu&apos;à quand ?</span>
-      <div role="radiogroup" aria-label="Jusqu'à quand" className="flex shrink-0 items-center gap-1">
+      <span className="shrink-0 text-sm font-medium text-ink">{t("untilWhen")}</span>
+      <div role="radiogroup" aria-label={t("untilWhenAria")} className="flex shrink-0 items-center gap-1">
         {DURATION_CHOICES.map((n) => {
           const v = n === null ? "" : String(n);
           const selected = value === v;
@@ -144,17 +150,17 @@ function DurationPills({ value, onChange, summary }: { value: string; onChange: 
               type="button"
               role="radio"
               aria-checked={selected}
-              aria-label={n === null ? "Sans limite" : `${n} semaine${n > 1 ? "s" : ""}`}
+              aria-label={n === null ? t("noLimit") : t("weeksAria", { count: n })}
               onClick={() => onChange(v)}
               className={`shrink-0 rounded-full border text-xs font-medium transition-colors ${n === null ? "mr-1 px-3 py-1.5" : "h-8 w-8"} ${
                 selected ? "border-brand bg-brand text-white" : "border-line bg-surface text-ink hover:border-brand/50"
               }`}
             >
-              {n === null ? "Sans limite" : n}
+              {n === null ? t("noLimit") : n}
             </button>
           );
         })}
-        <span className="ml-0.5 text-xs text-muted">sem.</span>
+        <span className="ml-0.5 text-xs text-muted">{t("weeksShort")}</span>
       </div>
       <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted max-sm:hidden">
         <CalendarRange className="h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={1.75} />
@@ -206,6 +212,7 @@ function SeanceComposer({
   extra?: ReactNode;
   recentIds?: string[];
 }) {
+  const t = useTranslations("exercise.adjust");
   const inSeance = useMemo(() => new Set(exercises.map((e) => e.id)), [exercises]);
   const library = useMemo(() => addableExercises.filter((e) => !inSeance.has(e.id)), [addableExercises, inSeance]);
   return (
@@ -218,12 +225,12 @@ function SeanceComposer({
         <div className="flex items-baseline justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</p>
           <span className="text-xs text-muted">
-            {exercises.length} exercice{exercises.length > 1 ? "s" : ""}
+            {t("exerciseCount", { count: exercises.length })}
           </span>
         </div>
         <p className="mt-1 text-xs text-muted max-sm:mt-0">
           <span className="max-sm:hidden">{hint}</span>
-          <span className="sm:hidden">Touchez un exercice pour le retirer.</span>
+          <span className="sm:hidden">{t("tapToRemove")}</span>
         </p>
         <ul className="mt-3 grid grid-cols-2 content-start gap-2 max-sm:mt-2 max-sm:min-h-0 max-sm:flex-1 max-sm:overflow-y-auto md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
           {exercises.map((ex) => {
@@ -243,7 +250,7 @@ function SeanceComposer({
                   {!marked && <MissingEquipmentPill required={ex.equipment} owned={patientEquipment} firstName={patientFirstName} />}
                   {marked ? (
                     <span className="flex items-center gap-1 text-xs font-medium no-underline">
-                      À retirer <X className="h-3.5 w-3.5" strokeWidth={2} />
+                      {t("toRemove")} <X className="h-3.5 w-3.5" strokeWidth={2} />
                     </span>
                   ) : (
                     <Check className="h-4 w-4 text-brand" strokeWidth={2} />
@@ -269,13 +276,13 @@ function SeanceComposer({
                   <ExerciseIllustration name={ex.name} className="h-16 w-full shrink-0 text-ok md:h-20" />
                   <span className="line-clamp-2 min-h-[2.5em] text-[13px] leading-tight">{ex.name}</span>
                   <MissingEquipmentPill required={ex.equipment} owned={patientEquipment} firstName={patientFirstName} />
-                  <span className="text-xs font-medium">Ajouté</span>
+                  <span className="text-xs font-medium">{t("added")}</span>
                 </button>
                 <DoseInputs exerciseId={ex.id} exerciseName={ex.name} dose={phaseDose} onEdit={onDoseEdit} />
               </li>
             );
           })}
-          {exercises.length === 0 && addIds.size === 0 && <li className="col-span-2 text-sm text-muted">Cette séance est vide.</li>}
+          {exercises.length === 0 && addIds.size === 0 && <li className="col-span-2 text-sm text-muted">{t("empty")}</li>}
         </ul>
       </section>
 
@@ -363,6 +370,8 @@ export default function AdjustWorkoutModal({
   /** Exercices de ses dernières séances (« Récents »). */
   recentIds?: string[];
 }) {
+  const t = useTranslations("exercise.adjust");
+  const locale = useLocale() as Locale;
   const [open, setOpen] = useState(false);
   // Exercice dont la démonstration est ouverte par le (i).
   const [info, setInfo] = useState<{ id: string; name: string } | null>(null);
@@ -389,10 +398,11 @@ export default function AdjustWorkoutModal({
   // sont présélectionnées ; « Par zone » garde les cases par partie du corps.
   const conditionOptions = useMemo(() => {
     const m = new Map<string, string>();
-    for (const w of addableWorkouts) if (w.conditionId) m.set(w.conditionId, w.conditionName ?? "Sans pathologie");
+    for (const w of addableWorkouts) if (w.conditionId) m.set(w.conditionId, w.conditionName ?? t("noPathology"));
     return [...m.entries()]
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => (a.id === patientConditionId ? -1 : b.id === patientConditionId ? 1 : a.name.localeCompare(b.name, "fr")));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addableWorkouts, patientConditionId]);
   const initialFilter = () => {
     const hasCondition = !!patientConditionId && addableWorkouts.some((w) => w.conditionId === patientConditionId);
@@ -554,7 +564,7 @@ export default function AdjustWorkoutModal({
   const triggerDisabled = !workout && addableWorkouts.length === 0;
   // Période choisie : à partir de la semaine sélectionnée dans la frise.
   const fromKey = weekStartDate ?? thisWeekStartDateKey();
-  const shortDate = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
+  const shortDate = (d: Date) => d.toLocaleDateString(intlTag(locale), { day: "numeric", month: "short", timeZone: "UTC" });
   const startLabel = shortDate(new Date(`${fromKey}T12:00:00Z`));
   // Dernier jour (dimanche) d'une période de n semaines.
   const endLabel = (n: number) => {
@@ -562,14 +572,11 @@ export default function AdjustWorkoutModal({
     d.setUTCDate(d.getUTCDate() - 1);
     return shortDate(d);
   };
+  const bold = (c: ReactNode) => <span className="font-semibold text-ink">{c}</span>;
   const periodSummary = weekCount ? (
-    <span>
-      Du <span className="font-semibold text-ink">{startLabel}</span> au <span className="font-semibold text-ink">{endLabel(Number(weekCount))}</span>
-    </span>
+    <span>{t.rich("fromTo", { start: startLabel, end: endLabel(Number(weekCount)), b: bold })}</span>
   ) : (
-    <span>
-      Dès le <span className="font-semibold text-ink">{startLabel}</span>, jusqu&apos;à la prochaine séance
-    </span>
+    <span>{t.rich("fromOpen", { start: startLabel, b: bold })}</span>
   );
   const changeHiddenInputs = (
     <>
@@ -582,11 +589,11 @@ export default function AdjustWorkoutModal({
     </>
   );
   const changeCounters = wouldBeEmpty ? (
-    <span className="text-xs text-danger">Une séance doit garder au moins un exercice.</span>
+    <span className="text-xs text-danger">{t("atLeastOne")}</span>
   ) : (
     <>
-      {removed > 0 && <span className="rounded-full bg-danger-soft px-3 py-1 text-xs font-medium text-danger">{removed} retiré{removed > 1 ? "s" : ""}</span>}
-      {added > 0 && <span className="rounded-full bg-ok-soft px-3 py-1 text-xs font-medium text-ok">{added} ajouté{added > 1 ? "s" : ""}</span>}
+      {removed > 0 && <span className="rounded-full bg-danger-soft px-3 py-1 text-xs font-medium text-danger">{t("removedCount", { count: removed })}</span>}
+      {added > 0 && <span className="rounded-full bg-ok-soft px-3 py-1 text-xs font-medium text-ok">{t("addedCount", { count: added })}</span>}
     </>
   );
   // Téléphone, page « Ajouter un exercice » : un seul bouton pour revenir.
@@ -594,7 +601,7 @@ export default function AdjustWorkoutModal({
     phoneTab === "add" ? (
       <div className="hidden border-t border-line px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2.5 max-sm:block">
         <button type="button" onClick={() => setPhoneTab("current")} className="w-full rounded-full bg-brand py-2.5 text-sm font-semibold text-white">
-          {added > 0 ? `Terminé · ${added} ajouté${added > 1 ? "s" : ""}` : "Retour à la séance"}
+          {added > 0 ? t("doneAdded", { count: added }) : t("backToSession")}
         </button>
       </div>
     ) : null;
@@ -605,7 +612,7 @@ export default function AdjustWorkoutModal({
       className="hidden flex-1 items-center justify-center gap-1 rounded-full border border-brand/40 bg-brand-soft px-2 py-2.5 text-[13px] font-semibold text-brand max-sm:inline-flex"
     >
       <Plus className="h-4 w-4 shrink-0" strokeWidth={2} />
-      Ajouter un exercice
+      {t("addExercise")}
     </button>
   );
 
@@ -616,12 +623,12 @@ export default function AdjustWorkoutModal({
         type="button"
         onClick={openModal}
         disabled={triggerDisabled}
-        title={triggerDisabled ? "Aucune séance disponible — créez-en une dans Mes séances." : undefined}
+        title={triggerDisabled ? t("noneAvailable") : undefined}
         className="inline-flex shrink-0 items-center rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
       >
         {/* « Ajuster / changer » : le même bouton ouvre les deux (modifier les
             exercices, ou « Changer de séance ») — Philippe, 2026-10-02. */}
-        {workout ? "Ajuster la séance" : "Choisir une séance"}
+        {workout ? t("adjust") : t("choose")}
       </button>
 
       {/* Portail vers document.body, comme NewSeanceModal : un ancêtre avec
@@ -637,7 +644,7 @@ export default function AdjustWorkoutModal({
               tabIndex={-1}
               role="dialog"
               aria-modal="true"
-              aria-label={view === "exercises" && workout ? `Ajuster la séance ${workout.name}` : "Choisir une séance"}
+              aria-label={view === "exercises" && workout ? t("adjustAria", { name: workout.name }) : t("choose")}
               onClick={(e) => e.stopPropagation()}
               // Plein écran (presque) sur desktop : hauteur fixe à 90vh pour que
               // les colonnes se partagent l'espace et scrollent chacune de leur
@@ -650,19 +657,21 @@ export default function AdjustWorkoutModal({
                   <h2 className="shrink-0 text-lg font-semibold text-ink max-sm:text-base">
                     {composing ? (
                       <>
-                        <span className={phoneTab === "add" ? "max-sm:hidden" : ""}>{picked && view === "template" ? "Séance choisie" : "Ajuster la séance"}</span>
-                        {phoneTab === "add" && <span className="sm:hidden">Ajouter un exercice</span>}
+                        <span className={phoneTab === "add" ? "max-sm:hidden" : ""}>{picked && view === "template" ? t("picked") : t("adjust")}</span>
+                        {phoneTab === "add" && <span className="sm:hidden">{t("addExercise")}</span>}
                       </>
                     ) : workout ? (
-                      "Changer de séance"
+                      t("change")
                     ) : (
-                      "Choisir une séance"
+                      t("choose")
                     )}
                   </h2>
                   <p className="truncate text-sm text-muted max-sm:text-xs">
                     {composing
-                      ? `${composing.name} · pour ${patientFirstName} uniquement`
-                      : `${weekLabel ?? "Cette semaine"}${workout ? ` · remplace ${workout.name}` : ""}`}
+                      ? t("forPatientOnly", { name: composing.name, patient: patientFirstName })
+                      : workout
+                        ? t("weekReplaces", { week: weekLabel ?? t("thisWeek"), name: workout.name })
+                        : (weekLabel ?? t("thisWeek"))}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -671,11 +680,11 @@ export default function AdjustWorkoutModal({
                   {view === "template" && !picked && (
                     <Link
                       href={`/dashboard/seances?nouvelle=1&retour=/dashboard/patients/${patientId}`}
-                      aria-label="Créer une séance"
+                      aria-label={t("create")}
                       className="mr-1 inline-flex items-center gap-1.5 rounded-full bg-brand-dark px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand max-sm:h-9 max-sm:w-9 max-sm:justify-center max-sm:p-0"
                     >
                       <Plus className="h-4 w-4" strokeWidth={2} />
-                      <span className="max-sm:hidden">Créer une séance</span>
+                      <span className="max-sm:hidden">{t("create")}</span>
                     </Link>
                   )}
                   {/* Recherche de séance dans l'en-tête : la ligne du dessous
@@ -687,7 +696,7 @@ export default function AdjustWorkoutModal({
                         type="search"
                         value={qTemplate}
                         onChange={(e) => setQTemplate(e.target.value)}
-                        placeholder="Rechercher une séance…"
+                        placeholder={t("searchPlaceholder")}
                         className="w-full rounded-lg border border-line bg-surface py-1.5 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
                       />
                     </label>
@@ -705,11 +714,11 @@ export default function AdjustWorkoutModal({
                         type="submit"
                         name="workout_id"
                         value={easierWorkout.id}
-                        title={`Plus facile : « ${easierWorkout.name} »${easierWorkout.stageLabel ? ` (${easierWorkout.stageLabel})` : ""}`}
+                        title={easierWorkout.stageLabel ? t("easierTitleStage", { name: easierWorkout.name, stage: easierWorkout.stageLabel }) : t("easierTitle", { name: easierWorkout.name })}
                         className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-app-bg"
                       >
                         <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.25} />
-                        Plus facile
+                        {t("easier")}
                       </button>
                     </form>
                   )}
@@ -725,7 +734,7 @@ export default function AdjustWorkoutModal({
                       className="inline-flex items-center gap-1.5 rounded-full bg-brand-dark px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand max-sm:hidden"
                     >
                       <Repeat className="h-4 w-4" strokeWidth={2} />
-                      Changer de séance
+                      {t("change")}
                     </button>
                   )}
                   {view === "template" && workout && !picked && (
@@ -738,7 +747,7 @@ export default function AdjustWorkoutModal({
                       className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-app-bg"
                     >
                       <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
-                      Retour
+                      {t("back")}
                     </button>
                   )}
                   <button
@@ -749,7 +758,7 @@ export default function AdjustWorkoutModal({
                       if (composing && phoneTab === "add" && isPhoneFormat()) setPhoneTab("current");
                       else close();
                     }}
-                    aria-label="Fermer"
+                    aria-label={t("close")}
                     className="rounded-lg p-1.5 text-muted hover:bg-app-bg hover:text-ink max-sm:flex max-sm:h-9 max-sm:w-9 max-sm:items-center max-sm:justify-center max-sm:rounded-full max-sm:bg-app-bg max-sm:text-ink"
                   >
                     <X className="h-5 w-5" strokeWidth={1.75} />
@@ -766,8 +775,8 @@ export default function AdjustWorkoutModal({
                     {changeHiddenInputs}
 
                     <SeanceComposer
-                      title="Séance actuelle"
-                      hint="Cliquez sur un exercice pour le retirer ; dessous, séries × répétitions ou maintien (vide = 3 × 8-12)."
+                      title={t("current")}
+                      hint={t("currentHint")}
                       exercises={workout.exercises}
                       stage={workout.stage}
                       removeIds={removeIds}
@@ -824,25 +833,25 @@ export default function AdjustWorkoutModal({
                               className="hidden flex-1 items-center justify-center gap-1 rounded-full bg-brand-dark px-2 py-2.5 text-[13px] font-semibold text-white shadow-sm max-sm:inline-flex"
                             >
                               <Repeat className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                              Changer de séance
+                              {t("change")}
                             </button>
                           )}
                           {recId ? (
                             confirmRemove ? (
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-sm text-ink">Retirer la séance de {patientFirstName} ?</span>
+                                <span className="text-sm text-ink">{t("removeConfirm", { name: patientFirstName })}</span>
                                 {/* Lié par l'attribut `form` au formulaire de retrait
                                     rendu à côté : un <form> ne peut pas être imbriqué
                                     dans un autre <form>, sinon erreur d'hydratation. */}
                                 <button type="submit" form={removeFormId} className="rounded-full bg-danger px-3 py-1.5 text-xs font-medium text-white hover:opacity-90">
-                                  Oui, retirer
+                                  {t("yesRemove")}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setConfirmRemove(false)}
                                   className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-app-bg"
                                 >
-                                  Non
+                                  {t("no")}
                                 </button>
                               </div>
                             ) : (
@@ -852,7 +861,7 @@ export default function AdjustWorkoutModal({
                                 className="inline-flex items-center gap-1.5 rounded-full border border-danger/30 px-4 py-1.5 text-sm font-medium text-danger transition-colors hover:bg-danger-soft max-sm:hidden"
                               >
                                 <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-                                Retirer cette séance
+                                {t("remove")}
                               </button>
                             )
                           ) : (
@@ -862,10 +871,10 @@ export default function AdjustWorkoutModal({
                             <button
                               type="submit"
                               form={saveFormId}
-                              title="Copie cette séance dans Mes séances pour l'attribuer à d'autres patients"
+                              title={t("saveAsMineTitle")}
                               className="text-sm font-medium text-muted underline underline-offset-2 hover:text-brand max-sm:hidden"
                             >
-                              Enregistrer dans Mes séances
+                              {t("saveAsMine")}
                             </button>
                           )}
                         </div>
@@ -876,22 +885,22 @@ export default function AdjustWorkoutModal({
                             <button
                               type="button"
                               onClick={() => setConfirmRemove(true)}
-                              aria-label="Retirer cette séance"
+                              aria-label={t("remove")}
                               className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-danger/30 text-danger max-sm:flex"
                             >
                               <Trash2 className="h-4 w-4" strokeWidth={1.75} />
                             </button>
                           )}
                           <button type="button" onClick={close} className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg max-sm:hidden">
-                            Annuler
+                            {t("cancel")}
                           </button>
                           <SubmitButton
-                            pendingText="Enregistrement…"
+                            pendingText={t("saving")}
                             disabled={noChanges || wouldBeEmpty}
                             className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50 max-sm:flex-1 max-sm:py-2.5"
                           >
-                            <span className="max-sm:hidden">Enregistrer les modifications</span>
-                            <span className="sm:hidden">Enregistrer</span>
+                            <span className="max-sm:hidden">{t("saveChanges")}</span>
+                            <span className="sm:hidden">{t("save")}</span>
                           </SubmitButton>
                         </div>
                       </div>
@@ -928,8 +937,8 @@ export default function AdjustWorkoutModal({
                   {changeHiddenInputs}
 
                   <SeanceComposer
-                    title={[picked.conditionName, picked.stage ? `Phase ${PHASE_NUMBER[picked.stage as Stage] ?? ""}` : null].filter(Boolean).join(" · ") || "Séance choisie"}
-                    hint={`Retirez ou ajoutez des exercices avant d'appliquer : les changements ne valent que pour ${patientFirstName}.`}
+                    title={[picked.conditionName, picked.stage ? t("phase", { n: PHASE_NUMBER[picked.stage as Stage] ?? "" }) : null].filter(Boolean).join(" · ") || t("picked")}
+                    hint={t("pickedHint", { name: patientFirstName })}
                     exercises={picked.exercises}
                     stage={picked.stage}
                     removeIds={removeIds}
@@ -957,7 +966,7 @@ export default function AdjustWorkoutModal({
                           onClick={backToList}
                           className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg max-sm:hidden"
                         >
-                          Retour
+                          {t("back")}
                         </button>
                         {phoneAddButton}
                         <button
@@ -965,7 +974,7 @@ export default function AdjustWorkoutModal({
                           disabled={wouldBeEmpty}
                           className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50 max-sm:flex-1 max-sm:py-2.5"
                         >
-                          Appliquer la séance
+                          {t("apply")}
                         </button>
                       </div>
                     </div>
@@ -990,18 +999,18 @@ export default function AdjustWorkoutModal({
                         type="search"
                         value={qTemplate}
                         onChange={(e) => setQTemplate(e.target.value)}
-                        placeholder="Rechercher une séance…"
+                        placeholder={t("searchPlaceholder")}
                         className="h-10 w-full rounded-xl border border-line bg-surface pl-9 pr-3 text-base text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
                       />
                     </label>
                   )}
                   {addableWorkouts.length > 3 && (
                     <div className={`flex flex-wrap items-center gap-2 border-b border-line px-6 py-2 max-sm:px-4 ${templateQuery ? "opacity-40" : ""}`}>
-                      <div role="tablist" aria-label="Trier les séances" className="flex shrink-0 rounded-full border border-line bg-app-bg p-0.5 text-xs font-semibold">
+                      <div role="tablist" aria-label={t("sortAria")} className="flex shrink-0 rounded-full border border-line bg-app-bg p-0.5 text-xs font-semibold">
                         {(
                           [
-                            ["pathology", "Par pathologie"],
-                            ["zone", "Par zone"],
+                            ["pathology", t("byPathology")],
+                            ["zone", t("byZone")],
                           ] as const
                         ).map(([mode, label]) => (
                           <button
@@ -1022,7 +1031,7 @@ export default function AdjustWorkoutModal({
                       {filterMode === "pathology" ? (
                         <>
                           <select
-                            aria-label="Pathologie"
+                            aria-label={t("pathologyAria")}
                             value={conditionFilter ?? ""}
                             onChange={(e) => {
                               setQTemplate("");
@@ -1045,7 +1054,7 @@ export default function AdjustWorkoutModal({
                               onClick={() => setStageFilter(null)}
                               className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${stageFilter === null ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"}`}
                             >
-                              Toutes
+                              {t("allStages")}
                             </button>
                             {STAGE_ORDER.map((s) => {
                               const count = stageCounts.get(s) ?? 0;
@@ -1056,13 +1065,13 @@ export default function AdjustWorkoutModal({
                                   type="button"
                                   aria-pressed={active}
                                   disabled={count === 0}
-                                  title={`${count} séance${count > 1 ? "s" : ""}${s === patientStage ? ` · phase déclarée par ${patientFirstName}` : ""}`}
+                                  title={s === patientStage ? t("sessionCountDeclared", { count, name: patientFirstName }) : t("sessionCount", { count })}
                                   onClick={() => setStageFilter(s)}
                                   className={`relative shrink-0 rounded-full border px-3 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40 ${
                                     active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
                                   }`}
                                 >
-                                  Phase {PHASE_NUMBER[s]}
+                                  {t("phase", { n: PHASE_NUMBER[s] })}
                                   {s === patientStage && <span aria-hidden className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-ok" />}
                                 </button>
                               );
@@ -1083,7 +1092,7 @@ export default function AdjustWorkoutModal({
                               <button
                                 key={bp.id}
                                 type="button"
-                                title={`${count} séance${count > 1 ? "s" : ""}`}
+                                title={t("sessionCount", { count })}
                                 onClick={() => {
                                   setQTemplate("");
                                   setTemplateBodyPartId(bp.id);
@@ -1103,10 +1112,10 @@ export default function AdjustWorkoutModal({
                   )}
                   <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 max-sm:px-4 max-sm:py-3">
                     {addableWorkouts.length === 0 ? (
-                      <p className="text-sm text-muted">Aucune séance disponible — créez-en une dans Mes séances.</p>
+                      <p className="text-sm text-muted">{t("noneAvailable")}</p>
                     ) : filteredWorkouts.length === 0 ? (
                       <p className="text-sm text-muted">
-                        {templateQuery ? `Aucune séance ne correspond à « ${qTemplate} ».` : "Aucune séance ici pour l'instant."}
+                        {templateQuery ? t("noMatch", { query: qTemplate }) : t("nothingHere")}
                       </p>
                     ) : (
                       // Blocs (dessin au-dessus du nom) — 2 par rangée sur
@@ -1115,7 +1124,7 @@ export default function AdjustWorkoutModal({
                         {filteredWorkouts.map((w, i) => {
                           // En-tête de groupe : la phase en mode pathologie, la pathologie sinon.
                           const groupOf = (x: AddableWorkout) =>
-                            filterMode === "pathology" && !templateQuery ? (x.stageLabel ?? "Sans phase") : (x.conditionName ?? "Sans condition");
+                            filterMode === "pathology" && !templateQuery ? (x.stageLabel ?? t("noPhase")) : (x.conditionName ?? t("noCondition"));
                           const newGroup = i === 0 || groupOf(filteredWorkouts[i - 1]) !== groupOf(w);
                           return (
                             <li key={w.id} className="contents">
@@ -1126,7 +1135,7 @@ export default function AdjustWorkoutModal({
                                 <button
                                   type="button"
                                   onClick={() => pick(w.id)}
-                                  title="Voir et modifier les exercices avant d'appliquer"
+                                  title={t("pickTitle")}
                                   className="flex min-w-0 flex-1 flex-col items-stretch gap-1.5 text-center"
                                 >
                                   <span className="flex h-16 w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-app-bg md:h-24">
@@ -1140,9 +1149,9 @@ export default function AdjustWorkoutModal({
                                     <span className="line-clamp-2 min-h-[2.5em] text-[13px] font-semibold leading-tight text-ink md:text-sm md:leading-tight">{w.name}</span>
                                     <span className="mt-0.5 block truncate text-[11px] text-muted md:text-xs">
                                       {[
-                                        w.stage ? `Phase ${PHASE_NUMBER[w.stage as Stage] ?? "?"}` : null,
+                                        w.stage ? t("phase", { n: PHASE_NUMBER[w.stage as Stage] ?? "?" }) : null,
                                         w.durationMinutes != null ? `${w.durationMinutes} min` : null,
-                                        w.exerciseNames.length > 0 ? `${w.exerciseNames.length} exo${w.exerciseNames.length > 1 ? "s" : ""}` : null,
+                                        w.exerciseNames.length > 0 ? t("exoCount", { count: w.exerciseNames.length }) : null,
                                       ]
                                         .filter(Boolean)
                                         .join(" · ")}
@@ -1155,7 +1164,7 @@ export default function AdjustWorkoutModal({
                                     onClick={() => pick(w.id)}
                                     className="flex-1 rounded-full border border-line px-2 py-1.5 text-xs font-medium text-ink hover:bg-app-bg"
                                   >
-                                    Modifier
+                                    {t("edit")}
                                   </button>
                                   <button
                                     type="submit"
@@ -1163,7 +1172,7 @@ export default function AdjustWorkoutModal({
                                     value={w.id}
                                     className="flex-1 rounded-full bg-brand px-2 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark"
                                   >
-                                    Appliquer
+                                    {t("applyShort")}
                                   </button>
                                 </div>
                               </div>
@@ -1190,12 +1199,14 @@ export default function AdjustWorkoutModal({
 // Pastille orange « il lui manque : … » — seulement si le patient n'a pas le
 // matériel qu'exige l'exercice (Philippe, 2026-10-12). Un signal, pas un blocage.
 function MissingEquipmentPill({ required, owned, firstName }: { required?: string[] | null; owned: string[] | null; firstName: string }) {
+  const t = useTranslations("exercise.adjust");
+  const tExEquipment = useTranslations("exercise.exerciseEquipment");
   const missing = missingEquipment(required, owned);
   if (missing.length === 0) return null;
-  const label = equipmentListLabel(missing);
+  const label = equipmentListLabel(missing, tExEquipment);
   return (
     <span
-      title={`Matériel que ${firstName} n'a pas déclaré : ${label}`}
+      title={t("missingTitle", { name: firstName, list: label })}
       className="max-w-full shrink-0 truncate rounded-full bg-warn-soft px-1.5 py-0.5 text-[10px] font-medium text-warn no-underline"
     >
       {label}

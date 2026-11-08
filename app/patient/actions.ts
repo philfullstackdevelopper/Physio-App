@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { notifyNewMessage } from "@/lib/push/notify";
+import { getTranslations } from "next-intl/server";
 
 // First step of patient onboarding, gated in app/patient/layout.tsx.
 // patients_update_by_instructor is the only ordinary UPDATE policy on
@@ -30,7 +31,8 @@ export async function acceptTerms(): Promise<{ error: string | null; accepted?: 
 
   const { error } = await supabase.rpc("accept_patient_terms", { p_patient_id: user.id });
   if (error) {
-    return { error: "L'acceptation n'a pas pu être enregistrée. Vérifiez votre connexion et réessayez." };
+    const t = await getTranslations("patient.actions");
+    return { error: t("acceptFailed") };
   }
 
   return { error: null, accepted: true };
@@ -60,9 +62,10 @@ export async function sendPatientMessage(formData: FormData) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
+  const t = await getTranslations("patient.actions");
   const body = String(formData.get("body") ?? "").trim();
   if (!body) {
-    redirect(`/patient/messages?error=${encodeURIComponent("Écrivez un message.")}`);
+    redirect(`/patient/messages?error=${encodeURIComponent(t("emptyMessage"))}`);
   }
 
   const { data: patient } = await supabase
@@ -71,12 +74,12 @@ export async function sendPatientMessage(formData: FormData) {
     .eq("id", user.id)
     .maybeSingle();
   if (!patient?.instructor_id) {
-    redirect(`/patient/messages?error=${encodeURIComponent("Kiné introuvable.")}`);
+    redirect(`/patient/messages?error=${encodeURIComponent(t("kineNotFound"))}`);
   }
   // Kiné suspendu (2026-10-07) : il n'a plus accès à son espace, un message
   // ne serait jamais lu.
   if ((patient!.instructors as unknown as { status: string | null } | null)?.status === "suspended") {
-    redirect(`/patient/messages?error=${encodeURIComponent("Votre kiné n'exerce plus sur EasyPhysio : la messagerie est fermée.")}`);
+    redirect(`/patient/messages?error=${encodeURIComponent(t("messagingClosed"))}`);
   }
 
   const { error } = await supabase.from("patient_messages").insert({
@@ -85,7 +88,7 @@ export async function sendPatientMessage(formData: FormData) {
     sender: "patient",
     body,
   });
-  if (error) redirect(`/patient/messages?error=${encodeURIComponent(friendlyDbError(error))}`);
+  if (error) redirect(`/patient/messages?error=${encodeURIComponent(friendlyDbError(error, undefined, await getTranslations("dashboard.lib")))}`);
   await notifyNewMessage({ patientId: user.id, instructorId: patient!.instructor_id as string, sender: "patient" });
 
   revalidatePath("/patient");

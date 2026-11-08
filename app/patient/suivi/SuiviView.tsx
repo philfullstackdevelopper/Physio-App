@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 import { ArrowLeft, CalendarClock, CheckCircle2, RefreshCw } from "lucide-react";
 import PaywallVideo from "./PaywallVideo";
 import SubmitButton from "@/components/SubmitButton";
@@ -52,37 +55,43 @@ export type SuiviViewProps = {
 
 const card = "rounded-2xl border border-line bg-surface p-5 shadow-sm max-sm:border-0 max-sm:p-4 max-sm:shadow-soft short:p-4";
 
-function dateFR(iso: string | null | undefined): string {
-  return iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
+function dateFR(iso: string | null | undefined, locale: Locale): string {
+  return iso ? new Date(iso).toLocaleDateString(intlTag(locale), { day: "numeric", month: "long", year: "numeric" }) : "";
 }
 
 /** Les deux montants qui composent le total, tels qu'ils figurent sur les deux factures. */
 function Breakdown({ offer, kineName, compact = false }: { offer: PlatformOffer; kineName: string; compact?: boolean }) {
+  const t = useTranslations("billing.suivi");
+  const tf = useTranslations("billing.format");
+  const locale = useLocale() as Locale;
   return (
     <ul className={`space-y-1 text-xs text-muted ${compact ? "" : "mt-2"}`}>
       <li className="flex gap-2">
-        <span className="w-14 shrink-0 text-right font-semibold tabular-nums text-ink">{eurosFR(offer.platformCents)} €</span>
-        <span>accès à la plateforme EasyPhysio, chaque mois (payé à EasyPhysio)</span>
+        <span className="w-14 shrink-0 text-right font-semibold tabular-nums text-ink">{tf("eur", { amount: eurosFR(offer.platformCents, locale) })}</span>
+        <span>{t("breakdownPlatform")}</span>
       </li>
       <li className="flex gap-2">
-        <span className="w-14 shrink-0 text-right font-semibold tabular-nums text-ink">{eurosFR(KINE_FOLLOW_UP_CENTS)} €</span>
-        <span>suivi par {kineName}, uniquement les mois où il met à jour votre programme (payé à votre kiné)</span>
+        <span className="w-14 shrink-0 text-right font-semibold tabular-nums text-ink">{tf("eur", { amount: eurosFR(KINE_FOLLOW_UP_CENTS, locale) })}</span>
+        <span>{t("breakdownKine", { kineName })}</span>
       </li>
     </ul>
   );
 }
 
-function commitmentText(offer: PlatformOffer): string {
-  return offer.commitmentMonths
-    ? `Accès engagé ${offer.commitmentMonths} mois, puis au même prix, résiliable à tout moment.`
-    : "Sans engagement, résiliable à tout moment.";
+function commitmentText(offer: PlatformOffer, t: (key: string, values?: Record<string, string | number>) => string): string {
+  return offer.commitmentMonths ? t("commitment", { months: offer.commitmentMonths }) : t("noCommitment");
 }
 
 // Hors du composant : la règle react-hooks/purity refuse Date.now() dans le rendu.
 const daysFromNow = (n: number) => new Date(Date.now() + n * 86_400_000);
-const shortDay = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+const shortDay = (d: Date, locale: Locale) => d.toLocaleDateString(intlTag(locale), { day: "numeric", month: "short" });
 
 export default function SuiviView({ sp, kineName, kineReady, required = false, subscription, programmeReady = false, demo = false }: SuiviViewProps) {
+  const t = useTranslations("billing.suivi");
+  const tf = useTranslations("billing.format");
+  const tOffer = useTranslations("billing.offers");
+  const locale = useLocale() as Locale;
+  const date = (iso: string | null | undefined) => dateFR(iso, locale);
   const known = !!subscription && (isPlatformOfferKey(subscription.plan) || subscription.plan === EARLY_ACCESS_PLAN_KEY);
   const legacy = known && !!subscription!.legacy;
   const offer = known && isPlatformOfferKey(subscription!.plan) && !legacy ? platformOffer(subscription!.plan) : null;
@@ -99,8 +108,8 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
         trial={!subscription}
         refused={refused}
         error={sp.error}
-        reminderLabel={shortDay(daysFromNow(TRIAL_DAYS - 2))}
-        firstChargeLabel={shortDay(daysFromNow(TRIAL_DAYS))}
+        reminderLabel={shortDay(daysFromNow(TRIAL_DAYS - 2), locale)}
+        firstChargeLabel={shortDay(daysFromNow(TRIAL_DAYS), locale)}
         programmeReady={programmeReady}
         demo={demo}
       />
@@ -113,15 +122,15 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
         {!required && (
           <Link href="/patient/compte" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
             <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
-            Paramètres
+            {t("back")}
           </Link>
         )}
-        <h1 className="mt-1 text-2xl font-semibold text-ink">Mon suivi</h1>
+        <h1 className="mt-1 text-2xl font-semibold text-ink">{t("title")}</h1>
         {required && !refused && (
           <p className="mt-1 text-sm text-muted">
-            Dernière étape avant votre programme.{" "}
+            {t("lastStep")}{" "}
             <Link href="/patient/compte" className="underline">
-              Mes données (export, suppression)
+              {t("myData")}
             </Link>
           </p>
         )}
@@ -130,73 +139,77 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
         {sp.ok === "1" && (
           <p className="mt-3 flex items-center gap-1.5 rounded-xl bg-ok-soft p-3 text-sm text-ok">
             <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-            C&apos;est fait : votre suivi est actif.
+            {t("ok")}
             {/* Vrai chargement de page : on quitte l'écran plein écran du paiement pour l'appli. */}
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/patient" className="ml-auto shrink-0 font-semibold underline">
-              Voir mon programme
+              {t("seeProgramme")}
             </a>
           </p>
         )}
         {sp.attente === "1" && (
-          <p className="mt-3 rounded-xl bg-warn-soft p-3 text-sm text-warn">Votre inscription est en cours de validation. Rechargez la page dans un instant.</p>
+          <p className="mt-3 rounded-xl bg-warn-soft p-3 text-sm text-warn">{t("waiting")}</p>
         )}
-        {sp.arret === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">Résiliation enregistrée.</p>}
-        {sp.reprise === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">C&apos;est noté : votre suivi continue.</p>}
+        {sp.arret === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">{t("cancelled")}</p>}
+        {sp.reprise === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">{t("resumed")}</p>}
 
         <section className={`mt-4 ${card}`}>
           {live ? (
             <div>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-muted">{trialing ? "Essai gratuit en cours" : "Mon offre"}</p>
+                  <p className="text-sm font-medium text-muted">{trialing ? t("trialRunning") : t("myOffer")}</p>
                   <p className="mt-0.5 text-xl font-semibold text-ink">
-                    {legacy ? "Formule de lancement" : offer ? `${offer.label} · ${eurosFR(monthlyTotalCents(offer))} € / mois` : "Accès à la plateforme"}
+                    {legacy
+                      ? t("legacyPlan")
+                      : offer
+                        ? t("offerLine", { label: tOffer(offer.key), total: tf("eur", { amount: eurosFR(monthlyTotalCents(offer), locale) }) })
+                        : t("platformAccess")}
                   </p>
                 </div>
                 <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ok-soft px-3 py-1 text-sm font-medium text-ok">
                   <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />
-                  Accès ouvert
+                  {t("accessOpen")}
                 </span>
               </div>
               {offer && <Breakdown offer={offer} kineName={kineName} />}
               <p className="mt-3 flex items-center gap-2 text-sm text-ink">
                 <CalendarClock className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
                 {legacy
-                  ? `Valable jusqu'au ${dateFR(subscription!.periodEnd)}, sans renouvellement. Vous pourrez ensuite choisir une offre.`
+                  ? t("legacyUntil", { date: date(subscription!.periodEnd) })
                   : ending
-                    ? `Résilié : accès jusqu'au ${dateFR(subscription!.endsAt ?? subscription!.periodEnd)}, puis plus aucun prélèvement.`
+                    ? t("endingUntil", { date: date(subscription!.endsAt ?? subscription!.periodEnd) })
                     : trialing
-                      ? `Premier prélèvement de l'accès le ${dateFR(subscription!.periodEnd)}. Rien n'est prélevé avant.`
+                      ? t("trialFirstCharge", { date: date(subscription!.periodEnd) })
                       : committed && new Date(committed) > new Date(subscription!.periodEnd ?? 0)
-                        ? `Engagé jusqu'au ${dateFR(committed)}, puis au même prix, résiliable à tout moment.`
+                        ? t("committedUntil", { date: date(committed) })
                         : offer
-                          ? commitmentText({ ...offer, commitmentMonths: 0 })
-                          : "Résiliable à tout moment."}
+                          ? commitmentText({ ...offer, commitmentMonths: 0 }, t)
+                          : t("cancelAnytime")}
               </p>
               {!legacy && (
                 <div className="mt-4 border-t border-line pt-4">
                   {ending ? (
                     <form action={demo ? undefined : resumePlan}>
-                      <SubmitButton pendingText="Enregistrement…" className="inline-flex items-center gap-1.5 rounded-full border border-brand px-4 py-1.5 text-sm font-semibold text-brand hover:bg-brand-soft">
+                      <SubmitButton pendingText={t("saving")} className="inline-flex items-center gap-1.5 rounded-full border border-brand px-4 py-1.5 text-sm font-semibold text-brand hover:bg-brand-soft">
                         <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
-                        Annuler la résiliation
+                        {t("undoCancel")}
                       </SubmitButton>
                     </form>
                   ) : (
                     <details>
                       <summary className="cursor-pointer list-none text-sm font-medium text-muted hover:text-danger [&::-webkit-details-marker]:hidden">
-                        Résilier mon suivi
+                        {t("cancelSummary")}
                       </summary>
                       <div className="mt-2 rounded-xl bg-danger-soft p-3">
                         <p className="text-sm text-ink">
                           {committed && new Date(committed) > new Date(subscription!.periodEnd ?? 0)
-                            ? `Votre accès est engagé jusqu'au ${dateFR(committed)} : la résiliation prendra effet à cette date (l'accès reste dû jusque-là). Votre kiné, lui, ne prélève rien les mois sans mise à jour.`
-                            : `Vous gardez l'accès jusqu'au ${dateFR(subscription!.periodEnd)}, puis plus aucun prélèvement, ni par EasyPhysio ni par votre kiné.`}
+                            ? t("cancelCommitted", { date: date(committed) })
+                            : t("cancelNow", { date: date(subscription!.periodEnd) })}
                         </p>
                         <form action={demo ? undefined : cancelPlan} className="mt-2">
-                          <SubmitButton pendingText="Résiliation…" className="w-full rounded-full bg-danger py-2 text-sm font-semibold text-white hover:brightness-95">
-                            Confirmer la résiliation
+                          <SubmitButton pendingText={t("cancelling")} className="w-full rounded-full bg-danger py-2 text-sm font-semibold text-white hover:brightness-95">
+                            {t("confirmCancel")}
                           </SubmitButton>
                         </form>
                       </div>
@@ -207,10 +220,10 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
             </div>
           ) : !kineReady ? (
             <p className="rounded-xl bg-app-bg px-3 py-2 text-sm text-muted">
-              {kineName} ne propose pas de suivi pour le moment.
+              {t("kineNotReady", { kineName })}
             </p>
           ) : (
-            <p className="text-sm text-muted">Aucun abonnement en cours.</p>
+            <p className="text-sm text-muted">{t("none")}</p>
           )}
         </section>
       </div>

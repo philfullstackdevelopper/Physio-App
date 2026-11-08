@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -46,19 +47,20 @@ const UUID = /^[0-9a-f-]{36}$/i;
 export async function createKineExercise(input: CreateKineExerciseInput): Promise<{ id: string } | { error: string }> {
   const supabase = await createClient();
   const userId = await requireInstructor(supabase);
+  const t = await getTranslations("exercise.exerciseActions");
 
   const name = String(input?.name ?? "").trim().replace(/\s+/g, " ");
-  if (name.length < 3) return { error: "Donnez un nom à l'exercice (3 caractères au moins)." };
-  if (name.length > 120) return { error: "Nom trop long (120 caractères au plus)." };
+  if (name.length < 3) return { error: t("nameTooShort") };
+  if (name.length > 120) return { error: t("nameTooLong") };
   const steps = Array.isArray(input.steps) ? input.steps.map(String).slice(0, 12) : [];
   const instructions = stepsToInstructions(steps);
-  if (instructions && instructions.length > 2000) return { error: "Consignes trop longues." };
+  if (instructions && instructions.length > 2000) return { error: t("instructionsTooLong") };
   const equipment = [...new Set((input.equipment ?? []).map(String).filter(isExerciseEquipmentId))];
   const bodyPartIds = [...new Set((input.bodyPartIds ?? []).map(String).filter((id) => UUID.test(id)))];
-  if (bodyPartIds.length === 0) return { error: "Choisissez au moins une zone du corps." };
+  if (bodyPartIds.length === 0) return { error: t("pickBodyPart") };
 
   const patientId = input.scope === "patient" ? String(input.patientId ?? "") : null;
-  if (input.scope === "patient" && !UUID.test(patientId ?? "")) return { error: "Choisissez le patient." };
+  if (input.scope === "patient" && !UUID.test(patientId ?? "")) return { error: t("pickPatient") };
   const makePublic = input.scope === "bank" && input.makePublic === true;
 
   // « Partir de cet exercice » : on reprend sa vidéo (celle de Jules) tant que
@@ -92,12 +94,12 @@ export async function createKineExercise(input: CreateKineExerciseInput): Promis
     })
     .select("id")
     .single();
-  if (error || !exercise) return { error: error ? friendlyDbError(error) : "Création impossible." };
+  if (error || !exercise) return { error: error ? friendlyDbError(error, undefined, await getTranslations("dashboard.lib")) : t("createFailed") };
 
   const { error: tagError } = await supabase
     .from("exercise_body_parts")
     .insert(bodyPartIds.map((bodyPartId) => ({ exercise_id: exercise.id, body_part_id: bodyPartId })));
-  if (tagError) return { error: friendlyDbError(tagError) };
+  if (tagError) return { error: friendlyDbError(tagError, undefined, await getTranslations("dashboard.lib")) };
 
   revalidatePath("/dashboard/exercises");
   return { id: exercise.id as string };
@@ -107,7 +109,8 @@ export async function createKineExercise(input: CreateKineExerciseInput): Promis
 export async function requestExercisePublication(exerciseId: string): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   await requireInstructor(supabase);
-  if (!UUID.test(String(exerciseId))) return { error: "Exercice introuvable." };
+  const t = await getTranslations("exercise.exerciseActions");
+  if (!UUID.test(String(exerciseId))) return { error: t("notFound") };
   const { data, error } = await supabase
     .from("exercises")
     .update({ publication_status: "pending" })
@@ -115,8 +118,8 @@ export async function requestExercisePublication(exerciseId: string): Promise<{ 
     .is("patient_id", null)
     .in("publication_status", ["private", "changes_requested", "declined"])
     .select("id");
-  if (error) return { error: friendlyDbError(error) };
-  if (!data?.length) return { error: "Cet exercice ne peut pas être proposé à tous." };
+  if (error) return { error: friendlyDbError(error, undefined, await getTranslations("dashboard.lib")) };
+  if (!data?.length) return { error: t("cannotPublish") };
   revalidatePath("/dashboard/exercises");
   return { ok: true };
 }
@@ -130,29 +133,30 @@ export async function getKineVideoUploadUrl(
 ): Promise<{ uploadUrl: string; key: string } | { error: string }> {
   const supabase = await createClient();
   const userId = await requireInstructor(supabase);
-  if (!UUID.test(String(exerciseId))) return { error: "Exercice introuvable." };
+  const t = await getTranslations("exercise.exerciseActions");
+  if (!UUID.test(String(exerciseId))) return { error: t("notFound") };
   const ext = KINE_VIDEO_TYPES[String(contentType)];
-  if (!ext) return { error: "Format de vidéo non pris en charge (MP4 ou MOV)." };
+  if (!ext) return { error: t("badVideoFormat") };
   const size = Number(sizeBytes);
-  if (!Number.isFinite(size) || size <= 0) return { error: "Vidéo vide." };
+  if (!Number.isFinite(size) || size <= 0) return { error: t("emptyVideo") };
   if (size > KINE_VIDEO_MAX_MB * 1024 * 1024) {
-    return { error: `Vidéo trop lourde (${KINE_VIDEO_MAX_MB} Mo au plus). Raccourcissez-la à 20 secondes environ.` };
+    return { error: t("videoTooBig", { max: KINE_VIDEO_MAX_MB }) };
   }
   const { data: ex } = await supabase
     .from("exercises")
     .select("id, created_by, publication_status")
     .eq("id", exerciseId)
     .maybeSingle();
-  if (!ex || ex.created_by !== userId) return { error: "Exercice introuvable." };
-  if (ex.publication_status === "published") return { error: "Un exercice publié ne peut plus être modifié." };
-  if (!r2UploadConfigured()) return { error: "L'envoi de vidéos n'est pas encore activé sur EasyPhysio." };
+  if (!ex || ex.created_by !== userId) return { error: t("notFound") };
+  if (ex.publication_status === "published") return { error: t("publishedLocked") };
+  if (!r2UploadConfigured()) return { error: t("uploadNotEnabled") };
 
   const key = `kines/${exerciseId}/${Date.now()}.${ext}`;
   try {
     return { uploadUrl: await presignVideoUpload(key, String(contentType), size), key };
   } catch (e) {
     console.error("getKineVideoUploadUrl failed", e);
-    return { error: "Envoi de la vidéo impossible pour le moment." };
+    return { error: t("uploadUnavailable") };
   }
 }
 
@@ -165,15 +169,16 @@ export async function saveKineExerciseVideo(
 ): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   await requireInstructor(supabase);
-  if (consent !== true) return { error: "Cochez l'accord de la personne filmée." };
+  const t = await getTranslations("exercise.exerciseActions");
+  if (consent !== true) return { error: t("consentRequired") };
   const m = KINE_VIDEO_KEY.exec(String(key));
-  if (!m || m[1] !== exerciseId) return { error: "Vidéo introuvable." };
+  if (!m || m[1] !== exerciseId) return { error: t("videoNotFound") };
   const { error: rpcErr } = await supabase.rpc("set_exercise_media", {
     p_exercise_id: exerciseId,
     p_media_url: `r2:${key}`,
     p_start_seconds: 0,
   });
-  if (rpcErr) return { error: friendlyDbError(rpcErr) };
+  if (rpcErr) return { error: friendlyDbError(rpcErr, undefined, await getTranslations("dashboard.lib")) };
   await supabase.from("exercises").update({ filming_consent_at: new Date().toISOString() }).eq("id", exerciseId);
   revalidatePath("/dashboard/exercises");
   return { ok: true };
@@ -193,7 +198,7 @@ export async function hideExercise(formData: FormData) {
     .from("instructor_hidden_exercises")
     .insert({ instructor_id: userId, exercise_id: exerciseId });
   if (error) {
-    redirect(`/dashboard/exercises?error=${encodeURIComponent(friendlyDbError(error))}`);
+    redirect(`/dashboard/exercises?error=${encodeURIComponent(friendlyDbError(error, undefined, await getTranslations("dashboard.lib")))}`);
   }
 
   revalidatePath("/dashboard/exercises");
@@ -212,7 +217,7 @@ export async function unhideExercise(formData: FormData) {
     .eq("instructor_id", userId)
     .eq("exercise_id", exerciseId);
   if (error) {
-    redirect(`/dashboard/exercises?error=${encodeURIComponent(friendlyDbError(error))}`);
+    redirect(`/dashboard/exercises?error=${encodeURIComponent(friendlyDbError(error, undefined, await getTranslations("dashboard.lib")))}`);
   }
 
   revalidatePath("/dashboard/exercises");
@@ -232,23 +237,24 @@ export async function adminSetExerciseMedia(
 ): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   const { user } = await requireApprovedInstructor(supabase);
-  if (!isAdminEmail(user.email)) return { error: "Action réservée à l'administrateur." };
+  const t = await getTranslations("exercise.exerciseActions");
+  if (!isAdminEmail(user.email)) return { error: t("adminOnly") };
 
-  if (typeof exerciseId !== "string" || !exerciseId) return { error: "Exercice introuvable." };
+  if (typeof exerciseId !== "string" || !exerciseId) return { error: t("notFound") };
   if (url !== null && (typeof url !== "string" || !/^https:\/\//.test(url))) {
-    return { error: "Adresse de vidéo invalide." };
+    return { error: t("invalidVideoUrl") };
   }
   const seconds = Number.isFinite(startSeconds) && startSeconds >= 0 ? Math.floor(startSeconds) : 0;
 
   const { data: ex } = await supabase.from("exercises").select("created_by").eq("id", exerciseId).maybeSingle();
-  if (!ex) return { error: "Exercice introuvable." };
-  if (ex.created_by !== null) return { error: "Seuls les exercices de la plateforme passent par ici." };
+  if (!ex) return { error: t("notFound") };
+  if (ex.created_by !== null) return { error: t("platformOnly") };
 
   try {
     await dbAdminSetExerciseMedia(exerciseId, url, seconds);
   } catch (e) {
     console.error("adminSetExerciseMedia failed", e);
-    return { error: "Échec de l'enregistrement de la vidéo." };
+    return { error: t("videoSaveFailed") };
   }
 
   revalidatePath("/dashboard/exercises");

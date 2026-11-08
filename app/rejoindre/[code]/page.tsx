@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { AlertCircle, ArrowLeft, MailCheck } from "lucide-react";
 import SubmitButton from "@/components/SubmitButton";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
@@ -11,13 +13,14 @@ import { joinViaLink } from "./actions";
 // 2026-11-04 : « hella clean », et le patient doit voir clairement QUI va le
 // suivre). Même mise en page que /invitation et /login : à gauche le
 // formulaire, à droite la vitrine d'exercices (ordinateur seulement).
-export const metadata = { title: "Rejoindre mon kiné", robots: { index: false } };
+export async function generateMetadata() {
+  const t = await getTranslations("auth.join");
+  return { title: t("metaTitle"), robots: { index: false } };
+}
 export const dynamic = "force-dynamic";
 
 const field =
   "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 shadow-sm transition-colors focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
-
-const STEPS = ["E-mail", "Mot de passe", "Programme"];
 
 function initials(name: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -25,15 +28,16 @@ function initials(name: string | null): string {
 }
 
 /** Qui va suivre le patient : visible d'un coup d'œil. */
-function KineCard({ name }: { name: string | null }) {
+async function KineCard({ name }: { name: string | null }) {
+  const t = await getTranslations("auth.join");
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm">
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
         {initials(name)}
       </span>
       <div className="min-w-0">
-        <p className="truncate font-semibold text-slate-900">{name ?? "Votre kinésithérapeute"}</p>
-        <p className="text-xs text-slate-500">Kinésithérapeute · vous suivra sur EasyPhysio</p>
+        <p className="truncate font-semibold text-slate-900">{name ?? t("yourPhysioLong")}</p>
+        <p className="text-xs text-slate-500">{t("kineRole")}</p>
       </div>
     </div>
   );
@@ -53,9 +57,16 @@ export default async function JoinPage({
   const available = !!kine && kine.status === "approved";
   const open = available && canInvitePatients(kine!.email);
   const kineName = kine?.full_name ?? null;
+  const t = await getTranslations("auth.join");
+  const tShared = await getTranslations("auth.shared");
+  const STEPS = [t("stepEmail"), t("stepPassword"), t("stepProgramme")];
 
   return (
     <main className="relative min-h-dvh bg-[#f6f8fd]">
+      {/* Choix de la langue, discret en haut à droite. */}
+      <div className="absolute right-4 top-4 z-10 lg:right-6 lg:top-6">
+        <LanguageSwitcher />
+      </div>
       <div className="relative mx-auto flex min-h-dvh max-w-6xl flex-col lg:flex-row lg:items-stretch">
         <div className="flex flex-1 justify-center px-5 pb-10 pt-6 sm:items-center sm:p-16">
           <div className="w-full max-w-sm">
@@ -69,9 +80,9 @@ export default async function JoinPage({
 
             {!available ? (
               <div className="mt-10">
-                <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Lien non valide</h1>
+                <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{t("invalidTitle")}</h1>
                 <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                  Ce lien ne correspond à aucun kinésithérapeute disponible. Demandez à votre kiné de vous le renvoyer.
+                  {t("invalidBody")}
                 </p>
               </div>
             ) : sp.ok ? (
@@ -80,21 +91,24 @@ export default async function JoinPage({
                 <span className="mt-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
                   <MailCheck className="h-6 w-6" strokeWidth={1.75} />
                 </span>
-                <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-slate-900">Vérifiez vos e-mails</h1>
+                <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-slate-900">{t("checkEmailTitle")}</h1>
                 <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                  Nous avons envoyé une invitation à <span className="font-medium text-slate-700">{sp.email ?? "votre adresse"}</span>.
-                  Ouvrez-la pour créer votre mot de passe : votre programme avec {kineName ?? "votre kiné"} vous attend.
+                  {t.rich("checkEmailBody", {
+                    email: sp.email ?? t("yourAddress"),
+                    kine: kineName ?? t("yourPhysio"),
+                    b: (c) => <span className="font-medium text-slate-700">{c}</span>,
+                  })}
                 </p>
-                <p className="mt-4 text-xs text-slate-400">Rien reçu après quelques minutes ? Regardez dans les indésirables.</p>
+                <p className="mt-4 text-xs text-slate-400">{t("nothingReceived")}</p>
               </div>
             ) : (
               <div className="mt-8">
                 <KineCard name={kineName} />
                 <h1 className="font-display mt-6 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-                  Rejoignez votre suivi
+                  {t("title")}
                 </h1>
                 <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                  Vos exercices en vidéo, à faire chez vous, suivis par votre kiné.
+                  {t("subtitle")}
                 </p>
 
                 {/* Les trois étapes, pour savoir où l'on va. */}
@@ -113,7 +127,7 @@ export default async function JoinPage({
                 {!open && (
                   <p className="mt-5 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50 p-3.5 text-sm text-slate-700">
                     <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-blue-700" strokeWidth={1.75} />
-                    Les inscriptions de patients ouvriront au lancement d&apos;EasyPhysio.
+                    {t("notOpen")}
                   </p>
                 )}
                 {sp.error && (
@@ -126,25 +140,25 @@ export default async function JoinPage({
                 <form action={joinViaLink.bind(null, code)} className="mt-5">
                   <fieldset disabled={!open} className="space-y-3.5 disabled:opacity-50">
                     <label className="block text-sm font-medium text-slate-700">
-                      Nom complet
+                      {t("fullName")}
                       <input name="full_name" type="text" required autoComplete="name" className={field} />
                     </label>
                     <label className="block text-sm font-medium text-slate-700">
-                      Adresse e-mail
+                      {t("email")}
                       <input name="email" type="email" required autoComplete="email" inputMode="email" className={field} />
                     </label>
                     <SubmitButton
-                      pendingText="Envoi…"
+                      pendingText={t("sending")}
                       className="!mt-5 w-full rounded-full bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98] disabled:opacity-60"
                     >
-                      Recevoir mon invitation
+                      {t("submit")}
                     </SubmitButton>
                   </fieldset>
                 </form>
                 <p className="mt-4 text-center text-sm text-slate-500">
-                  Déjà un compte ?{" "}
+                  {tShared("haveAccount")}{" "}
                   <Link href="/login" className="font-medium text-blue-700 hover:underline">
-                    Se connecter
+                    {tShared("signIn")}
                   </Link>
                 </p>
               </div>

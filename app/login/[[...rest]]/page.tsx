@@ -3,8 +3,11 @@ import { ArrowLeft } from "lucide-react";
 import { SignIn } from "@clerk/nextjs";
 import { brandedHeaderTitle } from "@/lib/clerk/brandedTitle";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { getTranslations } from "next-intl/server";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const tShared = await getTranslations("auth.shared");
   // Doit tenir sur un seul écran, sans scroll, y compris sur le PC de Philippe
   // (zoom 150 % → ~1262×549) : padding vertical réduit, pas de doublon du lien
   // d'inscription (Clerk l'affiche déjà en pied de carte), sous-titre Clerk
@@ -18,8 +21,12 @@ export default function LoginPage() {
           className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm backdrop-blur transition-colors hover:text-slate-900"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
-          Retour
+          {tShared("back")}
         </Link>
+      </div>
+      {/* Choix de la langue, en face du bouton Retour. */}
+      <div className="absolute right-4 top-4 z-10 lg:right-6 lg:top-6">
+        <LanguageSwitcher />
       </div>
 
       <div className="relative mx-auto flex min-h-dvh max-w-6xl flex-col lg:flex-row lg:items-stretch">

@@ -1,0 +1,13 @@
+{
+  "site": {
+    "titleSuffix": "suivi d'exercices de rééducation",
+    "tagline": "La rééducation continue entre deux séances",
+    "description": "EasyPhysio relie les kinésithérapeutes et leurs patients : programmes d'exercices sur mesure, séances guidées en vidéo et suivi de progression entre deux rendez-vous."
+  },
+  "language": {
+    "label": "Langue",
+    "hint": "Langue de l'application. Vous pouvez la changer à tout moment.",
+    "saved": "Langue enregistrée"
+  },
+  "reviewBanner": "Traduction en cours de relecture : la version française fait foi."
+}

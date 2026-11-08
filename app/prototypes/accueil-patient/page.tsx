@@ -4,21 +4,29 @@
 // coquille que app/patient/layout.tsx : tout changement d'affichage s'y voit
 // tel quel. Aucune donnée réelle, aucune requête. Pas lié depuis l'appli.
 
+import { getLocale, getTranslations } from "next-intl/server";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 import PatientNav from "@/components/PatientNav";
 import PatientAppOpening from "@/components/PatientAppOpening";
 import PatientHomeView from "@/components/PatientHomeView";
 import type { SessionDetail } from "@/components/WeekProgramme";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
 
-export const metadata = { title: "Aperçu Accueil patient", robots: { index: false } };
+export async function generateMetadata() {
+  const t = await getTranslations("demo.meta");
+  return { title: t("previewHome"), robots: { index: false } };
+}
 // Recalculée à chaque visite : les semaines fictives suivent la vraie date du jour.
 export const dynamic = "force-dynamic";
 
-export default function AccueilPatientPrototype() {
+export default async function AccueilPatientPrototype() {
+  const t = await getTranslations("demo.samples");
+  const locale = (await getLocale()) as Locale;
   const now = new Date();
   const created = new Date(now);
   created.setDate(created.getDate() - 24);
-  const weeks = buildWeeks(created.toISOString(), now);
+  const weeks = buildWeeks(created.toISOString(), now, locale);
 
   // Séances fictives : quelques jours par semaine passée, une cette semaine.
   const dayDetails: Record<string, SessionDetail[]> = {};
@@ -29,7 +37,7 @@ export default function AccueilPatientPrototype() {
     dayDetails[localDateKey(d)] = [
       {
         logId: `demo-${daysAgo}`,
-        workoutName: "Renforcement lombaire, niveau 2",
+        workoutName: t("lowBackL2"),
         time: "18:15",
         durationMinutes: 20,
         painScore: 3,
@@ -39,7 +47,7 @@ export default function AccueilPatientPrototype() {
     ];
   }
 
-  const today = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" }).format(now);
+  const today = new Intl.DateTimeFormat(intlTag(locale), { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" }).format(now);
   const week = currentWeekNumber(weeks, now);
 
   return (
@@ -52,9 +60,9 @@ export default function AccueilPatientPrototype() {
           today={today}
           week={week}
           programmeCard={{
-            title: "Renforcement lombaire, niveau 2",
-            subtitle: "2 séances à réaliser · 20 minutes environ",
-            cta: "Voir mon programme",
+            title: t("lowBackL2"),
+            subtitle: t("homeSubtitle"),
+            cta: t("homeCta"),
             done: false,
           }}
           weekCount={1}

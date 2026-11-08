@@ -1,10 +1,13 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
+
 // Actions factices de l'aperçu /prototypes/kine-telephone : elles ne touchent
 // à aucune donnée, elles répondent juste « désactivé ».
 
 export async function noopResult(): Promise<{ error: string }> {
-  return { error: "Aperçu : action désactivée." };
+  const t = await getTranslations("demo");
+  return { error: t("actionDisabled") };
 }
 
 export async function noopVoid(): Promise<void> {}

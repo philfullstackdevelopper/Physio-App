@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
+import type { Locale } from "@/i18n/locales";
+import { intlTag } from "@/lib/i18n/translator";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
@@ -9,7 +12,10 @@ import { eurosFR, nextPeriod, periodLabel, periodOf } from "@/lib/billing/review
 import FeeNoteSheet from "@/components/FeeNoteSheet";
 import PrintButton from "@/components/PrintButton";
 
-export const metadata: Metadata = { title: "Documents de facturation", robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("billing.documents");
+  return { title: t("metaTitle"), robots: { index: false } };
+}
 
 // Documents imprimables (nouveau modèle, 2026-10-24), hors de la mise en page
 // du tableau de bord pour s'imprimer proprement :
@@ -23,13 +29,16 @@ export default async function HonorairesDocumentsPage({
 }) {
   const { review, period: rawPeriod, type } = await searchParams;
   const supabase = await createClient();
+  // Langue du document = celle de la personne connectée.
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations("billing.documents");
 
   if (review) {
     await requireUser(supabase);
-    const note = await loadFeeNote(supabase, review);
+    const note = await loadFeeNote(supabase, review, locale);
     if (!note) notFound();
     return (
-      <Shell title={`Note d'honoraires n° ${note.number}`}>
+      <Shell title={t("noteTitle", { number: note.number })}>
         <FeeNoteSheet note={note} />
       </Shell>
     );
@@ -37,11 +46,11 @@ export default async function HonorairesDocumentsPage({
 
   const { user } = await requireApprovedInstructor(supabase);
   const period = /^\d{4}-\d{2}-01$/.test(rawPeriod ?? "") ? (rawPeriod as string) : periodOf(new Date());
-  const notes = await loadMonthFeeNotes(supabase, user.id, period);
+  const notes = await loadMonthFeeNotes(supabase, user.id, period, locale);
 
   if (type === "notes") {
     return (
-      <Shell title={`Notes d'honoraires — ${periodLabel(period)}`}>
+      <Shell title={t("notesTitle", { period: periodLabel(period, locale) })}>
         {notes.length === 0 ? (
           <Empty period={period} />
         ) : (
@@ -62,33 +71,41 @@ export default async function HonorairesDocumentsPage({
     .eq("period_start", period)
     .maybeSingle();
   return (
-    <Shell title={`Récapitulatif des recettes — ${periodLabel(period)}`}>
+    <Shell title={t("recapTitle", { period: periodLabel(period, locale) })}>
       <Recap notes={notes} period={period} invoice={invoice as { amount_cents: number; status: string; patient_count: number } | null} />
     </Shell>
   );
 }
 
-function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+async function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+  const locale = await getLocale();
+  const tc = await getTranslations("common");
   return (
     <main className="min-h-screen bg-app-bg px-4 py-6 print:bg-white print:p-0">
       <div className="mx-auto mb-4 flex max-w-[720px] flex-wrap items-center justify-between gap-3 print:hidden">
         <h1 className="text-lg font-semibold text-ink">{title}</h1>
         <PrintButton />
       </div>
+      {/* Traduction des mentions légales à faire relire : le français fait foi. */}
+      {locale !== "fr" && (
+        <p className="mx-auto mb-4 max-w-[720px] rounded-xl bg-warn-soft px-4 py-2 text-xs text-warn print:hidden">{tc("reviewBanner")}</p>
+      )}
       {children}
     </main>
   );
 }
 
-function Empty({ period }: { period: string }) {
+async function Empty({ period }: { period: string }) {
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations("billing.documents");
   return (
     <p className="mx-auto max-w-[720px] rounded-2xl border border-line bg-white p-8 text-center text-sm text-muted">
-      Aucun programme facturé en {periodLabel(period)}.
+      {t("empty", { period: periodLabel(period, locale) })}
     </p>
   );
 }
 
-function Recap({
+async function Recap({
   notes,
   period,
   invoice,
@@ -104,11 +121,16 @@ function Recap({
   const failedCents = sum((n) => n.paymentStatus === "failed");
   const stripeCents = paid.reduce((s, n) => s + estimateStripeFeeCents(n.amountCents), 0);
   const kine = notes[0]?.kine;
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations("billing.documents");
+  const tf = await getTranslations("billing.format");
+  const eur = (cents: number) => tf("eur", { amount: eurosFR(cents, 2, locale) });
+  const lastDay = new Date(new Date(`${nextPeriod(period)}T00:00:00Z`).getTime() - 86_400_000).toLocaleDateString(intlTag(locale), { timeZone: "UTC" });
 
   return (
     <article className="mx-auto w-full max-w-[720px] rounded-2xl border border-line bg-white p-8 text-ink shadow-sm print:rounded-none print:border-0 print:p-0 print:shadow-none max-sm:p-5">
       <header>
-        <p className="text-xl font-semibold">Récapitulatif des recettes — {periodLabel(period)}</p>
+        <p className="text-xl font-semibold">{t("recapTitle", { period: periodLabel(period, locale) })}</p>
         {kine && (
           <p className="mt-1 text-sm text-muted">
             {kine.name}
@@ -116,33 +138,30 @@ function Recap({
             {kine.rpps ? ` · RPPS ${kine.rpps}` : ""}
           </p>
         )}
-        <p className="mt-1 text-xs text-muted">
-          Programmes mensuels hors nomenclature (actes non remboursables), du 1er {periodLabel(period)} au{" "}
-          {new Date(new Date(`${nextPeriod(period)}T00:00:00Z`).getTime() - 86_400_000).toLocaleDateString("fr-FR", { timeZone: "UTC" })}.
-        </p>
+        <p className="mt-1 text-xs text-muted">{t("recapScope", { period: periodLabel(period, locale), end: lastDay })}</p>
       </header>
 
       {notes.length === 0 ? (
-        <p className="mt-6 text-sm text-muted">Aucun programme facturé ce mois-ci.</p>
+        <p className="mt-6 text-sm text-muted">{t("recapEmpty")}</p>
       ) : (
         <table className="mt-6 w-full text-sm">
           <thead>
             <tr className="border-b border-line text-left text-muted">
-              <th className="py-2 font-medium">Date</th>
-              <th className="py-2 font-medium">N° note</th>
-              <th className="py-2 font-medium">Patient</th>
-              <th className="py-2 font-medium">Paiement</th>
-              <th className="py-2 text-right font-medium">Montant</th>
+              <th className="py-2 font-medium">{t("colDate")}</th>
+              <th className="py-2 font-medium">{t("colNumber")}</th>
+              <th className="py-2 font-medium">{t("colPatient")}</th>
+              <th className="py-2 font-medium">{t("colPayment")}</th>
+              <th className="py-2 text-right font-medium">{t("colAmount")}</th>
             </tr>
           </thead>
           <tbody>
             {notes.map((n) => (
               <tr key={n.id} className="border-b border-line">
-                <td className="py-2">{new Date(n.validatedAt).toLocaleDateString("fr-FR")}</td>
+                <td className="py-2">{new Date(n.validatedAt).toLocaleDateString(intlTag(locale))}</td>
                 <td className="py-2 tabular-nums">{n.number}</td>
                 <td className="py-2">{n.patientName}</td>
-                <td className="py-2">{n.paymentStatus === "paid" ? "Encaissé" : n.paymentStatus === "pending" ? "En cours" : "Refusé"}</td>
-                <td className="py-2 text-right tabular-nums">{eurosFR(n.amountCents)} €</td>
+                <td className="py-2">{n.paymentStatus === "paid" ? t("statusPaid") : n.paymentStatus === "pending" ? t("statusPending") : t("statusFailed")}</td>
+                <td className="py-2 text-right tabular-nums">{eur(n.amountCents)}</td>
               </tr>
             ))}
           </tbody>
@@ -150,31 +169,23 @@ function Recap({
       )}
 
       <dl className="mt-6 space-y-1 text-sm">
-        <Line label="Recettes encaissées" value={paidCents} strong />
-        {pendingCents > 0 && <Line label="Paiements en cours" value={pendingCents} />}
-        {failedCents > 0 && <Line label="Paiements refusés (non encaissés)" value={failedCents} />}
-        <Line label="Frais de paiement Stripe (estimés, déductibles)" value={stripeCents} />
-        {invoice && (
-          <Line
-            label={`Facture EasyPhysio (${invoice.patient_count} patient${invoice.patient_count > 1 ? "s" : ""} actif${invoice.patient_count > 1 ? "s" : ""}, déductible)`}
-            value={invoice.amount_cents}
-          />
-        )}
+        <Line label={t("collected")} value={eur(paidCents)} strong />
+        {pendingCents > 0 && <Line label={t("pending")} value={eur(pendingCents)} />}
+        {failedCents > 0 && <Line label={t("failed")} value={eur(failedCents)} />}
+        <Line label={t("stripeFees")} value={eur(stripeCents)} />
+        {invoice && <Line label={t("invoice", { count: invoice.patient_count })} value={eur(invoice.amount_cents)} />}
       </dl>
 
-      <p className="mt-8 text-xs text-muted">
-        Ces recettes sont des honoraires (bénéfices non commerciaux, art. 92 du CGI), à reporter avec vos autres honoraires.
-        Informations générales : votre comptable ou votre AGA reste votre référence.
-      </p>
+      <p className="mt-8 text-xs text-muted">{t("taxNote")}</p>
     </article>
   );
 }
 
-function Line({ label, value, strong = false }: { label: string; value: number; strong?: boolean }) {
+function Line({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className="flex justify-between gap-4">
       <dt className={strong ? "font-semibold" : "text-muted"}>{label}</dt>
-      <dd className={`tabular-nums ${strong ? "font-semibold" : ""}`}>{eurosFR(value)} €</dd>
+      <dd className={`tabular-nums ${strong ? "font-semibold" : ""}`}>{value}</dd>
     </div>
   );
 }

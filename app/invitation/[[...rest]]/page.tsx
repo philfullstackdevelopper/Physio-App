@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { SignIn, SignUp } from "@clerk/nextjs";
@@ -6,6 +7,7 @@ import { compactClerkElements } from "@/lib/clerk/compact";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import InvitationSignedInGate from "@/components/InvitationSignedInGate";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
+import { getTranslations } from "next-intl/server";
 
 // Same split layout as /login and /signup (left: Clerk widget, right: sticky
 // exercise showcase) — Philippe, 2026-09-09: a lone centered card here read as
@@ -43,6 +45,10 @@ export default async function PatientInvitationPage({
   // EXISTE déjà (lien du mail recliqué après avoir créé son mot de passe).
   // Il faut alors le formulaire de connexion, pas celui d'inscription.
   const accountExists = params.__clerk_status === "sign_in";
+  const t = await getTranslations("auth.invitation");
+  const tShared = await getTranslations("auth.shared");
+  const kineTag = (c: ReactNode) => <span className="font-medium text-slate-700">{c}</span>;
+  const kineHeadTag = (c: ReactNode) => <span className="text-blue-700">{c}</span>;
 
   return (
     <main className="relative min-h-dvh bg-[#f6f8fd]">
@@ -52,7 +58,7 @@ export default async function PatientInvitationPage({
           className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm backdrop-blur transition-colors hover:text-slate-900"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
-          Retour
+          {tShared("back")}
         </Link>
       </div>
 
@@ -61,11 +67,8 @@ export default async function PatientInvitationPage({
         <div className="flex flex-1 items-center justify-center p-4 py-16 short:pb-1 short:pt-14 lg:p-16 short:lg:py-3">
           <div className="w-full max-w-sm">
             <p className="mb-6 text-center text-sm leading-relaxed text-slate-500 short:mb-2 lg:hidden">
-              {kine ? <span className="font-medium text-slate-700">{kine}</span> : "Votre kinésithérapeute"} vous
-              invite à rejoindre EasyPhysio.{" "}
-              {accountExists
-                ? "Votre compte existe déjà : connectez-vous pour continuer."
-                : "Choisissez votre mot de passe pour activer votre accès."}
+              {kine ? t.rich("invitesNamed", { kine, k: kineTag }) : t("invitesGeneric")}{" "}
+              {accountExists ? t("accountExistsShort") : t("choosePasswordShort")}
             </p>
 
             {/* Ticket-based invitation: Clerk reads __clerk_ticket from the URL
@@ -105,18 +108,10 @@ export default async function PatientInvitationPage({
             message as the panel's headline instead of a boxed callout. */}
         <div className="hidden flex-1 flex-col px-16 py-6 lg:sticky lg:top-0 lg:flex lg:h-dvh">
           <h1 className="font-display max-w-sm text-3xl font-semibold leading-[1.15] tracking-tight text-slate-900">
-            {kine ? (
-              <>
-                <span className="text-blue-700">{kine}</span> vous invite à rejoindre EasyPhysio
-              </>
-            ) : (
-              "Votre kinésithérapeute vous invite à rejoindre EasyPhysio"
-            )}
+            {kine ? t.rich("headingNamed", { kine, k: kineHeadTag }) : t("headingGeneric")}
           </h1>
           <p className="mt-3 max-w-sm text-base leading-relaxed text-slate-600">
-            {accountExists
-              ? "Votre compte existe déjà : connectez-vous pour retrouver votre programme d’exercices personnalisé."
-              : "Choisissez votre mot de passe pour accéder à votre programme d’exercices personnalisé."}
+            {accountExists ? t("accountExistsLong") : t("choosePasswordLong")}
           </p>
           <div className="mt-8 min-h-0 flex-1">
             <LoginExerciseShowcase />

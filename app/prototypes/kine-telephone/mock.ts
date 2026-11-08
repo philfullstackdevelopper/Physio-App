@@ -1,3 +1,4 @@
+import type { Locale } from "@/i18n/locales";
 // Données FICTIVES pour /prototypes/kine-telephone — aucun vrai patient.
 // Passées dans les mêmes fonctions de calcul que les vraies pages
 // (buildDashboardHome, buildPatientRows, buildConversations), pour que
@@ -7,19 +8,24 @@ import { buildDashboardHome } from "@/lib/dashboard/homeData";
 import { buildPatientRows } from "@/lib/dashboard/patientRows";
 import { buildConversations } from "@/lib/dashboard/conversations";
 import type { UnreadMessageRow } from "@/lib/dashboard/unreadMessages";
-import { STAGE_LABELS } from "@/lib/exercise/prescription";
+import type { LibI18n, Tr } from "@/lib/format/relativeDay";
+import { stageLabel } from "@/lib/exercise/prescription";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
 import type { SessionDetail } from "@/components/WeekProgramme";
 
 const DAY = 86_400_000;
 
-export function mockData(now = new Date()) {
+/** Traducteur de la zone « demo.samples » (getTranslations côté serveur) :
+ *  les données fictives s'affichent dans la langue du visiteur. */
+export type DemoT = (key: string, values?: Record<string, string | number>) => string;
+
+export function mockData(t: DemoT, now = new Date(), i18n?: LibI18n) {
   const ago = (days: number, hours = 0) => new Date(now.getTime() - days * DAY - hours * 3_600_000).toISOString();
 
   const conditions = [
-    { id: "c-lomb", name: "Lombalgie chronique" },
-    { id: "c-genou", name: "Prothèse de genou" },
-    { id: "c-epaule", name: "Épaule douloureuse" },
+    { id: "c-lomb", name: t("conditions.lowBack") },
+    { id: "c-genou", name: t("conditions.kneeReplacement") },
+    { id: "c-epaule", name: t("conditions.painfulShoulder") },
   ];
   const people: { id: string; name: string; cond: string | null; stage: string | null; created: number; sessions: number[]; pain?: number[]; invite?: boolean; lapsed?: boolean }[] = [
     { id: "p1", name: "Léa Martin", cond: "c-lomb", stage: "subacute", created: 40, sessions: [0, 2, 4, 6, 9, 11], pain: [3, 3, 2] },
@@ -48,17 +54,17 @@ export function mockData(now = new Date()) {
     .filter((p) => !p.invite)
     .map((p) => ({ patient_id: p.id, workout_id: `w-${p.id}`, week_start_date: ago(p.created).slice(0, 10), week_count: null, times_per_week: 3 }));
 
-  const home = { firstName: "Julien", ...buildDashboardHome({ now, patients, profiles, logs, feedback }) };
-  const rows = buildPatientRows({ now, patients, profiles, conditions, logs, feedback, recs });
+  const home = { firstName: "Julien", ...buildDashboardHome({ now, patients, profiles, logs, feedback }, i18n) };
+  const rows = buildPatientRows({ now, patients, profiles, conditions, logs, feedback, recs }, i18n);
 
   const messages = [
-    { patient_id: "p2", body: "Bonjour, j'ai eu plus mal au genou après la séance d'hier, est-ce normal ?", created_at: ago(0, 3), sender: "patient", read_by_instructor_at: null },
-    { patient_id: "p2", body: "Pensez à bien glacer après chaque séance.", created_at: ago(2), sender: "instructor", read_by_instructor_at: null },
-    { patient_id: "p1", body: "Merci pour le nouveau programme !", created_at: ago(1, 5), sender: "patient", read_by_instructor_at: null },
-    { patient_id: "p4", body: "Je reprends demain, j'étais en déplacement.", created_at: ago(3), sender: "patient", read_by_instructor_at: ago(2) },
-    { patient_id: "p7", body: "Très bien, continuez ainsi.", created_at: ago(4), sender: "instructor", read_by_instructor_at: null },
+    { patient_id: "p2", body: t("kineMessages.m1"), created_at: ago(0, 3), sender: "patient", read_by_instructor_at: null },
+    { patient_id: "p2", body: t("kineMessages.m2"), created_at: ago(2), sender: "instructor", read_by_instructor_at: null },
+    { patient_id: "p1", body: t("kineMessages.m3"), created_at: ago(1, 5), sender: "patient", read_by_instructor_at: null },
+    { patient_id: "p4", body: t("kineMessages.m4"), created_at: ago(3), sender: "patient", read_by_instructor_at: ago(2) },
+    { patient_id: "p7", body: t("kineMessages.m5"), created_at: ago(4), sender: "instructor", read_by_instructor_at: null },
   ];
-  const conversations = buildConversations({ patients, profiles, conditions, messages });
+  const conversations = buildConversations({ patients, profiles, conditions, messages }, i18n?.tx ? (k) => i18n.tx!(`stageShort.${k}`) : undefined);
   const unreadRows: UnreadMessageRow[] = messages
     .filter((m) => m.sender === "patient" && !m.read_by_instructor_at)
     .map((m) => ({ patientId: m.patient_id, patientName: people.find((p) => p.id === m.patient_id)!.name, body: m.body, createdAt: m.created_at }));
@@ -82,6 +88,7 @@ export function mockData(now = new Date()) {
       name: p.name,
       firstName: p.name.split(" ")[0],
       initials: p.name.split(" ").map((w) => w[0]).join(""),
+      conditionId: p.cond,
       conditionName: conditions.find((c) => c.id === p.cond)?.name ?? null,
       invited: !!p.invite,
       painLatest: pain.length ? pain[pain.length - 1] : null,
@@ -101,67 +108,85 @@ export function mockData(now = new Date()) {
 // 0032). BodyPartIllustration choisit sa photo d'après le slug : un slug inventé
 // (« genou » au lieu de « genou-jambe ») donnait une tuile sans image.
 // Les id « bp-<court> » restent ceux qu'utilisent les exercices fictifs.
-export const DEMO_BODY_PARTS = (
-  [
-    ["genou", "genou-jambe", "Genou & jambe"],
-    ["dos", "dos-lombaires", "Dos & lombaires"],
-    ["epaule", "epaule", "Épaule"],
-    ["hanche", "hanche-fessiers", "Hanche & fessiers"],
-    ["cheville", "cheville-pied", "Cheville & pied"],
-    ["cervicales", "cervicales-cou", "Cervicales & cou"],
-    ["poignet", "poignet-main-coude", "Poignet, main & coude"],
-    ["tronc", "tronc-gainage-abdos", "Tronc, gainage & abdominaux"],
-    ["equilibre", "equilibre-general", "Équilibre & général"],
-  ] as const
-).map(([short, slug, label], i) => ({ id: `bp-${short}`, slug, label, position: i }));
+// Nom affiché : demo.samples.bodyParts.<court>.
+export const demoBodyParts = (t: DemoT) =>
+  (
+    [
+      ["genou", "genou-jambe"],
+      ["dos", "dos-lombaires"],
+      ["epaule", "epaule"],
+      ["hanche", "hanche-fessiers"],
+      ["cheville", "cheville-pied"],
+      ["cervicales", "cervicales-cou"],
+      ["poignet", "poignet-main-coude"],
+      ["tronc", "tronc-gainage-abdos"],
+      ["equilibre", "equilibre-general"],
+    ] as const
+  ).map(([short, slug], i) => ({ id: `bp-${short}`, slug, label: t(`bodyParts.${short}`), position: i }));
 
 // Exercices de la démo : uniquement des exercices qui existent dans la banque
 // actuelle (après le tri de la migration 0069), avec leur dessin animé. Les
 // anciens noms (« Protected Squat (Quadriceps) »…) ont été retirés de la banque
 // et ne doivent plus apparaître dans la démo publique.
+// Consignes affichées : demo.samples.exerciseInstructions.<key> (le nom reste
+// celui de la banque : il sert à trouver le dessin).
 export const DEMO_EXERCISES = [
-  { name: "Quad Set", bodyPartIds: ["bp-genou"], equipment: [] as string[], instructions: "Allongé sur le dos, jambes tendues et posées au sol. Sans bouger la jambe, contractez fort le muscle de la cuisse en écrasant l'arrière du genou vers le sol, tenez quelques secondes, puis relâchez." },
-  { name: "Heel Slide", bodyPartIds: ["bp-genou"], equipment: [], instructions: "Allongé sur le dos, jambes tendues. Faites glisser lentement le talon vers les fesses en pliant le genou aussi loin que possible sans douleur forte, puis tendez à nouveau la jambe." },
-  { name: "Straight Leg Raise", bodyPartIds: ["bp-genou", "bp-hanche"], equipment: [], instructions: "Allongé sur le dos, appuyé sur les avant-bras. Verrouillez le genou en contractant la cuisse, levez la jambe tendue jusqu'à environ 45°, puis redescendez lentement." },
-  { name: "Terminal Knee Extension (Band)", bodyPartIds: ["bp-genou"], equipment: ["elastiques"], instructions: "Debout, élastique derrière le genou avant, fixé devant vous. Partez genou légèrement plié, puis tendez complètement le genou en poussant contre l'élastique." },
-  { name: "Bodyweight Squat", bodyPartIds: ["bp-genou", "bp-hanche"], equipment: [], instructions: "Debout, pieds à largeur de bassin. Descendez en poussant les fesses en arrière, genoux dans l'axe des pieds, puis remontez en poussant dans les talons." },
-  { name: "Wall Sit", bodyPartIds: ["bp-genou"], equipment: [], instructions: "Dos contre le mur, descendez jusqu'à la hauteur qui reste confortable pour le genou et tenez la position en respirant calmement." },
-  { name: "Glute Bridge", bodyPartIds: ["bp-hanche"], equipment: [], instructions: "Allongé sur le dos, genoux fléchis, pieds au sol. Soulevez le bassin en serrant les fessiers, puis redescendez lentement." },
-  { name: "Banded Clamshell", bodyPartIds: ["bp-hanche"], equipment: ["elastiques"], instructions: "Allongé sur le côté, élastique au-dessus des genoux, genoux fléchis et pieds joints. Ouvrez le genou du dessus sans faire rouler le bassin, puis refermez lentement." },
+  { key: "quadSet", name: "Quad Set", bodyPartIds: ["bp-genou"], equipment: [] as string[] },
+  { key: "heelSlide", name: "Heel Slide", bodyPartIds: ["bp-genou"], equipment: [] },
+  { key: "straightLegRaise", name: "Straight Leg Raise", bodyPartIds: ["bp-genou", "bp-hanche"], equipment: [] },
+  { key: "terminalKneeExt", name: "Terminal Knee Extension (Band)", bodyPartIds: ["bp-genou"], equipment: ["elastiques"] },
+  { key: "bodyweightSquat", name: "Bodyweight Squat", bodyPartIds: ["bp-genou", "bp-hanche"], equipment: [] },
+  { key: "wallSit", name: "Wall Sit", bodyPartIds: ["bp-genou"], equipment: [] },
+  { key: "gluteBridge", name: "Glute Bridge", bodyPartIds: ["bp-hanche"], equipment: [] },
+  { key: "bandedClamshell", name: "Banded Clamshell", bodyPartIds: ["bp-hanche"], equipment: ["elastiques"] },
   // Au moins un exercice par zone, pour que « Mes exercices » ne paraisse pas vide en démo.
-  { name: "Dead Bug", bodyPartIds: ["bp-dos"], equipment: [], instructions: "Allongé sur le dos, bras tendus vers le plafond, hanches et genoux à 90°. Tendez lentement un bras et la jambe opposée sans décoller le bas du dos, puis revenez et changez de côté." },
-  { name: "Bird Dog", bodyPartIds: ["bp-dos", "bp-tronc"], equipment: [], instructions: "À quatre pattes, dos plat. Tendez un bras devant vous et la jambe opposée derrière vous, sans cambrer, puis revenez et changez de côté." },
-  { name: "Cat-Cow Stretch", bodyPartIds: ["bp-dos"], equipment: [], instructions: "À quatre pattes. Arrondissez le dos vers le plafond en rentrant le menton, puis creusez-le doucement en levant la tête. Alternez lentement." },
-  { name: "Codman Pendulum", bodyPartIds: ["bp-epaule"], equipment: [], instructions: "Penché en avant, une main sur une table, l'autre bras pendant et relâché. Laissez-le se balancer doucement comme un pendule." },
-  { name: "Band Shoulder External Rotation", bodyPartIds: ["bp-epaule"], equipment: ["elastiques"], instructions: "Coude plié à 90° et collé au corps, élastique en main. Tournez l'avant-bras vers l'extérieur sans décoller le coude, puis revenez lentement." },
-  { name: "Wall Slides", bodyPartIds: ["bp-epaule"], equipment: [], instructions: "Face au mur, avant-bras posés contre le mur. Faites-les glisser vers le haut en gardant les épaules basses, puis redescendez." },
-  { name: "Chin Tuck", bodyPartIds: ["bp-cervicales"], equipment: [], instructions: "Assis bien droit. Rentrez le menton en reculant la tête tout droit, comme pour faire un double menton, tenez quelques secondes." },
-  { name: "Single-Leg Calf Raise", bodyPartIds: ["bp-cheville"], equipment: [], instructions: "Debout sur une jambe, une main contre le mur. Montez sur la pointe du pied le plus haut possible, puis redescendez lentement." },
-  { name: "Plank", bodyPartIds: ["bp-tronc"], equipment: [], instructions: "En appui sur les avant-bras et la pointe des pieds, corps aligné des chevilles à la tête. Tenez la position en respirant." },
-  { name: "Single-Leg Stance", bodyPartIds: ["bp-equilibre", "bp-cheville"], equipment: [], instructions: "Debout, mains sur les hanches. Levez un pied et tenez l'équilibre sur l'autre jambe, genou légèrement déverrouillé." },
+  { key: "deadBug", name: "Dead Bug", bodyPartIds: ["bp-dos"], equipment: [] },
+  { key: "birdDog", name: "Bird Dog", bodyPartIds: ["bp-dos", "bp-tronc"], equipment: [] },
+  { key: "catCow", name: "Cat-Cow Stretch", bodyPartIds: ["bp-dos"], equipment: [] },
+  { key: "codman", name: "Codman Pendulum", bodyPartIds: ["bp-epaule"], equipment: [] },
+  { key: "bandExternalRotation", name: "Band Shoulder External Rotation", bodyPartIds: ["bp-epaule"], equipment: ["elastiques"] },
+  { key: "wallSlides", name: "Wall Slides", bodyPartIds: ["bp-epaule"], equipment: [] },
+  { key: "chinTuck", name: "Chin Tuck", bodyPartIds: ["bp-cervicales"], equipment: [] },
+  { key: "singleLegCalfRaise", name: "Single-Leg Calf Raise", bodyPartIds: ["bp-cheville"], equipment: [] },
+  { key: "plank", name: "Plank", bodyPartIds: ["bp-tronc"], equipment: [] },
+  { key: "singleLegStance", name: "Single-Leg Stance", bodyPartIds: ["bp-equilibre", "bp-cheville"], equipment: [] },
 ];
 
-// Séance fictive selon la pathologie du patient affiché.
+/** DEMO_EXERCISES avec leur consigne dans la langue du visiteur. */
+export const demoExercises = (t: DemoT) =>
+  DEMO_EXERCISES.map(({ key, ...e }) => ({ ...e, instructions: t(`exerciseInstructions.${key}`) }));
+
+// Séance fictive selon la pathologie du patient affiché (clé de
+// demo.samples.seances, par identifiant de pathologie).
 const SEANCE_BY_CONDITION: Record<string, string> = {
-  "Prothèse de genou": "Genou, renforcement doux",
-  "Lombalgie chronique": "Lombaires, mobilité du matin",
-  "Épaule douloureuse": "Épaule, retour au geste",
+  "c-genou": "kneeGentle",
+  "c-lomb": "lowBackMorning",
+  "c-epaule": "shoulderReturn",
 };
 
 type FichePatient = ReturnType<ReturnType<typeof mockData>["patientInfo"]>;
 
-const DEMO_CONDITION_IDS: Record<string, string> = { "Prothèse de genou": "c-genou", "Lombalgie chronique": "c-dos", "Épaule douloureuse": "c-epaule" };
+// Par identifiant de pathologie fictive, et par clé de demo.samples.conditions.
+const DEMO_CONDITION_IDS: Record<string, string> = {
+  "c-genou": "c-genou",
+  "c-lomb": "c-dos",
+  "c-epaule": "c-epaule",
+  kneeReplacement: "c-genou",
+  lowBack: "c-dos",
+  painfulShoulder: "c-epaule",
+};
 
-export function mockFiche(now = new Date(), patient?: FichePatient) {
+/** `tStage` = traducteur de « exercise.stage » (libellés des phases). */
+export function mockFiche(t: DemoT, now = new Date(), patient?: FichePatient, tStage?: Tr, locale?: Locale) {
   const created = new Date(now.getTime() - 30 * DAY);
-  const weeks = buildWeeks(created.toISOString(), now);
-  const seanceName = (patient?.conditionName && SEANCE_BY_CONDITION[patient.conditionName]) || "Genou, renforcement doux";
+  const weeks = buildWeeks(created.toISOString(), now, locale);
+  const seanceName = t(`seances.${(patient?.conditionId && SEANCE_BY_CONDITION[patient.conditionId]) || "kneeGentle"}`);
   // Exercices de la séance selon la pathologie (noms réels de la banque).
   const byCondition: Record<string, string[]> = {
-    "Lombalgie chronique": ["Dead Bug", "Prone Press-Up (McKenzie)", "Cat-Cow Stretch", "Bird Dog"],
-    "Épaule douloureuse": ["Codman Pendulum", "Band Shoulder External Rotation", "Wall Slides", "Side-Lying External Rotation"],
+    "c-lomb": ["Dead Bug", "Prone Press-Up (McKenzie)", "Cat-Cow Stretch", "Bird Dog"],
+    "c-epaule": ["Codman Pendulum", "Band Shoulder External Rotation", "Wall Slides", "Side-Lying External Rotation"],
   };
-  const names = (patient?.conditionName && byCondition[patient.conditionName]) || DEMO_EXERCISES.slice(0, 4).map((e) => e.name);
+  const names = (patient?.conditionId && byCondition[patient.conditionId]) || DEMO_EXERCISES.slice(0, 4).map((e) => e.name);
   // Mêmes identifiants que la bibliothèque de la démo (a0, a1…) : un exercice déjà
   // dans la séance n'y est pas reproposé.
   const exercises = names.map((name, i) => {
@@ -179,38 +204,38 @@ export function mockFiche(now = new Date(), patient?: FichePatient) {
   for (const [daysAgo, pain] of history) {
     const d = new Date(now.getTime() - daysAgo * DAY);
     dayDetails[localDateKey(d)] = [
-      { logId: `f-${daysAgo}`, workoutName: seanceName, time: "18:15", durationMinutes: 20, painScore: pain, difficulty: 2, notes: !patient && daysAgo === 1 ? "Douleur au réveil" : null },
+      { logId: `f-${daysAgo}`, workoutName: seanceName, time: "18:15", durationMinutes: 20, painScore: pain, difficulty: 2, notes: !patient && daysAgo === 1 ? t("painOnWaking") : null },
     ];
   }
   const adherencePct = patient ? Math.min(100, Math.round((patient.sessionCount / 6) * 100)) : 33;
   const tone = adherencePct >= 70 ? ("ok" as const) : adherencePct >= 40 ? ("warn" as const) : ("danger" as const);
   const last = patient ? patient.lastSessionDaysAgo : 1;
-  const lastLabel = last === null ? "Aucune" : last === 0 ? "Aujourd'hui" : last === 1 ? "Hier" : `Il y a ${last} jours`;
+  const lastLabel = last === null ? t("lastNone") : last === 0 ? t("today") : last === 1 ? t("yesterday") : t("daysAgo", { n: last });
   return {
     weeks,
     currentWeekNumber: currentWeekNumber(weeks, now),
     dayDetails,
     assignments: [{ id: "r1", workoutId: "w1", weekStartDate: weeks[0].startDateKey, weekCount: null }],
     // Pathologie et phase de la séance : « Séance suivante » et le filtre « Par pathologie » de la démo.
-    workoutsById: { w1: { id: "w1", name: seanceName, exercises, conditionId: DEMO_CONDITION_IDS[patient?.conditionName ?? ""] ?? "c-genou", stage: "acute" } },
-    patientConditionId: DEMO_CONDITION_IDS[patient?.conditionName ?? ""] ?? "c-genou",
+    workoutsById: { w1: { id: "w1", name: seanceName, exercises, conditionId: DEMO_CONDITION_IDS[patient?.conditionId ?? ""] ?? "c-genou", stage: "acute" } },
+    patientConditionId: DEMO_CONDITION_IDS[patient?.conditionId ?? ""] ?? "c-genou",
     patientStage: "acute" as const,
-    bodyParts: DEMO_BODY_PARTS,
+    bodyParts: demoBodyParts(t),
     addableExercises: DEMO_EXERCISES.map((e, i) => ({ id: `a${i}`, name: e.name, bodyPartIds: e.bodyPartIds, equipment: e.equipment })),
     addableWorkouts: (
       [
-        ["Genou, phase 1 · B", "Prothèse de genou", "bp-genou", "acute"], ["Genou, phase 2", "Prothèse de genou", "bp-genou", "subacute"], ["Genou, retour au sport", "Prothèse de genou", "bp-genou", "return_to_sport"],
-        ["Lombaires, mobilité du matin", "Lombalgie chronique", "bp-dos", "subacute"], ["Lombaires, gainage doux", "Lombalgie chronique", "bp-dos", "recovery"], ["Épaule, retour au geste", "Épaule douloureuse", "bp-epaule", "recovery"],
+        ["kneePhase1B", "kneeReplacement", "bp-genou", "acute"], ["kneePhase2", "kneeReplacement", "bp-genou", "subacute"], ["kneeReturnToSport", "kneeReplacement", "bp-genou", "return_to_sport"],
+        ["lowBackMorning", "lowBack", "bp-dos", "subacute"], ["lowBackCore", "lowBack", "bp-dos", "recovery"], ["shoulderReturn", "painfulShoulder", "bp-epaule", "recovery"],
       ] as const
-    ).map(([name, conditionName, bp, stage], i) => ({ id: `aw${i}`, name, description: "Renforcement progressif, sans douleur.", durationMinutes: 20, timesPerWeek: 3, conditionId: DEMO_CONDITION_IDS[conditionName], stage, stageLabel: STAGE_LABELS[stage], conditionName, editHref: i === 0 ? "/dashboard/seances/x" : null, exerciseNames: exercises.map((e) => e.name), exercises, bodyPartIds: [bp] })),
+    ).map(([name, condition, bp, stage], i) => ({ id: `aw${i}`, name: t(`seances.${name}`), description: t("workoutDescription"), durationMinutes: 20, timesPerWeek: 3, conditionId: DEMO_CONDITION_IDS[condition], stage, stageLabel: stageLabel(stage, tStage), conditionName: t(`conditions.${condition}`), editHref: i === 0 ? "/dashboard/seances/x" : null, exerciseNames: exercises.map((e) => e.name), exercises, bodyPartIds: [bp] })),
     stats: {
       painLatest: patient ? patient.painLatest : 7,
       painPrevious: patient ? patient.painPrevious : 6,
       adherencePct,
       adherenceTone: tone,
-      adherenceLabel: tone === "ok" ? "Bonne" : tone === "warn" ? "Moyenne" : "Faible",
+      adherenceLabel: tone === "ok" ? t("adherenceGood") : tone === "warn" ? t("adherenceAverage") : t("adherenceLow"),
       lastSessionLabel: lastLabel,
-      lastSessionDetail: last === null ? "" : "20 min · 4 exercices",
+      lastSessionDetail: last === null ? "" : t("lastSessionDetail"),
     },
   };
 }

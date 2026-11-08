@@ -3,6 +3,7 @@
 import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import { useEffect, useRef, useState } from "react";
 import { LogOut } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { initials } from "@/lib/format/initials";
 
 /**
@@ -12,6 +13,7 @@ import { initials } from "@/lib/format/initials";
  * AccountMenu). Se ferme au toucher en dehors ou avec Échap.
  */
 export default function PhoneAccountMenu({ name, role }: { name: string | null; role: string }) {
+  const t = useTranslations("patient.nav");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -40,7 +42,7 @@ export default function PhoneAccountMenu({ name, role }: { name: string | null; 
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label={`Mon compte (${name ?? role})`}
+        aria-label={t("accountAria", { name: name ?? role })}
         aria-expanded={open}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand"
       >

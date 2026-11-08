@@ -4,17 +4,18 @@ import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import { useEffect, useRef, useState } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { LayoutDashboard, UsersRound, MessageCircle, Dumbbell, ListChecks, Wallet, LogOut, CircleUserRound, ChevronLeft, BadgeCheck } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import { initials } from "@/lib/format/initials";
 
 const LINKS = [
-  { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, exact: true },
-  { href: "/dashboard/patients", label: "Mes patients", icon: UsersRound },
-  { href: "/dashboard/messages", label: "Messages", icon: MessageCircle },
-  { href: "/dashboard/seances", label: "Mes séances", icon: Dumbbell },
-  { href: "/dashboard/exercises", label: "Mes exercices", icon: ListChecks },
-  { href: "/dashboard/facturation", label: "Suivi & facturation", icon: Wallet },
+  { href: "/dashboard", label: "dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/dashboard/patients", label: "myPatients", icon: UsersRound },
+  { href: "/dashboard/messages", label: "messages", icon: MessageCircle },
+  { href: "/dashboard/seances", label: "mySessions", icon: Dumbbell },
+  { href: "/dashboard/exercises", label: "myExercises", icon: ListChecks },
+  { href: "/dashboard/facturation", label: "billing", icon: Wallet },
 ];
 
 // Téléphone : 4 onglets en bas, comme l'appli patient (5 = trop, Philippe
@@ -24,12 +25,12 @@ const LINKS = [
 // bulle du nom, en haut à droite. Les 6 entrées de la barre latérale
 // ordinateur ne changent pas.
 const MOBILE_LINKS: { href: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; alsoActive?: string[] }[] = [
-  { href: "/dashboard", label: "Accueil", icon: LayoutDashboard, exact: true },
-  { href: "/dashboard/patients", label: "Patients", icon: UsersRound },
-  { href: "/dashboard/messages", label: "Messages", icon: MessageCircle },
+  { href: "/dashboard", label: "home", icon: LayoutDashboard, exact: true },
+  { href: "/dashboard/patients", label: "patients", icon: UsersRound },
+  { href: "/dashboard/messages", label: "messages", icon: MessageCircle },
   {
     href: "/dashboard/informations",
-    label: "Mes informations",
+    label: "myInfo",
     icon: CircleUserRound,
     alsoActive: ["/dashboard/seances", "/dashboard/exercises", "/dashboard/facturation"],
   },
@@ -38,6 +39,7 @@ const MOBILE_LINKS: { href: string; label: string; icon: typeof LayoutDashboard;
 // Bulle du nom (téléphone, en haut à droite de chaque écran) : qui est
 // connecté, et la déconnexion.
 function AccountMenu({ instructorName }: { instructorName: string | null }) {
+  const t = useTranslations("dashboard.nav");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -66,7 +68,7 @@ function AccountMenu({ instructorName }: { instructorName: string | null }) {
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label={`Mon compte (${instructorName ?? "praticien"})`}
+        aria-label={t("myAccount", { name: instructorName ?? t("practitionerFallback") })}
         aria-expanded={open}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand"
       >
@@ -75,8 +77,8 @@ function AccountMenu({ instructorName }: { instructorName: string | null }) {
       {open && (
         <div className="absolute right-0 top-11 z-50 w-60 overflow-hidden rounded-2xl bg-surface shadow-soft ring-1 ring-line/70">
           <div className="border-b border-line px-4 py-3">
-            <p className="truncate text-sm font-semibold text-ink">{instructorName ?? "Praticien"}</p>
-            <p className="text-xs text-muted">Kinésithérapeute</p>
+            <p className="truncate text-sm font-semibold text-ink">{instructorName ?? t("practitioner")}</p>
+            <p className="text-xs text-muted">{t("physio")}</p>
           </div>
           <SignOutOrExitDemo
             className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-danger"
@@ -100,6 +102,7 @@ type MobileLink = (typeof MOBILE_LINKS)[number];
 // téléphone semble ne pas avoir pris l'appui.
 function TabBody({ link, active, unreadCount }: { link: MobileLink; active: boolean; unreadCount: number }) {
   const { pending } = useLinkStatus();
+  const t = useTranslations("dashboard.nav");
   const lit = active || pending;
   return (
     <span
@@ -115,7 +118,7 @@ function TabBody({ link, active, unreadCount }: { link: MobileLink; active: bool
         } ${pending ? "animate-pulse" : ""}`}
       />
       <link.icon className="h-[22px] w-[22px]" strokeWidth={lit ? 2.1 : 1.6} />
-      {link.label}
+      {t(link.label)}
       {unreadCount > 0 && (
         <>
           <span
@@ -125,7 +128,7 @@ function TabBody({ link, active, unreadCount }: { link: MobileLink; active: bool
             {unreadCount}
           </span>
           <span className="sr-only">
-            {" "}({unreadCount} non lu{unreadCount > 1 ? "s" : ""})
+            {" "}{t("unreadSr", { count: unreadCount })}
           </span>
         </>
       )}
@@ -135,13 +138,14 @@ function TabBody({ link, active, unreadCount }: { link: MobileLink; active: bool
 
 // Téléphone : où ramène la flèche de retour de l'en-tête. La fiche patient
 // et une conversation ouverte ont déjà leur propre flèche, à côté du nom.
+// `label` = clé de dashboard.nav.
 function backTarget(pathname: string): { href: string; label: string } | null {
   if (pathname.startsWith("/dashboard/seances/") && pathname.length > "/dashboard/seances/".length) {
-    return { href: "/dashboard/seances", label: "Mes séances" };
+    return { href: "/dashboard/seances", label: "mySessions" };
   }
-  if (pathname === "/dashboard/patients/new") return { href: "/dashboard/patients", label: "Mes patients" };
+  if (pathname === "/dashboard/patients/new") return { href: "/dashboard/patients", label: "myPatients" };
   if (["/dashboard/seances", "/dashboard/exercises", "/dashboard/facturation"].some((p) => pathname.startsWith(p))) {
-    return { href: "/dashboard/informations", label: "Mes informations" };
+    return { href: "/dashboard/informations", label: "myInfo" };
   }
   return null;
 }
@@ -162,6 +166,7 @@ export default function DashboardSidebar({
   pathnameOverride?: string;
 }) {
   const realPathname = usePathname();
+  const t = useTranslations("dashboard.nav");
   const pathname = pathnameOverride ?? realPathname;
   const isActive = (href: string, exact?: boolean) => (exact ? pathname === href : pathname.startsWith(href));
   const back = backTarget(pathname);
@@ -183,7 +188,7 @@ export default function DashboardSidebar({
           {LINKS.map((link) => (
             <Link key={link.href} href={link.href} className={linkClass(isActive(link.href, link.exact))}>
               <link.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-              {link.label}
+              {t(link.label)}
               {link.href === "/dashboard/messages" && unreadCount > 0 && (
                 <span className="ml-auto rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">
                   {unreadCount}
@@ -197,8 +202,8 @@ export default function DashboardSidebar({
             {initials(instructorName)}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{instructorName ?? "Praticien"}</p>
-            <p className="text-xs text-white/60">Kinésithérapeute</p>
+            <p className="truncate text-sm font-medium">{instructorName ?? t("practitioner")}</p>
+            <p className="text-xs text-white/60">{t("physio")}</p>
             {contributorTitle && (
               <Link href="/dashboard/exercises/contributeurs" className="mt-0.5 flex items-center gap-1 text-[11px] text-white/80 hover:text-white">
                 <BadgeCheck className="h-3 w-3 shrink-0" strokeWidth={2} />
@@ -224,13 +229,13 @@ export default function DashboardSidebar({
           {back && (
             <Link
               href={back.href}
-              aria-label={`Retour : ${back.label}`}
+              aria-label={t("back", { label: t(back.label) })}
               className="-ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink transition-transform active:scale-90"
             >
               <ChevronLeft className="h-6 w-6" strokeWidth={2} />
             </Link>
           )}
-          <Link href="/dashboard" className="flex items-center gap-2" aria-label="Tableau de bord">
+          <Link href="/dashboard" className="flex items-center gap-2" aria-label={t("dashboard")}>
             <LogoLockup height={32} />
           </Link>
         </div>
@@ -239,7 +244,7 @@ export default function DashboardSidebar({
 
       <nav
         data-phone-tabbar=""
-        aria-label="Navigation principale"
+        aria-label={t("mainNav")}
         className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line/70 bg-surface/95 shadow-[0_-4px_16px_rgba(15,23,42,0.04)] backdrop-blur sm:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >

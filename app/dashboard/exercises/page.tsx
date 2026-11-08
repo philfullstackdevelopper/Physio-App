@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import { isPickableExercise } from "@/lib/exercise/filmedExercises";
 import { createClient } from "@/lib/supabase/server";
@@ -15,6 +16,8 @@ export default async function ExercisesPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  const t = await getTranslations("exercise.exercisesPage");
+  const tContributor = await getTranslations("exercise.contributor");
 
   const supabase = await createClient();
   // Validation du compte vérifiée ICI aussi (audit du 2026-10-08) : le
@@ -51,6 +54,8 @@ export default async function ExercisesPage({
       publication_status: ex.publication_status as PublicationStatus,
       author_label: ex.author_label as string | null,
     })),
+    undefined,
+    tContributor("unknownAuthor"),
   ).map((r) => ({ id: r.authorId, label: r.label }));
 
   const libraryExercises: LibraryExercise[] = await Promise.all((allExercises ?? []).filter(isPickableExercise).map(async (ex) => ({
@@ -76,10 +81,10 @@ export default async function ExercisesPage({
       <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-center justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-1">
-            <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
+            <h1 className="text-2xl font-semibold text-ink">{t("title")}</h1>
             <ContributionSummary contributors={contributors} published={publishedCount} pending={pendingCount} />
           </div>
-          <Link href="/dashboard/seances" className="text-sm font-medium text-brand hover:underline max-sm:hidden">← Mes séances</Link>
+          <Link href="/dashboard/seances" className="text-sm font-medium text-brand hover:underline max-sm:hidden">← {t("mySessions")}</Link>
         </div>
 
         {error && (
@@ -93,7 +98,7 @@ export default async function ExercisesPage({
             currentUserId={user.id}
             isAdmin={isAdminEmail(user.email)}
             creator={{
-              patients: (patientRows ?? []).map((p) => ({ id: p.id as string, name: (p.full_name as string | null) || "Patient sans nom" })),
+              patients: (patientRows ?? []).map((p) => ({ id: p.id as string, name: (p.full_name as string | null) || t("unnamedPatient") })),
               publishedCount,
               requestPublication: requestExercisePublication,
             }}

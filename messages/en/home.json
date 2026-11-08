@@ -1,0 +1,212 @@
+{
+  "header": {
+    "nav": {
+      "practitioners": "For physios",
+      "comparison": "Comparison",
+      "pricing": "Pricing",
+      "faq": "FAQ"
+    },
+    "mySpace": "My account",
+    "signIn": "Sign in",
+    "createAccount": "Create an account",
+    "waitlist": "Waiting list",
+    "signingOut": "Signing out",
+    "signOut": "Sign out"
+  },
+  "footer": {
+    "tagline": "Your physio's rehab programmes, properly followed at home.",
+    "hosting": "Your data is hosted in France and never sold.",
+    "changelog": "<b>October 2026</b> · redesigned messaging, physios verified automatically through their RPPS number.",
+    "columns": {
+      "product": "Product",
+      "space": "Account",
+      "legal": "Legal"
+    },
+    "links": {
+      "comparison": "Comparison",
+      "pricing": "Pricing",
+      "patientLogin": "Patient login",
+      "createKineAccount": "Create a practitioner account",
+      "waitlist": "Waiting list",
+      "faq": "FAQ",
+      "cgu": "Terms of use",
+      "privacy": "Privacy policy",
+      "legalNotice": "Legal notice"
+    },
+    "copyright": "© 2026 EasyPhysio · made in France, between two physio sessions",
+    "illustrations": "Some illustrations:"
+  },
+  "landing": {
+    "heroTitle": "“Yes, yes, I did my exercises.”",
+    "heroTitleNow": "Now",
+    "heroTitleSee": "you can see it.",
+    "heroShort": "Your patients do their guided exercises at home. You see who did them, and who was in pain.",
+    "tryDemo": "Try the demo",
+    "createAccount": "Create an account",
+    "notifyMe": "Get notified",
+    "heroLong": "At home, your patients follow the programme you chose, guided step by step. You see who did it, and who was in pain, before the next appointment.",
+    "createKineAccount": "Create a practitioner account",
+    "joinWaitlist": "Join the waiting list",
+    "haveProgramme": "I already have a programme",
+    "handNote": "what your patient sees",
+    "kineTitle": "Monday, 8 a.m.: you already know who did the work.",
+    "kineBody": "Who did their sessions, who reported pain, who hasn't opened the app. And two clicks to adjust a programme.",
+    "comparisonTitle": "An exercise sheet often ends up at the back of a drawer.",
+    "comparisonBody1": "It doesn't show the movement and doesn't tell you if it hurts.",
+    "comparisonBody2": "On their phone, the patient sees the exercise and reports their pain to you.",
+    "showcaseTitle": "Exercises your patients understand the first time.",
+    "showcaseBody": "292 drawn and animated movements, with the key exercises filmed by a physio.",
+    "testimonialsTitle1": "Used in the practice,",
+    "testimonialsTitle2": "and above all at home",
+    "pricingTitle": "“And how do I get paid?”",
+    "faqTitle": "Frequently asked questions",
+    "finalTitleOpen": "Try it with just one patient.",
+    "finalTitleWaitlist": "Hear about the launch first.",
+    "finalBodyOpen": "Create your account, build a first programme, invite a patient. Within the first week you'll see whether it changes your consultations.",
+    "finalBodyWaitlist": "EasyPhysio is in testing and opens soon. Leave your e-mail: we'll write to you as soon as you can create your account and invite your first patients.",
+    "finalNote": "You build the programme and you adjust it; the app never changes it for you.",
+    "signIn": "Sign in",
+    "haveAccount": "Already have an account?"
+  },
+  "plans": {
+    "_review": "Draft translation — billing wording needs review by lawyer before launch",
+    "patientsFollowed": "Patients followed",
+    "patientPays": "Each patient pays €{low} to €{high} a month depending on their commitment, after {trialDays} free days, in two parts:",
+    "kineShare": "Your programme, paid directly to you",
+    "amount": "€{value}",
+    "platformShare": "Access to the app, paid to EasyPhysio",
+    "range": "€{low} to €{high}",
+    "feesNote": "Your fees are only charged in months when you update their programme.",
+    "handNote": "and the app is free",
+    "forYou": "For you, each month",
+    "calc": "{patients} patients × €{net} (€{fee} minus card fees). EasyPhysio takes nothing from your fees.",
+    "createFreeAccount": "Create my free account",
+    "joinWaitlist": "Join the waiting list",
+    "footnote": "Free sign-up, no commitment, unlimited patients. You never pay EasyPhysio."
+  },
+  "faq": {
+    "_review": "Draft translation — needs review by lawyer (billing wording) and partner physio (safety wording) before launch",
+    "q1": "How do I get back to sport without risking a relapse?",
+    "a1": "Your programme moves forward in stages set by your physio: you only move on to the next one once the previous one is mastered. If you report pain, your physio sees it and can adapt the programme.",
+    "q2": "Can I do my exercises on my own, safely?",
+    "a2": "Each exercise is shown on video or as an animated drawing, with written instructions. During the session, a reminder tells you to stop if you feel sharp pain. At the end, you rate your pain, and your physio sees it.",
+    "q3": "How can my physio follow me remotely?",
+    "a3": "They see your adherence, completed sessions and feedback on pain or difficulty over time, and adjust your programme between two appointments at the practice.",
+    "q4": "Do I need equipment or a camera at home?",
+    "a4": "No, a phone is enough: you follow the exercises on screen, with the drawing and instructions in front of you. No camera or smartwatch. If an exercise needs an object (resistance band, chair), your physio knows from what you declared.",
+    "q5": "What happens to my health data?",
+    "a5": "It is used only for your follow-up: your sessions and how you felt are visible to you and your practitioner, never sold or used for advertising.",
+    "q6": "How much does the app cost me as a patient?",
+    "a6": "After {trialDays} free days, you choose a monthly offer: {offers}. Each total combines access to the app (€{low} to €{high} depending on the commitment), paid monthly to EasyPhysio, and €{kine} for your physio’s programme, paid directly to them, only in months when they update your programme. You receive two separate invoices, and you can cancel at any time from the app. Not reimbursed by the French national health insurance (Assurance Maladie).",
+    "offerNoCommitment": "€{total} with no commitment",
+    "offerCommitmentFirst": "€{total} with a {months}-month commitment",
+    "offerCommitment": "€{total} with {months} months",
+    "offersJoin": "{head} or {last}",
+    "q7": "I'm a practitioner: how can I try it with my patients?",
+    "a7Open": "Create your practitioner account, build a first programme from the exercise library, connect your Stripe account to be paid directly by your patients, then invite them. They'll get access without installing anything other than the app on their phone.",
+    "a7Waitlist": "EasyPhysio is in testing: join the waiting list at the bottom of this page and we'll write to you when we open. Then create your practitioner account, build a first programme from the exercise library, connect your Stripe account to be paid directly by your patients, then invite them. They'll get access without installing anything other than the app on their phone."
+  },
+  "testimonials": {
+    "julien": {
+      "quote": "I can see who did their exercises before I even open the file. I start the consultation with what happened at home.",
+      "role": "Physiotherapist",
+      "highlight": "Less time spent piecing together the patient's week."
+    },
+    "claire": {
+      "quote": "I finally knew what to do in the evening, and in what order. The demonstration saves me guessing the movement between appointments.",
+      "role": "Patient, shoulder rehab",
+      "highlight": "Less hesitation between two sessions."
+    },
+    "nadia": {
+      "quote": "Pain feedback changes everything: I adjust the programme the same day instead of waiting for the next session.",
+      "role": "Physiotherapist",
+      "highlight": "Same-day adjustments, not the following week."
+    },
+    "trust1": "Data hosted in France",
+    "trust2": "Physios verified by their RPPS number",
+    "trust3": "Data never sold",
+    "portrait": "Portrait of {name}",
+    "kines": "Physios",
+    "patients": "Patients",
+    "illustrative": "Illustrative testimonials",
+    "previous": "Previous testimonial",
+    "next": "Next testimonial"
+  },
+  "comparison": {
+    "easySub": "with your physio",
+    "fitness": "General fitness app",
+    "fitnessSub": "no clinical follow-up",
+    "paper": "Paper sheet",
+    "paperSub": "photocopied",
+    "rowDemos": "Clear demonstrations and instructions",
+    "rowTracking": "Progress tracked by the physio",
+    "rowPain": "Real-time pain reporting",
+    "rowRemote": "Remote programme adjustment",
+    "total": "Total score"
+  },
+  "waitlist": {
+    "thanks": "Thanks, you're on the list. We'll write to you at launch.",
+    "youAre": "You are",
+    "iAmKine": "I'm a physio",
+    "iAmPatient": "I'm a patient",
+    "emailLabel": "Your e-mail address",
+    "placeholder": "you@email.com",
+    "sending": "Sending…",
+    "submit": "Notify me at launch",
+    "privacyNote": "Your e-mail is only used to tell you about the launch. <link>Privacy</link>",
+    "errors": {
+      "invalidEmail": "This e-mail address doesn't look valid.",
+      "tooMany": "Too many sign-ups right now. Try again in an hour.",
+      "failed": "Your sign-up couldn't be saved. Try again in a moment."
+    }
+  },
+  "showcase": {
+    "_review": "Draft translation — exercise names need review by partner physio before launch",
+    "label": "Filmed demonstration: {name}",
+    "gluteBridge": {
+      "name": "Glute bridge",
+      "zone": "Lower back"
+    },
+    "pallofPress": {
+      "name": "Pallof press",
+      "zone": "Core"
+    },
+    "clamshell": {
+      "name": "Banded clamshell",
+      "zone": "Hip"
+    },
+    "shoulderRotation": {
+      "name": "Shoulder external rotation",
+      "zone": "Shoulder"
+    },
+    "straightLegRaise": {
+      "name": "Straight leg raise",
+      "zone": "Knee"
+    },
+    "yBalance": {
+      "name": "Y balance",
+      "zone": "Knee / ankle"
+    }
+  },
+  "intro": {
+    "tagline": "Your physio exercises, at home"
+  },
+  "notFound": {
+    "metaTitle": "Page not found",
+    "title": "This page stretched a little too far.",
+    "body": "It doesn't exist, or no longer does. Nothing's broken on your side: let's start again from the beginning.",
+    "back": "Back to the home page"
+  },
+  "connectionError": {
+    "title": "Connection problem",
+    "body": "We can't check your session right now — probably a brief network problem. You're most likely still signed in, and nothing you've already saved is lost."
+  },
+  "cookies": {
+    "_review": "Draft translation — needs review by lawyer before launch",
+    "text": "This site only uses cookies that are essential for keeping you signed in, no advertising or audience-measurement cookies. <link>Learn more</link>.",
+    "gotIt": "Got it"
+  },
+  "logo": {
+    "homeAria": "EasyPhysio — home"
+  }
+}

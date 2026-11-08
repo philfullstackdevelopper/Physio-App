@@ -13,6 +13,15 @@ import { deleteAppUserById } from "@/lib/db/admin";
 import { getStripe } from "@/lib/billing/stripe";
 import { resolveAppUserId, precreateAppUserId } from "@/lib/auth/user-map";
 import { friendlyDbError } from "@/lib/format/dbError";
+import { getTranslations } from "next-intl/server";
+import { getLocaleByAppId } from "@/lib/db/locale";
+import { localizeDbText } from "@/lib/i18n/dbContent";
+import { getLibI18n } from "@/lib/dashboard/libI18n";
+
+// Traducteur « dashboard.lib » pour friendlyDbError (langue du kiné).
+const tLib = async () => (await getLibI18n()).t;
+// Messages d'erreur de ce fichier (langue du kiné).
+const tActions = () => getTranslations("dashboard.patientActions");
 import { doseColumnsFromForm, doseColumnsFromRow, type DoseColumns } from "@/lib/exercise/doseForm";
 import { notifyNewMessage } from "@/lib/push/notify";
 
@@ -61,7 +70,7 @@ export async function deletePatient(formData: FormData) {
     .eq("id", patientId)
     .eq("instructor_id", user.id)
     .maybeSingle();
-  if (!patient) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Patient introuvable.")}`);
+  if (!patient) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent((await tActions())("notFound"))}`);
 
   // Ordre revu (Philippe, 2026-10-07) : avant, l'identité Clerk et la ligne
   // app_users étaient supprimées AVANT la ligne patients — si cette dernière
@@ -91,13 +100,13 @@ export async function deletePatient(formData: FormData) {
     } catch (e) {
       if ((e as { code?: string })?.code !== "resource_missing") {
         console.error("deletePatient: résiliation Stripe impossible", e);
-        redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("La formule du patient n'a pas pu être résiliée. Réessayez dans quelques minutes.")}`);
+        redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent((await tActions())("cancelSubFailed"))}`);
       }
     }
   }
 
   const { error } = await supabase.from("patients").delete().eq("id", patientId).eq("instructor_id", user.id);
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error, undefined, await tLib()))}`);
 
   // Sécurité (audit du 2026-10-08) : l'e-mail de la fiche patient est une
   // donnée modifiable — on ne supprime JAMAIS un compte de connexion sur la
@@ -152,7 +161,7 @@ export async function assignCondition(formData: FormData) {
   const patientId = String(formData.get("patient_id") ?? "");
   const conditionId = String(formData.get("condition_id") ?? "");
   if (!patientId || !conditionId) {
-    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Veuillez choisir une condition.")}`);
+    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent((await tActions())("chooseCondition"))}`);
   }
 
   const { data: before } = await supabase.from("patients").select("condition_id").eq("id", patientId).maybeSingle();
@@ -160,7 +169,7 @@ export async function assignCondition(formData: FormData) {
 
   const { error } = await supabase.from("patients").update({ condition_id: conditionId }).eq("id", patientId);
   if (error) {
-    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
+    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error, undefined, await tLib()))}`);
   }
   // Only when REPLACING a condition (ConditionSelect confirms that first).
   // A first condition must keep the séances already assigned: the kiné can
@@ -212,7 +221,7 @@ export async function addRecommendedWorkout(formData: FormData) {
   // (audit du 2026-10-08 : un formulaire modifié pouvait l'attribuer).
   const { data: workout } = await supabase.from("workouts").select("id, name, patient_id, times_per_week").eq("id", workoutId).maybeSingle();
   if (!workout || (workout.patient_id !== null && workout.patient_id !== patientId)) {
-    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Cette séance ne peut pas être attribuée à ce patient.")}`);
+    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent((await tActions())("cannotAssign"))}`);
   }
 
   // Pendant combien de semaines (migration 0059). Absent, vide ou hors 1-52
@@ -228,7 +237,7 @@ export async function addRecommendedWorkout(formData: FormData) {
     )
     .select("id")
     .single();
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error, undefined, await tLib()))}`);
 
   // Patient en suivi mensuel : attribuer une séance valide le bilan du mois.
   await recordMonthlyReviewIfDue({ supabase, instructorId: user.id, patientId, note: `Séance attribuée : ${workout!.name as string}` });
@@ -255,7 +264,7 @@ export async function removeRecommendedWorkout(formData: FormData) {
   const recId = String(formData.get("rec_id") ?? "");
 
   const { error } = await supabase.from("patient_recommended_workouts").delete().eq("id", recId);
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error))}`);
+  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error, undefined, await tLib()))}`);
 
   revalidatePath(`/dashboard/patients/${patientId}`);
   redirect(`/dashboard/patients/${patientId}`);
@@ -278,7 +287,7 @@ export async function adjustPatientWorkout(formData: FormData) {
   // adjusting one of them must not silently repoint the other.
   const recId = String(formData.get("rec_id") ?? "");
 
-  if (!patientId || !workoutId || !recId) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent("Séance introuvable.")}`);
+  if (!patientId || !workoutId || !recId) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent((await tActions())("sessionNotFound"))}`);
   if (!hasSeanceChanges(formData)) redirect(`/dashboard/patients/${patientId}`);
 
   const result = await applySeanceChanges({ supabase, userId: user.id, patientId, workoutId, recId, formData });
@@ -319,6 +328,7 @@ async function applySeanceChanges({
   formData: FormData;
 }): Promise<{ error: string } | { changed: boolean }> {
   const removeIds = formData.getAll("remove_ids").map(String).filter(Boolean);
+  const t = await tActions();
   const addIds = formData.getAll("add_ids").map(String).filter(Boolean);
 
   const { data: patient } = await supabase
@@ -327,15 +337,15 @@ async function applySeanceChanges({
     .eq("id", patientId)
     .eq("instructor_id", userId)
     .maybeSingle();
-  if (!patient) return { error: "Patient introuvable." };
+  if (!patient) return { error: t("notFound") };
 
   const { data: workout } = await supabase
     .from("workouts")
     .select("id, name, description, condition_id, stage, duration_minutes, times_per_week, patient_id")
     .eq("id", workoutId)
     .maybeSingle();
-  if (!workout) return { error: "Séance introuvable." };
-  if (workout.patient_id && workout.patient_id !== patientId) return { error: "Séance introuvable." };
+  if (!workout) return { error: t("sessionNotFound") };
+  if (workout.patient_id && workout.patient_id !== patientId) return { error: t("sessionNotFound") };
 
   // La nouvelle liste est calculée AVANT de créer la copie : rien n'est
   // écrit si la séance resterait vide ou inchangée.
@@ -344,7 +354,7 @@ async function applySeanceChanges({
   const current = (sourceRows ?? []).map((r) => ({ exerciseId: r.exercise_id as string, position: r.position as number }));
   const oldDose = new Map((sourceRows ?? []).map((r) => [r.exercise_id as string, doseColumnsFromRow(r)]));
   const next = applyAdjustment(current, removeIds, addIds);
-  if (next.length === 0) return { error: "Une séance doit garder au moins un exercice." };
+  if (next.length === 0) return { error: t("keepOne") };
 
   // Dose de chaque exercice : celle saisie dans la fenêtre si l'exercice y
   // figurait (vide = règle habituelle), sinon celle d'avant.
@@ -375,7 +385,7 @@ async function applySeanceChanges({
       })
       .select("id")
       .single();
-    if (copyError || !copy) return { error: copyError?.message ?? "Impossible de créer la séance du patient." };
+    if (copyError || !copy) return { error: copyError?.message ?? t("copyFailed") };
     targetId = copy.id as string;
     copied = true;
 
@@ -391,7 +401,7 @@ async function applySeanceChanges({
       .select("id");
     if (recError || !repointed || repointed.length === 0) {
       await supabase.from("workouts").delete().eq("id", targetId);
-      return { error: recError?.message ?? "Cette séance n'est pas recommandée à ce patient." };
+      return { error: recError?.message ?? t("notRecommended") };
     }
   }
 
@@ -417,12 +427,22 @@ async function applySeanceChanges({
     return { error: insertError.message };
   }
 
+  // Message automatique écrit dans la langue du PATIENT (pas celle du kiné).
+  // La note du bilan mensuel (document de facturation du kiné) reste en français.
   const message = adjustmentMessage(workout.name, removedCount, addedCount, dosesChanged);
+  const patientLocale = await getLocaleByAppId(patientId);
   await supabase.from("patient_messages").insert({
     patient_id: patientId,
     instructor_id: userId,
     sender: "instructor",
-    body: message,
+    body: adjustmentMessage(
+      // Nom de séance de la plateforme dans la langue du patient (lu ici dans celle du kiné).
+      await localizeDbText(workout.name, patientLocale),
+      removedCount,
+      addedCount,
+      dosesChanged,
+      await getTranslations({ locale: patientLocale, namespace: "exercise.adjustMessage" }),
+    ),
   });
   await notifyNewMessage({ patientId, instructorId: userId, sender: "instructor" });
   // Patient en suivi mensuel : ajuster la séance valide le bilan du mois.

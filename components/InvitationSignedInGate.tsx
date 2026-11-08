@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { SignOutButton } from "@clerk/nextjs";
 import { LogOut, UserCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 /**
  * Affiché sur /invitation quand une session Clerk est DÉJÀ ouverte dans ce
@@ -23,28 +24,27 @@ export default function InvitationSignedInGate({
   email: string | null;
   invitationUrl: string;
 }) {
+  const t = useTranslations("auth.invitationGate");
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-7 text-center shadow-sm">
       <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
         <UserCheck className="h-6 w-6" strokeWidth={1.75} />
       </span>
-      <h2 className="mt-4 text-lg font-semibold text-slate-900">Vous êtes déjà connecté</h2>
+      <h2 className="mt-4 text-lg font-semibold text-slate-900">{t("title")}</h2>
       <p className="mt-2 text-sm leading-relaxed text-slate-500">
         {email ? (
-          <>
-            Session ouverte avec <span className="font-medium text-slate-700">{email}</span>.
-          </>
+          t.rich("sessionWith", { email, b: (c) => <span className="font-medium text-slate-700">{c}</span> })
         ) : (
-          "Une session est déjà ouverte dans ce navigateur."
+          t("sessionOpen")
         )}{" "}
-        Pour utiliser cette invitation avec un autre compte, déconnectez-vous d&apos;abord.
+        {t("useOther")}
       </p>
 
       <Link
         href="/apres-connexion"
         className="mt-6 block w-full rounded-xl bg-blue-600 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
       >
-        Continuer avec ce compte
+        {t("continue")}
       </Link>
       <SignOutButton redirectUrl={invitationUrl}>
         <button
@@ -52,7 +52,7 @@ export default function InvitationSignedInGate({
           className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
         >
           <LogOut className="h-4 w-4" strokeWidth={1.75} />
-          Se déconnecter et utiliser l&apos;invitation
+          {t("signOutAndUse")}
         </button>
       </SignOutButton>
     </div>

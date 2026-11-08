@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import FaqSection from "@/components/FaqSection";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -42,7 +43,9 @@ function PrimaryCta({
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  // Textes : messages/<langue>/home.json (home.landing).
+  const t = await getTranslations("home.landing");
   return (
     <div className="relative min-h-screen bg-[#f6f8fd] text-slate-800">
       {/* Ouverture façon Aurascan (2026-10-07) : à chaque chargement de la page. */}
@@ -87,13 +90,13 @@ export default function Home() {
           <div className="relative">
             <h1 className="font-display animate-[fadeInUp_0.6s_ease-out_both] text-3xl font-semibold leading-[1.1] tracking-tight text-slate-900 sm:text-[2.6rem] lg:text-[2.75rem] lg:short:text-[2.3rem] phone-land:text-[1.6rem]">
               {/* La réponse que tout kiné a entendue, puis ce que l'appli change. */}
-              «&nbsp;Oui oui, j&apos;ai fait mes exercices.&nbsp;»
-              <br className="hidden sm:block" /> Maintenant, <Underlined>vous le voyez.</Underlined>
+              {t("heroTitle")}
+              <br className="hidden sm:block" />{" "}{t("heroTitleNow")}{" "}<Underlined>{t("heroTitleSee")}</Underlined>
             </h1>
             {/* Téléphone (2026-10-26) : une phrase courte, la version longue
                 plus bas est masquée sur petit écran. */}
             <p className="mt-2 text-[15px] leading-snug text-slate-600 sm:hidden phone-land:hidden">
-              Vos patients font leurs exercices guidés chez eux. Vous voyez qui les a faits, et qui a eu mal.
+              {t("heroShort")}
             </p>
             {/* Téléphone : le hero n'a plus de bouton (2026-10-10) — un simple
                 lien vers la liste d'attente du bas de page (2026-10-12). */}
@@ -104,7 +107,7 @@ export default function Home() {
                 href="/demo"
                 className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm active:scale-95"
               >
-                Essayer la démo
+                {t("tryDemo")}
                 <ArrowRight className="h-4 w-4" strokeWidth={2} />
               </Link>
               {/* Inscriptions ouvertes : même cible que le bouton PC (Philippe,
@@ -113,32 +116,31 @@ export default function Home() {
                 href={SIGNUPS_OPEN ? "/signup/kine" : "#liste-attente"}
                 className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
               >
-                {SIGNUPS_OPEN ? "Créer un compte" : "Être prévenu"}
+                {SIGNUPS_OPEN ? t("createAccount") : t("notifyMe")}
               </Link>
             </div>
             <p className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:160ms] mt-3 max-w-lg text-base leading-relaxed text-slate-600 max-sm:hidden sm:mt-5 sm:text-lg lg:short:mt-3 lg:short:text-base phone-land:mt-2 phone-land:text-sm">
-              Vos patients suivent chez eux le programme que vous avez choisi, guidés pas à pas.
-              Vous voyez qui l&apos;a fait, et qui a eu mal, avant le prochain rendez-vous.
+              {t("heroLong")}
             </p>
 
             <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:220ms] mt-5 flex flex-col gap-3 max-sm:hidden sm:mt-8 sm:flex-row sm:items-center lg:short:mt-5 phone-land:mt-3">
               {SIGNUPS_OPEN ? (
-                <PrimaryCta href="/signup/kine">Créer un compte praticien</PrimaryCta>
+                <PrimaryCta href="/signup/kine">{t("createKineAccount")}</PrimaryCta>
               ) : (
-                <PrimaryCta href="#liste-attente">Rejoindre la liste d&apos;attente</PrimaryCta>
+                <PrimaryCta href="#liste-attente">{t("joinWaitlist")}</PrimaryCta>
               )}
               {/* Démo dans le navigateur, sans compte (2026-10-16). */}
               <Link
                 href="/demo"
                 className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 font-medium text-slate-800 transition hover:border-blue-600 hover:text-blue-700"
               >
-                Essayer la démo
+                {t("tryDemo")}
               </Link>
               <Link
                 href="/login"
                 className="inline-flex items-center justify-center font-medium text-slate-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
               >
-                J&apos;ai déjà un programme
+                {t("haveProgramme")}
               </Link>
             </div>
 
@@ -148,7 +150,7 @@ export default function Home() {
                 de la fenêtre. */}
             <div className="mt-5 flex justify-end max-lg:hidden lg:short:mt-3">
               <HandNote className="-mr-6 -rotate-3 animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:900ms]">
-                ce que voit votre patient
+                {t("handNote")}
               </HandNote>
             </div>
 
@@ -171,10 +173,10 @@ export default function Home() {
         <section id="cote-kine" className="mt-16 max-sm:mt-20 scroll-mt-24 sm:mt-24">
           <div className="mx-auto max-w-2xl text-center sm:short:max-w-5xl">
             <h2 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-              Lundi matin, 8 h : vous savez déjà qui a travaillé.
+              {t("kineTitle")}
             </h2>
             <p className="mt-3 text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg sm:short:mt-1 sm:short:text-sm">
-              Qui a fait ses séances, qui a signalé une douleur, qui n&apos;a pas ouvert l&apos;appli. Et deux clics pour ajuster un programme.
+              {t("kineBody")}
             </p>
           </div>
 
@@ -197,9 +199,9 @@ export default function Home() {
           {/* Masqué sur téléphone et écran peu haut : le header garde son bouton « Créer un compte ». */}
           <div className="mt-10 hidden text-center sm:block sm:short:hidden">
             {SIGNUPS_OPEN ? (
-              <PrimaryCta>Créer un compte praticien</PrimaryCta>
+              <PrimaryCta>{t("createKineAccount")}</PrimaryCta>
             ) : (
-              <PrimaryCta href="#liste-attente">Rejoindre la liste d&apos;attente</PrimaryCta>
+              <PrimaryCta href="#liste-attente">{t("joinWaitlist")}</PrimaryCta>
             )}
           </div>
         </section>
@@ -217,12 +219,12 @@ export default function Home() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-                Une feuille d&apos;exercices finit souvent au fond d&apos;un tiroir.
+                {t("comparisonTitle")}
               </h2>
               <p className="mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 max-sm:hidden phone-land:hidden">
-                Elle ne montre pas le mouvement et ne vous dit pas si ça fait mal.{" "}
+                {t("comparisonBody1")}{" "}
                 <br className="hidden sm:block lg:hidden" />
-                Sur le téléphone, le patient voit l&apos;exercice et vous signale sa douleur.
+                {t("comparisonBody2")}
               </p>
             </div>
           </div>
@@ -237,10 +239,10 @@ export default function Home() {
         <section className="mt-24 max-sm:mt-6 sm:mt-32 phone-land:mt-12 phone-land:grid phone-land:grid-cols-[1fr_3fr] phone-land:items-center phone-land:gap-5">
           <div>
             <h2 className="font-display max-w-2xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-              Des exercices que vos patients comprennent du premier coup.
+              {t("showcaseTitle")}
             </h2>
             <p className="mt-3 max-w-xl leading-relaxed text-slate-600 sm:short:mt-1 phone-land:hidden">
-              292 mouvements dessinés et animés, et les exercices clés filmés par un kiné.
+              {t("showcaseBody")}
             </p>
           </div>
           {/* Pas de FitToViewport : le bandeau a déjà une hauteur qui tient
@@ -255,9 +257,9 @@ export default function Home() {
         <Reveal className="max-sm:order-[-1]">
         <section className="mt-24 sm:mt-32 phone-land:mt-12 phone-land:grid phone-land:grid-cols-[1fr_3fr] phone-land:items-center phone-land:gap-5">
           <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-            Utilisé au cabinet,
+            {t("testimonialsTitle1")}
             <br className="sm:hidden" />{" "}
-            et surtout à la maison
+            {t("testimonialsTitle2")}
           </h2>
           <FitToViewport>
             <Testimonials />
@@ -278,7 +280,7 @@ export default function Home() {
               2026-10-28 (Philippe) : les tarifs juste en dessous donnaient déjà
               toutes ses informations ; seule sa question d'accroche est gardée. */}
           <h2 className="font-display mx-auto max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-            «&nbsp;Et moi, comment je suis payé&nbsp;?&nbsp;»
+            {t("pricingTitle")}
           </h2>
 
           {/* Paragraphe d'intro retiré : KinePlans dit déjà la même chose
@@ -294,7 +296,7 @@ export default function Home() {
         <section id="faq" className="mx-auto mt-24 max-w-2xl scroll-mt-28 sm:mt-32 phone-land:mt-12 phone-land:grid phone-land:max-w-none phone-land:grid-cols-[1fr_2fr] phone-land:items-center phone-land:gap-5">
           <div>
             <h2 className="font-display text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl phone-land:text-xl">
-              Questions fréquentes
+              {t("faqTitle")}
             </h2>
           </div>
           <div className="mt-8 sm:short:mt-4 phone-land:mt-0">
@@ -310,15 +312,13 @@ export default function Home() {
             {/* Avant le lancement (lib/launchFlags.ts) : ce bloc ne propose que la
                 liste d'attente. Après : le texte et les boutons d'inscription. */}
             <h2 className="font-display mx-auto max-w-xl text-3xl font-semibold leading-tight text-white sm:text-4xl phone-land:text-2xl">
-              {SIGNUPS_OPEN ? "Essayez avec un seul patient." : "Soyez prévenu du lancement."}
+              {SIGNUPS_OPEN ? t("finalTitleOpen") : t("finalTitleWaitlist")}
             </h2>
             <p className="mx-auto mt-4 max-w-md leading-relaxed text-slate-300 sm:short:mt-2 sm:short:text-sm">
-              {SIGNUPS_OPEN
-                ? "Créez votre compte, composez un premier programme, invitez un patient. Vous verrez dès la première semaine si ça change vos consultations."
-                : "EasyPhysio est en phase de test et ouvre bientôt. Laissez votre e-mail : nous vous écrivons dès que vous pouvez créer votre compte et inviter vos premiers patients."}
+              {SIGNUPS_OPEN ? t("finalBodyOpen") : t("finalBodyWaitlist")}
             </p>
             <p className="mt-6 text-sm font-medium text-blue-300 sm:short:hidden phone-land:mt-3">
-              Vous composez le programme et vous l&apos;ajustez ; l&apos;app ne le modifie pas à votre place.
+              {t("finalNote")}
             </p>
             {SIGNUPS_OPEN && (
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:short:mt-5 phone-land:mt-4">
@@ -326,14 +326,14 @@ export default function Home() {
                 href="/signup/kine"
                 className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-6 py-3 font-medium text-slate-900 shadow-sm transition hover:bg-slate-100 active:scale-95"
               >
-                Créer un compte praticien
+                {t("createKineAccount")}
                 <ArrowRight className="h-4 w-4" strokeWidth={2} />
               </Link>
               <Link
                 href="/login"
                 className="inline-flex items-center justify-center font-medium text-slate-300 underline-offset-4 transition hover:text-white hover:underline"
               >
-                Se connecter
+                {t("signIn")}
               </Link>
             </div>
             )}
@@ -346,9 +346,9 @@ export default function Home() {
               <div className="mx-auto mt-8 max-w-md sm:short:mt-5 phone-land:mt-4">
                 <WaitlistForm />
                 <p className="mt-5 text-sm text-slate-400">
-                  Vous avez déjà un compte&nbsp;?{" "}
+                  {t("haveAccount")}{" "}
                   <Link href="/login" className="font-medium text-white underline-offset-4 hover:underline">
-                    Se connecter
+                    {t("signIn")}
                   </Link>
                 </p>
               </div>

@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 import HistoriqueDetailView from "./HistoriqueDetailView";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
@@ -23,7 +26,8 @@ export default async function HistoriqueDetailPage({
   // Ouvert depuis la frise de l'accueil (components/WeekProgramme.tsx,
   // « ?depuis=accueil ») : le lien retour y ramène ; sinon, à l'historique.
   const { depuis } = await searchParams;
-  const back = depuis === "accueil" ? { href: "/patient", label: "Accueil" } : undefined;
+  const tNav = await getTranslations("patient.nav");
+  const back = depuis === "accueil" ? { href: "/patient", label: tNav("home") } : undefined;
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
@@ -58,17 +62,19 @@ export default async function HistoriqueDetailPage({
   // Séance enregistrée avec son suivi par exercice : la liste vient de là
   // (ce qui a vraiment été proposé ce jour-là). Séance plus ancienne, sans
   // suivi : la liste actuelle de la séance, tout coché, comme avant.
+  const tc = await getTranslations("patient.common");
+  const locale = (await getLocale()) as Locale;
   const exercises =
     resultRows && resultRows.length > 0
       ? resultRows.map((r) => ({ name: r.exercise_name as string, skipped: r.status === "skipped" }))
       : [...(log.workouts?.workout_exercises ?? [])]
           .sort((a, b) => a.position - b.position)
-          .map((we) => ({ name: we.exercises?.name ?? "Exercice", skipped: false }));
+          .map((we) => ({ name: we.exercises?.name ?? tc("exercise"), skipped: false }));
 
   return (
     <HistoriqueDetailView
-      name={log.workouts?.name ?? "Séance"}
-      dateLabel={new Date(log.completed_at).toLocaleString("fr-FR", {
+      name={log.workouts?.name ?? tc("session")}
+      dateLabel={new Date(log.completed_at).toLocaleString(intlTag(locale), {
         weekday: "long",
         day: "numeric",
         month: "long",

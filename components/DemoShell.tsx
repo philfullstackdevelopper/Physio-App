@@ -24,32 +24,20 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftRight, Check, LogOut, Sparkles, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { track } from "@/lib/analytics/track";
 import { DemoHrefContext, DemoModeContext } from "@/components/DemoContext";
 
 type Side = "kine" | "patient";
 
 // Parcours conseillé, dans l'ordre. `ecran` = paramètre de /demo/<side>.
-const TOUR: Record<Side, { ecran: string; title: string; hint: string }[]> = {
-  kine: [
-    { ecran: "accueil", title: "Tableau de bord", hint: "Qui va bien, qui est à surveiller." },
-    { ecran: "patients", title: "Mes patients", hint: "Toute votre patientèle, triée." },
-    { ecran: "fiche", title: "La fiche d'un patient", hint: "Sa frise semaine par semaine. Essayez « Ajuster / changer la séance »." },
-    { ecran: "revenus", title: "Suivi & facturation", hint: "Vos patients abonnés et vos honoraires : 6 € par mois et par patient." },
-    { ecran: "seances", title: "Mes séances", hint: "Vos séances et la bibliothèque d'exercices." },
-    { ecran: "exercices", title: "Mes exercices", hint: "Les exercices filmés. Essayez « Créer un exercice »." },
-    { ecran: "messages", title: "Messages", hint: "Vos échanges avec les patients." },
-  ],
-  patient: [
-    { ecran: "accueil", title: "Accueil", hint: "Le programme de la semaine en un coup d'œil." },
-    // Ancienne étape « La séance du jour » : la page /patient/seance-du-jour
-    // n'existe plus, le parcours montre la vraie séance guidée (Philippe,
-    // 2026-11-06 : audit, on allège).
-    { ecran: "seance", title: "La séance guidée", hint: "Les exercices guidés, un par un." },
-    { ecran: "progres", title: "Mes progrès", hint: "La frise et l'évolution de la douleur." },
-    { ecran: "messages", title: "Messages", hint: "Écrire à son kiné." },
-    { ecran: "suivi", title: "L'abonnement", hint: "10 jours d'essai, puis l'accès à l'appli et le programme de son kiné." },
-  ],
+// Titre et phrase d'aide : demo.shell.tour.<side>.<ecran>.title / .hint.
+const TOUR: Record<Side, string[]> = {
+  kine: ["accueil", "patients", "fiche", "revenus", "seances", "exercices", "messages"],
+  // Ancienne étape « La séance du jour » : la page /patient/seance-du-jour
+  // n'existe plus, le parcours montre la vraie séance guidée (Philippe,
+  // 2026-11-06 : audit, on allège).
+  patient: ["accueil", "seance", "progres", "messages", "suivi"],
 };
 
 /** Écran de démo kiné correspondant à une adresse de l'appli, ou null. Garde
@@ -116,12 +104,13 @@ const mapHref = (href: string) => {
 };
 
 export default function DemoShell({ side, children }: { side: Side; children: React.ReactNode }) {
+  const t = useTranslations("demo.shell");
   const router = useRouter();
   const current = useSearchParams().get("ecran") ?? "accueil";
   useEffect(() => {
     track("demo_ouverte", { espace: side });
   }, [side]);
-  const [toast, setToast] = useState<string | null>("Démo avec des données fictives : rien n'est enregistré.");
+  const [toast, setToast] = useState<string | null>(() => t("toastIntro"));
   // Guide ouvert d'office sur ordinateur (≥ 640 px), une fois par espace et
   // par visite ; replié sur téléphone, où il cacherait l'écran.
   const [menuOpen, setMenuOpen] = useState(false);
@@ -143,7 +132,11 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
     () => window.self !== window.top,
     () => false,
   );
-  const steps = TOUR[side];
+  const steps = TOUR[side].map((ecran) => ({
+    ecran,
+    title: t(`tour.${side}.${ecran}.title`),
+    hint: t(`tour.${side}.${ecran}.hint`),
+  }));
   const stepIndex = steps.findIndex((s) => s.ecran === current);
   const timer = useRef<number | null>(null);
 
@@ -176,7 +169,7 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
         if (window.self !== window.top && !url.pathname.startsWith("/demo")) {
           e.preventDefault();
           e.stopImmediatePropagation();
-          show("Cet écran n'est pas disponible dans la démo.");
+          show(t("unavailable"));
         }
         return;
       }
@@ -184,12 +177,12 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
       e.stopImmediatePropagation();
       const target = demoHref(url);
       if (target) router.push(target);
-      else show("Cet écran n'est pas disponible dans la démo.");
+      else show(t("unavailable"));
     };
     const onSubmit = (e: Event) => {
       e.preventDefault();
       e.stopImmediatePropagation();
-      show("Dans la démo, rien n'est enregistré.");
+      show(t("nothingSaved"));
     };
     window.addEventListener("click", onClick, true);
     window.addEventListener("submit", onSubmit, true);
@@ -197,7 +190,7 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
       window.removeEventListener("click", onClick, true);
       window.removeEventListener("submit", onSubmit, true);
     };
-  }, [router]);
+  }, [router, t]);
 
   const other: Side = side === "kine" ? "patient" : "kine";
 
@@ -212,12 +205,12 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
           <div className="mb-2 max-h-[calc(100dvh-5.5rem)] w-72 overflow-y-auto rounded-2xl bg-surface text-sm shadow-xl ring-1 ring-line max-sm:w-[calc(100vw-1.5rem)]">
             <div className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">
               <div>
-                <p className="font-semibold text-ink">Guide de la démo</p>
+                <p className="font-semibold text-ink">{t("guideTitle")}</p>
                 <p className="mt-0.5 text-xs leading-snug text-muted">
-                  Espace {side === "kine" ? "kiné" : "patient"} · données fictives, rien n&apos;est enregistré.
+                  {t("guideSubtitle", { side })}
                 </p>
               </div>
-              <button type="button" onClick={() => setMenuOpen(false)} aria-label="Replier le guide" className="rounded-full p-1 text-muted hover:bg-app-bg hover:text-ink">
+              <button type="button" onClick={() => setMenuOpen(false)} aria-label={t("collapseGuide")} className="rounded-full p-1 text-muted hover:bg-app-bg hover:text-ink">
                 <X className="h-4 w-4" strokeWidth={2} />
               </button>
             </div>
@@ -254,7 +247,7 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
                   href={`/demo/${side}?ecran=${steps[stepIndex + 1].ecran}`}
                   className="flex w-full items-center justify-center rounded-full bg-brand py-2 text-sm font-semibold text-white hover:bg-brand-dark"
                 >
-                  Écran suivant : {steps[stepIndex + 1].title}
+                  {t("nextScreen", { title: steps[stepIndex + 1].title })}
                 </Link>
               </div>
             )}
@@ -265,11 +258,11 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
                 className="flex items-center gap-2.5 px-4 py-2.5 font-medium text-ink hover:bg-app-bg"
               >
                 <ArrowLeftRight className="h-4 w-4 text-brand" strokeWidth={1.75} />
-                Voir l&apos;espace {other === "kine" ? "kiné" : "patient"}
+                {t("seeOtherSide", { side: other })}
               </Link>
               <Link href="/" className="flex items-center gap-2.5 px-4 py-2.5 font-medium text-ink hover:bg-app-bg">
                 <LogOut className="h-4 w-4 text-muted" strokeWidth={1.75} />
-                Quitter la démo
+                {t("exit")}
               </Link>
             </div>
           </div>
@@ -281,7 +274,7 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
           className="ml-auto flex items-center gap-1.5 rounded-full bg-ink px-3.5 py-2 text-xs font-semibold text-white shadow-lg"
         >
           {menuOpen ? <X className="h-3.5 w-3.5" strokeWidth={2} /> : <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />}
-          {menuOpen ? "Fermer le guide" : `Guide de la démo · ${side === "kine" ? "kiné" : "patient"}`}
+          {menuOpen ? t("closeGuide") : t("guideButton", { side })}
         </button>
       </div>
 

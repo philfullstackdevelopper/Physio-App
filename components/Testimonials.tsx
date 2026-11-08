@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslations } from "next-intl";
 import {
   ChevronLeft,
   ChevronRight,
@@ -23,56 +24,48 @@ import {
 
 type Voice = "kine" | "patient";
 
+// Citation, rôle et phrase-clé : messages/<langue>/home.json
+// (home.testimonials.<id>.quote / role / highlight).
 const TESTIMONIALS: {
-  quote: string;
+  id: "julien" | "claire" | "nadia";
   name: string;
   photo: string;
-  role: string;
   city: string;
   voice: Voice;
-  highlight: string;
 }[] = [
   {
-    quote:
-      "Je vois qui a fait ses exercices avant même d'ouvrir le dossier. Je commence la consultation par ce qui s'est passé à la maison.",
+    id: "julien",
     name: "Julien M.",
     photo: "/testimonials/julien.png",
-    role: "Kinésithérapeute",
     city: "Lyon",
     voice: "kine",
-    highlight: "Moins de temps passé à reconstituer la semaine du patient.",
   },
   {
-    quote:
-      "Je savais enfin quoi faire le soir, et dans quel ordre. La démonstration m'évite de deviner le mouvement entre deux rendez-vous.",
+    id: "claire",
     name: "Claire D.",
     photo: "/testimonials/claire.png",
-    role: "Patiente, rééducation épaule",
     city: "Villeurbanne",
     voice: "patient",
-    highlight: "Moins d'hésitation entre deux séances.",
   },
   {
-    quote:
-      "Les retours de douleur changent tout : j'ajuste le programme le jour même au lieu d'attendre la séance suivante.",
+    id: "nadia",
     name: "Nadia B.",
     photo: "/testimonials/nadia.png",
-    role: "Kinésithérapeute",
     city: "Bordeaux",
     voice: "kine",
-    highlight: "Des ajustements le jour même, pas la semaine suivante.",
   },
 ];
 
 // « Soutien kiné 7j/7 » retiré le 2026-10-10 : ce service n'existe pas.
-const TRUST = ["Données hébergées en France", "Kinés vérifiés par leur numéro RPPS", "Données jamais revendues"];
+const TRUST = ["trust1", "trust2", "trust3"] as const;
 
 function Avatar({ src, name, size = "sm" }: { src: string; name: string; size?: "sm" | "lg" }) {
+  const tr = useTranslations("home.testimonials");
   return (
     // eslint-disable-next-line @next/next/no-img-element -- small static local PNG
     <img
       src={src}
-      alt={`Portrait de ${name}`}
+      alt={tr("portrait", { name })}
       width={size === "lg" ? 80 : 56}
       height={size === "lg" ? 80 : 56}
       className={`shrink-0 rounded-full object-cover ring-4 ring-white ${
@@ -83,12 +76,13 @@ function Avatar({ src, name, size = "sm" }: { src: string; name: string; size?: 
 }
 
 function Identity({ t, size = "sm" }: { t: (typeof TESTIMONIALS)[number]; size?: "sm" | "lg" }) {
+  const tr = useTranslations("home.testimonials");
   return (
     <div className="flex items-center gap-4">
       <Avatar src={t.photo} name={t.name} size={size} />
       <div>
         <p className={`font-semibold text-slate-900 ${size === "lg" ? "text-xl" : "text-base"}`}>{t.name}</p>
-        <p className="text-sm text-slate-500">{t.role}</p>
+        <p className="text-sm text-slate-500">{tr(`${t.id}.role`)}</p>
         <p className="mt-0.5 flex items-center gap-1 text-sm text-blue-600">
           <MapPin className="h-3.5 w-3.5" strokeWidth={2} /> {t.city}
         </p>
@@ -104,9 +98,10 @@ function Toggle({
   value: Voice;
   onChange: (v: Voice) => void;
 }) {
+  const tr = useTranslations("home.testimonials");
   const opts: { v: Voice; label: string; icon: LucideIcon }[] = [
-    { v: "kine", label: "Kinés", icon: User },
-    { v: "patient", label: "Patients", icon: Users },
+    { v: "kine", label: tr("kines"), icon: User },
+    { v: "patient", label: tr("patients"), icon: Users },
   ];
   return (
     <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
@@ -128,6 +123,7 @@ function Toggle({
 }
 
 export default function Testimonials() {
+  const tr = useTranslations("home.testimonials");
   const [voice, setVoice] = useState<Voice>("kine");
   const [index, setIndex] = useState(0);
 
@@ -161,14 +157,14 @@ export default function Testimonials() {
               dit. À retirer dès qu'ils sont remplacés par de vrais retours,
               avec l'accord écrit des personnes (2026-10-10). */}
           <span className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-500">
-            Témoignages illustratifs
+            {tr("illustrative")}
           </span>
         </div>
         <div className="flex items-center gap-3 max-sm:mx-auto">
           <button
             type="button"
             onClick={() => step(-1)}
-            aria-label="Témoignage précédent"
+            aria-label={tr("previous")}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             <ChevronLeft className="h-4 w-4" strokeWidth={2} />
@@ -179,7 +175,7 @@ export default function Testimonials() {
           <button
             type="button"
             onClick={() => step(1)}
-            aria-label="Témoignage suivant"
+            aria-label={tr("next")}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
@@ -201,13 +197,13 @@ export default function Testimonials() {
               <Identity t={featured} size="lg" />
               <Quote className="mt-4 h-6 w-6 text-blue-600 sm:mt-6 sm:short:mt-3" strokeWidth={2} fill="currentColor" />
               <blockquote className="font-display mt-3 max-w-2xl text-xl leading-snug text-slate-900 sm:text-[1.7rem] sm:short:text-[1.4rem]">
-                {featured.quote}
+                {tr(`${featured.id}.quote`)}
               </blockquote>
               <figcaption className="mt-4 sm:mt-6 sm:short:mt-4 inline-flex items-center gap-3 rounded-xl bg-blue-50/70 px-4 py-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-blue-600">
                   <TrendingUp className="h-4 w-4" strokeWidth={2} />
                 </span>
-                <span className="text-sm text-slate-700">{featured.highlight}</span>
+                <span className="text-sm text-slate-700">{tr(`${featured.id}.highlight`)}</span>
               </figcaption>
             </div>
           </motion.figure>
@@ -225,21 +221,21 @@ export default function Testimonials() {
               <Identity t={t} />
               <blockquote className="mt-4 sm:short:mt-2 flex gap-2 text-sm leading-relaxed text-slate-700">
                 <Quote className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" strokeWidth={2} fill="currentColor" />
-                <span>{t.quote}</span>
+                <span>{tr(`${t.id}.quote`)}</span>
               </blockquote>
             </figure>
           ))}
         </div>
       </div>
 
-      <p className="mt-3 text-center text-xs text-slate-400 sm:hidden">Témoignages illustratifs</p>
+      <p className="mt-3 text-center text-xs text-slate-400 sm:hidden">{tr("illustrative")}</p>
 
       {/* Bandeau secondaire, masqué sur écran peu haut pour que la section tienne. */}
       <div className="mt-8 text-center sm:short:hidden">
         <ul className=" flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
           {TRUST.map((label) => (
             <li key={label} className="flex items-center gap-2 text-sm text-slate-700">
-              <CircleCheck className="h-4 w-4 text-blue-600" strokeWidth={2} /> {label}
+              <CircleCheck className="h-4 w-4 text-blue-600" strokeWidth={2} /> {tr(label)}
             </li>
           ))}
         </ul>

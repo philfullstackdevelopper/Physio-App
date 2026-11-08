@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { notifyNewMessage } from "@/lib/push/notify";
+import { getTranslations } from "next-intl/server";
+import { getLibI18n } from "@/lib/dashboard/libI18n";
 
 // Adresse de retour vers la boîte de réception, en gardant la recherche du
 // kiné (audit du 2026-10-08 : elle se perdait).
@@ -27,9 +29,11 @@ export async function sendInboxMessage(formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
 
   const fail = (msg: string): never => redirect(inboxUrl(formData, patientId, { error: msg }));
+  const t = await getTranslations("dashboard.patientActions");
+  const { t: tLib } = await getLibI18n();
 
-  if (!patientId) fail("Patient introuvable.");
-  if (!body) fail("Écrivez un message.");
+  if (!patientId) fail(t("notFound"));
+  if (!body) fail(t("emptyMessage"));
 
   const { error } = await supabase.from("patient_messages").insert({
     patient_id: patientId,
@@ -37,7 +41,7 @@ export async function sendInboxMessage(formData: FormData) {
     sender: "instructor",
     body,
   });
-  if (error) fail(friendlyDbError(error));
+  if (error) fail(friendlyDbError(error, undefined, tLib));
   await notifyNewMessage({ patientId, instructorId: user.id, sender: "instructor" });
 
   revalidatePath("/dashboard/messages");

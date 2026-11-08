@@ -6,9 +6,12 @@
 // Dans une fenêtre pour que la fiche tienne toujours sur un écran.
 
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { Table2, X } from "lucide-react";
 import type { ExerciseGrid, GridCell } from "@/lib/dashboard/exerciseGrid";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 
 function cellClass(c: GridCell): string {
   if (!c) return "bg-app-bg text-muted/60";
@@ -23,6 +26,8 @@ function cellClass(c: GridCell): string {
 const TREND_CLASS = { up: "text-danger", down: "text-ok", skip: "text-warn", flat: "text-muted", new: "text-muted" } as const;
 
 export default function ExerciseGridButton({ grid, patientName }: { grid: ExerciseGrid; patientName: string }) {
+  const t = useTranslations("exercise.gridButton");
+  const locale = useLocale() as Locale;
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
@@ -32,7 +37,7 @@ export default function ExerciseGridButton({ grid, patientName }: { grid: Exerci
   }, [open]);
 
   if (grid.sessions.length === 0) return null;
-  const fmt = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "numeric" });
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString(intlTag(locale), { day: "numeric", month: "numeric" });
 
   return (
     <>
@@ -42,7 +47,7 @@ export default function ExerciseGridButton({ grid, patientName }: { grid: Exerci
         className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink hover:bg-app-bg max-sm:px-2 max-sm:py-0.5 max-sm:text-[11px]"
       >
         <Table2 className="h-3.5 w-3.5" strokeWidth={2} />
-        Suivi par exercice
+        {t("button")}
       </button>
       {open &&
         createPortal(
@@ -50,16 +55,16 @@ export default function ExerciseGridButton({ grid, patientName }: { grid: Exerci
             <div
               role="dialog"
               aria-modal="true"
-              aria-label={`Suivi par exercice — ${patientName}`}
+              aria-label={t("dialogAria", { name: patientName })}
               onClick={(e) => e.stopPropagation()}
               className="flex max-h-[90vh] w-full max-w-5xl flex-col rounded-2xl bg-surface shadow-xl max-sm:h-dvh max-sm:max-h-none max-sm:rounded-none"
             >
               <div className="flex items-center gap-3 border-b border-line px-6 py-4 max-sm:px-4">
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-lg font-semibold text-ink">Suivi par exercice</h2>
-                  <p className="text-xs text-muted">Douleur donnée par {patientName} à chaque séance ({grid.sessions.length} dernière{grid.sessions.length > 1 ? "s" : ""})</p>
+                  <h2 className="text-lg font-semibold text-ink">{t("title")}</h2>
+                  <p className="text-xs text-muted">{t("subtitle", { name: patientName, count: grid.sessions.length })}</p>
                 </div>
-                <button type="button" aria-label="Fermer" onClick={() => setOpen(false)} className="rounded-full p-1.5 text-muted hover:bg-app-bg hover:text-ink">
+                <button type="button" aria-label={t("close")} onClick={() => setOpen(false)} className="rounded-full p-1.5 text-muted hover:bg-app-bg hover:text-ink">
                   <X className="h-5 w-5" strokeWidth={1.75} />
                 </button>
               </div>
@@ -68,13 +73,13 @@ export default function ExerciseGridButton({ grid, patientName }: { grid: Exerci
                   className="grid min-w-[640px] items-center gap-1.5"
                   style={{ gridTemplateColumns: `minmax(180px, 1.6fr) repeat(${grid.sessions.length}, minmax(40px, 1fr)) 130px` }}
                 >
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Exercice</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{t("exercise")}</span>
                   {grid.sessions.map((s, i) => (
                     <span key={s.logId} className={`text-center text-[11px] tabular-nums ${i === grid.sessions.length - 1 ? "font-bold text-ink" : "text-muted"}`}>
                       {fmt(s.completedAt)}
                     </span>
                   ))}
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Tendance</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{t("trend")}</span>
 
                   {grid.rows.map((row) => (
                     <div key={row.name} className="contents">
@@ -83,9 +88,9 @@ export default function ExerciseGridButton({ grid, patientName }: { grid: Exerci
                         <span
                           key={i}
                           className={`flex h-8 items-center justify-center rounded-lg text-xs font-semibold tabular-nums ${cellClass(c)}`}
-                          title={c ? (c.status === "skipped" ? "Passé" : c.pain != null ? `Douleur ${c.pain}/10` : "Fait, douleur non donnée") : "Pas dans cette séance"}
+                          title={c ? (c.status === "skipped" ? t("cellSkipped") : c.pain != null ? t("cellPain", { pain: c.pain }) : t("cellNoPain")) : t("cellNone")}
                         >
-                          {c ? (c.status === "skipped" ? "P" : c.pain ?? "✓") : "—"}
+                          {c ? (c.status === "skipped" ? t("skippedLetter") : c.pain ?? "✓") : "—"}
                         </span>
                       ))}
                       <span className={`text-xs font-semibold ${TREND_CLASS[row.trend.tone]}`}>{row.trend.label}</span>
@@ -94,11 +99,11 @@ export default function ExerciseGridButton({ grid, patientName }: { grid: Exerci
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-3 border-t border-line px-6 py-3 text-xs text-muted max-sm:px-4">
-                <span className="flex items-center gap-1.5"><span className="h-3 w-5 rounded bg-brand-soft" />1 à 3</span>
-                <span className="flex items-center gap-1.5"><span className="h-3 w-5 rounded bg-warn-soft" />4 à 5</span>
-                <span className="flex items-center gap-1.5"><span className="h-3 w-5 rounded bg-danger-soft" />6 et plus</span>
-                <span className="flex items-center gap-1.5"><span className="flex h-3 w-5 items-center justify-center rounded border border-dashed border-warn text-[9px] text-warn">P</span>passé</span>
-                <span className="ml-auto">« Ajuster la séance » propose des variantes plus faciles ou plus difficiles.</span>
+                <span className="flex items-center gap-1.5"><span className="h-3 w-5 rounded bg-brand-soft" />{t("legendLow")}</span>
+                <span className="flex items-center gap-1.5"><span className="h-3 w-5 rounded bg-warn-soft" />{t("legendMid")}</span>
+                <span className="flex items-center gap-1.5"><span className="h-3 w-5 rounded bg-danger-soft" />{t("legendHigh")}</span>
+                <span className="flex items-center gap-1.5"><span className="flex h-3 w-5 items-center justify-center rounded border border-dashed border-warn text-[9px] text-warn">{t("skippedLetter")}</span>{t("legendSkipped")}</span>
+                <span className="ml-auto">{t("legendHint")}</span>
               </div>
             </div>
           </div>,

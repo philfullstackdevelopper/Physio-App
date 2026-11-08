@@ -1,60 +1,69 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
-import { HIGHEST_PLATFORM_CENTS, LOWEST_PLATFORM_CENTS, KINE_FOLLOW_UP_CENTS, TRIAL_DAYS, eurosFR, offersSummaryFR } from "@/lib/billing/patientPlans";
+import {
+  HIGHEST_PLATFORM_CENTS,
+  LOWEST_PLATFORM_CENTS,
+  KINE_FOLLOW_UP_CENTS,
+  PLATFORM_OFFERS,
+  TRIAL_DAYS,
+  monthlyTotalCents,
+} from "@/lib/billing/patientPlans";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 
 // Modèle définitif (2026-11-04) : lib/billing/patientPlans.ts.
 // Audit du 2026-11-06 (Philippe : on allège) : question « Je suis kiné : combien
 // ça me coûte… » retirée (le bloc Tarifs de l'accueil y répond), plus de
 // « validé par notre équipe » (validation automatique depuis le 2026-11-02) ni
 // de « les vidéos arrivent » (les exercices proposés sont filmés).
-const PRICE_TEXT = `Après ${TRIAL_DAYS} jours offerts, vous choisissez une offre : ${offersSummaryFR()} par mois. Chaque total réunit l'accès à l'appli (${eurosFR(LOWEST_PLATFORM_CENTS)} € à ${eurosFR(HIGHEST_PLATFORM_CENTS)} € selon l'engagement), payé chaque mois à EasyPhysio, et ${eurosFR(KINE_FOLLOW_UP_CENTS)} € pour le programme de votre kiné, payés directement à lui, seulement les mois où il met à jour votre programme`;
-
-const QUESTIONS = [
-  {
-    question: "Comment reprendre le sport sans risquer une rechute ?",
-    answer:
-      "Votre programme avance par étapes définies par votre kiné : on ne passe à la suivante que lorsque la précédente est acquise. Si vous signalez une douleur, votre kiné le voit et peut adapter le programme.",
-  },
-  {
-    question: "Puis-je faire mes exercices seul(e), sans risque ?",
-    answer:
-      "Chaque exercice est montré en vidéo ou en dessin animé, avec des consignes écrites. Pendant la séance, un rappel vous dit de vous arrêter en cas de douleur vive. À la fin, vous notez votre douleur, et votre kiné la voit.",
-  },
-  {
-    question: "Comment mon kiné peut-il me suivre à distance ?",
-    answer:
-      "Il voit votre assiduité, vos séances complétées et vos retours de douleur ou de difficulté au fil du temps, et ajuste votre programme entre deux rendez-vous en cabinet.",
-  },
-  {
-    question: "Faut-il du matériel ou une caméra chez moi ?",
-    answer:
-      "Non, un téléphone suffit : les exercices se suivent à l'écran, avec le dessin et les consignes sous les yeux. Aucune caméra ni montre connectée. Si un exercice demande un objet (élastique, chaise), votre kiné le sait d'après ce que vous avez déclaré.",
-  },
-  {
-    question: "Que deviennent mes données de santé ?",
-    answer:
-      "Elles servent uniquement à votre suivi : vos séances et vos ressentis sont visibles par vous et par votre praticien, jamais revendus ni utilisés à des fins publicitaires.",
-  },
-  {
-    question: "Combien coûte l'application pour moi, patient ?",
-    answer: `${PRICE_TEXT}. Vous recevez deux factures distinctes, et vous pouvez résilier à tout moment depuis l'appli. Acte non remboursé par l'Assurance Maladie.`,
-  },
-  {
-    question: "Je suis praticien : comment essayer avec mes patients ?",
-    // Avant le lancement (lib/launchFlags.ts), la première phrase annonce la
-    // liste d'attente ; la suite décrit ce qui se passera à l'ouverture.
-    answer:
-      (SIGNUPS_OPEN ? "" : "EasyPhysio est en phase de test : inscrivez-vous sur la liste d'attente en bas de cette page, nous vous écrivons à l'ouverture. Ensuite, ") +
-      (SIGNUPS_OPEN ? "Créez" : "créez") +
-      " votre compte praticien, composez un premier programme depuis la bibliothèque d'exercices, connectez votre compte Stripe pour être payé directement par vos patients, puis invitez-les. Ils recevront leur accès sans rien installer d'autre que l'app sur leur téléphone.",
-  },
-];
+// Questions et réponses : messages/<langue>/home.json (home.faq.q1…q7).
+function useQuestions() {
+  const t = useTranslations("home.faq");
+  const tag = intlTag(useLocale() as Locale);
+  // fr-FR : identique à eurosFR de patientPlans.
+  const euros = (cents: number) =>
+    (cents / 100).toLocaleString(tag, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Même phrase que offersSummaryFR (lib/billing/patientPlans.ts), dans la langue choisie.
+  const parts = PLATFORM_OFFERS.map((o, i) => {
+    const total = euros(monthlyTotalCents(o));
+    if (!o.commitmentMonths) return t("offerNoCommitment", { total });
+    return i === 1
+      ? t("offerCommitmentFirst", { total, months: o.commitmentMonths })
+      : t("offerCommitment", { total, months: o.commitmentMonths });
+  });
+  const offers = t("offersJoin", { head: parts.slice(0, -1).join(", "), last: parts[parts.length - 1] });
+  return [
+    { question: t("q1"), answer: t("a1") },
+    { question: t("q2"), answer: t("a2") },
+    { question: t("q3"), answer: t("a3") },
+    { question: t("q4"), answer: t("a4") },
+    { question: t("q5"), answer: t("a5") },
+    {
+      question: t("q6"),
+      answer: t("a6", {
+        trialDays: TRIAL_DAYS,
+        offers,
+        low: euros(LOWEST_PLATFORM_CENTS),
+        high: euros(HIGHEST_PLATFORM_CENTS),
+        kine: euros(KINE_FOLLOW_UP_CENTS),
+      }),
+    },
+    {
+      question: t("q7"),
+      // Avant le lancement (lib/launchFlags.ts), la première phrase annonce la
+      // liste d'attente ; la suite décrit ce qui se passera à l'ouverture.
+      answer: SIGNUPS_OPEN ? t("a7Open") : t("a7Waitlist"),
+    },
+  ];
+}
 
 export default function FaqSection() {
+  const QUESTIONS = useQuestions();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (

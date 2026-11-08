@@ -1,7 +1,32 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getInstructor } from "@/lib/dashboard/instructor";
+import { cookies } from "next/headers";
+import { auth } from "@clerk/nextjs/server";
+import { LOCALE_COOKIE, isLocale, type Locale } from "@/i18n/locales";
+import { getUserLocale, setUserLocale } from "@/lib/db/locale";
 import ClientRedirect from "./ClientRedirect";
+
+// Langue du compte ↔ cookie de l'appareil, juste après la connexion :
+// - le compte a déjà une langue → elle s'applique à cet appareil (le cookie
+//   est réécrit côté navigateur par ClientRedirect) ;
+// - pas encore de langue (premier passage après l'inscription) → on garde
+//   celle choisie sur l'accueil / l'inscription (cookie), ou le français.
+// Un échec (migration 0084 absente…) ne bloque jamais la connexion.
+async function syncLocale(): Promise<Locale | null> {
+  try {
+    const { userId } = await auth();
+    if (!userId) return null;
+    const stored = await getUserLocale(userId);
+    if (stored) return stored;
+    const fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;
+    await setUserLocale(userId, isLocale(fromCookie) ? fromCookie : "fr");
+    return null;
+  } catch (e) {
+    console.error("apres-connexion : langue non synchronisée", e);
+    return null;
+  }
+}
 
 // Single landing spot for the SignIn component's fallbackRedirectUrl — Clerk
 // doesn't know the role before sign-in completes, so every login lands here
@@ -42,5 +67,6 @@ export default async function AfterSignIn() {
       to = "/connection-error?next=/apres-connexion";
     }
   }
-  return <ClientRedirect to={to} />;
+  const locale = await syncLocale();
+  return <ClientRedirect to={to} locale={locale} />;
 }

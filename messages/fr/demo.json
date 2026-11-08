@@ -1,0 +1,380 @@
+{
+  "actionDisabled": "Aperçu : action désactivée.",
+  "meta": {
+    "entry": "Essayer la démo",
+    "kine": "Démo · espace kiné",
+    "patient": "Démo · espace patient",
+    "previewHome": "Aperçu Accueil patient",
+    "previewMessages": "Aperçu Messages patient",
+    "previewKine": "Aperçu tableau de bord kiné",
+    "previewPatient": "Aperçu écrans patient"
+  },
+  "entry": {
+    "homeAria": "Accueil EasyPhysio",
+    "space": "Espace",
+    "kineTitle": "kinésithérapeute",
+    "kineText": "Vos patients, la frise de chacun, l'ajustement d'une séance et les messages.",
+    "patientTitle": "patient·e",
+    "patientText": "Le programme de la semaine, la séance guidée et les progrès.",
+    "try": "Essayer",
+    "footer": "Démo avec des patients fictifs : pas de compte à créer, rien n'est enregistré.",
+    "back": "Retour à l'accueil"
+  },
+  "shell": {
+    "toastIntro": "Démo avec des données fictives : rien n'est enregistré.",
+    "unavailable": "Cet écran n'est pas disponible dans la démo.",
+    "nothingSaved": "Dans la démo, rien n'est enregistré.",
+    "guideTitle": "Guide de la démo",
+    "guideSubtitle": "Espace {side, select, kine {kiné} other {patient}} · données fictives, rien n'est enregistré.",
+    "collapseGuide": "Replier le guide",
+    "nextScreen": "Écran suivant : {title}",
+    "seeOtherSide": "Voir l'espace {side, select, kine {kiné} other {patient}}",
+    "exit": "Quitter la démo",
+    "closeGuide": "Fermer le guide",
+    "guideButton": "Guide de la démo · {side, select, kine {kiné} other {patient}}",
+    "tour": {
+      "kine": {
+        "accueil": {
+          "title": "Tableau de bord",
+          "hint": "Qui va bien, qui est à surveiller."
+        },
+        "patients": {
+          "title": "Mes patients",
+          "hint": "Toute votre patientèle, triée."
+        },
+        "fiche": {
+          "title": "La fiche d'un patient",
+          "hint": "Sa frise semaine par semaine. Essayez « Ajuster / changer la séance »."
+        },
+        "revenus": {
+          "title": "Suivi & facturation",
+          "hint": "Vos patients abonnés et vos honoraires : 6 € par mois et par patient."
+        },
+        "seances": {
+          "title": "Mes séances",
+          "hint": "Vos séances et la bibliothèque d'exercices."
+        },
+        "exercices": {
+          "title": "Mes exercices",
+          "hint": "Les exercices filmés. Essayez « Créer un exercice »."
+        },
+        "messages": {
+          "title": "Messages",
+          "hint": "Vos échanges avec les patients."
+        }
+      },
+      "patient": {
+        "accueil": {
+          "title": "Accueil",
+          "hint": "Le programme de la semaine en un coup d'œil."
+        },
+        "seance": {
+          "title": "La séance guidée",
+          "hint": "Les exercices guidés, un par un."
+        },
+        "progres": {
+          "title": "Mes progrès",
+          "hint": "La frise et l'évolution de la douleur."
+        },
+        "messages": {
+          "title": "Messages",
+          "hint": "Écrire à son kiné."
+        },
+        "suivi": {
+          "title": "L'abonnement",
+          "hint": "10 jours d'essai, puis l'accès à l'appli et le programme de son kiné."
+        }
+      }
+    }
+  },
+  "kinePreview": {
+    "iframeTitle": "Démo de l'espace kiné, à essayer",
+    "hint": "Touchez l'écran pour essayer : rien n'est enregistré."
+  },
+  "phone": {
+    "tabHome": "Accueil",
+    "tabProgress": "Progrès",
+    "tabMessages": "Messages",
+    "tabSettings": "Paramètres",
+    "hello": "Bonjour {name}",
+    "homeDate": "Mercredi 7 octobre",
+    "week": "Semaine {n}",
+    "workoutName": "Renforcement global, niveau 2",
+    "workoutSubtitle": "2 séances à réaliser · 20 minutes environ",
+    "sessionsCount": "1/3 séances",
+    "seeProgramme": "Voir mon programme",
+    "youAreHere": "Vous êtes ici",
+    "weekRange": "(5 oct. – 11 oct.)",
+    "sessionsDone": "Séances réalisées",
+    "dayLetters": "LMMJVSD",
+    "weekShort": "Sem",
+    "nextWeekStart": "(12 oct",
+    "myProgramme": "Mon programme",
+    "currentSession": "Séance en cours",
+    "workoutNameShort": "Renforcement global, niv. 2",
+    "thisWeek": "1 / 3 cette semaine · 20 min",
+    "yourExercises": "Vos exercices",
+    "startSession": "Démarrer cette séance",
+    "videoLabel": "Démonstration filmée : {name}",
+    "quit": "Quitter",
+    "exerciseN": "Exercice {n}",
+    "pallofInstructions": "Élastique attaché sur le côté : poussez les mains devant vous sans laisser le buste tourner, puis ramenez.",
+    "setsReps": "3 séries · 12 répétitions",
+    "doneExercise": "J'ai terminé cet exercice",
+    "exercises": {
+      "pallof": "Pallof press",
+      "bridge": "Pont fessier",
+      "coreBracing": "Gainage postural",
+      "quadruped": "Quadrupédie"
+    }
+  },
+  "journey": {
+    "captions": {
+      "list": "1. La liste des patients.",
+      "fiche": "2. La fiche de Marc.",
+      "week": "3. La semaine, jour par jour.",
+      "adjust": "4. Ajuster la séance.",
+      "done": "C'est fait.",
+      "painSignal": "Marc a signalé une douleur à 7/10 pendant sa dernière séance.",
+      "opensMarc": "Le kiné ouvre la fiche de Marc.",
+      "ficheIntro": "Douleur, adhérence, dernière séance, et son programme semaine par semaine.",
+      "weekRed": "La semaine en cours est en rouge : le kiné l'ouvre.",
+      "highPainWed": "Mercredi, douleur élevée pendant la séance.",
+      "clicksAdjust": "Le kiné clique sur « Ajuster / changer la séance ».",
+      "adjustIntro": "Un exercice à retirer, un autre à ajouter, pour Marc uniquement.",
+      "squatToRemove": "Le squat assisté était trop douloureux : il clique pour le retirer.",
+      "squatRemoved": "Le squat assisté était trop douloureux : retiré.",
+      "clickBridge": "Il clique sur « Pont fessier » pour l'ajouter à la place.",
+      "bridgeReplaces": "Le pont fessier remplace le squat assisté.",
+      "clickSave": "Le kiné clique sur « Enregistrer les modifications ».",
+      "notified": "Marc est prévenu et voit sa séance mise à jour dès sa prochaine connexion."
+    },
+    "exercises": {
+      "kneeExt": "Extension du genou assise",
+      "stepUp": "Montée de marche",
+      "squat": "Squat assisté",
+      "splitSquat": "Fente statique",
+      "bridge": "Pont fessier",
+      "hamCurl": "Extension ischio debout"
+    },
+    "rows": {
+      "gonarthrosis": "Gonarthrose",
+      "shoulderTendinopathy": "Tendinopathie de l'épaule",
+      "chronicLowBack": "Lombalgie chronique",
+      "ankleSprain": "Entorse de cheville",
+      "today": "Aujourd'hui",
+      "daysAgo4": "Il y a 4 jours",
+      "yesterday": "Hier",
+      "pain7": "Douleur signalée 7/10",
+      "lastSession4": "Dernière séance faite il y a 4 jours",
+      "upToDate": "À jour"
+    },
+    "sidebar": {
+      "dashboard": "Tableau de bord",
+      "patients": "Mes patients",
+      "messages": "Messages",
+      "sessions": "Mes séances",
+      "exercises": "Mes exercices",
+      "billing": "Suivi & facturation"
+    },
+    "physiotherapist": "Kinésithérapeute",
+    "exitDemo": "Quitter la démo",
+    "pain": "Douleur",
+    "painUp": "↑ 2 depuis la séance précédente",
+    "adherence": "Adhérence",
+    "good": "Bonne",
+    "lastSession": "Dernière séance",
+    "manage": "Gérer",
+    "days": {
+      "mon": "Lundi",
+      "tue": "Mardi",
+      "wed": "Mercredi",
+      "thu": "Jeudi",
+      "fri": "Vendredi",
+      "sat": "Samedi",
+      "sun": "Dimanche"
+    },
+    "dayLabels": {
+      "done": "Réalisée",
+      "notDone": "Non fait",
+      "highPain": "Douleur élevée"
+    },
+    "weekRange": "{from} – {to} sept.",
+    "dateSept": "{d} sept.",
+    "bodyParts": {
+      "knee": "Genou",
+      "hip": "Hanche",
+      "ankle": "Cheville",
+      "back": "Dos",
+      "shoulder": "Épaule",
+      "neck": "Cou"
+    },
+    "thisWeek": "Cette semaine",
+    "weekN": "Semaine {n}",
+    "badge": "Démo interactive",
+    "patientsSubtitle": "Suivez tous vos patients et intervenez en quelques clics.",
+    "addPatient": "Ajouter un patient",
+    "searchPatient": "Rechercher un patient…",
+    "segAll": "Tous (4)",
+    "segWatch": "À surveiller (2)",
+    "segUpToDate": "À jour (2)",
+    "segLapsed": "Ne paient plus (0)",
+    "filters": "Filtres",
+    "colPatient": "Patient",
+    "colPhase": "Phase",
+    "colSignal": "Signal",
+    "phaseN": "Phase {n}",
+    "backToList": "Retour à la liste",
+    "programmeTitle": "Programme, semaine par semaine",
+    "programmeHint": "Cliquez sur une semaine pour voir le détail jour par jour et changer la séance.",
+    "adjustedNotice": "Séance ajustée, le patient a été prévenu.",
+    "allWeeks": "Toutes les semaines",
+    "sessionThisWeek": "Séance cette semaine",
+    "seanceName": "Initiation genou",
+    "adjustOrChange": "Ajuster / changer la séance",
+    "adjustTitle": "Ajuster la séance",
+    "adjustSubtitle": "{seance} · pour {name} uniquement",
+    "changeSession": "Changer de séance",
+    "currentSessionTitle": "Séance actuelle",
+    "exerciseCount": "{n} exercices",
+    "clickToRemove": "Cliquez sur un exercice pour le retirer.",
+    "toRemove": "À retirer",
+    "added": "Ajouté",
+    "addExercise": "Ajouter un exercice",
+    "searchExercise": "Rechercher un exercice…",
+    "removeSession": "Retirer cette séance",
+    "oneRemoved": "1 retiré",
+    "oneAdded": "1 ajouté",
+    "cancel": "Annuler",
+    "saveChanges": "Enregistrer les modifications"
+  },
+  "patientMessages": {
+    "title": "Messages",
+    "subtitle": "Échangez avec {name}.",
+    "yourPhysio": "Votre kinésithérapeute",
+    "placeholder": "Écrire à {name}…",
+    "m1": "Bonjour Léa,\n\nVoici le nouveau programme pour cette semaine. N'hésitez pas à me dire si vous avez des questions !",
+    "m2": "Parfait, merci ! Je le regarde tout de suite.",
+    "m3": "Comment vous sentez-vous après la séance d'hier ?",
+    "m4": "Très bien, un peu de courbatures mais ça va !",
+    "m5": "Parfait, c'est normal ! On garde le même rythme cette semaine."
+  },
+  "samples": {
+    "lowBackL2": "Renforcement lombaire, niveau 2",
+    "homeSubtitle": "2 séances à réaliser · 20 minutes environ",
+    "homeCta": "Voir mon programme",
+    "conditions": {
+      "lowBack": "Lombalgie chronique",
+      "kneeReplacement": "Prothèse de genou",
+      "painfulShoulder": "Épaule douloureuse"
+    },
+    "kineMessages": {
+      "m1": "Bonjour, j'ai eu plus mal au genou après la séance d'hier, est-ce normal ?",
+      "m2": "Pensez à bien glacer après chaque séance.",
+      "m3": "Merci pour le nouveau programme !",
+      "m4": "Je reprends demain, j'étais en déplacement.",
+      "m5": "Très bien, continuez ainsi."
+    },
+    "bodyParts": {
+      "genou": "Genou & jambe",
+      "dos": "Dos & lombaires",
+      "epaule": "Épaule",
+      "hanche": "Hanche & fessiers",
+      "cheville": "Cheville & pied",
+      "cervicales": "Cervicales & cou",
+      "poignet": "Poignet, main & coude",
+      "tronc": "Tronc, gainage & abdominaux",
+      "equilibre": "Équilibre & général"
+    },
+    "exerciseInstructions": {
+      "quadSet": "Allongé sur le dos, jambes tendues et posées au sol. Sans bouger la jambe, contractez fort le muscle de la cuisse en écrasant l'arrière du genou vers le sol, tenez quelques secondes, puis relâchez.",
+      "heelSlide": "Allongé sur le dos, jambes tendues. Faites glisser lentement le talon vers les fesses en pliant le genou aussi loin que possible sans douleur forte, puis tendez à nouveau la jambe.",
+      "straightLegRaise": "Allongé sur le dos, appuyé sur les avant-bras. Verrouillez le genou en contractant la cuisse, levez la jambe tendue jusqu'à environ 45°, puis redescendez lentement.",
+      "terminalKneeExt": "Debout, élastique derrière le genou avant, fixé devant vous. Partez genou légèrement plié, puis tendez complètement le genou en poussant contre l'élastique.",
+      "bodyweightSquat": "Debout, pieds à largeur de bassin. Descendez en poussant les fesses en arrière, genoux dans l'axe des pieds, puis remontez en poussant dans les talons.",
+      "wallSit": "Dos contre le mur, descendez jusqu'à la hauteur qui reste confortable pour le genou et tenez la position en respirant calmement.",
+      "gluteBridge": "Allongé sur le dos, genoux fléchis, pieds au sol. Soulevez le bassin en serrant les fessiers, puis redescendez lentement.",
+      "bandedClamshell": "Allongé sur le côté, élastique au-dessus des genoux, genoux fléchis et pieds joints. Ouvrez le genou du dessus sans faire rouler le bassin, puis refermez lentement.",
+      "deadBug": "Allongé sur le dos, bras tendus vers le plafond, hanches et genoux à 90°. Tendez lentement un bras et la jambe opposée sans décoller le bas du dos, puis revenez et changez de côté.",
+      "birdDog": "À quatre pattes, dos plat. Tendez un bras devant vous et la jambe opposée derrière vous, sans cambrer, puis revenez et changez de côté.",
+      "catCow": "À quatre pattes. Arrondissez le dos vers le plafond en rentrant le menton, puis creusez-le doucement en levant la tête. Alternez lentement.",
+      "codman": "Penché en avant, une main sur une table, l'autre bras pendant et relâché. Laissez-le se balancer doucement comme un pendule.",
+      "bandExternalRotation": "Coude plié à 90° et collé au corps, élastique en main. Tournez l'avant-bras vers l'extérieur sans décoller le coude, puis revenez lentement.",
+      "wallSlides": "Face au mur, avant-bras posés contre le mur. Faites-les glisser vers le haut en gardant les épaules basses, puis redescendez.",
+      "chinTuck": "Assis bien droit. Rentrez le menton en reculant la tête tout droit, comme pour faire un double menton, tenez quelques secondes.",
+      "singleLegCalfRaise": "Debout sur une jambe, une main contre le mur. Montez sur la pointe du pied le plus haut possible, puis redescendez lentement.",
+      "plank": "En appui sur les avant-bras et la pointe des pieds, corps aligné des chevilles à la tête. Tenez la position en respirant.",
+      "singleLegStance": "Debout, mains sur les hanches. Levez un pied et tenez l'équilibre sur l'autre jambe, genou légèrement déverrouillé."
+    },
+    "seances": {
+      "kneeGentle": "Genou, renforcement doux",
+      "lowBackMorning": "Lombaires, mobilité du matin",
+      "shoulderReturn": "Épaule, retour au geste",
+      "kneePhase1": "Genou, phase 1",
+      "kneePhase2": "Genou, phase 2",
+      "kneeReturnToSport": "Genou, retour au sport",
+      "lowBackCore": "Lombaires, gainage doux",
+      "lowBackPhase1": "Lombalgie, phase 1",
+      "lowBackPhase2": "Lombalgie, phase 2",
+      "kneePhase1B": "Genou, phase 1 · B"
+    },
+    "painOnWaking": "Douleur au réveil",
+    "lastNone": "Aucune",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "daysAgo": "Il y a {n} jours",
+    "workoutDescription": "Renforcement progressif, sans douleur.",
+    "adherenceGood": "Bonne",
+    "adherenceAverage": "Moyenne",
+    "adherenceLow": "Faible",
+    "lastSessionDetail": "20 min · 4 exercices",
+    "exerciseCount": "{n} exercices",
+    "myExercises": "Mes exercices",
+    "highPain": "Douleur élevée",
+    "highPainDetail": "Douleur {score}/10 signalée récemment.",
+    "patientInstructions": {
+      "gluteBridge": "Allongé sur le dos, genoux fléchis, soulevez le bassin en serrant les fessiers puis redescendez lentement.",
+      "bodyweightSquat": "Debout, pieds écartés largeur du bassin, fléchissez doucement les genoux sans dépasser les orteils.",
+      "straightLegRaise": "Allongé sur le dos, appuyé sur les avant-bras, l'autre jambe allongée au sol. Contractez la cuisse pour verrouiller le genou, puis levez la jambe tendue jusqu'à environ 45°, sans plier le genou. Redescendez lentement.",
+      "terminalKneeExt": "Debout, un pied devant l'autre, élastique passé derrière le genou avant et fixé devant vous à hauteur du genou. Partez genou légèrement plié, puis tendez complètement le genou en poussant vers l'arrière contre l'élastique. Revenez lentement."
+    },
+    "kneeL2": "Renforcement du genou, niveau 2",
+    "kneeL2Description": "Renforcement doux des quadriceps et des fessiers.",
+    "kneeLeg": "Genou / jambe",
+    "info": {
+      "zonesLabel": "Zones travaillées",
+      "zones": "Genou / jambe, Hanche / fessiers",
+      "stageLabel": "Étape de récupération",
+      "stage": "Phase intermédiaire, reprise progressive",
+      "progressLabel": "Avancée de la rééducation",
+      "progress": "Je marche sans béquilles depuis deux semaines, encore gênée dans les escaliers.",
+      "historyLabel": "Ce qui s'est passé",
+      "history": "Entorse du genou droit au ski en février, opérée en mars.",
+      "birthLabel": "Date de naissance",
+      "birth": "14 mars 1988",
+      "sizeLabel": "Taille / poids",
+      "activityLabel": "Niveau d'activité",
+      "activity": "Modérée (activité régulière)",
+      "equipmentLabel": "Équipement disponible",
+      "equipment": "Tapis, élastique, chaise"
+    },
+    "historyDate": "lundi 28 septembre à 18:15",
+    "historyNotes": "Un peu raide au début, mieux à la fin.",
+    "programmeTip": "Mieux vaut une séance courte et régulière qu'une longue de temps en temps.",
+    "contribExercises": {
+      "lateralStepUp": "Montée de marche latérale",
+      "reverseLunge": "Fente arrière contrôlée",
+      "singleLegBridgeBand": "Pont fessier sur une jambe, élastique",
+      "quadrupedThoracicRotation": "Rotation thoracique à quatre pattes"
+    },
+    "plans": {
+      "plan_1m": "Sans engagement",
+      "plan_3m": "Engagement 3 mois",
+      "plan_6m": "Engagement 6 mois"
+    },
+    "freeTrial": "Essai gratuit",
+    "contributorTitle": "Contributeur EasyPhysio",
+    "followUpLine": "3 mois · renouvelée le 4 février",
+    "backHome": "Accueil"
+  }
+}

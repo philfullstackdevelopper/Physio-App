@@ -4,18 +4,23 @@
 // et mêmes classes que app/patient/messages/page.tsx ; l'envoi ne fait rien.
 // Aucune donnée réelle. Pas lié depuis l'appli.
 
+import { getTranslations } from "next-intl/server";
 import PatientNav from "@/components/PatientNav";
 import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
 import MessageComposer from "@/components/MessageComposer";
 
-export const metadata = { title: "Aperçu Messages patient", robots: { index: false } };
+export async function generateMetadata() {
+  const t = await getTranslations("demo.meta");
+  return { title: t("previewMessages"), robots: { index: false } };
+}
 export const dynamic = "force-dynamic";
 
 async function sendNothing() {
   "use server";
 }
 
-export default function MessagesPatientPrototype() {
+export default async function MessagesPatientPrototype() {
+  const t = await getTranslations("demo.patientMessages");
   const at = (daysAgo: number, h: number, m: number) => {
     const d = new Date();
     d.setDate(d.getDate() - daysAgo);
@@ -23,11 +28,11 @@ export default function MessagesPatientPrototype() {
     return d.toISOString();
   };
   const thread: ThreadMessage[] = [
-    { id: "1", sender: "instructor", body: "Bonjour Léa,\n\nVoici le nouveau programme pour cette semaine. N'hésitez pas à me dire si vous avez des questions !", created_at: at(2, 9, 12), read_at: null },
-    { id: "2", sender: "patient", body: "Parfait, merci ! Je le regarde tout de suite.", created_at: at(2, 9, 48), read_at: at(2, 10, 0) },
-    { id: "3", sender: "instructor", body: "Comment vous sentez-vous après la séance d'hier ?", created_at: at(1, 16, 37), read_at: null },
-    { id: "4", sender: "patient", body: "Très bien, un peu de courbatures mais ça va !", created_at: at(1, 17, 5), read_at: at(1, 17, 6) },
-    { id: "5", sender: "instructor", body: "Parfait, c'est normal ! On garde le même rythme cette semaine.", created_at: at(1, 17, 6), read_at: null },
+    { id: "1", sender: "instructor", body: t("m1"), created_at: at(2, 9, 12), read_at: null },
+    { id: "2", sender: "patient", body: t("m2"), created_at: at(2, 9, 48), read_at: at(2, 10, 0) },
+    { id: "3", sender: "instructor", body: t("m3"), created_at: at(1, 16, 37), read_at: null },
+    { id: "4", sender: "patient", body: t("m4"), created_at: at(1, 17, 5), read_at: at(1, 17, 6) },
+    { id: "5", sender: "instructor", body: t("m5"), created_at: at(1, 17, 6), read_at: null },
   ];
 
   return (
@@ -36,8 +41,8 @@ export default function MessagesPatientPrototype() {
       <div className="relative min-w-0 flex-1 pb-20 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0">
         <main data-hide-phone-topbar="" className="min-h-screen p-6 max-sm:min-h-0 max-sm:p-0 sm:p-8">
           <div className="mx-auto max-w-4xl">
-            <h1 className="text-2xl font-semibold text-ink max-sm:hidden">Messages</h1>
-            <p className="mt-1 text-sm text-muted max-sm:hidden">Échangez avec Julie Dupont.</p>
+            <h1 className="text-2xl font-semibold text-ink max-sm:hidden">{t("title")}</h1>
+            <p className="mt-1 text-sm text-muted max-sm:hidden">{t("subtitle", { name: "Julie Dupont" })}</p>
             <section className="mt-6 flex h-[32rem] max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm max-sm:mt-0 max-sm:h-[calc(100dvh-5rem-env(safe-area-inset-bottom))] max-sm:max-h-none max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:shadow-none">
               <header className="flex items-center gap-3 border-b border-line px-5 py-3 max-sm:bg-surface max-sm:px-4 max-sm:pb-3 max-sm:pt-[calc(0.75rem+env(safe-area-inset-top))]">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand max-sm:h-11 max-sm:w-11">
@@ -45,7 +50,7 @@ export default function MessagesPatientPrototype() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-ink max-sm:text-base">Julie Dupont</p>
-                  <p className="text-xs text-muted">Votre kinésithérapeute</p>
+                  <p className="text-xs text-muted">{t("yourPhysio")}</p>
                 </div>
               </header>
               {/* Téléphone : colonne inversée = le fil s'ouvre sur le dernier message, comme une messagerie. */}
@@ -53,7 +58,7 @@ export default function MessagesPatientPrototype() {
                 <MessageThread messages={thread} mineSender="patient" />
               </div>
               <div className="border-t border-line px-4 py-3 max-sm:bg-surface max-sm:px-3 max-sm:py-2.5">
-                <MessageComposer patientId="demo" action={sendNothing} placeholder="Écrire à Julie Dupont…" chat />
+                <MessageComposer patientId="demo" action={sendNothing} placeholder={t("placeholder", { name: "Julie Dupont" })} chat />
               </div>
             </section>
           </div>

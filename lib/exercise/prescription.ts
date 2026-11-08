@@ -7,6 +7,12 @@
 // program (e.g. on `program_exercises`) — for now it lives in the UI.
 // =============================================================================
 
+/** Traducteur fourni par l'appelant (useTranslations / getTranslations de
+ *  next-intl, déjà placé sur le bon espace de noms). Absent = français, le
+ *  texte d'origine : ce fichier est testé par node:test, qui ne sait pas
+ *  importer les fichiers de messages JSON. */
+type Tr = (key: string, values?: Record<string, string | number>) => string;
+
 export type ActivityLevel = "sedentary" | "moderate" | "active";
 
 /** Recovery stage of the injury, aligned with the DB `injury_stage` values. */
@@ -26,6 +32,16 @@ export const STAGE_SHORT: Record<InjuryStage, string> = {
   recovery: "Phase 3",
   return_to_sport: "Phase 4",
 };
+
+/** STAGE_LABELS dans la langue de l'interface (`t` = « exercise.stage »). */
+export function stageLabel(stage: InjuryStage, t?: Tr): string {
+  return t ? t(stage) : STAGE_LABELS[stage];
+}
+
+/** STAGE_SHORT dans la langue de l'interface (`t` = « exercise.stageShort »). */
+export function stageShort(stage: InjuryStage, t?: Tr): string {
+  return t ? t(stage) : STAGE_SHORT[stage];
+}
 
 export interface Prescription {
   exerciseId: string;
@@ -132,6 +148,11 @@ function goalFromInstructions(instructions: string | null): { minutes: string } 
   if (min) return { minutes: min[1] };
   const sec = instructions?.match(/(\d+(?:\s*à\s*\d+)?)\s*secondes?\b/i);
   if (sec) return { seconds: sec[1].replace(/\s+/g, " ") };
+  // Consigne traduite en anglais (lib/i18n/dbContent.ts) : « hold for 20 to
+  // 30 seconds » → même objectif qu'en français (« 20 à 30 »), pour que la
+  // dose prescrite ne change pas avec la langue.
+  const secEn = instructions?.match(/(\d+(?:\s*(?:to|-|–)\s*\d+)?)\s*seconds?\b/i);
+  if (secEn) return { seconds: secEn[1].replace(/\s*(?:to|-|–)\s*/i, " à ").replace(/\s+/g, " ") };
   return null;
 }
 
@@ -147,8 +168,16 @@ export function goalTextFor(
   instructions: string | null,
   p: Pick<Prescription, "goalSets" | "goalReps">,
   dose?: ExerciseDose | null,
+  /** Traducteur « exercise.goal » ; absent = français. */
+  t?: Tr,
 ): string {
   const g = goalPartsFor(instructions, dose, p.goalSets);
+  if (t) {
+    if (g.kind === "duration") return t("minutes", { n: Number(g.minutes), minutes: g.minutes });
+    if (g.kind === "hold") return t("hold", { sets: g.sets, seconds: g.seconds.replace("-", " à "), range: g.seconds });
+    if (g.reps === `${FIXED_GOAL_REPS_MIN}-${FIXED_GOAL_REPS}`) return t("reps", { sets: g.sets, min: FIXED_GOAL_REPS_MIN, max: p.goalReps });
+    return t("repsFixed", { sets: g.sets, reps: g.reps });
+  }
   if (g.kind === "duration") return `${g.minutes} minute${Number(g.minutes) > 1 ? "s" : ""}`;
   if (g.kind === "hold") return `${g.sets} × ${g.seconds.replace("-", " à ")} secondes`;
   const reps = g.reps === `${FIXED_GOAL_REPS_MIN}-${FIXED_GOAL_REPS}` ? `${FIXED_GOAL_REPS_MIN} à ${p.goalReps}` : g.reps;
@@ -181,10 +210,12 @@ export function goalPartsFor(instructions: string | null, dose?: ExerciseDose | 
 }
 
 /** Version courte pour les tuiles d'exercice : « 3 × 8-12 rép. », « 10 min », « 3 × 30 s ». */
-export function goalShortFor(instructions: string | null, dose?: ExerciseDose | null): string {
+export function goalShortFor(instructions: string | null, dose?: ExerciseDose | null, t?: Tr): string {
   const g = goalPartsFor(instructions, dose);
   if (g.kind === "duration") return `${g.minutes} min`;
   if (g.kind === "hold") return `${g.sets} × ${g.seconds} s`;
+  // `t` = traducteur « exercise.goal » ; absent = français.
+  if (t) return t("repsShortFixed", { sets: g.sets, reps: g.reps });
   return `${g.sets} × ${g.reps} rép.`;
 }
 

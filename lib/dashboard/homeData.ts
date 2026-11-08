@@ -7,9 +7,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { assessSignals, PAIN_HOLD, type ProgressSignals } from "../exercise/stageProgress.ts";
 import { computeSignal } from "./patientSignal.ts";
-import { daysBetween } from "../format/relativeDay.ts";
+import { daysBetween, type LibI18n } from "../format/relativeDay.ts";
 import { initials } from "../format/initials.ts";
 import { getInstructor } from "./instructor.ts";
+import { INTL_TAGS } from "../../i18n/locales.ts";
 
 export interface DashboardHomeInput {
   now?: Date;
@@ -36,9 +37,14 @@ export interface DashboardHome {
   surveillerCount: number;
 }
 
-const TODAY_FMT = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-
-export function buildDashboardHome({ now = new Date(), patients, profiles, logs, feedback }: DashboardHomeInput): Omit<DashboardHome, "firstName"> {
+export function buildDashboardHome(
+  { now = new Date(), patients, profiles, logs, feedback }: DashboardHomeInput,
+  i18n?: LibI18n,
+): Omit<DashboardHome, "firstName"> {
+  const t = i18n?.t;
+  const tx = i18n?.tx;
+  const tSignals = tx ? (k: string, v?: Record<string, string | number>) => tx(`signals.${k}`, v) : undefined;
+  const TODAY_FMT = new Intl.DateTimeFormat(INTL_TAGS[i18n?.locale ?? "fr"], { weekday: "long", day: "numeric", month: "long" });
   const isToday = (iso: string) => daysBetween(iso, now) === 0;
   const isYesterday = (iso: string) => daysBetween(iso, now) === 1;
 
@@ -73,15 +79,15 @@ export function buildDashboardHome({ now = new Date(), patients, profiles, logs,
   for (const p of patients) {
     if (isOnboarding(p)) continue;
     const sig = signalsBy.get(p.id) ?? { painScores: [], difficulties: [], lastPain: null, lastPainAt: "" };
-    const a = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties });
-    const s = computeSignal({ concerning: a.concerning, severe: a.severe, lastPain: sig.lastPain, lastSessionAt: lastSession.get(p.id) ?? null, createdAt: p.created_at, now });
+    const a = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties }, tSignals);
+    const s = computeSignal({ concerning: a.concerning, severe: a.severe, lastPain: sig.lastPain, lastSessionAt: lastSession.get(p.id) ?? null, createdAt: p.created_at, now }, t);
     if (s.kind === "ok") continue;
     toTreat.push({
       id: p.id,
       name: p.full_name ?? "Patient",
       initials: initials(p.full_name),
       kind: s.kind,
-      label: s.kind === "pain" ? "Douleur signalée" : s.label,
+      label: s.kind === "pain" ? (t ? t("home.painReported") : "Douleur signalée") : s.label,
       score: s.score,
       severe: s.severe,
     });
@@ -101,7 +107,12 @@ export function buildDashboardHome({ now = new Date(), patients, profiles, logs,
   };
 }
 
-export async function loadDashboardHome(supabase: SupabaseClient, userId: string, now: Date = new Date()): Promise<DashboardHome> {
+export async function loadDashboardHome(
+  supabase: SupabaseClient,
+  userId: string,
+  now: Date = new Date(),
+  i18n?: LibI18n,
+): Promise<DashboardHome> {
   const since14 = new Date(now.getTime() - 14 * 86_400_000).toISOString();
   const [instructor, { data: patients }, { data: profiles }, { data: logs }, { data: feedback }] = await Promise.all([
     getInstructor(supabase, userId),
@@ -119,6 +130,6 @@ export async function loadDashboardHome(supabase: SupabaseClient, userId: string
       profiles: (profiles ?? []) as DashboardHomeInput["profiles"],
       logs: (logs ?? []) as DashboardHomeInput["logs"],
       feedback: (feedback ?? []) as DashboardHomeInput["feedback"],
-    }),
+    }, i18n),
   };
 }

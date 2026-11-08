@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Info } from "lucide-react";
-import { INVITATIONS_CLOSED_MESSAGE } from "@/lib/launch";
+import { useTranslations } from "next-intl";
 
 // « Ajouter un patient » : invitation par e-mail, ou QR code à faire scanner
 // au cabinet. Partagé par la vraie page (app/dashboard/patients/new) et la
@@ -21,6 +21,7 @@ export default function NewPatientView({
   /** La carte « QR code » (components/JoinQrCard). */
   qr: ReactNode;
 }) {
+  const t = useTranslations("dashboard.newPatient");
   return (
     <main className="min-h-screen p-8 max-sm:min-h-0 max-sm:px-4 max-sm:pb-4 max-sm:pt-2">
       <div className="mx-auto max-w-sm">
@@ -28,21 +29,21 @@ export default function NewPatientView({
           href="/dashboard/patients"
           className="animate-[fadeInUp_0.6s_ease-out_both] text-sm text-muted hover:underline max-sm:hidden"
         >
-          ← Mes patients
+          {t("back")}
         </Link>
 
         <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-4 rounded-xl border border-line bg-surface p-8 max-sm:mt-1 max-sm:rounded-2xl max-sm:border-0 max-sm:p-5 max-sm:shadow-soft">
           <h1 className="mb-1 text-2xl font-semibold text-ink">
-            Ajouter un patient
+            {t("title")}
           </h1>
           <p className="mb-6 text-sm text-muted">
-            Le patient recevra un e-mail pour créer son mot de passe.
+            {t("intro")}
           </p>
 
           {!open && (
             <p className="mb-4 flex items-start gap-2 rounded-lg bg-brand-soft p-3 text-sm text-ink">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
-              <span>{INVITATIONS_CLOSED_MESSAGE}</span>
+              <span>{t("invitationsClosed")}</span>
             </p>
           )}
           {open && error && (
@@ -55,7 +56,7 @@ export default function NewPatientView({
             <fieldset disabled={!open} className="space-y-4 disabled:opacity-50">
             <div>
               <label htmlFor="full_name" className="mb-1 block text-sm font-medium text-ink">
-                Nom complet
+                {t("fullName")}
               </label>
               <input
                 id="full_name"
@@ -67,7 +68,7 @@ export default function NewPatientView({
             </div>
             <div>
               <label htmlFor="email" className="mb-1 block text-sm font-medium text-ink">
-                Adresse e-mail
+                {t("email")}
               </label>
               <input
                 id="email"
@@ -83,7 +84,7 @@ export default function NewPatientView({
             {seanceGroups.length > 0 && (
               <div>
                 <label htmlFor="workout_id" className="mb-1 block text-sm font-medium text-ink">
-                  Première séance <span className="font-normal text-muted">(facultatif)</span>
+                  {t("firstSession")} <span className="font-normal text-muted">{t("optional")}</span>
                 </label>
                 <select
                   id="workout_id"
@@ -91,7 +92,7 @@ export default function NewPatientView({
                   defaultValue=""
                   className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
                 >
-                  <option value="">Plus tard, depuis sa fiche</option>
+                  <option value="">{t("later")}</option>
                   {seanceGroups.map((g) => (
                     <optgroup key={g.condition} label={g.condition}>
                       {g.seances.map((s) => (
@@ -108,7 +109,7 @@ export default function NewPatientView({
               type="submit"
               className="w-full rounded-full bg-brand py-2.5 font-medium text-white transition-colors duration-150 hover:bg-brand-dark disabled:cursor-not-allowed"
             >
-              {open ? "Envoyer l'invitation" : "Disponible au lancement"}
+              {open ? t("send") : t("atLaunch")}
             </button>
             </fieldset>
           </form>

@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { LOWEST_MONTHLY_TOTAL_CENTS, TRIAL_DAYS, eurosFR, isLegacySubscription, isPlatformOfferKey, isPlatformSubscription, platformOffer, type SubscriptionRow } from "@/lib/billing/patientPlans";
 import { nativeAppPlatform } from "@/lib/app/nativeAppServer";
+import { getLocale, getTranslations } from "next-intl/server";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 import CompteView, { type FollowUpSummary } from "./CompteView";
 
 // « Paramètres » du patient. Modèle définitif (2026-11-04, lib/billing/patientPlans.ts) :
@@ -13,6 +16,8 @@ export default async function CompteePage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations("patient.compte");
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
@@ -27,20 +32,20 @@ export default async function CompteePage({
   const live = known && (sub!.status === "active" || sub!.status === "trialing");
   const refused = known && ["past_due", "unpaid", "incomplete"].includes(sub!.status as string);
   const date = sub?.current_period_end
-    ? new Date(sub.current_period_end as string).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
+    ? new Date(sub.current_period_end as string).toLocaleDateString(intlTag(locale), { day: "numeric", month: "long" })
     : "";
 
   const summary: FollowUpSummary = {
     status: live ? "active" : refused ? "pending_card" : "none",
     line: live
         ? sub!.cancel_at_period_end || legacy
-          ? `Accès jusqu'au ${date}`
+          ? t("lineAccessUntil", { date })
           : sub!.status === "trialing"
-            ? `Essai gratuit jusqu'au ${date}`
-            : `${offer ? offer.label : "Actif"} · prochain mois le ${date}`
+            ? t("lineTrialUntil", { date })
+            : t("lineNextMonth", { offer: offer ? t(`offers.${offer.key}`) : t("lineActive"), date })
         : refused
-          ? "Le dernier paiement a été refusé"
-          : `${TRIAL_DAYS} jours offerts, puis dès ${eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} € par mois (non remboursé)`,
+          ? t("lineRefused")
+          : t("lineNone", { days: TRIAL_DAYS, price: eurosFR(LOWEST_MONTHLY_TOTAL_CENTS, locale) }),
   };
 
   // Appli mobile : pas de carte « Mon suivi » avec ses prix (règles d'Apple / Google).

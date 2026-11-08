@@ -8,6 +8,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, Check, Play, Repeat2, Dumbbell, Timer, X, ArrowRight, ShieldAlert, SkipForward } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { goalPartsFor, goalTextFor, type ExerciseDose, type GoalParts, type Prescription } from "@/lib/exercise/prescription";
@@ -36,6 +37,7 @@ type Phase = "exercise" | "celebrate" | "finished";
  *  for now (2026-10-31), no autoplay, no endless loop. Shown whole
  *  (object-contain) on black. `startSeconds` skips any intro. */
 function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string; startSeconds?: number }) {
+  const t = useTranslations("exercise.session");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   // A clip that fails to load (mislink, deleted file) must degrade to the
@@ -88,7 +90,7 @@ function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string;
         playsInline
         muted
         preload="metadata"
-        aria-label={`Vidéo : ${name}. Touchez pour lire ou mettre en pause.`}
+        aria-label={t("videoAria", { name })}
         onLoadedMetadata={(e) => {
           const v = e.currentTarget;
           if (v.videoWidth > 0 && v.videoHeight > 0) setRatio(v.videoWidth / v.videoHeight);
@@ -126,6 +128,7 @@ function IllustrationDemo({ name }: { name: string }) {
  *  Anything that isn't a recognizable video/image link (e.g. a stray search-page
  *  URL) falls back to the illustration rather than showing a broken embed. */
 function Demo({ url, name, startSeconds = 0 }: { url: string | null; name: string; startSeconds?: number }) {
+  const t = useTranslations("exercise.session");
   if (url) {
     const ytId = getYoutubeEmbedId(url);
     if (ytId) {
@@ -133,7 +136,7 @@ function Demo({ url, name, startSeconds = 0 }: { url: string | null; name: strin
         <iframe
           className="aspect-video w-full rounded-xl short:aspect-auto short:h-36"
           src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&start=${startSeconds}`}
-          title="Démonstration"
+          title={t("demo")}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
         />
@@ -146,7 +149,7 @@ function Demo({ url, name, startSeconds = 0 }: { url: string | null; name: strin
     }
     if (isImageFileUrl(url)) {
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={url} alt="Démonstration" className="w-full rounded-xl" />;
+      return <img src={url} alt={t("demo")} className="w-full rounded-xl" />;
     }
   }
 
@@ -159,9 +162,10 @@ function Demo({ url, name, startSeconds = 0 }: { url: string | null; name: strin
 /** L'objectif en badges lisibles d'un coup d'œil (Philippe, 2026-11-02 :
  *  « nice icons / nice display ») : séries, répétitions ou temps. */
 function GoalBadges({ goal, label }: { goal: GoalParts; label: string }) {
+  const t = useTranslations("exercise.session");
   const badge = "inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-800 max-sm:py-1 short:py-1";
   return (
-    <div className="flex flex-wrap items-center gap-2" aria-label={`Objectif : ${label}`}>
+    <div className="flex flex-wrap items-center gap-2" aria-label={t("goalAria", { goal: label })}>
       {goal.kind === "duration" ? (
         <span className={badge}>
           <Timer className="h-4 w-4" strokeWidth={2} />
@@ -171,15 +175,15 @@ function GoalBadges({ goal, label }: { goal: GoalParts; label: string }) {
         <>
           <span className={badge}>
             <Repeat2 className="h-4 w-4" strokeWidth={2} />
-            {goal.sets} séries
+            {t("sets", { count: goal.sets })}
           </span>
           <span className={badge}>
             {goal.kind === "reps" ? <Dumbbell className="h-4 w-4" strokeWidth={2} /> : <Timer className="h-4 w-4" strokeWidth={2} />}
-            {goal.kind === "reps" ? `${goal.reps} répétitions` : `${goal.seconds} s`}
+            {goal.kind === "reps" ? t("reps", { reps: goal.reps }) : `${goal.seconds} s`}
           </span>
         </>
       )}
-      {goal.kind === "reps" && <span className="text-xs text-slate-500 max-sm:hidden">selon votre aisance</span>}
+      {goal.kind === "reps" && <span className="text-xs text-slate-500 max-sm:hidden">{t("asComfortable")}</span>}
     </div>
   );
 }
@@ -187,9 +191,10 @@ function GoalBadges({ goal, label }: { goal: GoalParts; label: string }) {
 /** Une pastille par série, à cocher au fil de l'exercice : facultatif, juste
  *  pour savoir où l'on en est. */
 function SetTracker({ sets, done, onToggle }: { sets: number; done: number; onToggle: (n: number) => void }) {
+  const t = useTranslations("exercise.session");
   return (
     <div className="mt-3 flex items-center gap-2 max-sm:mt-2 short:mt-2">
-      <span className="text-xs font-medium text-slate-500">Séries faites</span>
+      <span className="text-xs font-medium text-slate-500">{t("setsDone")}</span>
       {Array.from({ length: sets }, (_, i) => {
         const on = i < done;
         return (
@@ -197,7 +202,7 @@ function SetTracker({ sets, done, onToggle }: { sets: number; done: number; onTo
             key={i}
             type="button"
             aria-pressed={on}
-            aria-label={`Série ${i + 1}${on ? " faite" : ""}`}
+            aria-label={on ? t("setDoneAria", { n: i + 1 }) : t("setAria", { n: i + 1 })}
             onClick={() => onToggle(on && i === done - 1 ? i : i + 1)}
             className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors motion-reduce:transition-none max-sm:h-7 max-sm:w-7 ${
               on ? "bg-blue-600 text-white" : "border border-slate-300 bg-white text-slate-500 hover:border-blue-400"
@@ -214,9 +219,10 @@ function SetTracker({ sets, done, onToggle }: { sets: number; done: number; onTo
 /** Douleur pendant l'exercice, en pastilles de 0 à 10 (Philippe, 2026-11-02,
  *  option B validée) : facultatif, colorées de plus en plus chaud. */
 function PainPills({ value, onChange }: { value: number | null; onChange: (n: number) => void }) {
+  const t = useTranslations("exercise.session");
   return (
     <div className="text-left">
-      <p id="ex-pain-label" className="text-sm font-semibold text-slate-800">Douleur pendant l&apos;exercice</p>
+      <p id="ex-pain-label" className="text-sm font-semibold text-slate-800">{t("painDuring")}</p>
       <div role="group" aria-labelledby="ex-pain-label" className="mt-2 grid grid-cols-11 gap-1">
         {Array.from({ length: 11 }, (_, n) => {
           const on = value === n;
@@ -226,7 +232,7 @@ function PainPills({ value, onChange }: { value: number | null; onChange: (n: nu
               key={n}
               type="button"
               aria-pressed={on}
-              aria-label={`Douleur ${n} sur 10`}
+              aria-label={t("painAria", { n })}
               onClick={() => onChange(n)}
               className={`h-9 rounded-lg border text-sm font-semibold tabular-nums max-sm:h-8 ${on ? "border-blue-600 bg-blue-600 text-white" : tone}`}
             >
@@ -236,8 +242,8 @@ function PainPills({ value, onChange }: { value: number | null; onChange: (n: nu
         })}
       </div>
       <p className="mt-1 flex justify-between text-[11px] text-slate-500">
-        <span>aucune</span>
-        <span>très forte</span>
+        <span>{t("painNone")}</span>
+        <span>{t("painStrong")}</span>
       </p>
     </div>
   );
@@ -245,15 +251,16 @@ function PainPills({ value, onChange }: { value: number | null; onChange: (n: nu
 
 /** « C'était… » : facile / correct / difficile, enregistré en 2, 5 ou 8 sur 10. */
 const DIFFICULTY_CHOICES = [
-  { label: "Facile", value: 2 },
-  { label: "Correct", value: 5 },
-  { label: "Difficile", value: 8 },
+  { label: "diffEasy", value: 2 },
+  { label: "diffCorrect", value: 5 },
+  { label: "diffHard", value: 8 },
 ] as const;
 
 function DifficultyChoice({ value, onChange }: { value: number | null; onChange: (n: number) => void }) {
+  const t = useTranslations("exercise.session");
   return (
     <div className="text-left">
-      <p id="ex-diff-label" className="text-sm font-semibold text-slate-800">C&apos;était…</p>
+      <p id="ex-diff-label" className="text-sm font-semibold text-slate-800">{t("feltLabel")}</p>
       <div role="group" aria-labelledby="ex-diff-label" className="mt-2 grid grid-cols-3 gap-1.5">
         {DIFFICULTY_CHOICES.map((c) => {
           const on = value === c.value;
@@ -265,7 +272,7 @@ function DifficultyChoice({ value, onChange }: { value: number | null; onChange:
               onClick={() => onChange(c.value)}
               className={`h-11 rounded-xl text-sm font-semibold max-sm:h-10 ${on ? "border-2 border-blue-600 bg-blue-50 text-blue-800" : "border border-slate-200 bg-white text-slate-700"}`}
             >
-              {c.label}
+              {t(c.label)}
             </button>
           );
         })}
@@ -275,22 +282,24 @@ function DifficultyChoice({ value, onChange }: { value: number | null; onChange:
 }
 
 type SkipReason = "pain" | "equipment" | "unclear" | "time";
+// label = clé de « exercise.session ».
 const SKIP_REASONS: { id: SkipReason; label: string }[] = [
-  { id: "pain", label: "Ça fait mal" },
-  { id: "equipment", label: "Pas le matériel" },
-  { id: "unclear", label: "Pas compris" },
-  { id: "time", label: "Pas le temps" },
+  { id: "pain", label: "skipPain" },
+  { id: "equipment", label: "skipEquipment" },
+  { id: "unclear", label: "skipUnclear" },
+  { id: "time", label: "skipTime" },
 ];
 /** Intensité de la douleur quand c'est la raison : légère / moyenne / forte = 3 / 5 / 8. */
 const SKIP_PAIN = [
-  { label: "Légère", value: 3 },
-  { label: "Moyenne", value: 5 },
-  { label: "Forte", value: 8 },
+  { label: "skipPainLight", value: 3 },
+  { label: "skipPainMedium", value: 5 },
+  { label: "skipPainStrong", value: 8 },
 ] as const;
 
 /** « Pourquoi passer cet exercice ? » (option C validée) : n'apparaît QUE quand
  *  le patient touche « Passer cet exercice ». Tout est facultatif. */
 function SkipSheet({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: (reason: SkipReason | null, pain: number | null) => void }) {
+  const t = useTranslations("exercise.session");
   const [reason, setReason] = useState<SkipReason | null>(null);
   const [pain, setPain] = useState<number | null>(null);
   return (
@@ -298,13 +307,13 @@ function SkipSheet({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: (
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Pourquoi passer cet exercice ?"
+        aria-label={t("skipTitle")}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-t-3xl bg-white px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 sm:rounded-3xl sm:pb-6"
       >
         <div className="mx-auto h-1 w-10 rounded-full bg-slate-300 sm:hidden" aria-hidden="true" />
-        <h2 className="mt-3 text-lg font-semibold text-slate-900">Pourquoi passer cet exercice ?</h2>
-        <p className="text-sm text-slate-500">Votre kiné le verra pour adapter votre programme.</p>
+        <h2 className="mt-3 text-lg font-semibold text-slate-900">{t("skipTitle")}</h2>
+        <p className="text-sm text-slate-500">{t("skipHint")}</p>
         <div className="mt-3 grid grid-cols-2 gap-2">
           {SKIP_REASONS.map((r) => {
             const on = reason === r.id;
@@ -321,14 +330,14 @@ function SkipSheet({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: (
                   on ? (r.id === "pain" ? "border-2 border-red-600 bg-red-50 text-red-700" : "border-2 border-blue-600 bg-blue-50 text-blue-800") : "border border-slate-200 bg-white text-slate-700"
                 }`}
               >
-                {r.label}
+                {t(r.label)}
               </button>
             );
           })}
         </div>
         {reason === "pain" && (
           <>
-            <p id="skip-pain-label" className="mt-4 text-sm font-semibold text-slate-800">Et cette douleur, c&apos;est…</p>
+            <p id="skip-pain-label" className="mt-4 text-sm font-semibold text-slate-800">{t("skipPainQuestion")}</p>
             <div role="group" aria-labelledby="skip-pain-label" className="mt-2 grid grid-cols-3 gap-2">
               {SKIP_PAIN.map((c) => {
                 const on = pain === c.value;
@@ -340,7 +349,7 @@ function SkipSheet({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: (
                     onClick={() => setPain(on ? null : c.value)}
                     className={`h-11 rounded-xl text-sm font-semibold ${on ? "border-2 border-amber-600 bg-amber-50 text-amber-800" : "border border-slate-200 bg-white text-slate-700"}`}
                   >
-                    {c.label}
+                    {t(c.label)}
                   </button>
                 );
               })}
@@ -352,10 +361,10 @@ function SkipSheet({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: (
           onClick={() => onConfirm(reason, pain)}
           className="mt-5 h-12 w-full rounded-xl bg-slate-900 text-base font-semibold text-white hover:bg-slate-800"
         >
-          Passer et continuer
+          {t("skipConfirm")}
         </button>
         <button type="button" onClick={onCancel} className="mt-2 h-10 w-full rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-50">
-          Finalement, je le fais
+          {t("skipCancel")}
         </button>
       </div>
     </div>
@@ -365,10 +374,11 @@ function SkipSheet({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: (
 type ExerciseResult = { status: "done" | "skipped"; pain: number | null; difficulty: number | null; skipReason?: SkipReason | null };
 
 function HowTo({ instructions, goalText }: { instructions: string | null; goalText: string }) {
+  const t = useTranslations("exercise.session");
   const steps = parseSteps(instructions);
   return (
     <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 max-sm:mt-2 max-sm:p-3 short:mt-2 short:p-3">
-      <p className="sr-only">Objectif : {goalText}</p>
+      <p className="sr-only">{t("goalAria", { goal: goalText })}</p>
       {steps.length > 0 ? (
         <ol className="space-y-2 short:space-y-1">
           {steps.map((s, i) => (
@@ -381,11 +391,11 @@ function HowTo({ instructions, goalText }: { instructions: string | null; goalTe
           ))}
         </ol>
       ) : (
-        <p className="text-sm text-slate-500">Allez-y doucement, sans forcer.</p>
+        <p className="text-sm text-slate-500">{t("noSteps")}</p>
       )}
       <p className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-500 short:mt-2 short:pt-2">
         <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-amber-500" strokeWidth={2} />
-        Une douleur vive ? Arrêtez-vous et parlez-en à votre praticien.
+        {t("sharpPain")}
       </p>
     </div>
   );
@@ -408,6 +418,8 @@ export default function WorkoutSession({
    *  ressenti s'affichent comme si l'enregistrement avait réussi. */
   demo?: boolean;
 }) {
+  const t = useTranslations("exercise.session");
+  const tGoal = useTranslations("exercise.goal");
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<Phase>("exercise");
   // Brief press-feedback on the "done" button before the phase switches to
@@ -450,7 +462,7 @@ export default function WorkoutSession({
   const total = exercises.length;
   const current = exercises[idx];
   const upcoming = exercises[idx + 1] ?? null;
-  const goalText = goalTextFor(current?.instructions ?? null, prescription, current?.dose);
+  const goalText = goalTextFor(current?.instructions ?? null, prescription, current?.dose, tGoal);
   const goal = goalPartsFor(current?.instructions ?? null, current?.dose);
   const doneCount = Object.values(results).filter((r) => r.status === "done").length;
   const skippedCount = Object.values(results).filter((r) => r.status === "skipped").length;
@@ -630,7 +642,7 @@ export default function WorkoutSession({
   if (total === 0) {
     return (
       <p className="text-center text-sm text-slate-500">
-        Cette séance ne contient pas encore d&apos;exercices.
+        {t("empty")}
       </p>
     );
   }
@@ -644,23 +656,23 @@ export default function WorkoutSession({
       return (
         <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <h2 className="font-display mt-2 text-2xl font-semibold text-slate-900">
-            La séance n&apos;a pas été enregistrée
+            {t("notSavedTitle")}
           </h2>
           <p className="mt-2 text-slate-600">
-            Vérifiez votre connexion et réessayez : vos exercices ne sont pas perdus.
+            {t("notSavedBody")}
           </p>
           <button
             onClick={() => finish()}
             disabled={saving}
             className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {saving ? "Enregistrement…" : "Réessayer"}
+            {saving ? t("saving") : t("retry")}
           </button>
           <Link
             href="/patient"
             className="mt-3 block rounded-xl border border-slate-300 py-3 font-medium text-slate-700 hover:bg-slate-50"
           >
-            Retour à l&apos;accueil
+            {t("backHome")}
           </Link>
         </div>
       );
@@ -671,13 +683,12 @@ export default function WorkoutSession({
           <Check className="h-7 w-7 text-blue-600" strokeWidth={2.5} />
         </div>
         <h2 className="font-display mt-4 text-2xl font-semibold text-slate-900">
-          Séance terminée
+          {t("finishedTitle")}
         </h2>
         <p className="mt-2 text-sm text-slate-500">
           {skippedCount > 0
-            ? `${doneCount} exercice${doneCount > 1 ? "s" : ""} sur ${total} réalisé${doneCount > 1 ? "s" : ""}`
-            : `${total} exercice${total > 1 ? "s" : ""} complété${total > 1 ? "s" : ""}`}{" "}
-          — « {workoutName} »
+            ? t("finishedPartial", { done: doneCount, total, name: workoutName })
+            : t("finishedCount", { count: total, name: workoutName })}
         </p>
         {/* (Philippe, 2026-11-06 : audit, on allège) Badge « N jours
             d'affilée » et question « douleur du moment » (1–10) retirés. */}
@@ -689,19 +700,19 @@ export default function WorkoutSession({
         {sessionPain == null ? null : !fbSent ? (
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-left">
             <label htmlFor="session-note" className="block text-sm font-medium text-slate-800">
-              Comment vous sentez-vous ?
+              {t("feelingTitle")}
             </label>
             <textarea
               id="session-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              placeholder="Un mot sur votre ressenti…"
+              placeholder={t("notePlaceholder")}
               className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
             />
             {fbError && (
               <p className="mt-3 text-sm text-red-700">
-                L&apos;envoi a échoué. Vérifiez votre connexion et réessayez.
+                {t("sendFailed")}
               </p>
             )}
             <button
@@ -709,13 +720,13 @@ export default function WorkoutSession({
               disabled={!note.trim() || fbBusy}
               className="mt-4 w-full rounded-lg bg-blue-600 py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {fbBusy ? "Envoi…" : "Envoyer à mon kiné"}
+              {fbBusy ? t("sending") : t("sendToPhysio")}
             </button>
           </div>
         ) : (
           <p className="mt-6 flex items-center justify-center gap-1.5 text-sm font-medium text-slate-700">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-600" strokeWidth={1.75} />
-            Ressenti transmis à votre kiné
+            {t("feelingSent")}
           </p>
         )}
 
@@ -723,7 +734,7 @@ export default function WorkoutSession({
           href="/patient"
           className="mt-4 block rounded-xl border border-slate-300 py-3 font-medium text-slate-700 hover:bg-slate-50"
         >
-          Retour à l&apos;accueil
+          {t("backHome")}
         </Link>
       </div>
     );
@@ -740,11 +751,11 @@ export default function WorkoutSession({
           <p className="min-w-0 truncate text-sm font-semibold text-slate-700">{workoutName}</p>
           <Link
             href="/patient"
-            aria-label="Quitter la séance"
+            aria-label={t("quitAria")}
             className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-sm text-slate-400 hover:bg-slate-100 hover:text-slate-600"
           >
             <X className="h-4 w-4" strokeWidth={2} />
-            Quitter
+            {t("quit")}
           </Link>
         </div>
         <div className="mt-1.5 flex items-center gap-3">
@@ -774,7 +785,7 @@ export default function WorkoutSession({
             {current.name}
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Exercice {idx + 1} sur {total} terminé
+            {t("exerciseDone", { n: idx + 1, total })}
           </p>
 
           {/* Ressenti de CET exercice, facultatif : le kiné voit lequel gêne. */}
@@ -788,9 +799,9 @@ export default function WorkoutSession({
             <div className="mt-5 flex items-center gap-3 rounded-xl bg-slate-50 p-3 text-left">
               <ExerciseIllustration name={upcoming.name} className="h-14 w-14 shrink-0 rounded-lg bg-white text-blue-600" />
               <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">À suivre</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{t("upNext")}</p>
                 <p className="truncate text-sm font-semibold text-slate-900">{upcoming.name}</p>
-                <p className="text-xs text-slate-500">{goalTextFor(upcoming.instructions, prescription, upcoming.dose)}</p>
+                <p className="text-xs text-slate-500">{goalTextFor(upcoming.instructions, prescription, upcoming.dose, tGoal)}</p>
               </div>
             </div>
           )}
@@ -802,13 +813,13 @@ export default function WorkoutSession({
           >
             {idx < total - 1 ? (
               <>
-                Exercice suivant
+                {t("nextExercise")}
                 <ArrowRight className="h-4 w-4" strokeWidth={2} />
               </>
             ) : saving ? (
-              "Enregistrement…"
+              t("saving")
             ) : (
-              "Terminer la séance"
+              t("finishSession")
             )}
           </button>
         </div>
@@ -845,7 +856,7 @@ export default function WorkoutSession({
             }`}
           >
             <Check className="h-5 w-5" strokeWidth={1.75} />
-            J&apos;ai terminé cet exercice
+            {t("doneExercise")}
           </button>
           <button
             type="button"
@@ -854,7 +865,7 @@ export default function WorkoutSession({
             className="mx-auto mt-2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 max-sm:mt-1"
           >
             <SkipForward className="h-4 w-4" strokeWidth={1.75} />
-            Passer cet exercice
+            {t("skipButton")}
           </button>
           {skipOpen && <SkipSheet onCancel={() => setSkipOpen(false)} onConfirm={skip} />}
           </div>

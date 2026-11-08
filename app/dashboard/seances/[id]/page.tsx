@@ -3,12 +3,13 @@ import { redirect } from "next/navigation";
 import { isPickableExercise } from "@/lib/exercise/filmedExercises";
 import { fitsPatient } from "@/lib/exercise/kineExercises";
 import { createClient } from "@/lib/supabase/server";
-import { STAGE_LABELS, doseFromRow, type InjuryStage } from "@/lib/exercise/prescription";
+import { STAGE_LABELS, doseFromRow, stageLabel, type InjuryStage } from "@/lib/exercise/prescription";
+import { getTranslations } from "next-intl/server";
 import EditSeanceModal from "@/components/EditSeanceModal";
 import { saveSeance, deleteSeance } from "../actions";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
-const STAGES = Object.entries(STAGE_LABELS) as [InjuryStage, string][];
+const STAGE_IDS = Object.keys(STAGE_LABELS) as InjuryStage[];
 
 export default async function SeanceEditorPage({
   params,
@@ -21,6 +22,8 @@ export default async function SeanceEditorPage({
   // (Philippe, 2026-10-07 : ?error= était envoyé par saveSeance/createSeance
   // mais jamais affiché.)
   const { saved, error } = await searchParams;
+  const tStage = await getTranslations("exercise.stage");
+  const STAGES = STAGE_IDS.map((s) => [s, stageLabel(s, tStage)] as [InjuryStage, string]);
 
   const supabase = await createClient();
   // Validation du compte vérifiée ICI aussi (audit du 2026-10-08) : le

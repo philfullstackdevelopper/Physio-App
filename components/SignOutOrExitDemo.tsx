@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { SignOutButton } from "@clerk/nextjs";
 import { useIsDemo } from "@/components/DemoContext";
+import { useTranslations } from "next-intl";
 
 // Le bouton « Se déconnecter » de l'appli (kiné et patient, ordinateur et
 // téléphone, onboarding, Paramètres). Dans la démo publique, il devient
@@ -24,6 +25,7 @@ export default function SignOutOrExitDemo({
   after?: React.ReactNode;
 }) {
   const isDemo = useIsDemo();
+  const t = useTranslations("dashboard.nav");
   const content = (label: string) => (
     <>
       {before}
@@ -34,14 +36,14 @@ export default function SignOutOrExitDemo({
   if (isDemo) {
     return (
       <Link href="/" target="_top" data-demo-exit="" className={className}>
-        {content("Quitter la démo")}
+        {content(t("exitDemo"))}
       </Link>
     );
   }
   return (
     <SignOutButton redirectUrl="/login">
       <button type="button" className={className}>
-        {content("Se déconnecter")}
+        {content(t("signOut"))}
       </button>
     </SignOutButton>
   );

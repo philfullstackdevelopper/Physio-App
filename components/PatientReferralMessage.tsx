@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowUpRight, Check, Copy, Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // A patient can't self-register — they're invited by their kiné (see
 // AGENTS.md §4) — so /signup/patient doesn't lead to a form at all: it
@@ -10,19 +11,14 @@ import { ArrowUpRight, Check, Copy, Mail } from "lucide-react";
 // a mail-client-style card with a subject/recipient/body and two ways to act
 // on it — open the patient's own mail app, or copy the text to paste
 // anywhere).
-const SUBJECT = "Invitation EasyPhysio – mon suivi de rééducation";
-const BODY = `Bonjour,
-
-J'aimerais utiliser EasyPhysio pour suivre mon programme de rééducation avec vous. Pourriez-vous créer votre compte sur EasyPhysio et m'inviter depuis votre espace ?
-
-easyphysio.fr
-
-Merci !`;
-
-const MAILTO_HREF = `mailto:?subject=${encodeURIComponent(SUBJECT)}&body=${encodeURIComponent(BODY)}`;
+// Objet et texte du message : messages/<langue>/auth.json (« referral »).
 
 export default function PatientReferralMessage() {
   const [copied, setCopied] = useState(false);
+  const t = useTranslations("auth.referral");
+  const SUBJECT = t("subject");
+  const BODY = t("body");
+  const MAILTO_HREF = `mailto:?subject=${encodeURIComponent(SUBJECT)}&body=${encodeURIComponent(BODY)}`;
 
   const copy = async () => {
     try {
@@ -45,13 +41,13 @@ export default function PatientReferralMessage() {
 
       <div className="space-y-2 border-b border-slate-100 px-5 py-3 text-sm short:space-y-1 short:py-2">
         <p className="flex gap-2">
-          <span className="w-10 shrink-0 text-slate-400">Objet</span>
+          <span className="w-10 shrink-0 text-slate-400">{t("subjectLabel")}</span>
           <span className="font-medium text-slate-800">{SUBJECT}</span>
         </p>
         <p className="flex items-center gap-2">
-          <span className="w-10 shrink-0 text-slate-400">À :</span>
+          <span className="w-10 shrink-0 text-slate-400">{t("toLabel")}</span>
           <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-            votre kiné
+            {t("yourPhysio")}
           </span>
         </p>
       </div>
@@ -81,7 +77,7 @@ export default function PatientReferralMessage() {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 short:gap-1.5 short:text-[13px]"
         >
           <Mail className="h-4 w-4" strokeWidth={1.75} />
-          Ouvrir mon e-mail
+          {t("openEmail")}
         </a>
         <button
           type="button"
@@ -89,14 +85,14 @@ export default function PatientReferralMessage() {
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 short:gap-1.5 short:text-[13px]"
         >
           {copied ? <Check className="h-4 w-4 text-emerald-600" strokeWidth={2} /> : <Copy className="h-4 w-4" strokeWidth={1.75} />}
-          {copied ? "Message copié" : <>Copier<span className="max-sm:short:hidden"> le message</span></>}
+          {copied ? t("copied") : t.rich("copy", { more: (c) => <span className="max-sm:short:hidden">{c}</span> })}
         </button>
         {/* "Ouvrir mon e-mail" only works if the device has a default mail
             app configured — a bare click gives no feedback otherwise, which
             reads as broken rather than "nothing to open" (Philippe,
             2026-09-10). This is the fallback, always right below it. */}
         <p className="pt-0.5 text-center text-xs text-slate-400 short:col-span-2">
-          Rien ne s&apos;ouvre ? Copiez le message et collez-le dans votre e-mail habituel.
+          {t("nothingOpens")}
         </p>
       </div>
     </div>

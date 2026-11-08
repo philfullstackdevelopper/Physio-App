@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { useClerk, useUser } from "@clerk/nextjs";
+import { useTranslations } from "next-intl";
 import { LogOut } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { SIGNUPS_OPEN, WAITLIST_HREF } from "@/lib/launchFlags";
 
 // Un en-tête plein mais aéré (Philippe, 2026-10-07 : d'abord « too much
@@ -13,13 +15,14 @@ import { SIGNUPS_OPEN, WAITLIST_HREF } from "@/lib/launchFlags";
 // sans le texte « Connecté·e en tant que … ». « Comment ça marche » retiré :
 // la section n'existe plus sur l'accueil (Philippe, 2026-11-06 : audit, on allège).
 const NAV_LINKS = [
-  { href: "/#cote-kine", label: "Praticiens" },
-  { href: "/#comparaison", label: "Comparaison" },
-  { href: "/#formules", label: "Tarifs" },
-  { href: "/#faq", label: "FAQ" },
-];
+  { href: "/#cote-kine", key: "practitioners" },
+  { href: "/#comparaison", key: "comparison" },
+  { href: "/#formules", key: "pricing" },
+  { href: "/#faq", key: "faq" },
+] as const;
 
 export default function SiteHeader() {
+  const t = useTranslations("home.header");
   const [scrolled, setScrolled] = useState(false);
   // The main header itself: visible only while actively scrolling down.
   // Scrolling up hides it immediately, and so does pausing — it's an
@@ -117,7 +120,7 @@ export default function SiteHeader() {
           <nav className="hidden items-center gap-7 text-[15px] font-medium text-slate-600 lg:flex">
             {NAV_LINKS.map((l) => (
               <a key={l.href} href={l.href} className="whitespace-nowrap transition hover:text-blue-700">
-                {l.label}
+                {t(`nav.${l.key}`)}
               </a>
             ))}
           </nav>
@@ -132,6 +135,11 @@ export default function SiteHeader() {
                 Téléphone (Philippe, 2026-10-10) : c'est le seul bouton, en
                 bleu ; la création de compte se fait depuis le pied de la page
                 de connexion (lien d'inscription de Clerk). */}
+            {/* Sélecteur de langue (2026-11-06) : seulement en haut de page —
+                la pastille défilée (1000 px) n'a pas la place — et pas sur
+                téléphone, où l'en-tête est déjà plein (il est alors dans le
+                pied de page). */}
+            {!scrolled && <LanguageSwitcher className="max-sm:hidden" />}
             <Link
               href={isLoaded && isSignedIn ? "/dashboard" : "/login"}
               className={`shrink-0 items-center justify-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition active:scale-[0.97] ${
@@ -140,7 +148,7 @@ export default function SiteHeader() {
                   : "inline-flex max-sm:bg-blue-600 max-sm:text-white max-sm:shadow-sm sm:border sm:border-slate-300 sm:bg-white/60 sm:text-slate-700 sm:hover:border-blue-200 sm:hover:bg-white"
               }`}
             >
-              {isLoaded && isSignedIn ? "Mon espace" : "Se connecter"}
+              {isLoaded && isSignedIn ? t("mySpace") : t("signIn")}
             </Link>
 
             {isLoaded && !isSignedIn && (
@@ -148,7 +156,7 @@ export default function SiteHeader() {
                 href={SIGNUPS_OPEN ? "/signup" : WAITLIST_HREF}
                 className="hidden shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition active:scale-[0.97] hover:bg-blue-700 sm:inline-flex"
               >
-                {SIGNUPS_OPEN ? "Créer un compte" : "Liste d'attente"}
+                {SIGNUPS_OPEN ? t("createAccount") : t("waitlist")}
               </Link>
             )}
 
@@ -157,8 +165,8 @@ export default function SiteHeader() {
                 type="button"
                 onClick={handleSignOut}
                 disabled={signingOut}
-                aria-label={signingOut ? "Déconnexion en cours" : "Se déconnecter"}
-                title="Se déconnecter"
+                aria-label={signingOut ? t("signingOut") : t("signOut")}
+                title={t("signOut")}
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white/60 text-slate-500 transition active:scale-[0.97] hover:border-blue-200 hover:text-slate-800 disabled:opacity-50"
               >
                 <LogOut className={`h-4 w-4 shrink-0 ${signingOut ? "animate-pulse" : ""}`} strokeWidth={1.75} />

@@ -1,4 +1,5 @@
 import { MessageCircle } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { markMessagesSeenOnOpen, sendPatientMessage } from "../actions";
@@ -35,7 +36,9 @@ export default async function MessagesPage({
   const instructorRow = patient?.instructors as unknown as { full_name: string | null; status: string | null } | null;
   const kineSuspended = instructorRow?.status === "suspended";
   const instructorFullName = instructorRow?.full_name ?? null;
-  const instructorName = instructorFullName ?? "votre kiné";
+  const t = await getTranslations("patient.messages");
+  const tc = await getTranslations("patient.common");
+  const instructorName = instructorFullName ?? tc("yourKine");
 
   const { data: messages } = await supabase
     .from("patient_messages")
@@ -66,9 +69,9 @@ export default async function MessagesPage({
       <div className="mx-auto max-w-4xl">
         <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink max-sm:hidden">
           <MessageCircle className="h-5 w-5 text-brand max-sm:hidden" strokeWidth={1.75} />
-          Messages
+          {t("title")}
         </h1>
-        <p className="mt-1 text-sm text-muted max-sm:hidden">Échangez avec {instructorName}.</p>
+        <p className="mt-1 text-sm text-muted max-sm:hidden">{t("subtitle", { name: instructorName })}</p>
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger max-sm:m-3">{error}</p>}
 
@@ -79,7 +82,7 @@ export default async function MessagesPage({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-ink max-sm:text-base">{instructorName}</p>
-              <p className="text-xs text-muted">Votre kinésithérapeute</p>
+              <p className="text-xs text-muted">{t("yourPhysio")}</p>
             </div>
           </header>
 
@@ -93,15 +96,15 @@ export default async function MessagesPage({
             <MessageThread
               messages={thread}
               mineSender="patient"
-              emptyText={`Vous n'avez pas encore échangé de messages avec ${instructorName}. Écrivez-lui pour poser une question sur votre programme.`}
+              emptyText={t("empty", { name: instructorName })}
             />
           </div>
 
           <div className="border-t border-line px-4 py-3 max-sm:bg-surface max-sm:px-3 max-sm:py-2.5">
             {kineSuspended ? (
-              <p className="text-center text-sm text-muted">Votre kiné n&apos;exerce plus sur EasyPhysio : la messagerie est fermée.</p>
+              <p className="text-center text-sm text-muted">{t("closed")}</p>
             ) : (
-              <MessageComposer patientId={user.id} action={sendPatientMessage} placeholder={`Écrire à ${instructorName}…`} chat />
+              <MessageComposer patientId={user.id} action={sendPatientMessage} placeholder={t("placeholder", { name: instructorName })} chat />
             )}
           </div>
         </section>

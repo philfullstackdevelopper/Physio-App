@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { Plus, X } from "lucide-react";
 import { track } from "@/lib/analytics/track";
 import { isPhoneFormat } from "@/lib/phoneFormat";
@@ -61,7 +62,8 @@ export default function NewSeanceModal({
     error?: string | null;
   };
 }) {
-  const title = edit ? "Modifier la séance" : "Nouvelle séance";
+  const t = useTranslations("exercise.newSeance");
+  const title = edit ? t("editTitle") : t("newTitle");
   const isClient = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -137,12 +139,12 @@ export default function NewSeanceModal({
           <div className="flex flex-wrap items-center gap-2 border-b border-line px-6 py-3 max-sm:grid max-sm:grid-cols-2 max-sm:px-4 max-sm:py-2.5 md:flex-nowrap">
             <h2 className="mr-2 shrink-0 text-lg font-semibold text-ink max-sm:col-start-1 max-sm:row-start-1 max-sm:mr-0 max-sm:text-base">
               <span className={hideOnAdd}>{title}</span>
-              {phoneTab === "add" && <span className="sm:hidden">Ajouter un exercice</span>}
+              {phoneTab === "add" && <span className="sm:hidden">{t("addExercise")}</span>}
             </h2>
-            <input name="name" required defaultValue={edit?.name} placeholder="Nom de la séance" aria-label="Nom de la séance" className={`min-w-0 flex-[2] max-sm:col-span-2 max-sm:h-10 max-sm:text-base ${hideOnAdd} ${fieldClass}`} />
-            <select name="condition_id" required defaultValue={edit?.conditionId ?? ""} aria-label="Condition" className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
+            <input name="name" required defaultValue={edit?.name} placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")} className={`min-w-0 flex-[2] max-sm:col-span-2 max-sm:h-10 max-sm:text-base ${hideOnAdd} ${fieldClass}`} />
+            <select name="condition_id" required defaultValue={edit?.conditionId ?? ""} aria-label={t("condition")} className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
               <option value="" disabled>
-                Condition…
+                {t("conditionPlaceholder")}
               </option>
               {conditions.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -150,8 +152,8 @@ export default function NewSeanceModal({
                 </option>
               ))}
             </select>
-            <select name="stage" value={stage} onChange={(e) => setStage(e.target.value)} aria-label="Phase" className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
-              <option value="">Phase (toutes)</option>
+            <select name="stage" value={stage} onChange={(e) => setStage(e.target.value)} aria-label={t("phase")} className={`min-w-0 flex-1 max-sm:h-10 ${hideOnAdd} ${fieldClass}`}>
+              <option value="">{t("phaseAll")}</option>
               {stages.map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -161,13 +163,13 @@ export default function NewSeanceModal({
             {edit && (
               <>
                 <label className={`flex shrink-0 items-center gap-1.5 text-xs text-muted ${hideOnAdd}`}>
-                  Durée
-                  <input type="number" name="duration_minutes" min={1} max={90} defaultValue={edit.durationMinutes ?? 10} aria-label="Durée en minutes" className={`w-16 max-sm:h-10 max-sm:flex-1 ${fieldClass}`} />
-                  min
+                  {t("duration")}
+                  <input type="number" name="duration_minutes" min={1} max={90} defaultValue={edit.durationMinutes ?? 10} aria-label={t("durationAria")} className={`w-16 max-sm:h-10 max-sm:flex-1 ${fieldClass}`} />
+                  {t("minutesUnit")}
                 </label>
                 <label className={`flex shrink-0 items-center gap-1.5 text-xs text-muted ${hideOnAdd}`}>
-                  <input type="number" name="times_per_week" min={1} max={14} defaultValue={edit.timesPerWeek ?? 3} aria-label="Fois par semaine" className={`w-14 max-sm:h-10 max-sm:flex-1 ${fieldClass}`} />
-                  fois / sem.
+                  <input type="number" name="times_per_week" min={1} max={14} defaultValue={edit.timesPerWeek ?? 3} aria-label={t("timesPerWeekAria")} className={`w-14 max-sm:h-10 max-sm:flex-1 ${fieldClass}`} />
+                  {t("timesPerWeek")}
                 </label>
               </>
             )}
@@ -179,7 +181,7 @@ export default function NewSeanceModal({
                 if (phoneTab === "add" && isPhoneFormat()) setPhoneTab("current");
                 else onClose();
               }}
-              aria-label="Fermer"
+              aria-label={t("close")}
               className="ml-1 shrink-0 rounded-lg p-1.5 text-muted hover:bg-app-bg hover:text-ink max-sm:col-start-2 max-sm:row-start-1 max-sm:ml-0 max-sm:flex max-sm:h-9 max-sm:w-9 max-sm:items-center max-sm:justify-center max-sm:justify-self-end max-sm:rounded-full max-sm:bg-app-bg max-sm:text-ink"
             >
               <X className="h-5 w-5" strokeWidth={1.75} />
@@ -188,7 +190,7 @@ export default function NewSeanceModal({
 
           {edit?.error && <p className={`mx-6 mt-3 rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger max-sm:mx-4 ${hideOnAdd}`}>{edit.error}</p>}
           {edit?.saved && !edit.error && (
-            <p className={`mx-6 mt-3 rounded-xl bg-ok-soft px-4 py-2 text-sm font-medium text-ok max-sm:mx-4 ${hideOnAdd}`}>Séance enregistrée</p>
+            <p className={`mx-6 mt-3 rounded-xl bg-ok-soft px-4 py-2 text-sm font-medium text-ok max-sm:mx-4 ${hideOnAdd}`}>{t("saved")}</p>
           )}
           <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-4 sm:max-md:flex sm:max-md:flex-col sm:max-md:*:shrink-0 max-sm:block max-sm:overflow-hidden max-sm:px-4 max-sm:py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:overflow-hidden">
             <section className={`flex min-h-0 flex-col sm:max-md:shrink-0 rounded-xl border border-line bg-app-bg p-4 max-sm:h-full max-sm:border-0 max-sm:bg-transparent max-sm:p-0 ${hideOnAdd}`}>
@@ -196,10 +198,10 @@ export default function NewSeanceModal({
                   il prenait de la place sans rien apprendre. */}
               <p className="text-xs text-muted">
                 <span className="max-sm:hidden">
-                  {selected.length ? "Cliquez sur un exercice pour le retirer. Sous chaque exercice : séries × répétitions, ou maintien en secondes (vide = 3 × 8-12)." : "Choisissez des exercices dans la bibliothèque, à droite."}
+                  {selected.length ? t("clickToRemoveDose") : t("chooseFromLibrary")}
                 </span>
                 <span className="sm:hidden">
-                  {selected.length ? "Touchez un exercice pour le retirer." : "Touchez « Ajouter un exercice » pour composer la séance."}
+                  {selected.length ? t("tapToRemove") : t("tapAdd")}
                 </span>
               </p>
               <ul className="mt-3 grid grid-cols-2 content-start gap-2 max-sm:mt-2 max-sm:min-h-0 max-sm:flex-1 max-sm:overflow-y-auto md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1">
@@ -246,7 +248,7 @@ export default function NewSeanceModal({
           {phoneTab === "add" && (
             <div className="hidden border-t border-line px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2.5 max-sm:block">
               <button type="button" onClick={() => setPhoneTab("current")} className="w-full rounded-full bg-brand py-2.5 text-sm font-semibold text-white">
-                {selected.length > 0 ? `Terminé · ${selected.length} exercice${selected.length > 1 ? "s" : ""}` : "Retour à la séance"}
+                {selected.length > 0 ? t("doneCount", { count: selected.length }) : t("backToSession")}
               </button>
             </div>
           )}
@@ -258,7 +260,7 @@ export default function NewSeanceModal({
               className="hidden flex-1 items-center justify-center gap-1 rounded-full border border-brand/40 bg-brand-soft px-2 py-2.5 text-[13px] font-semibold text-brand max-sm:inline-flex"
             >
               <Plus className="h-4 w-4 shrink-0" strokeWidth={2} />
-              Ajouter un exercice
+              {t("addExercise")}
             </button>
             {edit && (
               // formAction : ce bouton envoie le même formulaire à l'action de
@@ -268,22 +270,22 @@ export default function NewSeanceModal({
                 formAction={edit.deleteAction}
                 formNoValidate
                 onClick={(e) => {
-                  if (!window.confirm("Supprimer définitivement cette séance ?")) e.preventDefault();
+                  if (!window.confirm(t("deleteConfirm"))) e.preventDefault();
                 }}
                 className="mr-auto rounded-full px-3 py-2 text-sm font-medium text-danger hover:bg-danger-soft max-sm:hidden"
               >
-                Supprimer cette séance
+                {t("delete")}
               </button>
             )}
             <button type="button" onClick={onClose} className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg max-sm:hidden">
-              {edit ? "Fermer" : "Annuler"}
+              {edit ? t("close") : t("cancel")}
             </button>
             <SubmitButton
-              pendingText={edit ? "Enregistrement…" : "Création…"}
+              pendingText={edit ? t("saving") : t("creating")}
               disabled={selected.length === 0}
               className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1 max-sm:px-2 max-sm:py-2.5 max-sm:text-[13px]"
             >
-              {edit ? "Enregistrer" : "Créer la séance"}
+              {edit ? t("save") : t("create")}
             </SubmitButton>
           </div>
         </form>

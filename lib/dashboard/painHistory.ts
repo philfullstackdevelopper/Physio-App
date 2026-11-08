@@ -1,5 +1,7 @@
 // Série de douleur des 30 derniers jours pour la fiche patient — pur, testé.
 
+import { INTL_TAGS, type Locale } from "../../i18n/locales.ts";
+
 export interface PainPoint { x: number; y: number; score: number; dateLabel: string }
 export interface PainSeries {
   points: PainPoint[];
@@ -8,13 +10,13 @@ export interface PainSeries {
   previous: number | null;
 }
 
-const DAY_FMT = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
-
 export function buildPainSeries(
   rows: { pain_score: number | null; created_at: string }[],
   now: Date = new Date(),
   days = 30,
+  locale: Locale = "fr",
 ): PainSeries {
+  const DAY_FMT = new Intl.DateTimeFormat(INTL_TAGS[locale], { day: "numeric", month: "short" });
   const end = now.getTime();
   const span = Math.max(1, days) * 86_400_000;
   const start = end - span;

@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 import { CheckCircle2, ChevronRight, Circle, ExternalLink, Tag, Users } from "lucide-react";
 import SubmitButton from "@/components/SubmitButton";
 import PhoneFold from "@/components/PhoneFold";
@@ -23,8 +26,6 @@ export type SubscriberRow = {
   periodEnd: string | null;
 };
 
-const eur = (cents: number) => `${eurosFR(cents)} €`;
-const shortDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "");
 
 const CARD = "rounded-2xl border border-line bg-surface p-4 sm:p-5 max-sm:border-0 max-sm:shadow-soft max-sm:short:p-3";
 
@@ -43,14 +44,17 @@ export default function FacturationView({
   error?: string;
 }) {
   const active = subscribers.filter((s) => s.status !== "refused");
+  const t = useTranslations("billing.facturation");
+  const tf = useTranslations("billing.format");
+  const locale = useLocale() as Locale;
+  const eur = (cents: number) => tf("eur", { amount: eurosFR(cents, locale) });
+  const shortDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(intlTag(locale), { day: "numeric", month: "short" }) : "");
   return (
     <main>
       <div className="mx-auto max-w-7xl p-3 max-sm:p-4 max-sm:pt-2 sm:p-5 short:sm:py-3">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
-          <h1 className="text-xl font-semibold text-ink max-sm:text-2xl">Suivi &amp; facturation</h1>
-          <p className="text-sm text-muted max-sm:text-xs max-sm:short:hidden">
-            EasyPhysio est gratuit pour vous. Vos honoraires sont versés directement sur votre compte.
-          </p>
+          <h1 className="text-xl font-semibold text-ink max-sm:text-2xl">{t("title")}</h1>
+          <p className="text-sm text-muted max-sm:text-xs max-sm:short:hidden">{t("subtitle")}</p>
         </div>
 
         {error && <p className="mt-2 rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger">{error}</p>}
@@ -60,7 +64,7 @@ export default function FacturationView({
           <section className={`${CARD} flex min-h-0 flex-col md:col-span-2 lg:col-span-1`}>
             <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
               <Users className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
-              Mes patients abonnés
+              {t("subscribersTitle")}
             </h2>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-xl bg-app-bg px-3 py-2">
@@ -68,20 +72,18 @@ export default function FacturationView({
                   {active.length}
                   <span className="text-sm font-normal text-muted"> / {patientCount}</span>
                 </p>
-                <p className="text-[11px] leading-tight text-muted">patients abonnés</p>
+                <p className="text-[11px] leading-tight text-muted">{t("subscribersTile")}</p>
               </div>
               <div className="rounded-xl bg-ok-soft px-3 py-2">
                 <p className="text-lg font-semibold tabular-nums text-ok">{eur(monthlyCents)}</p>
-                <p className="text-[11px] leading-tight text-muted">pour vous par mois, programmes à jour</p>
+                <p className="text-[11px] leading-tight text-muted">{t("monthlyTile")}</p>
               </div>
             </div>
 
             {subscribers.length === 0 ? (
               <div className="mt-3 rounded-xl border border-dashed border-line px-4 py-4 text-center">
-                <p className="text-sm font-medium text-ink">Aucun patient abonné pour l&apos;instant.</p>
-                <p className="mx-auto mt-1 max-w-md text-xs text-muted">
-                  Vos patients activent leur suivi dans l&apos;appli, juste après leur inscription ({TRIAL_DAYS} jours offerts).
-                </p>
+                <p className="text-sm font-medium text-ink">{t("emptyTitle")}</p>
+                <p className="mx-auto mt-1 max-w-md text-xs text-muted">{t("emptyText", { days: TRIAL_DAYS })}</p>
               </div>
             ) : (
               <ul className="mt-3 min-h-0 divide-y divide-line overflow-y-auto max-sm:max-h-32 sm:max-h-[calc(100dvh-17rem)]">
@@ -96,10 +98,10 @@ export default function FacturationView({
                         <span className="block truncate text-xs text-muted">
                           {s.planLabel} ·{" "}
                           {s.status === "refused"
-                            ? "paiement refusé"
+                            ? t("rowRefused")
                             : s.status === "cancelled"
-                              ? `résiliée, fin le ${shortDate(s.periodEnd)}`
-                              : `prochain mois le ${shortDate(s.periodEnd)}`}
+                              ? t("rowCancelled", { date: shortDate(s.periodEnd) })
+                              : t("rowNext", { date: shortDate(s.periodEnd) })}
                         </span>
                       </span>
                       <span
@@ -107,7 +109,7 @@ export default function FacturationView({
                           s.status === "active" ? "bg-ok-soft text-ok" : s.status === "cancelled" ? "bg-app-bg text-muted" : "bg-danger-soft text-danger"
                         }`}
                       >
-                        {s.status === "active" ? "Actif" : s.status === "cancelled" ? "Résiliée" : "Refusé"}
+                        {s.status === "active" ? t("badgeActive") : s.status === "cancelled" ? t("badgeCancelled") : t("badgeRefused")}
                       </span>
                       <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
                     </Link>
@@ -124,31 +126,33 @@ export default function FacturationView({
               title={
                 <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
                   <Tag className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
-                  Ce que paie un patient
+                  {t("patientPaysTitle")}
                 </h2>
               }
-              summary={`${eur(KINE_FOLLOW_UP_CENTS)} pour vous`}
+              summary={t("patientPaysSummary", { amount: eur(KINE_FOLLOW_UP_CENTS) })}
             >
               <table className="mt-2 w-full text-left text-xs">
                 <tbody className="divide-y divide-line">
                   <tr>
-                    <td className="py-1.5 text-ink">Votre programme (vos honoraires, versés à vous)</td>
+                    <td className="py-1.5 text-ink">{t("rowProgramme")}</td>
                     <td className="py-1.5 text-right font-semibold tabular-nums text-ok">{eur(KINE_FOLLOW_UP_CENTS)}</td>
                   </tr>
                   <tr>
-                    <td className="py-1.5 text-ink">Accès à l&apos;appli (payé à EasyPhysio, selon l&apos;engagement)</td>
-                    <td className="py-1.5 text-right tabular-nums text-ink">{eurosFR(LOWEST_PLATFORM_CENTS)} à {eur(HIGHEST_PLATFORM_CENTS)}</td>
+                    <td className="py-1.5 text-ink">{t("rowAccess")}</td>
+                    <td className="py-1.5 text-right tabular-nums text-ink">
+                      {tf("eurRange", { low: eurosFR(LOWEST_PLATFORM_CENTS, locale), high: eurosFR(HIGHEST_PLATFORM_CENTS, locale) })}
+                    </td>
                   </tr>
                   <tr>
-                    <td className="py-1.5 font-medium text-ink">Total pour le patient, par mois</td>
-                    <td className="py-1.5 text-right font-medium tabular-nums text-ink">{eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} à {eur(HIGHEST_MONTHLY_TOTAL_CENTS)}</td>
+                    <td className="py-1.5 font-medium text-ink">{t("rowTotal")}</td>
+                    <td className="py-1.5 text-right font-medium tabular-nums text-ink">
+                      {tf("eurRange", { low: eurosFR(LOWEST_MONTHLY_TOTAL_CENTS, locale), high: eurosFR(HIGHEST_MONTHLY_TOTAL_CENTS, locale) })}
+                    </td>
                   </tr>
                 </tbody>
               </table>
               <p className="mt-2 text-[11px] leading-snug text-muted">
-                Vos {eur(KINE_FOLLOW_UP_CENTS)} sont prélevés directement sur votre compte Stripe, avec la note d&apos;honoraires à votre nom,
-                seulement les mois où vous mettez à jour le programme ({eur(KINE_NET_CENTS)} après frais de carte). EasyPhysio ne prend
-                rien sur vos honoraires. {TRIAL_DAYS} jours offerts au patient. Acte non remboursé par l&apos;Assurance Maladie.
+                {t("patientPaysNote", { amount: eur(KINE_FOLLOW_UP_CENTS), net: eur(KINE_NET_CENTS), days: TRIAL_DAYS })}
               </p>
             </PhoneFold>
           </div>
@@ -164,34 +168,35 @@ export default function FacturationView({
 }
 
 function ConnectCard({ status }: { status: ConnectStatus }) {
+  const t = useTranslations("billing.facturation.connect");
   const s = {
     active: {
       box: "border-ok/30 bg-ok-soft",
       icon: <CheckCircle2 className="h-5 w-5 shrink-0 text-ok" strokeWidth={1.75} />,
-      title: "Paiements activés",
+      title: t("activeTitle"),
       titleClass: "text-ok",
-      text: "Les formules de vos patients sont versées directement sur votre compte.",
+      text: t("activeText"),
     },
     onboarding: {
       box: "border-warn/30 bg-warn-soft",
       icon: <Circle className="h-5 w-5 shrink-0 text-warn" strokeWidth={1.75} />,
-      title: "Inscription en cours",
+      title: t("onboardingTitle"),
       titleClass: "text-warn",
-      text: "Terminez l'inscription Stripe pour commencer à encaisser les formules.",
+      text: t("onboardingText"),
     },
     not_started: {
       box: "border-line bg-app-bg",
       icon: <Circle className="h-5 w-5 shrink-0 text-muted" strokeWidth={1.75} />,
-      title: "Paiements non activés",
+      title: t("notStartedTitle"),
       titleClass: "text-ink",
-      text: "Activez votre compte de paiement (Stripe) pour que vos patients puissent payer leur formule.",
+      text: t("notStartedText"),
     },
   }[status];
   return (
     <PhoneFold
       className={CARD}
-      title={<h2 className="text-base font-semibold text-ink">Encaisser les formules</h2>}
-      summary={<span className={s.titleClass}>{status === "active" ? "Activés" : status === "onboarding" ? "En cours" : "À activer"}</span>}
+      title={<h2 className="text-base font-semibold text-ink">{t("cardTitle")}</h2>}
+      summary={<span className={s.titleClass}>{status === "active" ? t("summaryActive") : status === "onboarding" ? t("summaryOnboarding") : t("summaryNotStarted")}</span>}
     >
       <div className={`mt-2 flex items-start gap-3 rounded-xl border px-3 py-2 ${s.box}`}>
         {s.icon}
@@ -208,13 +213,13 @@ function ConnectCard({ status }: { status: ConnectStatus }) {
             rel="noopener noreferrer"
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand px-4 py-2 text-sm font-medium text-brand transition hover:bg-brand-soft"
           >
-            Mes versements (Stripe)
+            {t("payouts")}
             <ExternalLink className="h-4 w-4" strokeWidth={1.75} />
           </a>
         ) : (
           <form action={startConnectOnboarding}>
-            <SubmitButton pendingText="Redirection…" className="w-full rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark">
-              {status === "onboarding" ? "Reprendre l'inscription" : "Activer les paiements"}
+            <SubmitButton pendingText={t("redirecting")} className="w-full rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark">
+              {status === "onboarding" ? t("resume") : t("activate")}
             </SubmitButton>
           </form>
         )}

@@ -4,12 +4,14 @@
 // connecté s'il est plus loin. Partagée par la vraie page et la démo.
 import Link from "next/link";
 import { BadgeCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { AuthorAvatar } from "@/components/ContributorCredit";
 import { contributorTitle, nextContributorStep, type ContributorRank } from "@/lib/exercise/kineExercises";
 
 function Row({ r, rank, meId }: { r: ContributorRank; rank: number; meId: string }) {
+  const t = useTranslations("exercise.contributors");
   const me = r.authorId === meId;
-  const title = contributorTitle(r.count);
+  const title = contributorTitle(r.count, useTranslations("exercise.contributor"));
   return (
     <tr className={`border-t border-line ${me ? "bg-brand-soft/60" : ""}`}>
       <td className={`w-10 py-2.5 pl-4 pr-2 text-right tabular-nums ${rank <= 3 ? "font-semibold text-ink" : "text-muted"}`}>{rank}</td>
@@ -17,7 +19,7 @@ function Row({ r, rank, meId }: { r: ContributorRank; rank: number; meId: string
         <span className="flex min-w-0 items-center gap-2.5">
           <AuthorAvatar label={r.label} size={28} />
           <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-ink">{me ? `${r.label} (vous)` : r.label}</span>
+            <span className="block truncate text-sm font-medium text-ink">{me ? t("you", { name: r.label }) : r.label}</span>
             {title && (
               <span className="inline-flex items-center gap-1 text-[11px] text-muted">
                 <BadgeCheck className="h-3 w-3 text-brand" strokeWidth={2} />
@@ -41,6 +43,8 @@ export default function ContributorsView({
   meId: string;
   backHref?: string;
 }) {
+  const t = useTranslations("exercise.contributors");
+  const tContributor = useTranslations("exercise.contributor");
   const mineIndex = ranking.findIndex((r) => r.authorId === meId);
   const mine = mineIndex >= 0 ? ranking[mineIndex] : null;
   const top = ranking.slice(0, 10);
@@ -49,29 +53,27 @@ export default function ContributorsView({
   return (
     <main className="mx-auto w-full max-w-3xl px-4 pb-8 pt-2 sm:px-8 sm:py-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-ink">Contributeurs</h1>
+        <h1 className="text-2xl font-semibold text-ink">{t("title")}</h1>
         <Link href={backHref} className="text-sm font-medium text-brand hover:underline max-sm:hidden">
-          ← Mes exercices
+          {t("backToExercises")}
         </Link>
       </div>
       <p className="mt-1 max-w-[60ch] text-sm text-muted">
-        Les kinés dont les exercices, vérifiés par EasyPhysio, enrichissent la bibliothèque de tous. À 5 exercices publiés, le titre
-        « Contributeur EasyPhysio » s&apos;affiche sur leur profil.
+        {t("intro")}
       </p>
 
       <div className="mt-5 overflow-hidden rounded-xl border border-line bg-surface">
         {top.length === 0 ? (
           <p className="p-5 text-sm text-muted">
-            Aucun exercice de kiné n&apos;est encore publié. Proposez les vôtres depuis « Mes exercices » en cochant « Rendre public pour
-            tous ».
+            {t("empty")}
           </p>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-muted">
                 <th className="py-2 pl-4 pr-2 text-right font-semibold">#</th>
-                <th className="py-2 pr-3 font-semibold">Kiné</th>
-                <th className="py-2 pl-2 pr-4 text-right font-semibold">Publiés</th>
+                <th className="py-2 pr-3 font-semibold">{t("colPhysio")}</th>
+                <th className="py-2 pl-2 pr-4 text-right font-semibold">{t("colPublished")}</th>
               </tr>
             </thead>
             <tbody>
@@ -86,8 +88,8 @@ export default function ContributorsView({
 
       <p className="mt-3 text-xs text-muted">
         {mine
-          ? `Vous avez ${myCount} exercice${myCount > 1 ? "s" : ""} publié${myCount > 1 ? "s" : ""}. ${nextContributorStep(myCount) ?? ""}`
-          : "Vous n'avez pas encore d'exercice publié."}
+          ? t("mine", { count: myCount, next: nextContributorStep(myCount, tContributor) ?? "" })
+          : t("noneMine")}
       </p>
     </main>
   );

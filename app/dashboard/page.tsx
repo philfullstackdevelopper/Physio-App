@@ -5,6 +5,7 @@ import { getInstructor } from "@/lib/dashboard/instructor";
 import { loadDashboardHome } from "@/lib/dashboard/homeData";
 import { loadUnreadMessages } from "@/lib/dashboard/unreadMessages";
 import DashboardHomeView from "@/components/DashboardHomeView";
+import { getLibI18n } from "@/lib/dashboard/libI18n";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -17,7 +18,7 @@ export default async function DashboardPage() {
   // on y est déjà, ce serait une boucle.
   if (((instructor.status as string | null) ?? "approved") !== "approved") return null;
 
-  const h = await loadDashboardHome(supabase, user.id);
+  const h = await loadDashboardHome(supabase, user.id, new Date(), await getLibI18n());
   const unread = await loadUnreadMessages(supabase, user.id);
   // Une ligne par patient : on garde le message le plus récent de chacun.
   const unreadByPatient = new Map<string, (typeof unread)[number]>();

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
+import { useTranslations } from "next-intl";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 
 // Right-panel centerpiece for the login page only. A "cinema reel" of real
@@ -47,17 +48,31 @@ const COLUMNS: { items: string[]; direction: "down" | "up"; duration: number }[]
   },
 ];
 
+// Libellé affiché (messages/<langue>/auth.json, « showcase ») ; le nom
+// français reste la clé de recherche du dessin.
+const LABEL_KEYS: Record<string, string> = {
+  "Pont fessier (coxarthrose)": "gluteBridgeHip",
+  "Étirement des pectoraux à la porte": "doorwayPecStretch",
+  "Rotation lombaire allongée": "lyingLumbarRotation",
+  "Squat fonctionnel complet (hanche)": "functionalSquatHip",
+  "Étirement des ischio-jambiers (genou arthrose)": "hamstringStretchKnee",
+  "Renforcement léger des abducteurs, allongé": "lyingAbductors",
+  "Étirement des ischio-jambiers assis (sciatique)": "seatedHamstringSciatica",
+  "Montée de marche contrôlée (genou arthrose)": "controlledStepUpKnee",
+};
+
 // Cards per column loop, before the seamless-loop duplication below — high
 // enough that even the shortest column (2 unique items) comfortably fills
 // the panel's height with no visible gap.
 const MIN_LOOP_LENGTH = 8;
 
 function FilmCard({ name }: { name: string }) {
+  const t = useTranslations("auth.showcase");
   return (
     <div className="flex w-full shrink-0 flex-col gap-2 rounded-2xl border border-slate-100 bg-white/90 p-3 shadow-sm">
       <ExerciseIllustration name={name} className="h-24 w-full text-blue-600" />
       <p className="line-clamp-2 text-center text-xs font-medium leading-snug text-slate-600">
-        {name}
+        {LABEL_KEYS[name] ? t(LABEL_KEYS[name]) : name}
       </p>
     </div>
   );

@@ -1,19 +1,15 @@
 import InformationsView from "./InformationsView";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { STAGE_LABELS, type ActivityLevel, type InjuryStage } from "@/lib/exercise/prescription";
-import { EQUIPMENT_LABELS, type EquipmentId } from "@/lib/exercise/equipment";
+import { getLocale, getTranslations } from "next-intl/server";
+import { stageLabel, type ActivityLevel, type InjuryStage } from "@/lib/exercise/prescription";
+import { equipmentLabels, type EquipmentId } from "@/lib/exercise/equipment";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 
-// Pas de constante partagée pour ces libellés (ils vivent en dur dans le
-// <select> de OnboardingWizard) — repris ici tels quels pour rester cohérent
-// avec ce que le patient a vu en les choisissant.
-const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
-  sedentary: "Sédentaire (peu ou pas de sport)",
-  moderate: "Modérée (activité régulière)",
-  active: "Active (sport fréquent)",
-};
-
-const frDate = (iso: string) => new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" }).format(new Date(iso));
+// Libellés du niveau d'activité : les mêmes que le <select> de
+// OnboardingWizard (messages patient.situation.activity), pour rester
+// cohérent avec ce que le patient a vu en les choisissant.
 
 // « Mes informations » : coordonnées (Clerk) + tout ce que le patient a
 // renseigné à l'onboarding (Philippe, 2026-09-11 — la maquette d'origine ne
@@ -25,6 +21,14 @@ const frDate = (iso: string) => new Intl.DateTimeFormat("fr-FR", { day: "numeric
 export default async function InformationsPage() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations("patient.informations");
+  const tActivity = await getTranslations("patient.situation.activity");
+  const tStage = await getTranslations("exercise.stage");
+  const tEquipment = await getTranslations("exercise.equipment");
+  const longDate = (iso: string) =>
+    new Intl.DateTimeFormat(intlTag(locale), { day: "numeric", month: "long", year: "numeric" }).format(new Date(iso));
+  const EQUIPMENT_LABELS = equipmentLabels(tEquipment);
 
   const [{ data: patient }, { data: profile }, { data: bodyParts }] = await Promise.all([
     supabase.from("patients").select("full_name").eq("id", user.id).maybeSingle(),
@@ -49,13 +53,13 @@ export default async function InformationsPage() {
       name={(patient?.full_name as string | null) ?? null}
       email={user.email ?? null}
       situation={[
-        { label: "Zones travaillées", value: declaredBodyParts.length ? declaredBodyParts.join(", ") : null },
-        { label: "Étape de récupération", value: profile?.injury_stage ? STAGE_LABELS[profile.injury_stage as InjuryStage] : null },
-        { label: "Avancée de la rééducation", value: (profile?.rehab_progress as string | null) ?? null },
-        { label: "Ce qui s'est passé", value: (profile?.history as string | null) ?? null },
-        { label: "Date de naissance", value: profile?.date_of_birth ? frDate(profile.date_of_birth as string) : null },
+        { label: t("bodyParts"), value: declaredBodyParts.length ? declaredBodyParts.join(", ") : null },
+        { label: t("stage"), value: profile?.injury_stage ? stageLabel(profile.injury_stage as InjuryStage, tStage) : null },
+        { label: t("rehabProgress"), value: (profile?.rehab_progress as string | null) ?? null },
+        { label: t("history"), value: (profile?.history as string | null) ?? null },
+        { label: t("dateOfBirth"), value: profile?.date_of_birth ? longDate(profile.date_of_birth as string) : null },
         {
-          label: "Taille / poids",
+          label: t("heightWeight"),
           value:
             profile?.height_cm || profile?.weight_kg
               ? [profile?.height_cm ? `${profile.height_cm} cm` : null, profile?.weight_kg ? `${profile.weight_kg} kg` : null]
@@ -63,8 +67,8 @@ export default async function InformationsPage() {
                   .join(" · ")
               : null,
         },
-        { label: "Niveau d'activité", value: profile?.activity_level ? ACTIVITY_LABELS[profile.activity_level as ActivityLevel] : null },
-        { label: "Équipement disponible", value: equipment.length ? equipment.join(", ") : null },
+        { label: t("activity"), value: profile?.activity_level ? tActivity(profile.activity_level as ActivityLevel) : null },
+        { label: t("equipment"), value: equipment.length ? equipment.join(", ") : null },
       ]}
     />
   );

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { refreshConnectStatus } from "@/lib/billing/connectStatus";
@@ -25,10 +26,7 @@ export async function GET(request: Request) {
       await refreshConnectStatus(user.id, accountId);
     } catch (err) {
       console.error("[connect/return] vérification du compte Stripe impossible :", err);
-      target.searchParams.set(
-        "error",
-        "Impossible de vérifier votre compte Stripe pour le moment. Rechargez cette page dans quelques minutes.",
-      );
+      target.searchParams.set("error", (await getTranslations("billing.connect"))("verifyError"));
     }
   }
 

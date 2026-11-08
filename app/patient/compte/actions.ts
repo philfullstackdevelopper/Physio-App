@@ -7,6 +7,7 @@ import { requireUser, forgetKnownUser } from "@/lib/supabase/require-user";
 import { revokeCurrentSession } from "@/lib/auth/clerk-session";
 import { deleteClerkUserWithRetry } from "@/lib/auth/deleteClerkUser";
 import { getStripe } from "@/lib/billing/stripe";
+import { getTranslations } from "next-intl/server";
 
 // RGPD droit à l'effacement: a patient deletes their own account. Every
 // table referencing patients.id has "on delete cascade" (see the
@@ -15,6 +16,7 @@ import { getStripe } from "@/lib/billing/stripe";
 export async function deleteMyAccount(formData: FormData) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  const t = await getTranslations("patient.compte");
 
   // Réservé aux patients (audit du 2026-10-08) : appelée par un kiné, cette
   // action supprimerait son compte praticien — et, par cascade, toutes les
@@ -24,12 +26,9 @@ export async function deleteMyAccount(formData: FormData) {
   if (!ownPatientRow) redirect("/dashboard");
 
   const confirmation = String(formData.get("confirmation") ?? "").trim().toUpperCase();
-  if (confirmation !== "SUPPRIMER") {
-    redirect(
-      `/patient/compte?error=${encodeURIComponent(
-        'Tapez exactement "SUPPRIMER" pour confirmer.',
-      )}`,
-    );
+  // Le mot à taper dépend de la langue (« SUPPRIMER » / « DELETE ») : les deux sont acceptés.
+  if (confirmation !== "SUPPRIMER" && confirmation !== t("confirmWord").toUpperCase()) {
+    redirect(`/patient/compte?error=${encodeURIComponent(t("confirmError"))}`);
   }
 
   // redirect() lève une exception interne à Next : toujours HORS des try.
@@ -54,7 +53,7 @@ export async function deleteMyAccount(formData: FormData) {
       const code = (err as { code?: string })?.code;
       if (code !== "resource_missing") {
         console.error("deleteMyAccount: résiliation Stripe impossible", err);
-        failure = "Votre abonnement n'a pas pu être résilié pour le moment. Votre compte est intact — réessayez dans quelques minutes.";
+        failure = t("cancelFailed");
       }
     }
   }
@@ -68,7 +67,7 @@ export async function deleteMyAccount(formData: FormData) {
     await deleteAppUserById(user.id);
   } catch (err) {
     console.error("deleteMyAccount: suppression des données impossible", err);
-    failure = "Suppression des données impossible pour le moment. Votre compte est intact — réessayez dans quelques minutes.";
+    failure = t("deleteFailed");
   }
   if (failure) redirect(`/patient/compte?error=${encodeURIComponent(failure)}`);
 
@@ -101,12 +100,13 @@ export async function deleteOrphanIdentity() {
   if (patientRow) redirect("/patient");
   if (kineRow) redirect("/dashboard");
 
+  const t = await getTranslations("patient.compte");
   let failure: string | null = null;
   try {
     await deleteAppUserById(user.id);
   } catch (err) {
     console.error("deleteOrphanIdentity: suppression de la correspondance impossible", err);
-    failure = "Suppression impossible pour le moment. Réessayez dans quelques minutes.";
+    failure = t("orphanDeleteFailed");
   }
   if (failure) redirect(`/patient?error=${encodeURIComponent(failure)}`);
 

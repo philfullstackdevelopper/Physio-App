@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * Ouverture de la landing (Philippe, 2026-10-07 : « comme Aurascan — ça
@@ -29,6 +30,7 @@ const HOLD_MS = 2600;
 const FADE_MS = 800;
 
 export default function IntroSplash() {
+  const t = useTranslations("home.intro");
   const [gone, setGone] = useState(false);
   const [leaving, setLeaving] = useState(false);
   // Vrai dès que CE montage a lancé l'ouverture : en développement React
@@ -106,7 +108,7 @@ export default function IntroSplash() {
           className="mt-5 text-[11px] font-medium uppercase text-white/60 sm:text-xs"
           style={{ animation: "ep-intro-tag .7s ease-out 1.35s both", letterSpacing: ".28em" }}
         >
-          Vos exercices de kiné, à la maison
+          {t("tagline")}
         </p>
       </div>
     </>

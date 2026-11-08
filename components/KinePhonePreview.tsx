@@ -14,6 +14,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Wifi, BatteryFull, Signal } from "lucide-react";
 
 const SCREEN_W = 360; // écran simulé : proportions d'un vrai téléphone
@@ -35,6 +36,7 @@ const MIN_SCALE = 0.62;
 const MAX_SCALE = 1.05;
 
 export default function KinePhonePreview() {
+  const t = useTranslations("demo.kinePreview");
   // Hauteur STABLE de l'écran (2026-10-28, Philippe : « la taille du téléphone
   // change quand on défile vers le haut ou le bas ») : sur téléphone, la barre
   // d'adresse se cache et réapparaît en défilant, ce qui change
@@ -113,14 +115,14 @@ export default function KinePhonePreview() {
           </div>
           <iframe
             src={near ? "/demo/kine" : undefined}
-            title="Démo de l'espace kiné, à essayer"
+            title={t("iframeTitle")}
             className="absolute left-0 origin-top-left border-0"
             style={{ top: STATUS_H * scale + 4, width: SCREEN_W, height: SCREEN_H, transform: `scale(${scale})` }}
           />
         </div>
       </div>
       <p className="mt-2.5 text-center text-sm font-medium text-slate-500">
-        Touchez l&apos;écran pour essayer : rien n&apos;est enregistré.
+        {t("hint")}
       </p>
     </div>
   );

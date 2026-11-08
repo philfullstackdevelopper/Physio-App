@@ -16,6 +16,7 @@
 // =============================================================================
 
 import { ImageOff } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { EXERCISE_ILLUSTRATION_MAP } from "@/lib/exercise/illustrationMap";
 import { EIGHT_FRAME_LOOP_SLUGS, EIGHT_FRAME_SLOW_SLUGS, EIGHT_FRAME_SLUGS } from "@/lib/exercise/illustrationFrames";
 
@@ -36,6 +37,7 @@ function VendoredIllustration({
   animate: boolean;
   still?: "start" | "middle";
 }) {
+  const t = useTranslations("exercise.illustration");
   if (!animate) {
     // « middle » : le dessin en plein mouvement (cartes « Séances prévues »,
     // Philippe 2026-11-02) — image 4 sur 8, ou 2 sur 3.
@@ -50,7 +52,7 @@ function VendoredIllustration({
     // demonstrated in motion, just recognized at a glance (e.g. a séance
     // card in a list).
     return (
-      <div className={`relative ${className}`} role="img" aria-label={`Démonstration : ${name}`}>
+      <div className={`relative ${className}`} role="img" aria-label={t("aria", { name })}>
         {/* eslint-disable-next-line @next/next/no-img-element -- static local SVG, no next/image benefit */}
         <img
           src={stillSrc}
@@ -70,7 +72,7 @@ function VendoredIllustration({
   const file = eight ? "anim" : "frame";
   const cls = eight ? (EIGHT_FRAME_LOOP_SLUGS.has(slug) ? "ei8l" : EIGHT_FRAME_SLOW_SLUGS.has(slug) ? "ei8s" : "ei8") : "ei-frame";
   return (
-    <div className={`relative ${className}`} role="img" aria-label={`Démonstration : ${name}`}>
+    <div className={`relative ${className}`} role="img" aria-label={t("aria", { name })}>
       {frames.map((frame) => (
         // eslint-disable-next-line @next/next/no-img-element -- static local SVG, no next/image benefit
         <img
@@ -91,17 +93,18 @@ function NoIllustration({ name, className }: { name: string; className: string }
   // Petite vignette (hauteur Tailwind ≤ h-16, ex. listes d'exercices en
   // 28-40 px) : icône seule — le texte « Démonstration à venir » débordait de
   // la case (Philippe, 2026-10-02).
+  const t = useTranslations("exercise.illustration");
   const h = className.match(/(?:^|\s)h-(\d+)(?:\s|$)/);
   const small = h !== null && Number(h[1]) <= 16;
   return (
     <div
       className={`flex items-center justify-center ${className}`}
       role="img"
-      aria-label={`Pas de démonstration disponible : ${name}`}
+      aria-label={t("noneAria", { name })}
     >
       <div className="flex flex-col items-center gap-1.5 text-slate-300">
         <ImageOff className={small ? "h-4 w-4" : "h-6 w-6"} strokeWidth={1.75} />
-        {!small && <span className="text-xs text-slate-400">Démonstration à venir</span>}
+        {!small && <span className="text-xs text-slate-400">{t("comingSoon")}</span>}
       </div>
     </div>
   );

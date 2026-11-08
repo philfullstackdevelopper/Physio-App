@@ -6,6 +6,7 @@ import { SignUp } from "@clerk/nextjs";
 import { brandedHeaderTitle } from "@/lib/clerk/brandedTitle";
 import { compactClerkElements } from "@/lib/clerk/compact";
 import { findCabinetByRpps } from "@/app/signup/kine/actions";
+import { useTranslations } from "next-intl";
 
 // Cabinet details FIRST, account creation LAST — the order a professional
 // signup on a real B2B site follows (Philippe, 2026-09-10), reversed from
@@ -39,6 +40,9 @@ export default function KineSignupFlow() {
   const [fields, setFields] = useState({ cabinetName: "", cabinetAddress: "", phone: "", rppsNumber: "", siret: "" });
   const [lookup, setLookup] = useState<"idle" | "searching" | "notFound">("idle");
   const [found, setFound] = useState<Found | null>(null);
+  const t = useTranslations("auth.cabinet");
+  const tKine = useTranslations("auth.signupKine");
+  const tShared = useTranslations("auth.shared");
 
   const set = (key: keyof typeof fields) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setFields((f) => ({ ...f, [key]: e.target.value }));
@@ -76,15 +80,15 @@ export default function KineSignupFlow() {
     const siret = fields.siret.replace(/\s+/g, "");
 
     if (!cabinetName || !cabinetAddress || !phone) {
-      setError("Merci d'indiquer le nom du cabinet, son adresse et un téléphone.");
+      setError(t("errorRequired"));
       return;
     }
     if (rppsNumber && !/^\d{9,11}$/.test(rppsNumber)) {
-      setError("Le numéro RPPS ou ADELI ne contient que des chiffres (ou laissez-le vide).");
+      setError(t("errorRppsDigitsOrEmpty"));
       return;
     }
     if (siret && !/^\d{14}$/.test(siret)) {
-      setError("Le SIRET doit contenir 14 chiffres (ou laissez-le vide).");
+      setError(t("errorSiretDigitsOrEmpty"));
       return;
     }
 
@@ -100,8 +104,7 @@ export default function KineSignupFlow() {
     return (
       <div>
         <p className="text-sm leading-relaxed text-slate-600 max-sm:hidden short:hidden">
-          Vos patients n&apos;ont pas besoin de créer de compte ici — c&apos;est vous qui les
-          invitez depuis votre tableau de bord, une fois inscrit·e.
+          {tKine("patientsNoAccount")}
         </p>
         <div className="mt-5 short:mt-2">
           <SignUp
@@ -110,7 +113,7 @@ export default function KineSignupFlow() {
             appearance={{ elements: { ...compactClerkElements, rootBox: "w-full", cardBox: "w-full", headerTitle: brandedHeaderTitle } }}
           />
           <p className="mt-4 text-center text-xs leading-relaxed text-slate-400 short:hidden">
-            Votre espace est prêt dès la création du compte.
+            {tKine("spaceReady")}
           </p>
         </div>
       </div>
@@ -119,9 +122,9 @@ export default function KineSignupFlow() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold text-slate-900"><span className="text-blue-700">EasyPhysio ·</span>{" "}Votre cabinet</h1>
+      <h1 className="font-display text-2xl font-semibold text-slate-900">{t.rich("title", { brand: (c) => <span className="text-blue-700">{c}</span> })}</h1>
       <p className="mt-2 text-sm leading-relaxed text-slate-600 short:hidden">
-        Quelques informations pour vos notes d&apos;honoraires et vos patients.
+        {t("intro")}
       </p>
 
       {error && <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
@@ -129,21 +132,21 @@ export default function KineSignupFlow() {
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4 short:mt-3 short:gap-2.5">
         <div>
           <span className="text-sm font-medium text-slate-700">
-            Numéro RPPS <span className="font-normal text-slate-400">(facultatif)</span>
+            {t("rppsLabel")} <span className="font-normal text-slate-400">{t("optional")}</span>
           </span>
           <div className="mt-1.5 flex gap-2 short:mt-1">
             <input
               type="text"
               name="rpps_number"
               inputMode="numeric"
-              placeholder="11 chiffres"
+              placeholder={t("rppsPlaceholder")}
               value={fields.rppsNumber}
               onChange={(e) => {
                 set("rppsNumber")(e);
                 setLookup("idle");
                 setFound(null);
               }}
-              aria-label="Numéro RPPS (facultatif)"
+              aria-label={t("rppsAria")}
               className={`${fieldClass} mt-0 short:mt-0`}
             />
             <button
@@ -152,17 +155,17 @@ export default function KineSignupFlow() {
               disabled={lookup === "searching" || !fields.rppsNumber.trim()}
               className="shrink-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 disabled:opacity-50"
             >
-              {lookup === "searching" ? "Recherche…" : "Retrouver mon cabinet"}
+              {lookup === "searching" ? t("searching") : t("findCabinet")}
             </button>
           </div>
           {lookup === "notFound" && (
             <span className="mt-1 block text-xs text-slate-500">
-              Numéro non retrouvé dans l&apos;Annuaire Santé — pas de souci, remplissez simplement les champs ci-dessous.
+              {t("notFound")}
             </span>
           )}
           {found && (
             <div className="mt-2 rounded-xl border border-blue-100 bg-blue-50 px-3.5 py-2.5 text-sm">
-              <p className="font-medium text-slate-900">C&apos;est bien vous ? {found.fullName}</p>
+              <p className="font-medium text-slate-900">{t("isThisYou", { name: found.fullName })}</p>
               {(found.cabinetName || found.cabinetAddress) && (
                 <p className="mt-0.5 text-slate-600">
                   {[found.cabinetName, found.cabinetAddress].filter(Boolean).join(" · ")}
@@ -174,14 +177,14 @@ export default function KineSignupFlow() {
                   onClick={useFound}
                   className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-700"
                 >
-                  Utiliser ces informations
+                  {t("useThis")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setFound(null)}
                   className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:text-slate-900"
                 >
-                  Non, je remplis moi-même
+                  {t("fillMyself")}
                 </button>
               </div>
             </div>
@@ -189,48 +192,48 @@ export default function KineSignupFlow() {
         </div>
 
         <label>
-          <span className="text-sm font-medium text-slate-700">Nom du cabinet</span>
+          <span className="text-sm font-medium text-slate-700">{t("nameLabel")}</span>
           <input
             type="text"
             name="cabinet_name"
             required
             value={fields.cabinetName}
             onChange={set("cabinetName")}
-            placeholder="ex. Cabinet de kinésithérapie du Parc"
+            placeholder={t("namePlaceholder")}
             className={fieldClass}
           />
         </label>
 
         <label>
-          <span className="text-sm font-medium text-slate-700">Adresse du cabinet</span>
+          <span className="text-sm font-medium text-slate-700">{t("addressLabel")}</span>
           <input
             type="text"
             name="cabinet_address"
             required
             value={fields.cabinetAddress}
             onChange={set("cabinetAddress")}
-            placeholder="12 rue des Lilas, 75011 Paris"
+            placeholder={t("addressPlaceholder")}
             className={fieldClass}
           />
         </label>
 
         <div className="flex flex-col gap-4 short:grid short:grid-cols-2 short:gap-3">
           <label>
-            <span className="text-sm font-medium text-slate-700">Téléphone</span>
+            <span className="text-sm font-medium text-slate-700">{t("phoneShortLabel")}</span>
             <input
               type="tel"
               name="phone"
               required
               value={fields.phone}
               onChange={set("phone")}
-              placeholder="06 12 34 56 78"
+              placeholder={t("phonePlaceholder")}
               className={fieldClass}
             />
           </label>
 
           <label>
             <span className="text-sm font-medium text-slate-700">
-              SIRET <span className="font-normal text-slate-400">(facultatif)</span>
+              SIRET <span className="font-normal text-slate-400">{t("optional")}</span>
             </span>
             <input
               type="text"
@@ -238,7 +241,7 @@ export default function KineSignupFlow() {
               inputMode="numeric"
               value={fields.siret}
               onChange={set("siret")}
-              placeholder="14 chiffres"
+              placeholder={t("siretPlaceholder")}
               className={fieldClass}
             />
           </label>
@@ -248,14 +251,14 @@ export default function KineSignupFlow() {
           type="submit"
           className="mt-2 rounded-xl bg-blue-600 py-2.5 font-medium text-white transition hover:bg-blue-700 short:mt-1"
         >
-          Continuer
+          {tShared("continue")}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-500 short:mt-3">
-        Déjà un compte ?{" "}
+        {tShared("haveAccount")}{" "}
         <Link href="/login" className="font-medium text-blue-700 hover:underline">
-          Se connecter
+          {tShared("signIn")}
         </Link>
       </p>
     </div>

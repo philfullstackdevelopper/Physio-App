@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { useLocale, useTranslations } from "next-intl";
 import { Check } from "lucide-react";
-import type { InjuryStage } from "@/lib/exercise/prescription";
-import type { EquipmentId } from "@/lib/exercise/equipment";
+import { stageLabel, type InjuryStage } from "@/lib/exercise/prescription";
+import { equipmentLabels as equipmentLabelsFor, type EquipmentId } from "@/lib/exercise/equipment";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 
 // (Philippe, 2026-11-06 : audit, on allège) 3 étapes au lieu de 4 : l'ancienne
@@ -13,7 +14,8 @@ import BodyPartIllustration from "@/components/BodyPartIllustration";
 // donné). La case vit maintenant en bas de l'étape « Équipement », dont le
 // bouton final enregistre. Elle reste distincte des CGU, même texte, même
 // champ envoyé (health_data_consent), toujours obligatoire.
-const STEP_LABELS = ["Votre situation", "Votre profil", "Équipement"] as const;
+// Clés de patient.onboarding.steps.
+const STEP_LABELS = ["situation", "profile", "equipment"] as const;
 
 const fieldClass =
   "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 shadow-sm transition-colors focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
@@ -53,6 +55,17 @@ export default function OnboardingWizard({
   needsConsent: boolean;
   hasError?: boolean;
 }) {
+  const t = useTranslations("patient.onboarding");
+  const tSit = useTranslations("patient.situation");
+  const tConsent = useTranslations("patient.consent");
+  const tStage = useTranslations("exercise.stage");
+  const tEquipment = useTranslations("exercise.equipment");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  // Libellés dans la langue de l'interface (en français : ceux reçus de la page,
+  // identiques à STAGE_LABELS / EQUIPMENT_LABELS).
+  const stageText = (value: InjuryStage, label: string) => (locale === "fr" ? label : stageLabel(value, tStage));
+  const equipmentText = locale === "fr" ? equipmentLabels : equipmentLabelsFor(tEquipment);
   // A failed save (server-side validation) reloads the page and resets this
   // component from scratch — landing back on step 0 made the error message
   // above the form invisible-in-spirit: nothing on screen (body-part picker)
@@ -125,7 +138,7 @@ export default function OnboardingWizard({
                 {i < step ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : i + 1}
               </span>
               <span className={`hidden text-xs font-medium sm:block ${i === step ? "text-slate-900" : "text-slate-400"}`}>
-                {label}
+                {t(`steps.${label}`)}
               </span>
             </div>
             {i < STEP_LABELS.length - 1 && <span className={`h-px w-6 sm:w-10 ${i < step ? "bg-ok" : "bg-slate-200"}`} />}
@@ -146,7 +159,7 @@ export default function OnboardingWizard({
         {/* Étape 1 : Votre situation */}
         <div ref={(el) => { stepRefs.current[0] = el; }} hidden={step !== 0} className="flex flex-col gap-3">
           <div>
-            <span className={labelClass}>Quelle(s) partie(s) du corps souhaitez-vous travailler ?</span>
+            <span className={labelClass}>{t("bodyPartsQuestion")}</span>
             {/* 9 body parts in 5 columns -> 2 rows instead of 3 (Philippe,
                 2026-09-09: the onboarding card must fit without scrolling —
                 paired with the wider max-w-xl column in page.tsx). */}
@@ -172,18 +185,18 @@ export default function OnboardingWizard({
             {[...bodyPartIds].map((id) => (
               <input key={id} type="hidden" name="declared_body_part_ids" value={id} />
             ))}
-            {bodyPartError && <p className="mt-1.5 text-xs text-red-600">Choisissez au moins une zone.</p>}
+            {bodyPartError && <p className="mt-1.5 text-xs text-red-600">{t("bodyPartsError")}</p>}
           </div>
 
           <label>
-            <span className={labelClass}>Où en êtes-vous ? (étape de récupération)</span>
+            <span className={labelClass}>{t("stageQuestion")}</span>
             <select name="injury_stage" required defaultValue={profile?.injury_stage ?? ""} className={fieldClass}>
               <option value="" disabled>
-                Choisir…
+                {t("choose")}
               </option>
               {stages.map(([value, label]) => (
                 <option key={value} value={value}>
-                  {label}
+                  {stageText(value, label)}
                 </option>
               ))}
             </select>
@@ -194,7 +207,7 @@ export default function OnboardingWizard({
         {/* Étape 2 : Votre profil */}
         <div ref={(el) => { stepRefs.current[1] = el; }} hidden={step !== 1} className="flex flex-col gap-4 short:gap-2.5">
           <label>
-            <span className={labelClass}>Date de naissance</span>
+            <span className={labelClass}>{t("dob")}</span>
             <input
               type="date"
               name="date_of_birth"
@@ -206,7 +219,7 @@ export default function OnboardingWizard({
 
           <div className="grid grid-cols-2 gap-4">
             <label>
-              <span className={labelClass}>Taille (cm)</span>
+              <span className={labelClass}>{t("height")}</span>
               <input
                 type="number" name="height_cm" min={100} max={230} required
                 defaultValue={profile?.height_cm ?? ""}
@@ -214,7 +227,7 @@ export default function OnboardingWizard({
               />
             </label>
             <label>
-              <span className={labelClass}>Poids (kg)</span>
+              <span className={labelClass}>{t("weight")}</span>
               <input
                 type="number" name="weight_kg" min={20} max={250} required
                 defaultValue={profile?.weight_kg ?? ""}
@@ -224,11 +237,11 @@ export default function OnboardingWizard({
           </div>
 
           <label>
-            <span className={labelClass}>Êtes-vous plutôt sportif·ve ? (niveau d&apos;activité)</span>
+            <span className={labelClass}>{t("activityQuestion")}</span>
             <select name="activity_level" required defaultValue={profile?.activity_level ?? "moderate"} className={fieldClass}>
-              <option value="sedentary">Sédentaire (peu ou pas de sport)</option>
-              <option value="moderate">Modérée (activité régulière)</option>
-              <option value="active">Active (sport fréquent)</option>
+              <option value="sedentary">{tSit("activity.sedentary")}</option>
+              <option value="moderate">{tSit("activity.moderate")}</option>
+              <option value="active">{tSit("activity.active")}</option>
             </select>
           </label>
 
@@ -236,22 +249,22 @@ export default function OnboardingWizard({
               l'étape 1 (zones du corps + étape de récupération) doit tenir sur
               un écran sans défiler (Philippe, 2026-10-01). */}
           <label>
-            <span className={labelClass}>Où en êtes-vous dans votre rééducation ? (optionnel)</span>
+            <span className={labelClass}>{t("rehabQuestion")}</span>
             <input
               type="text"
               name="rehab_progress"
-              placeholder="ex. 3 semaines après l'opération, je remarche sans béquilles"
+              placeholder={t("rehabPlaceholder")}
               defaultValue={profile?.rehab_progress ?? ""}
               className={fieldClass}
             />
           </label>
 
           <label>
-            <span className={labelClass}>Que s&apos;est-il passé ? (optionnel)</span>
+            <span className={labelClass}>{t("historyQuestion")}</span>
             <textarea
               name="history"
               rows={2}
-              placeholder="Décrivez votre blessure, vos douleurs, ce qui vous limite…"
+              placeholder={t("historyPlaceholder")}
               defaultValue={profile?.history ?? ""}
               className={`${fieldClass} resize-none`}
             />
@@ -261,7 +274,7 @@ export default function OnboardingWizard({
         {/* Étape 3 : Équipement */}
         <div ref={(el) => { stepRefs.current[2] = el; }} hidden={step !== 2} className="flex flex-col gap-3">
           <p className="text-sm text-slate-500">
-            Votre kiné choisira des séances réalisables avec ce que vous avez sous la main.
+            {t("equipmentIntro")}
           </p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {/* "aucun" (poids du corps) n'est pas proposé ici : ces exercices
@@ -279,7 +292,7 @@ export default function OnboardingWizard({
                   defaultChecked={currentEquipment.has(id)}
                   className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
                 />
-                {equipmentLabels[id]}
+                {equipmentText[id]}
               </label>
             ))}
           </div>
@@ -294,12 +307,14 @@ export default function OnboardingWizard({
                 className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
               />
               <span>
-                J&apos;accepte que mes données de santé (condition, ressenti, historique) soient traitées par mon
-                kinésithérapeute et EasyPhysio dans le cadre de mon suivi, conformément à la{" "}
-                <a href="/confidentialite" className="font-medium text-blue-700 underline" target="_blank">
-                  politique de confidentialité
-                </a>
-                .
+                {tConsent.rich("healthData", {
+                  link: (c) => (
+                    <a href="/confidentialite" className="font-medium text-blue-700 underline" target="_blank">
+                      {c}
+                    </a>
+                  ),
+                })}
+                {locale !== "fr" && <span className="mt-1 block text-xs text-slate-500">{tCommon("reviewBanner")}</span>}
               </span>
             </label>
           )}
@@ -314,7 +329,7 @@ export default function OnboardingWizard({
             onClick={goBack}
             className={`rounded-full border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 ${step === 0 ? "invisible" : ""}`}
           >
-            Précédent
+            {t("previous")}
           </button>
           {step < STEP_LABELS.length - 1 ? (
             <button
@@ -322,7 +337,7 @@ export default function OnboardingWizard({
               onClick={goNext}
               className="rounded-full bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
             >
-              Suivant
+              {t("next")}
             </button>
           ) : (
             <SubmitButton />
@@ -345,13 +360,14 @@ export default function OnboardingWizard({
 // go out on top of it).
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const t = useTranslations("patient.onboarding");
   return (
     <button
       type="submit"
       disabled={pending}
       className="rounded-full bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {pending ? "Enregistrement…" : "Enregistrer et continuer"}
+      {pending ? t("saving") : t("saveContinue")}
     </button>
   );
 }

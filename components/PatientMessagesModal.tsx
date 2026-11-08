@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Loader2, X } from "lucide-react";
 import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
 import MessageComposer from "@/components/MessageComposer";
@@ -31,6 +32,8 @@ export default function PatientMessagesModal({
   getThread: (patientId: string) => Promise<{ thread: ThreadMessage[] } | { error: string }>;
   sendMessage: (formData: FormData) => Promise<{ ok: true } | { error: string }>;
 }) {
+  const t = useTranslations("patient.messagesModal");
+  const tc = useTranslations("patient.common");
   const [loading, setLoading] = useState(true);
   const [thread, setThread] = useState<ThreadMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +80,7 @@ export default function PatientMessagesModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Messages avec ${patient.name}`}
+      aria-label={t("aria", { name: patient.name })}
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
       onClick={onClose}
     >
@@ -94,12 +97,12 @@ export default function PatientMessagesModal({
             href={`/dashboard/messages?patient=${patient.id}`}
             className="shrink-0 text-sm font-medium text-brand hover:underline"
           >
-            Ouvrir en plein écran
+            {t("fullScreen")}
           </Link>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Fermer"
+            aria-label={tc("close")}
             className="shrink-0 rounded-lg p-1.5 text-muted hover:bg-app-bg hover:text-ink"
           >
             <X className="h-4 w-4" strokeWidth={1.75} />

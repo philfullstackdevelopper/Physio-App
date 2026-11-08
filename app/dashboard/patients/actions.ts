@@ -7,13 +7,15 @@ import { isClerkAPIResponseError } from "@clerk/shared/error";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { precreateAppUserId } from "@/lib/auth/user-map";
-import { canInvitePatients, INVITATIONS_CLOSED_MESSAGE } from "@/lib/launch";
+import { canInvitePatients } from "@/lib/launch";
 import { requestOrigin } from "@/lib/requestOrigin";
 import type { ThreadMessage } from "@/components/MessageThread";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { deleteAppUserById } from "@/lib/db/admin";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { notifyNewMessage } from "@/lib/push/notify";
+import { getTranslations } from "next-intl/server";
+import { getLibI18n } from "@/lib/dashboard/libI18n";
 
 // Instructor invites a new patient by email. Creates the patient's Clerk
 // account invitation (they choose their own password from the e-mail), and
@@ -21,10 +23,12 @@ import { notifyNewMessage } from "@/lib/push/notify";
 export async function addPatient(formData: FormData) {
   const supabase = await createClient();
   const { user, instructor } = await requireApprovedInstructor(supabase);
+  const t = await getTranslations("dashboard.patientActions");
+  const { t: tLib } = await getLibI18n();
 
   // Avant le lancement : aucune invitation de vrai patient (lib/launch.ts).
   if (!canInvitePatients(user.email)) {
-    redirect(`/dashboard/patients/new?error=${encodeURIComponent(INVITATIONS_CLOSED_MESSAGE)}`);
+    redirect(`/dashboard/patients/new?error=${encodeURIComponent((await getTranslations("dashboard.newPatient"))("invitationsClosed"))}`);
   }
 
   const fullName = String(formData.get("full_name") ?? "").trim();
@@ -35,7 +39,7 @@ export async function addPatient(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
 
   if (!fullName || !email) {
-    redirect(`/dashboard/patients/new?error=${encodeURIComponent("Veuillez remplir tous les champs.")}`);
+    redirect(`/dashboard/patients/new?error=${encodeURIComponent(t("fillAll"))}`);
   }
 
   const origin = await requestOrigin();
@@ -49,7 +53,7 @@ export async function addPatient(formData: FormData) {
     ({ appId, isNew: appIdIsNew } = await precreateAppUserId(email));
   } catch (e) {
     console.error("addPatient: precreateAppUserId failed", e);
-    redirect(`/dashboard/patients/new?error=${encodeURIComponent("Impossible de préparer le compte du patient. Réessayez dans un instant.")}`);
+    redirect(`/dashboard/patients/new?error=${encodeURIComponent(t("prepareFailed"))}`);
   }
   // Un échec plus bas ne doit pas laisser derrière lui l'identifiant que l'on
   // vient de réserver (audit du 2026-10-08) — seulement s'il est neuf.
@@ -102,10 +106,10 @@ export async function addPatient(formData: FormData) {
     const isDuplicate = clerkErrors.some((ce) => ce.code === "duplicate_record" || ce.code === "form_identifier_exists");
     const isPending = clerkErrors.some((ce) => ce.code === "invitation_already_pending" || ce.code === "duplicate_invitation");
     const message = isDuplicate
-      ? "Un compte existe déjà avec cette adresse. Si cette personne a supprimé son ancien compte EasyPhysio, demandez-lui de se connecter une fois : l'appli lui proposera de supprimer son ancien identifiant, puis vous pourrez l'inviter."
+      ? t("duplicate")
       : isPending
-        ? "Une invitation est déjà en attente pour cette adresse."
-        : "Impossible d'inviter ce patient.";
+        ? t("pendingInvite")
+        : t("inviteFailed");
     await discardReservedId();
     redirect(`/dashboard/patients/new?error=${encodeURIComponent(message)}`);
   }
@@ -136,8 +140,8 @@ export async function addPatient(formData: FormData) {
     await discardReservedId();
     const message =
       patientError.code === "23505"
-        ? "Cette adresse e-mail est déjà utilisée par un autre compte EasyPhysio."
-        : "Impossible d'enregistrer le patient : " + friendlyDbError(patientError);
+        ? t("emailTaken")
+        : t("saveFailed", { reason: friendlyDbError(patientError, undefined, tLib) });
     redirect(`/dashboard/patients/new?error=${encodeURIComponent(message)}`);
   }
 
@@ -171,12 +175,13 @@ export async function addPatient(formData: FormData) {
 export async function reactivatePatient(formData: FormData): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   const { user, instructor } = await requireApprovedInstructor(supabase);
+  const t = await getTranslations("dashboard.patientActions");
 
   // Avant le lancement : aucune invitation renvoyée non plus (lib/launch.ts).
-  if (!canInvitePatients(user.email)) return { error: INVITATIONS_CLOSED_MESSAGE };
+  if (!canInvitePatients(user.email)) return { error: (await getTranslations("dashboard.newPatient"))("invitationsClosed") };
 
   const patientId = String(formData.get("patient_id") ?? "");
-  if (!patientId) return { error: "Patient introuvable." };
+  if (!patientId) return { error: t("notFound") };
 
   const { data: patient } = await supabase
     .from("patients")
@@ -184,9 +189,9 @@ export async function reactivatePatient(formData: FormData): Promise<{ ok: true 
     .eq("id", patientId)
     .eq("instructor_id", user.id)
     .maybeSingle();
-  if (!patient) return { error: "Patient introuvable." };
-  if (patient.terms_accepted_at) return { error: "Ce patient a déjà activé son compte." };
-  if (!patient.email) return { error: "Ce patient n'a pas d'adresse e-mail enregistrée." };
+  if (!patient) return { error: t("notFound") };
+  if (patient.terms_accepted_at) return { error: t("alreadyActive") };
+  if (!patient.email) return { error: t("noEmail") };
 
 
   const origin = await requestOrigin();
@@ -208,8 +213,8 @@ export async function reactivatePatient(formData: FormData): Promise<{ ok: true 
     const isDuplicate = clerkErrors.some((ce) => ce.code === "duplicate_record" || ce.code === "form_identifier_exists");
     return {
       error: isDuplicate
-        ? "Ce patient a déjà un compte : il doit simplement se reconnecter et accepter les CGU."
-        : "Impossible de renvoyer l'invitation.",
+        ? t("hasAccount")
+        : t("resendFailed"),
     };
   }
 
@@ -227,6 +232,7 @@ export async function reactivatePatient(formData: FormData): Promise<{ ok: true 
 export async function getPatientThread(patientId: string): Promise<{ thread: ThreadMessage[] } | { error: string }> {
   const supabase = await createClient();
   const { user } = await requireApprovedInstructor(supabase);
+  const t = await getTranslations("dashboard.patientActions");
 
   const { data: patient } = await supabase
     .from("patients")
@@ -234,7 +240,7 @@ export async function getPatientThread(patientId: string): Promise<{ thread: Thr
     .eq("id", patientId)
     .eq("instructor_id", user.id)
     .maybeSingle();
-  if (!patient) return { error: "Patient introuvable." };
+  if (!patient) return { error: t("notFound") };
 
   const { data } = await supabase
     .from("patient_messages")
@@ -275,12 +281,13 @@ export async function getPatientThread(patientId: string): Promise<{ thread: Thr
 export async function sendPatientMessage(formData: FormData): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   const { user } = await requireApprovedInstructor(supabase);
+  const t = await getTranslations("dashboard.patientActions");
 
   const patientId = String(formData.get("patient_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
 
-  if (!patientId) return { error: "Patient introuvable." };
-  if (!body) return { error: "Écrivez un message." };
+  if (!patientId) return { error: t("notFound") };
+  if (!body) return { error: t("emptyMessage") };
 
   const { error } = await supabase.from("patient_messages").insert({
     patient_id: patientId,
@@ -288,7 +295,7 @@ export async function sendPatientMessage(formData: FormData): Promise<{ ok: true
     sender: "instructor",
     body,
   });
-  if (error) return { error: friendlyDbError(error) };
+  if (error) return { error: friendlyDbError(error, undefined, (await getLibI18n()).t) };
   await notifyNewMessage({ patientId, instructorId: user.id, sender: "instructor" });
 
   revalidatePath("/dashboard/messages");

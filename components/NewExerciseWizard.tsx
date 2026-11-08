@@ -15,9 +15,10 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { X, Plus, Trash2, Camera, Upload, Globe, User, BookOpen, Check } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
-import { EXERCISE_EQUIPMENT_LABELS, EXERCISE_EQUIPMENT_OPTIONS } from "@/lib/exercise/equipment";
+import { EXERCISE_EQUIPMENT_OPTIONS, exerciseEquipmentLabels } from "@/lib/exercise/equipment";
 import { parseSteps } from "@/lib/exercise/steps";
 import { contributorTitle, nextContributorStep, similarExercises } from "@/lib/exercise/kineExercises";
 import { createKineExercise } from "@/app/dashboard/exercises/actions";
@@ -41,7 +42,6 @@ export interface WizardPatient {
   name: string;
 }
 
-const STEP_TITLES = ["Le mouvement", "La vidéo", "Pour qui ?"] as const;
 
 export default function NewExerciseWizard({
   bodyParts,
@@ -64,6 +64,11 @@ export default function NewExerciseWizard({
   demo?: boolean;
 }) {
   const router = useRouter();
+  const t = useTranslations("exercise.wizard");
+  const tVideo = useTranslations("exercise.kineVideo");
+  const tContributor = useTranslations("exercise.contributor");
+  const equipmentLabels = exerciseEquipmentLabels(useTranslations("exercise.exerciseEquipment"));
+  const STEP_TITLES = [t("stepMovement"), t("stepVideo"), t("stepWho")];
   const [step, setStep] = useState(0);
   const [demoDone, setDemoDone] = useState(false);
   const [name, setName] = useState("");
@@ -91,7 +96,7 @@ export default function NewExerciseWizard({
 
   const startFrom = (ex: WizardLibraryExercise) => {
     setSource(ex);
-    setName(`${ex.name} (variante)`);
+    setName(t("variantName", { name: ex.name }));
     setBodyPartIds(ex.bodyPartIds.length ? ex.bodyPartIds : bodyPartIds);
     setEquipment(ex.equipment);
     const s = parseSteps(ex.instructions);
@@ -103,7 +108,7 @@ export default function NewExerciseWizard({
   const chooseVideo = (f: File | undefined) => {
     setError(null);
     if (!f) return;
-    const problem = checkVideoFile(f);
+    const problem = checkVideoFile(f, tVideo);
     if (problem) {
       setError(problem);
       return;
@@ -114,9 +119,9 @@ export default function NewExerciseWizard({
   };
 
   const step1Problem =
-    name.trim().length < 3 ? "Donnez un nom à l'exercice." : bodyPartIds.length === 0 ? "Choisissez au moins une zone du corps." : null;
-  const step2Problem = video && !consent ? "Cochez l'accord de la personne filmée, ou retirez la vidéo." : null;
-  const step3Problem = scope === "patient" && !patientId ? "Choisissez le patient." : null;
+    name.trim().length < 3 ? t("needName") : bodyPartIds.length === 0 ? t("needBodyPart") : null;
+  const step2Problem = video && !consent ? t("needConsent") : null;
+  const step3Problem = scope === "patient" && !patientId ? t("needPatient") : null;
 
   const next = () => {
     const problem = step === 0 ? step1Problem : step === 1 ? step2Problem : null;
@@ -155,14 +160,12 @@ export default function NewExerciseWizard({
       if (video) {
         setProgress(0);
         try {
-          await uploadKineVideo(res.id, video, consent, setProgress);
+          await uploadKineVideo(res.id, video, consent, setProgress, tVideo);
         } catch (e) {
           // L'exercice existe déjà : on le dit, la vidéo pourra être renvoyée
           // depuis sa fiche.
           router.refresh();
-          setError(
-            `L'exercice est créé, mais la vidéo n'a pas pu être envoyée : ${e instanceof Error ? e.message : "erreur"}. Vous pourrez la renvoyer depuis sa fiche.`,
-          );
+          setError(t("createdVideoFailed", { detail: e instanceof Error ? e.message : t("error") }));
           setBusy(false);
           setProgress(null);
           return;
@@ -171,7 +174,7 @@ export default function NewExerciseWizard({
       router.refresh();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Création impossible.");
+      setError(e instanceof Error ? e.message : t("createFailed"));
     } finally {
       setBusy(false);
       setProgress(null);
@@ -188,24 +191,24 @@ export default function NewExerciseWizard({
       <div className="flex max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden bg-surface shadow-2xl sm:max-h-[92dvh] sm:rounded-2xl max-sm:rounded-t-2xl">
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
           <h2 id="new-ex-title" className="text-base font-semibold text-ink">
-            Créer un exercice
+            {t("title")}
           </h2>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="rounded-full p-1.5 text-muted hover:bg-app-bg hover:text-ink">
+          <button type="button" onClick={onClose} aria-label={t("close")} className="rounded-full p-1.5 text-muted hover:bg-app-bg hover:text-ink">
             <X className="h-5 w-5" strokeWidth={2} />
           </button>
         </div>
 
         <ol className="flex gap-1.5 px-5 pt-3">
-          {STEP_TITLES.map((t, i) => (
+          {STEP_TITLES.map((title, i) => (
             <li
-              key={t}
+              key={title}
               className={`flex-1 rounded-lg border px-2.5 py-1.5 text-xs ${
                 i === step ? "border-brand bg-brand-soft font-semibold text-brand" : i < step ? "border-line text-ink" : "border-line text-muted"
               }`}
             >
               <span className="inline-flex items-center gap-1">
                 {i < step && <Check className="h-3 w-3" strokeWidth={3} />}
-                {i + 1}. {t}
+                {i + 1}. {title}
               </span>
             </li>
           ))}
@@ -215,14 +218,14 @@ export default function NewExerciseWizard({
           {step === 0 && (
             <div className="flex flex-col gap-4">
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-muted">Nom de l&apos;exercice</span>
+                <span className="text-xs font-semibold text-muted">{t("nameLabel")}</span>
                 <input
                   value={name}
                   onChange={(e) => {
                     setName(e.target.value);
                     setDupDismissed(false);
                   }}
-                  placeholder="Ex. : Pont fessier sur une jambe avec élastique"
+                  placeholder={t("namePlaceholder")}
                   className={field}
                   autoFocus
                 />
@@ -230,43 +233,42 @@ export default function NewExerciseWizard({
 
               {source && (
                 <p className="rounded-lg bg-ok-soft p-2.5 text-sm text-ink">
-                  Vous partez de <b>{source.name}</b>
-                  {source.hasVideo ? " : sa vidéo est reprise, vous pourrez filmer la vôtre à l'étape suivante." : "."}{" "}
+                  {t.rich(source.hasVideo ? "startingFromVideo" : "startingFrom", { name: source.name, b: (c) => <b>{c}</b> })}{" "}
                   <button type="button" onClick={() => setSource(null)} className="font-medium text-brand hover:underline">
-                    Ne pas partir de cet exercice
+                    {t("dontStartFrom")}
                   </button>
                 </p>
               )}
 
               {similar.length > 0 && (
                 <div className="rounded-xl border border-warn/40 bg-warn-soft p-3">
-                  <p className="text-sm font-semibold text-ink">Cet exercice existe peut-être déjà :</p>
+                  <p className="text-sm font-semibold text-ink">{t("maybeExists")}</p>
                   <ul className="mt-2 flex flex-col gap-2">
                     {similar.map((ex) => (
                       <li key={ex.id} className="flex items-center gap-3 rounded-lg bg-surface p-2">
                         <ExerciseIllustration name={ex.name} className="h-12 w-14 shrink-0 text-brand" />
                         <span className="min-w-0 flex-1 text-sm">
                           <span className="block font-medium text-ink">{ex.name}</span>
-                          <span className="text-xs text-muted">{ex.hasVideo ? "Avec vidéo" : "Dessin seulement"}</span>
+                          <span className="text-xs text-muted">{ex.hasVideo ? t("withVideo") : t("drawingOnly")}</span>
                         </span>
                         <button
                           type="button"
                           onClick={() => startFrom(ex)}
                           className="shrink-0 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-ink hover:bg-app-bg"
                         >
-                          Partir de cet exercice
+                          {t("startFrom")}
                         </button>
                       </li>
                     ))}
                   </ul>
                   <button type="button" onClick={() => setDupDismissed(true)} className="mt-2 text-xs font-medium text-brand hover:underline">
-                    Non, c&apos;est un nouvel exercice
+                    {t("isNew")}
                   </button>
                 </div>
               )}
 
               <div>
-                <p className="text-xs font-semibold text-muted">Zones du corps</p>
+                <p className="text-xs font-semibold text-muted">{t("bodyParts")}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {bodyParts.map((bp) => {
                     const on = bodyPartIds.includes(bp.id);
@@ -286,7 +288,7 @@ export default function NewExerciseWizard({
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-muted">Matériel indispensable (laissez vide si aucun)</p>
+                <p className="text-xs font-semibold text-muted">{t("equipment")}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {EXERCISE_EQUIPMENT_OPTIONS.map((id) => {
                     const on = equipment.includes(id);
@@ -298,7 +300,7 @@ export default function NewExerciseWizard({
                         onClick={() => setEquipment((l) => toggle(l, id))}
                         className={`${chip} ${on ? "border-brand bg-brand-soft text-brand" : "border-line text-ink"}`}
                       >
-                        {EXERCISE_EQUIPMENT_LABELS[id]}
+                        {equipmentLabels[id]}
                       </button>
                     );
                   })}
@@ -306,8 +308,8 @@ export default function NewExerciseWizard({
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-muted">Consignes, étape par étape</p>
-                <p className="mt-0.5 text-xs text-muted">Le patient les verra numérotées pendant sa séance.</p>
+                <p className="text-xs font-semibold text-muted">{t("stepsLabel")}</p>
+                <p className="mt-0.5 text-xs text-muted">{t("stepsHint")}</p>
                 <ol className="mt-2 flex flex-col gap-2">
                   {steps.map((s, i) => (
                     <li key={i} className="flex items-center gap-2">
@@ -315,13 +317,13 @@ export default function NewExerciseWizard({
                       <input
                         value={s}
                         onChange={(e) => setSteps((l) => l.map((x, j) => (j === i ? e.target.value : x)))}
-                        placeholder={i === 0 ? "Ex. : Allongé sur le dos, élastique au-dessus des genoux" : "Étape suivante"}
+                        placeholder={i === 0 ? t("firstStepPlaceholder") : t("nextStepPlaceholder")}
                         className={field}
                       />
                       {steps.length > 1 && (
                         <button
                           type="button"
-                          aria-label={`Retirer l'étape ${i + 1}`}
+                          aria-label={t("removeStep", { n: i + 1 })}
                           onClick={() => setSteps((l) => l.filter((_, j) => j !== i))}
                           className="shrink-0 rounded p-1.5 text-muted hover:bg-app-bg hover:text-danger"
                         >
@@ -337,7 +339,7 @@ export default function NewExerciseWizard({
                     onClick={() => setSteps((l) => [...l, ""])}
                     className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-brand hover:underline"
                   >
-                    <Plus className="h-4 w-4" strokeWidth={2} /> Ajouter une étape
+                    <Plus className="h-4 w-4" strokeWidth={2} /> {t("addStep")}
                   </button>
                 )}
               </div>
@@ -352,11 +354,10 @@ export default function NewExerciseWizard({
                   <video src={videoPreview} controls muted playsInline className="max-h-72 w-full rounded-xl bg-ink object-contain sm:w-56" />
                   <div className="flex min-w-0 flex-1 flex-col gap-2">
                     <p className="text-sm text-ink">
-                      <b>{video?.name}</b> ({Math.max(1, Math.round((video?.size ?? 0) / 1024 / 1024))} Mo)
+                      <b>{video?.name}</b> {t("sizeMb", { size: Math.max(1, Math.round((video?.size ?? 0) / 1024 / 1024)) })}
                     </p>
                     <p className="text-xs text-muted">
-                      La vidéo sera lue sans le son. Si elle est trop longue, coupez le début et la fin dans l&apos;application Photos de votre
-                      téléphone avant de l&apos;envoyer.
+                      {t("videoHint")}
                     </p>
                     <button
                       type="button"
@@ -368,7 +369,7 @@ export default function NewExerciseWizard({
                       }}
                       className="self-start text-sm font-medium text-danger hover:underline"
                     >
-                      Retirer la vidéo
+                      {t("removeVideo")}
                     </button>
                   </div>
                 </div>
@@ -379,14 +380,14 @@ export default function NewExerciseWizard({
                     onClick={() => cameraRef.current?.click()}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-dark"
                   >
-                    <Camera className="h-4 w-4" strokeWidth={2} /> Filmer maintenant
+                    <Camera className="h-4 w-4" strokeWidth={2} /> {t("filmNow")}
                   </button>
                   <button
                     type="button"
                     onClick={() => pickRef.current?.click()}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink hover:bg-app-bg"
                   >
-                    <Upload className="h-4 w-4" strokeWidth={2} /> Choisir une vidéo
+                    <Upload className="h-4 w-4" strokeWidth={2} /> {t("chooseVideo")}
                   </button>
                   <input ref={cameraRef} type="file" accept="video/*" capture="environment" className="hidden" onChange={(e) => chooseVideo(e.target.files?.[0])} />
                   <input ref={pickRef} type="file" accept="video/mp4,video/quicktime,video/webm" className="hidden" onChange={(e) => chooseVideo(e.target.files?.[0])} />
@@ -395,16 +396,12 @@ export default function NewExerciseWizard({
               {video && (
                 <label className="flex items-start gap-2 rounded-xl border border-line p-3 text-sm text-ink">
                   <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 h-4 w-4 accent-brand" />
-                  <span>
-                    <b>La personne filmée a donné son accord</b> pour que cette vidéo soit montrée aux patients
-                    {makePublic && scope === "bank" ? ", et aux kinés d'EasyPhysio si l'exercice devient public" : ""}. (Obligatoire.)
-                  </span>
+                  <span>{t.rich(makePublic && scope === "bank" ? "consentPublic" : "consent", { b: (c) => <b>{c}</b> })}</span>
                 </label>
               )}
               {!video && (
                 <p className="text-sm text-muted">
-                  Pas de vidéo ? Vous pouvez continuer :{" "}
-                  {source?.hasVideo ? "la vidéo de l'exercice repris sera utilisée." : "le patient verra le nom et les consignes, et vous pourrez filmer plus tard."}
+                  {source?.hasVideo ? t("noVideoSource") : t("noVideo")}
                 </p>
               )}
             </div>
@@ -420,16 +417,16 @@ export default function NewExerciseWizard({
               >
                 <BookOpen className={`mt-0.5 h-5 w-5 shrink-0 ${scope === "bank" ? "text-brand" : "text-muted"}`} strokeWidth={2} />
                 <span>
-                  <span className="block font-semibold text-ink">Ma banque</span>
-                  <span className="text-sm text-muted">Utilisable dans les séances de tous mes patients.</span>
+                  <span className="block font-semibold text-ink">{t("bankTitle")}</span>
+                  <span className="text-sm text-muted">{t("bankText")}</span>
                 </span>
               </button>
               <div className={`rounded-xl border p-3 ${scope === "patient" ? "border-brand bg-brand-soft" : "border-line"}`}>
                 <button type="button" onClick={() => setScope("patient")} aria-pressed={scope === "patient"} className="flex w-full items-start gap-3 text-left">
                   <User className={`mt-0.5 h-5 w-5 shrink-0 ${scope === "patient" ? "text-brand" : "text-muted"}`} strokeWidth={2} />
                   <span>
-                    <span className="block font-semibold text-ink">Seulement pour un patient</span>
-                    <span className="text-sm text-muted">Un exercice sur mesure : vous le trouverez dans « Ajuster la séance » de ce patient.</span>
+                    <span className="block font-semibold text-ink">{t("patientTitle")}</span>
+                    <span className="text-sm text-muted">{t("patientText")}</span>
                   </span>
                 </button>
                 {scope === "patient" && (
@@ -437,9 +434,9 @@ export default function NewExerciseWizard({
                     value={patientId}
                     onChange={(e) => setPatientId(e.target.value)}
                     className={`${field} mt-3`}
-                    aria-label="Patient"
+                    aria-label={t("patientAria")}
                   >
-                    <option value="">Choisir le patient…</option>
+                    <option value="">{t("choosePatient")}</option>
                     {patients.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}
@@ -447,7 +444,7 @@ export default function NewExerciseWizard({
                     ))}
                   </select>
                 )}
-                {scope === "patient" && patients.length === 0 && <p className="mt-2 text-sm text-muted">Vous n&apos;avez pas encore de patient.</p>}
+                {scope === "patient" && patients.length === 0 && <p className="mt-2 text-sm text-muted">{t("noPatients")}</p>}
               </div>
 
               {scope === "bank" && (
@@ -455,16 +452,15 @@ export default function NewExerciseWizard({
                   <input type="checkbox" checked={makePublic} onChange={(e) => setMakePublic(e.target.checked)} className="mt-1 h-4 w-4 accent-ok" />
                   <span className="text-sm text-ink">
                     <span className="flex items-center gap-1.5 font-semibold">
-                      <Globe className="h-4 w-4 text-ok" strokeWidth={2} /> Rendre public pour tous les kinés d&apos;EasyPhysio
+                      <Globe className="h-4 w-4 text-ok" strokeWidth={2} /> {t("makePublic")}
                     </span>
                     <span className="mt-0.5 block">
-                      Vous l&apos;utilisez dès maintenant. EasyPhysio le vérifie, puis lui crée gratuitement un dessin animé. Votre nom
-                      s&apos;affichera comme auteur.
+                      {t("makePublicText")}
                     </span>
                     <span className="mt-1.5 block text-xs text-muted">
-                      {contributorTitle(publishedCount)
-                        ? `Vous êtes « ${contributorTitle(publishedCount)} » (${publishedCount} exercices publiés).`
-                        : `${publishedCount} exercice${publishedCount > 1 ? "s" : ""} publié${publishedCount > 1 ? "s" : ""}. ${nextContributorStep(publishedCount) ?? ""}`}
+                      {contributorTitle(publishedCount, tContributor)
+                        ? t("youAre", { title: contributorTitle(publishedCount, tContributor) ?? "", count: publishedCount })
+                        : t("publishedSoFar", { count: publishedCount, next: nextContributorStep(publishedCount, tContributor) ?? "" })}
                     </span>
                   </span>
                 </label>
@@ -475,9 +471,7 @@ export default function NewExerciseWizard({
           {error && <p className="mt-4 rounded-lg bg-danger-soft p-3 text-sm text-danger">{error}</p>}
           {demoDone && (
             <p className="mt-4 rounded-lg bg-ok-soft p-3 text-sm text-ink">
-              C&apos;est tout : dans l&apos;appli, l&apos;exercice serait créé
-              {scope === "patient" ? " pour ce patient" : makePublic ? " et envoyé à EasyPhysio pour vérification" : " dans votre banque"}. En démo,
-              rien n&apos;est enregistré.
+              {scope === "patient" ? t("demoDonePatient") : makePublic ? t("demoDonePublic") : t("demoDoneBank")}
             </p>
           )}
         </div>
@@ -485,20 +479,20 @@ export default function NewExerciseWizard({
         <div className="flex items-center justify-between gap-2 border-t border-line px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {step > 0 ? (
             <button type="button" disabled={busy} onClick={() => { setError(null); setStep((s) => s - 1); }} className="rounded-lg px-3 py-2 text-sm text-muted hover:text-ink">
-              ← Retour
+              {t("back")}
             </button>
           ) : (
             <button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-sm text-muted hover:text-ink">
-              Annuler
+              {t("cancel")}
             </button>
           )}
           {step < 2 ? (
             <button type="button" onClick={next} className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
-              Suivant : {STEP_TITLES[step + 1].toLowerCase()} →
+              {t("next", { step: STEP_TITLES[step + 1].toLowerCase() })}
             </button>
           ) : (
             <button type="button" disabled={busy} onClick={demoDone ? onClose : submit} className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-60">
-              {demoDone ? "Fermer" : busy ? (progress !== null ? `Envoi de la vidéo… ${progress} %` : "Création…") : "Créer l'exercice"}
+              {demoDone ? t("close") : busy ? (progress !== null ? t("uploadingVideo", { progress }) : t("creating")) : t("create")}
             </button>
           )}
         </div>

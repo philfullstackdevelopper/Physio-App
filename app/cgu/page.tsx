@@ -1,11 +1,26 @@
+import type { ReactNode } from "react";
+import { getLocale, getTranslations } from "next-intl/server";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import DotCanvas from "@/components/DotCanvas";
 import { HIGHEST_MONTHLY_TOTAL_CENTS, HIGHEST_PLATFORM_CENTS, LOWEST_MONTHLY_TOTAL_CENTS, LOWEST_PLATFORM_CENTS, KINE_FOLLOW_UP_CENTS, PLATFORM_OFFERS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 
 // Renders legal/cgu.md for the app. Keep the two in sync by hand — this is
 // still a DRAFT pending legal review (see the banner below).
-export default function CguPage() {
+// Textes : messages/<langue>/legal.json (« cgu ») ; la version anglaise est un
+// brouillon à faire relire par un avocat, d'où le bandeau hors français.
+export default async function CguPage() {
+  const t = await getTranslations("legal.cgu");
+  const tCommon = await getTranslations("common");
+  const locale = (await getLocale()) as Locale;
+  // Montants : en français exactement eurosFR ; sinon le format de la langue.
+  const eur = (cents: number) =>
+    locale === "fr"
+      ? eurosFR(cents)
+      : (cents / 100).toLocaleString(intlTag(locale), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const b = (c: ReactNode) => <strong>{c}</strong>;
   return (
     <div className="relative min-h-screen bg-[#f6f8fd] text-slate-800">
       <DotCanvas />
@@ -13,98 +28,71 @@ export default function CguPage() {
       <SiteHeader />
       <main className="p-6 pt-32 sm:p-8 sm:pt-36">
       <div className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        {locale !== "fr" && (
+          <p className="mb-4 rounded-lg bg-warn-soft px-3 py-2 text-sm text-ink">{tCommon("reviewBanner")}</p>
+        )}
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          <strong>Brouillon.</strong> Ce document est en cours de rédaction et n&apos;a pas
-          encore été validé par un avocat.
+          {t.rich("draft", { b })}
         </div>
 
         <h1 className="font-display mt-6 text-2xl font-semibold text-slate-900">
-          Conditions générales d&apos;utilisation
+          {t("title")}
         </h1>
 
         <div className="mt-6 space-y-6 text-sm leading-relaxed text-slate-700">
           <section>
-            <h2 className="font-display font-semibold text-slate-900">1. Objet</h2>
-            <p className="mt-1">
-              Les présentes conditions générales d&apos;utilisation régissent l&apos;accès et
-              l&apos;usage de la plateforme EasyPhysio par les kinésithérapeutes et leurs
-              patients.
-            </p>
+            <h2 className="font-display font-semibold text-slate-900">{t("s1Title")}</h2>
+            <p className="mt-1">{t("s1")}</p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">2. Description du service</h2>
-            <p className="mt-1">
-              EasyPhysio met à disposition des kinésithérapeutes un outil de suivi
-              d&apos;exercices à distance pour leurs patients. EasyPhysio n&apos;est pas un
-              dispositif médical et ne dispense pas de soin : le programme d&apos;exercices est
-              établi et validé par le kinésithérapeute, qui reste seul responsable du suivi
-              clinique de son patient.
-            </p>
+            <h2 className="font-display font-semibold text-slate-900">{t("s2Title")}</h2>
+            <p className="mt-1">{t("s2")}</p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">3. Deux services distincts</h2>
-            <p className="mt-1">
-              L&apos;application est gratuite pour le kinésithérapeute. Le patient souscrit deux services distincts, vendus
-              par deux vendeurs distincts, qui font l&apos;objet de deux paiements et de deux factures distincts :
-            </p>
+            <h2 className="font-display font-semibold text-slate-900">{t("s3Title")}</h2>
+            <p className="mt-1">{t("s3Intro")}</p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>
-                <strong>l&apos;accès à la plateforme EasyPhysio</strong> ({eurosFR(LOWEST_PLATFORM_CENTS)} € à {eurosFR(HIGHEST_PLATFORM_CENTS)} € TTC par mois selon l&apos;offre),
-                vendu par EasyPhysio : application, vidéos, messagerie et hébergement sécurisé des données de santé ;
+                {t.rich("s3Platform", { b, low: eur(LOWEST_PLATFORM_CENTS), high: eur(HIGHEST_PLATFORM_CENTS) })}
               </li>
               <li>
-                <strong>le programme de son kinésithérapeute</strong> ({eurosFR(KINE_FOLLOW_UP_CENTS)} € par mois), vendu par
-                le kinésithérapeute : la mise à jour de son programme d&apos;exercices hors nomenclature.
+                {t.rich("s3Kine", { b, kine: eur(KINE_FOLLOW_UP_CENTS) })}
               </li>
             </ul>
             <p className="mt-2">
-              Soit de {eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} € à {eurosFR(HIGHEST_MONTHLY_TOTAL_CENTS)} € par mois selon l&apos;offre choisie, les 6,00 € du kinésithérapeute n&apos;étant dus que les mois où il met à jour le programme. Accès : {PLATFORM_OFFERS.map((o) => `${o.label.toLowerCase()} ${eurosFR(o.platformCents)} €`).join(", ")}. L&apos;engagement ne porte que sur l&apos;accès à la plateforme ; à son terme, l&apos;accès continue au même prix, mois par mois, résiliable à tout moment. EasyPhysio ne perçoit aucune part des
-              honoraires du kinésithérapeute, et le kinésithérapeute aucune part de l&apos;accès à la plateforme.
+              {t("s3Total", {
+                low: eur(LOWEST_MONTHLY_TOTAL_CENTS),
+                high: eur(HIGHEST_MONTHLY_TOTAL_CENTS),
+                kine: eur(KINE_FOLLOW_UP_CENTS),
+                offers: PLATFORM_OFFERS.map((o) =>
+                  t("offer", { label: o.label.toLowerCase(), months: o.commitmentMonths, price: eur(o.platformCents) }),
+                ).join(", "),
+              })}
             </p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">4. Prix, essai et prélèvements</h2>
-            <p className="mt-1">
-              À la première souscription, les {TRIAL_DAYS} premiers jours sont offerts : rien n&apos;est prélevé pendant cette
-              période, et la date du premier prélèvement est indiquée avant l&apos;enregistrement de la carte. Le patient
-              accepte les deux montants par écrit avant de souscrire. Il enregistre sa carte une seule fois : elle sert à
-              EasyPhysio pour l&apos;accès et au kinésithérapeute pour ses honoraires.
-            </p>
-            <p className="mt-2">
-              L&apos;accès à la plateforme est prélevé chaque mois par EasyPhysio, tant que l&apos;abonnement est en cours.
-              Les honoraires du kinésithérapeute sont prélevés par lui, directement sur son compte, uniquement les mois où
-              il met à jour le programme du patient, après la réalisation de cette mise à jour et jamais pendant
-              l&apos;essai ; il en délivre une note d&apos;honoraires à son nom. C&apos;est un suivi non remboursé par
-              l&apos;Assurance Maladie. Les paiements sont traités par Stripe.
-            </p>
-            <p className="mt-2">
-              Le patient peut résilier à tout moment depuis son espace : il garde l&apos;accès jusqu&apos;à la fin du mois en
-              cours, puis plus aucun prélèvement n&apos;a lieu, ni par EasyPhysio ni par son kinésithérapeute. En cas de
-              paiement refusé, l&apos;accès est suspendu jusqu&apos;à l&apos;enregistrement d&apos;une carte valide. Les
-              soins en cabinet ne dépendent pas de ce suivi, et le patient garde toujours le droit d&apos;exporter ou de
-              supprimer ses données.
-            </p>
+            <h2 className="font-display font-semibold text-slate-900">{t("s4Title")}</h2>
+            <p className="mt-1">{t("s4a", { trial: TRIAL_DAYS })}</p>
+            <p className="mt-2">{t("s4b")}</p>
+            <p className="mt-2">{t("s4c")}</p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">5. Comptes et résiliation</h2>
-            <p className="mt-1">
-              Le patient peut supprimer son compte à tout moment depuis son espace personnel ; son abonnement en cours est
-              alors résilié. Le kinésithérapeute peut également supprimer son propre compte à tout moment, sans frais.
-            </p>
+            <h2 className="font-display font-semibold text-slate-900">{t("s5Title")}</h2>
+            <p className="mt-1">{t("s5")}</p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">6. Droit applicable</h2>
-            <p className="mt-1">Les présentes conditions sont soumises au droit français.</p>
+            <h2 className="font-display font-semibold text-slate-900">{t("s6Title")}</h2>
+            <p className="mt-1">{t("s6")}</p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">7. Contact</h2>
-            <p className="mt-1">Pour toute question, contactez-nous depuis votre compte.</p>
+            <h2 className="font-display font-semibold text-slate-900">{t("s7Title")}</h2>
+            <p className="mt-1">{t("s7")}</p>
           </section>
         </div>
       </div>

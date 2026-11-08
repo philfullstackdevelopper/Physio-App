@@ -14,6 +14,9 @@
 
 import { MessageCircle } from "lucide-react";
 import { groupByDay } from "@/lib/dashboard/messageDays";
+import { useTranslations } from "next-intl";
+import { useLibI18n } from "@/lib/dashboard/useLibI18n";
+import { intlTag } from "@/lib/i18n/translator";
 
 export interface ThreadMessage {
   id: string;
@@ -23,31 +26,33 @@ export interface ThreadMessage {
   read_at: string | null;
 }
 
-const TIME = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
 /** Au-delà de ce délai entre deux messages, on rouvre un groupe (et on réaffiche l'heure). */
 const RUN_GAP_MS = 30 * 60 * 1000;
 
 export default function MessageThread({
   messages,
   mineSender,
-  emptyText = "Aucun message pour l'instant. Écrivez le premier !",
+  emptyText,
 }: {
   messages: ThreadMessage[];
   mineSender: "instructor" | "patient";
   emptyText?: string;
 }) {
+  const t = useTranslations("dashboard.messages");
+  const i18n = useLibI18n();
+  const TIME = new Intl.DateTimeFormat(intlTag(i18n.locale), { hour: "2-digit", minute: "2-digit" });
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 py-14 text-center">
         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-app-bg">
           <MessageCircle className="h-5 w-5 text-muted" strokeWidth={1.5} />
         </span>
-        <p className="max-w-[22rem] text-sm text-muted">{emptyText}</p>
+        <p className="max-w-[22rem] text-sm text-muted">{emptyText ?? t("emptyThread")}</p>
       </div>
     );
   }
 
-  const groups = groupByDay(messages);
+  const groups = groupByDay(messages, undefined, i18n);
   const lastMineId = [...messages].reverse().find((m) => m.sender === mineSender)?.id;
 
   return (
@@ -76,7 +81,7 @@ export default function MessageThread({
               >
                 {m.body}
               </p>
-              {m.id === lastMineId && <p className="mt-0.5 pr-1 text-[11px] text-muted">{m.read_at ? "Lu" : "Envoyé"}</p>}
+              {m.id === lastMineId && <p className="mt-0.5 pr-1 text-[11px] text-muted">{m.read_at ? t("read") : t("sent")}</p>}
             </li>
           );
         }),

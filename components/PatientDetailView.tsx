@@ -8,18 +8,20 @@
 
 import Link from "next/link";
 import { Activity, AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Minus } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 const TONE_TEXT = { ok: "text-ok", warn: "text-warn", danger: "text-danger", muted: "text-muted" } as const;
 const TONE_BG = { ok: "bg-ok-soft text-ok", warn: "bg-warn-soft text-warn", danger: "bg-danger-soft text-danger", muted: "bg-app-bg text-muted" } as const;
 
 function PainDelta({ latest, previous }: { latest: number | null; previous: number | null }) {
+  const t = useTranslations("dashboard.patientDetail");
   if (latest === null || previous === null) return <span className="text-xs text-muted">—</span>;
   const d = latest - previous;
-  if (d === 0) return <span className="flex items-center gap-1 text-xs text-muted"><Minus className="h-3 w-3" strokeWidth={2} />= séance précédente</span>;
+  if (d === 0) return <span className="flex items-center gap-1 text-xs text-muted"><Minus className="h-3 w-3" strokeWidth={2} />{t("samePrevious")}</span>;
   return (
     <span className={`flex items-center gap-1 text-xs ${d > 0 ? "text-danger" : "text-ok"}`}>
       {d > 0 ? <ArrowUp className="h-3 w-3" strokeWidth={2} /> : <ArrowDown className="h-3 w-3" strokeWidth={2} />}
-      {Math.abs(d)} depuis la séance précédente
+      {t("sincePrevious", { n: Math.abs(d) })}
     </span>
   );
 }
@@ -65,18 +67,19 @@ export default function PatientDetailView({
   programme: React.ReactNode;
 }) {
   const s = stats;
+  const t = useTranslations("dashboard.patientDetail");
   return (
     <main className="min-h-screen max-sm:flex max-sm:h-[calc(100dvh-var(--phone-chrome))] max-sm:min-h-0 max-sm:flex-col">
       {/* max-w-7xl comme la liste patients (Philippe, 2026-09-09 : « prendre
           toute la place ») — la frise a besoin de largeur. */}
       <div className="mx-auto max-w-7xl px-6 py-5 max-sm:flex max-sm:min-h-0 max-sm:w-full max-sm:flex-1 max-sm:flex-col max-sm:px-4 max-sm:pb-3 max-sm:pt-1 sm:px-8 sm:py-6 short:sm:py-4">
-        <Link href="/dashboard/patients" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink max-sm:hidden"><ArrowLeft className="h-4 w-4" strokeWidth={1.75} />Retour à la liste</Link>
+        <Link href="/dashboard/patients" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink max-sm:hidden"><ArrowLeft className="h-4 w-4" strokeWidth={1.75} />{t("backToList")}</Link>
         {/* En-tête épuré (Philippe, 2026-10-01 : « trop d'information ») :
             le nom, les alertes et « Gérer ». Condition, profil déclaré et
             messages sont dans le menu « Gérer » ; phase et jours d'affilée
             ont été retirés de l'en-tête. */}
         <div className="mt-2 flex flex-wrap items-center justify-between gap-4 max-sm:mt-0 max-sm:flex-nowrap max-sm:gap-2">
-          <Link href="/dashboard/patients" aria-label="Retour à la liste" className="-ml-2 hidden h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink max-sm:flex">
+          <Link href="/dashboard/patients" aria-label={t("backToList")} className="-ml-2 hidden h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink max-sm:flex">
             <ArrowLeft className="h-5 w-5" strokeWidth={2} />
           </Link>
           <div className="flex flex-wrap items-center gap-3 max-sm:min-w-0 max-sm:flex-1 max-sm:gap-x-2 max-sm:gap-y-1">
@@ -92,14 +95,14 @@ export default function PatientDetailView({
             {/* Exercice à surveiller (suivi par exercice, 2026-11-02). */}
             {exerciseWatch.length > 0 && (
               <span
-                title={exerciseWatch.map((w) => `${w.name} : ${w.reason}`).join(" · ")}
+                title={exerciseWatch.map((w) => t("watchItem", { name: w.name, reason: w.reason })).join(" · ")}
                 className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-danger-soft px-3 py-1 text-xs font-medium text-danger max-sm:px-2 max-sm:py-0.5 max-sm:text-[11px]"
               >
                 <Activity className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
                 <span className="truncate">
                   {exerciseWatch.length === 1
-                    ? `${exerciseWatch[0].name} : ${exerciseWatch[0].reason}`
-                    : `${exerciseWatch.length} exercices à surveiller`}
+                    ? t("watchItem", { name: exerciseWatch[0].name, reason: exerciseWatch[0].reason })
+                    : t("watchCount", { count: exerciseWatch.length })}
                 </span>
               </span>
             )}
@@ -109,7 +112,7 @@ export default function PatientDetailView({
         </div>
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger max-sm:mt-2 max-sm:py-2">{error}</p>}
-        {adjusted && <p className="mt-4 flex items-center gap-2 rounded-xl bg-ok-soft px-4 py-3 text-sm text-ok max-sm:mt-2 max-sm:py-2"><CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />Séance ajustée, le patient a été prévenu.</p>}
+        {adjusted && <p className="mt-4 flex items-center gap-2 rounded-xl bg-ok-soft px-4 py-3 text-sm text-ok max-sm:mt-2 max-sm:py-2"><CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />{t("adjusted")}</p>}
 
         {/* Trois stats — une barre fine (valeur + détail sur la même ligne)
             plutôt que trois grandes cases, pour que la frise tienne à l'écran
@@ -117,17 +120,17 @@ export default function PatientDetailView({
             à côte. */}
         <div data-hide-when-week-open="" className="mt-4 grid divide-y divide-line rounded-xl border border-line bg-surface max-sm:mt-3 max-sm:shrink-0 max-sm:grid-cols-3 max-sm:divide-x max-sm:divide-y-0 max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-soft sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className={STAT_CELL}>
-            <p className="text-xs font-medium text-muted">Douleur</p>
+            <p className="text-xs font-medium text-muted">{t("pain")}</p>
             <p className={`text-lg font-semibold tabular-nums ${s.painLatest !== null && s.painLatest >= 6 ? "text-danger" : "text-ink"}`}>{s.painLatest !== null ? `${s.painLatest}/10` : "—"}</p>
             {s.painLatest !== null && <span className="max-sm:hidden"><PainDelta latest={s.painLatest} previous={s.painPrevious} /></span>}
           </div>
           <div className={STAT_CELL}>
-            <p className="text-xs font-medium text-muted">Adhérence</p>
+            <p className="text-xs font-medium text-muted">{t("adherence")}</p>
             <p className={`text-lg font-semibold tabular-nums ${TONE_TEXT[s.adherenceTone]}`}>{s.adherencePct !== null ? `${s.adherencePct} %` : "—"}</p>
             {s.adherenceLabel && <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium max-sm:hidden ${TONE_BG[s.adherenceTone]}`}>{s.adherenceLabel}</span>}
           </div>
           <div className={STAT_CELL}>
-            <p className="text-xs font-medium text-muted"><span className="max-sm:hidden">Dernière séance</span><span className="hidden max-sm:inline">Dernière</span></p>
+            <p className="text-xs font-medium text-muted"><span className="max-sm:hidden">{t("lastSession")}</span><span className="hidden max-sm:inline">{t("lastShort")}</span></p>
             <p className="text-lg font-semibold text-ink max-sm:truncate max-sm:max-w-full">{s.lastSessionLabel}</p>
             {s.lastSessionDetail && <p className="text-xs text-muted max-sm:hidden">{s.lastSessionDetail}</p>}
           </div>

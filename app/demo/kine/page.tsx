@@ -1,9 +1,13 @@
+import { getTranslations } from "next-intl/server";
 import DemoShell from "@/components/DemoShell";
 import KineTelephonePrototype from "@/app/prototypes/kine-telephone/page";
 
 // Démo publique, espace kiné : les écrans de /prototypes/kine-telephone
 // (vrais composants, données fictives), rendus navigables par DemoShell.
-export const metadata = { title: "Démo · espace kiné" };
+export async function generateMetadata() {
+  const t = await getTranslations("demo.meta");
+  return { title: t("kine") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function DemoKinePage({

@@ -2,13 +2,14 @@ import { doseKindOf, loadRecentExercises } from "@/lib/exercise/kineLibraryExtra
 import { createClient } from "@/lib/supabase/server";
 import { isPickableExercise, isPickableSeance } from "@/lib/exercise/filmedExercises";
 import { fitsPatient } from "@/lib/exercise/kineExercises";
-import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
+import { STAGE_LABELS, stageLabel, type InjuryStage } from "@/lib/exercise/prescription";
+import { getTranslations } from "next-intl/server";
 import SeancesTabs from "@/components/SeancesTabs";
 import { type BodyPart } from "@/lib/exercise/category";
 import { createSeance, duplicateSeance, deleteSeance, hideTemplateWorkout, unhideTemplateWorkout } from "./actions";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
-const STAGES = Object.entries(STAGE_LABELS) as [InjuryStage, string][];
+const STAGE_IDS = Object.keys(STAGE_LABELS) as InjuryStage[];
 
 type WorkoutExerciseRow = {
   position: number;
@@ -49,6 +50,8 @@ export default async function SeancesPage({
   // Seul retour accepté : une fiche patient du tableau de bord (jamais une URL externe).
   const returnTo = retour && /^\/dashboard\/patients\/[0-9a-f-]{36}$/.test(retour) ? retour : undefined;
 
+  const [tp, tStage] = await Promise.all([getTranslations("exercise.seancesPage"), getTranslations("exercise.stage")]);
+  const STAGES = STAGE_IDS.map((s) => [s, stageLabel(s, tStage)] as [InjuryStage, string]);
   const supabase = await createClient();
   // Validation du compte vérifiée ICI aussi (audit du 2026-10-08) : le
   // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
@@ -136,8 +139,8 @@ export default async function SeancesPage({
     const u = usageByWorkout.get(id);
     if (!u) return undefined;
     const parts: string[] = [];
-    if (u.recommended > 0) parts.push(`recommandée à ${u.recommended} patient${u.recommended > 1 ? "s" : ""}`);
-    if (u.logged > 0) parts.push(`${u.logged} séance${u.logged > 1 ? "s" : ""} enregistrée${u.logged > 1 ? "s" : ""}`);
+    if (u.recommended > 0) parts.push(tp("recommendedTo", { count: u.recommended }));
+    if (u.logged > 0) parts.push(tp("loggedCount", { count: u.logged }));
     return parts.length ? parts.join(", ") : undefined;
   }
 
@@ -189,8 +192,8 @@ export default async function SeancesPage({
               name: s.name,
               conditionName: conditionName(s.condition_id),
               stage: s.stage as InjuryStage | null,
-              stageLabel: s.stage ? STAGE_LABELS[s.stage as InjuryStage] : undefined,
-              extra: `${s.workout_exercises?.length ?? 0} exercices`,
+              stageLabel: s.stage ? stageLabel(s.stage as InjuryStage, tStage) : undefined,
+              extra: tp("exerciseCount", { count: s.workout_exercises?.length ?? 0 }),
               leadExerciseName: leadExerciseName(s.workout_exercises),
               exerciseNames: exerciseNames(s.workout_exercises),
               exerciseCount: s.workout_exercises?.length ?? 0,
@@ -202,7 +205,7 @@ export default async function SeancesPage({
               name: t.name,
               conditionName: conditionName(t.condition_id),
               stage: t.stage as InjuryStage | null,
-              stageLabel: t.stage ? STAGE_LABELS[t.stage as InjuryStage] : undefined,
+              stageLabel: t.stage ? stageLabel(t.stage as InjuryStage, tStage) : undefined,
               leadExerciseName: leadExerciseName(t.workout_exercises),
               exerciseNames: exerciseNames(t.workout_exercises),
               bodyPartIds: seanceBodyPartIds(t.workout_exercises),

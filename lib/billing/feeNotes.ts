@@ -5,6 +5,10 @@
 // remboursable, exonération de TVA des soins (art. 261-4-1° CGI).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { feeNoteNumber, nextPeriod } from "./reviewModel";
+import type { Locale } from "@/i18n/locales";
+import { intlTag, libTranslator } from "@/lib/i18n/translator";
+import fr from "@/messages/fr/billing.json";
+import en from "@/messages/en/billing.json";
 
 export type FeeNote = {
   id: string;
@@ -33,15 +37,16 @@ type Row = {
 
 const FIELDS = "id, patient_id, instructor_id, period, validated_at, amount_cents, payment_status, paid_at, fee_note_year, fee_note_seq";
 
-async function toNotes(supabase: SupabaseClient, rows: Row[]): Promise<FeeNote[]> {
+async function toNotes(supabase: SupabaseClient, rows: Row[], locale: Locale = "fr"): Promise<FeeNote[]> {
   if (rows.length === 0) return [];
+  const t = libTranslator(locale, { fr, en }, "feeNote");
   const patientIds = [...new Set(rows.map((r) => r.patient_id))];
   const kineIds = [...new Set(rows.map((r) => r.instructor_id))];
   const [{ data: patients }, { data: kines }] = await Promise.all([
     supabase.from("patients").select("id, full_name").in("id", patientIds),
     supabase.from("instructors").select("id, full_name, cabinet_name, cabinet_address, rpps_number").in("id", kineIds),
   ]);
-  const patientName = new Map((patients ?? []).map((p) => [p.id as string, (p.full_name as string | null) ?? "Patient"]));
+  const patientName = new Map((patients ?? []).map((p) => [p.id as string, (p.full_name as string | null) ?? t("fallbackPatient")]));
   const kine = new Map((kines ?? []).map((k) => [k.id as string, k]));
   return rows.map((r) => {
     const k = kine.get(r.instructor_id);
@@ -53,9 +58,9 @@ async function toNotes(supabase: SupabaseClient, rows: Row[]): Promise<FeeNote[]
       amountCents: r.amount_cents,
       paymentStatus: r.payment_status,
       paidAt: r.paid_at,
-      patientName: patientName.get(r.patient_id) ?? "Patient",
+      patientName: patientName.get(r.patient_id) ?? t("fallbackPatient"),
       kine: {
-        name: (k?.full_name as string | null) ?? "Masseur-kinésithérapeute",
+        name: (k?.full_name as string | null) ?? t("profession"),
         cabinet: (k?.cabinet_name as string | null) ?? null,
         address: (k?.cabinet_address as string | null) ?? null,
         rpps: (k?.rpps_number as string | null) ?? null,
@@ -65,7 +70,7 @@ async function toNotes(supabase: SupabaseClient, rows: Row[]): Promise<FeeNote[]
 }
 
 /** Les bilans d'un mois pour un kiné, par numéro de note. */
-export async function loadMonthFeeNotes(supabase: SupabaseClient, instructorId: string, period: string): Promise<FeeNote[]> {
+export async function loadMonthFeeNotes(supabase: SupabaseClient, instructorId: string, period: string, locale: Locale = "fr"): Promise<FeeNote[]> {
   const { data } = await supabase
     .from("monthly_reviews")
     .select(FIELDS)
@@ -73,20 +78,21 @@ export async function loadMonthFeeNotes(supabase: SupabaseClient, instructorId: 
     .eq("period", period)
     .lt("period", nextPeriod(period))
     .order("fee_note_seq", { ascending: true });
-  return toNotes(supabase, (data ?? []) as Row[]);
+  return toNotes(supabase, (data ?? []) as Row[], locale);
 }
 
 /** Une note précise (kiné ou patient : la RLS ne renvoie que ce qu'on a le droit de voir). */
-export async function loadFeeNote(supabase: SupabaseClient, reviewId: string): Promise<FeeNote | null> {
+export async function loadFeeNote(supabase: SupabaseClient, reviewId: string, locale: Locale = "fr"): Promise<FeeNote | null> {
   const { data } = await supabase.from("monthly_reviews").select(FIELDS).eq("id", reviewId).maybeSingle();
   if (!data) return null;
-  return (await toNotes(supabase, [data as Row]))[0] ?? null;
+  return (await toNotes(supabase, [data as Row], locale))[0] ?? null;
 }
 
-export function paymentLabel(n: Pick<FeeNote, "paymentStatus" | "paidAt">): string {
+export function paymentLabel(n: Pick<FeeNote, "paymentStatus" | "paidAt">, locale: Locale = "fr"): string {
+  const t = libTranslator(locale, { fr, en }, "feeNote");
   if (n.paymentStatus === "paid") {
-    return n.paidAt ? `Réglé par carte le ${new Date(n.paidAt).toLocaleDateString("fr-FR")}` : "Réglé par carte";
+    return n.paidAt ? t("paidOn", { date: new Date(n.paidAt).toLocaleDateString(intlTag(locale)) }) : t("paid");
   }
-  if (n.paymentStatus === "pending") return "Paiement en cours";
-  return "Paiement refusé — à régulariser";
+  if (n.paymentStatus === "pending") return t("pending");
+  return t("failed");
 }

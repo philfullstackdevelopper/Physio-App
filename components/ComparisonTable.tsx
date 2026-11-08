@@ -6,6 +6,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { LogoMark } from "@/components/Logo";
 import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 
@@ -17,19 +18,20 @@ import RevealGroup, { RevealItem } from "@/components/RevealGroup";
 type Status = "yes" | "partial" | "no";
 
 // EasyPhysio n'a pas d'icône générique : il affiche le vrai logo (LogoMark).
+// Libellés : messages/<langue>/home.json (home.comparison).
 const COLUMNS: { name: string; sub: string; icon?: LucideIcon; highlight?: boolean }[] = [
-  { name: "EasyPhysio", sub: "avec votre kiné", highlight: true },
-  { name: "Appli fitness généraliste", sub: "sans suivi clinique", icon: Activity },
+  { name: "easy", sub: "easySub", highlight: true },
+  { name: "fitness", sub: "fitnessSub", icon: Activity },
   // « Feuille papier » (2026-10-10) : c'est la vraie alternative d'un cabinet,
   // et celle dont parle le titre de la section — plus parlant que « Rien ».
-  { name: "Feuille papier", sub: "photocopiée", icon: FileText },
+  { name: "paper", sub: "paperSub", icon: FileText },
 ];
 
 const ROWS: { label: string; values: [Status, Status, Status] }[] = [
-  { label: "Démonstrations et consignes claires", values: ["yes", "partial", "partial"] },
-  { label: "Suivi de l'évolution par le kiné", values: ["yes", "no", "no"] },
-  { label: "Signalement de douleur en temps réel", values: ["yes", "no", "no"] },
-  { label: "Ajustement du programme à distance", values: ["yes", "no", "no"] },
+  { label: "rowDemos", values: ["yes", "partial", "partial"] },
+  { label: "rowTracking", values: ["yes", "no", "no"] },
+  { label: "rowPain", values: ["yes", "no", "no"] },
+  { label: "rowRemote", values: ["yes", "no", "no"] },
 ];
 
 function scoreOf(col: number) {
@@ -62,6 +64,7 @@ function StatusIcon({ value }: { value: Status }) {
 }
 
 export default function ComparisonTable() {
+  const t = useTranslations("home.comparison");
   return (
     <div className="overflow-x-auto">
       {/* Téléphone : les 4 colonnes tiennent dans la largeur de l'écran, sans
@@ -89,9 +92,9 @@ export default function ComparisonTable() {
                   <span className="font-medium">Physio</span>
                 </p>
               ) : (
-                <p className="mt-2 text-sm font-semibold leading-tight text-slate-500 max-sm:text-[11px]">{col.name}</p>
+                <p className="mt-2 text-sm font-semibold leading-tight text-slate-500 max-sm:text-[11px]">{t(col.name)}</p>
               )}
-              <p className="mt-0.5 text-xs text-slate-400 max-sm:text-[10px] max-sm:leading-tight">{col.sub}</p>
+              <p className="mt-0.5 text-xs text-slate-400 max-sm:text-[10px] max-sm:leading-tight">{t(col.sub)}</p>
             </div>
           ))}
         </div>
@@ -102,7 +105,7 @@ export default function ComparisonTable() {
               key={row.label}
               className="grid grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-xl px-2 py-3 max-sm:gap-1 max-sm:py-2.5 odd:bg-slate-50/70 sm:short:py-2 sm:gap-4 sm:px-4"
             >
-              <p className="text-sm leading-snug text-slate-700 max-sm:text-xs">{row.label}</p>
+              <p className="text-sm leading-snug text-slate-700 max-sm:text-xs">{t(row.label)}</p>
               {row.values.map((value, i) => (
                 <div key={i} className="flex justify-center">
                   <StatusIcon value={value} />
@@ -115,7 +118,7 @@ export default function ComparisonTable() {
         {/* Score total row — masquée sur téléphone (2026-10-26) : une note
             qu'on s'attribue soi-même fait « IA » et n'apporte rien. */}
         <div className="mt-1 grid max-sm:hidden grid-cols-[1.3fr_1fr_1fr_1fr] items-center gap-2 rounded-2xl bg-blue-50/70 px-4 py-4 max-sm:gap-1 max-sm:px-2 max-sm:py-3 sm:short:py-2.5 sm:gap-4 sm:px-6">
-          <p className="text-sm font-semibold text-slate-900 max-sm:text-xs">Score total</p>
+          <p className="text-sm font-semibold text-slate-900 max-sm:text-xs">{t("total")}</p>
           {COLUMNS.map((col, i) => (
             <p
               key={col.name}

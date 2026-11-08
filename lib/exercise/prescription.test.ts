@@ -36,3 +36,11 @@ test("la dose du kiné remplace la règle habituelle", () => {
   assert.equal(goalShortFor("Pédalez 10 minutes.", { sets: 4 }), "10 min");
   assert.equal(goalShortFor("Tenez 20 à 30 secondes."), "3 × 20-30 s");
 });
+
+test("consigne traduite en anglais : même objectif qu'en français", () => {
+  const p = { goalSets: 3, goalReps: 12 };
+  assert.equal(goalTextFor("Hold the position for 30 seconds.", p), "3 × 30 secondes");
+  assert.equal(goalTextFor("Hold for 20 to 30 seconds.", p), "3 × 20 à 30 secondes");
+  assert.equal(goalShortFor("Hold for 20-30 seconds."), "3 × 20-30 s");
+  assert.equal(goalShortFor("Cycle for 10 minutes at low resistance."), "10 min");
+});

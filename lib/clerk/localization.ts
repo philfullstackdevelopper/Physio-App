@@ -4,7 +4,7 @@
 // production) et un « Create a password » en anglais.
 // On part de la traduction officielle frFR, on y remplace partout le nom
 // d'application par « EasyPhysio », et on complète ce qui manque.
-import { frFR } from "@clerk/localizations";
+import { enGB, frFR } from "@clerk/localizations";
 
 type Loc = typeof frFR;
 
@@ -19,4 +19,11 @@ function withAppName<T>(value: T): T {
 export const easyPhysioFR: Loc = {
   ...withAppName(frFR),
   formFieldInputPlaceholder__signUpPassword: "Créez un mot de passe",
+};
+
+// Même chose en anglais (interface en anglais, 2026-11-06) : pack officiel
+// enGB, nom d'application remplacé par « EasyPhysio », et le même complément.
+export const easyPhysioEN: typeof enGB = {
+  ...withAppName(enGB),
+  formFieldInputPlaceholder__signUpPassword: "Create a password",
 };

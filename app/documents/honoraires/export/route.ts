@@ -1,4 +1,7 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { loadMonthFeeNotes } from "@/lib/billing/feeNotes";
 import { estimateStripeFeeCents } from "@/lib/billing/reviewModel";
@@ -16,18 +19,23 @@ export async function GET(req: Request) {
   const { user } = await requireApprovedInstructor(supabase);
   const raw = new URL(req.url).searchParams.get("period") ?? "";
   const period = /^\d{4}-\d{2}-01$/.test(raw) ? raw : periodOf(new Date());
-  const notes = await loadMonthFeeNotes(supabase, user.id, period);
+  // Langue du document = celle de la personne connectée (mentions légales
+  // françaises gardées entre parenthèses dans la version anglaise).
+  // Séparateur « ; » et décimales « , » inchangés dans les deux langues.
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations("billing.csv");
+  const notes = await loadMonthFeeNotes(supabase, user.id, period, locale);
 
-  const header = ["Date", "N° note d'honoraires", "Patient", "Désignation", "Montant (€)", "Paiement", "Date d'encaissement", "Frais Stripe estimés (€)"];
+  const header = [t("date"), t("number"), t("patient"), t("designation"), t("amount"), t("payment"), t("collectedOn"), t("stripeFees")];
   const lines = notes.map((n) =>
     [
-      new Date(n.validatedAt).toLocaleDateString("fr-FR"),
+      new Date(n.validatedAt).toLocaleDateString(intlTag(locale)),
       n.number,
       n.patientName,
-      "Programme mensuel hors nomenclature (acte non remboursable)",
+      t("line"),
       amount(n.amountCents),
-      n.paymentStatus === "paid" ? "Encaissé" : n.paymentStatus === "pending" ? "En cours" : "Refusé",
-      n.paidAt ? new Date(n.paidAt).toLocaleDateString("fr-FR") : "",
+      n.paymentStatus === "paid" ? t("statusPaid") : n.paymentStatus === "pending" ? t("statusPending") : t("statusFailed"),
+      n.paidAt ? new Date(n.paidAt).toLocaleDateString(intlTag(locale)) : "",
       n.paymentStatus === "paid" ? amount(estimateStripeFeeCents(n.amountCents)) : "",
     ]
       .map(csvCell)
@@ -37,7 +45,7 @@ export async function GET(req: Request) {
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="recettes-easyphysio-${period.slice(0, 7)}.csv"`,
+      "Content-Disposition": `attachment; filename="${t("filename", { month: period.slice(0, 7) })}"`,
       "Cache-Control": "no-store",
     },
   });

@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+// Langues de l'interface (français / anglais) : next-intl lit la langue du
+// cookie et charge les textes de messages/<langue>/ (i18n/request.ts).
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 // Heure de Paris pour tout le serveur (audit du 2026-10-08) : les dates du
 // programme (jour, semaine, « aujourd'hui », heure d'une séance) sont
@@ -36,4 +41,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

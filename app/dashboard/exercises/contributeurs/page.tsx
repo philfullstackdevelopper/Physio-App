@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import ContributorsView from "@/components/ContributorsView";
@@ -8,6 +9,7 @@ import { contributorRanking, type PublicationStatus } from "@/lib/exercise/kineE
 export default async function ContributeursPage() {
   const supabase = await createClient();
   const { user } = await requireApprovedInstructor(supabase);
+  const tContributor = await getTranslations("exercise.contributor");
   const { data } = await supabase
     .from("exercises")
     .select("created_by, publication_status, author_label")
@@ -19,6 +21,8 @@ export default async function ContributeursPage() {
       publication_status: r.publication_status as PublicationStatus,
       author_label: r.author_label as string | null,
     })),
+    undefined,
+    tContributor("unknownAuthor"),
   );
   return <ContributorsView ranking={ranking} meId={user.id} />;
 }

@@ -1,4 +1,6 @@
 import HistoriqueView from "./HistoriqueView";
+import { getLocale, getTranslations } from "next-intl/server";
+import type { Locale } from "@/i18n/locales";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { buildHistoryWeeks, type HistoryWorkout } from "@/lib/patient/historyWeeks";
@@ -40,7 +42,10 @@ export default async function HistoriquePage() {
       .eq("patient_id", user.id),
   ]);
 
+  const [locale, t, tc] = await Promise.all([getLocale(), getTranslations("patient.history"), getTranslations("patient.common")]);
   const weeks = buildHistoryWeeks({
+    locale: locale as Locale,
+    labels: { weekOf: (date) => t("weekOf", { date }), session: tc("session") },
     logs: (logRows ?? []).map((l) => ({
       id: l.id as string,
       completedAt: l.completed_at as string,

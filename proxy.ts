@@ -1,6 +1,7 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { isAppPath, nativePlatformFromUserAgent } from "@/lib/app/nativeApp";
+import { LOCALE_COOKIE, localeFromAcceptLanguage } from "@/i18n/locales";
 
 // Next.js 16 renamed Middleware → Proxy (same job: runs before each request).
 // clerkMiddleware() makes the Clerk session available to Server Components and
@@ -54,6 +55,20 @@ export default clerkMiddleware(async (auth, req) => {
   // tell it was already on /patient/onboarding.
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-pathname", req.nextUrl.pathname);
+
+  // Première visite (pas encore de cookie de langue) : langue devinée depuis
+  // le navigateur (i18n/locales.ts). Le cookie est posé sur la réponse pour
+  // les visites suivantes, et ajouté à la requête en cours pour que cette
+  // toute première page s'affiche déjà dans la bonne langue. Un choix fait
+  // avec le sélecteur, ou enregistré sur le compte, l'emporte toujours.
+  if (!req.cookies.get(LOCALE_COOKIE)) {
+    const guessed = localeFromAcceptLanguage(req.headers.get("accept-language"));
+    const existing = req.headers.get("cookie");
+    requestHeaders.set("cookie", `${existing ? `${existing}; ` : ""}${LOCALE_COOKIE}=${guessed}`);
+    const res = NextResponse.next({ request: { headers: requestHeaders } });
+    res.cookies.set(LOCALE_COOKIE, guessed, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+    return res;
+  }
   return NextResponse.next({ request: { headers: requestHeaders } });
 });
 

@@ -21,6 +21,7 @@
 // =============================================================================
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { uploadFile } from "@/lib/storage/client";
 import { adminSetExerciseMedia } from "@/app/dashboard/exercises/actions";
@@ -41,6 +42,8 @@ export default function ExerciseVideoUpload({
   onUploaded?: (url: string) => void;
 }) {
   const supabase = createClient();
+  const t = useTranslations("exercise.videoUpload");
+  const tStorage = useTranslations("exercise.storage");
 
   // Écrit l'URL + le point de départ, par la RPC (exercice du kiné) ou par la
   // Server Action admin (exercice plateforme). Lève une vraie Error avec le
@@ -58,7 +61,7 @@ export default function ExerciseVideoUpload({
       p_media_url: mediaUrl,
       p_start_seconds: seconds,
     });
-    if (rpcErr) throw new Error(rpcErr.message || "Échec de l'enregistrement.");
+    if (rpcErr) throw new Error(rpcErr.message || t("saveFailed"));
   };
 
   const errorMessage = (e: unknown, fallback: string) => {
@@ -72,7 +75,7 @@ export default function ExerciseVideoUpload({
   const upload = async (file: File) => {
     setError(null);
     if (file.size > MAX_MB * 1024 * 1024) {
-      setError(`Vidéo trop volumineuse (max ${MAX_MB} Mo). Compressez-la ou raccourcissez-la.`);
+      setError(t("tooBig", { max: MAX_MB }));
       return;
     }
     setBusy(true);
@@ -80,15 +83,15 @@ export default function ExerciseVideoUpload({
       const safe = file.name.replace(/[^\w.\-]+/g, "_");
       const path = `${exerciseId}/${crypto.randomUUID()}_${safe}`;
 
-      const { error: upErr, publicUrl } = await uploadFile(BUCKET, path, file);
-      if (upErr || !publicUrl) throw new Error(upErr ?? "Échec de l'envoi.");
+      const { error: upErr, publicUrl } = await uploadFile(BUCKET, path, file, tStorage);
+      if (upErr || !publicUrl) throw new Error(upErr ?? t("sendFailed"));
 
       await saveMedia(publicUrl, 0);
 
       setUrl(publicUrl);
       onUploaded?.(publicUrl);
     } catch (e) {
-      setError(errorMessage(e, "Échec de l'envoi de la vidéo."));
+      setError(errorMessage(e, t("uploadFailed")));
     } finally {
       setBusy(false);
     }
@@ -97,7 +100,7 @@ export default function ExerciseVideoUpload({
   return (
     <div>
       <label className="inline-block cursor-pointer rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink hover:bg-app-bg">
-        {busy ? "Envoi…" : url ? "Remplacer la vidéo" : "Ajouter une vidéo"}
+        {busy ? t("sending") : url ? t("replace") : t("add")}
         <input
           type="file"
           accept="video/*"

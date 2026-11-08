@@ -1,4 +1,13 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale, type Locale } from "@/i18n/locales";
+import { localizingFetch } from "@/lib/i18n/dbContent";
+
+// Langue de l'interface, lue dans le cookie (voir i18n/request.ts).
+function browserLocale(): Locale {
+  if (typeof document === "undefined") return DEFAULT_LOCALE;
+  const m = document.cookie.match(new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]+)`));
+  return m && isLocale(m[1]) ? m[1] : DEFAULT_LOCALE;
+}
 
 type ClerkWindow = Window & {
   Clerk?: { session?: { getToken?: () => Promise<string | null> } };
@@ -24,6 +33,8 @@ export function createClient() {
         const getToken = (window as ClerkWindow).Clerk?.session?.getToken;
         return getToken ? getToken() : Promise.resolve(null);
       },
+      // Textes de la plateforme dans la langue de l'interface (lib/i18n/dbContent.ts).
+      global: { fetch: localizingFetch(browserLocale, { reverseInFrench: false }) },
     },
   );
 }

@@ -6,6 +6,7 @@
 // depuis l'appli.
 //   ?ecran=programme | seance | historique | informations | historique-detail | onboarding | progres | compte | suivi | cabinet (formulaire kiné de secours)
 
+import { getTranslations } from "next-intl/server";
 import SuiviView from "@/app/patient/suivi/SuiviView";
 import PatientNav from "@/components/PatientNav";
 import ProgrammeView, { type ProgrammeWorkout } from "@/app/patient/programme/ProgrammeView";
@@ -15,18 +16,21 @@ import HistoriqueView from "@/app/patient/historique/HistoriqueView";
 import HistoriqueDetailView from "@/app/patient/historique/[logId]/HistoriqueDetailView";
 import InformationsView from "@/app/patient/compte/informations/InformationsView";
 import OnboardingView from "@/app/patient/onboarding/OnboardingView";
-import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
-import { EQUIPMENT_LABELS, EQUIPMENT_OPTIONS } from "@/lib/exercise/equipment";
+import { STAGE_LABELS, stageLabel, type InjuryStage } from "@/lib/exercise/prescription";
+import { EQUIPMENT_OPTIONS, equipmentLabels } from "@/lib/exercise/equipment";
 import ProgresView from "@/app/patient/progres/ProgresView";
 import CompteView from "@/app/patient/compte/CompteView";
 import { buildPainSeries } from "@/lib/dashboard/painHistory";
 import SignupOnboardingView from "@/app/signup/onboarding/SignupOnboardingView";
-import { DEMO_BODY_PARTS } from "@/app/prototypes/kine-telephone/mock";
+import { demoBodyParts, type DemoT } from "@/app/prototypes/kine-telephone/mock";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import { buildHistoryWeeks } from "@/lib/patient/historyWeeks";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 
-export const metadata = { title: "Aperçu écrans patient", robots: { index: false } };
+export async function generateMetadata() {
+  const t = await getTranslations("demo.meta");
+  return { title: t("previewPatient"), robots: { index: false } };
+}
 // Recalculée à chaque visite : la courbe de douleur fictive suit la vraie date.
 export const dynamic = "force-dynamic";
 
@@ -34,31 +38,27 @@ export const dynamic = "force-dynamic";
 // montre leur vraie vidéo (Cloudflare R2, lien signé côté serveur — même
 // fichier que exercises.media_url, migration 0075) et l'objectif séries ×
 // répétitions (Philippe, 2026-11-02).
-const EXERCISES = [
-  ["Glute Bridge", "Allongé sur le dos, genoux fléchis, soulevez le bassin en serrant les fessiers puis redescendez lentement.", "glute-bridge.mp4"],
-  ["Bodyweight Squat", "Debout, pieds écartés largeur du bassin, fléchissez doucement les genoux sans dépasser les orteils.", "bodyweight-squat.mp4"],
-  [
-    "Straight Leg Raise",
-    "Allongé sur le dos, appuyé sur les avant-bras, l'autre jambe allongée au sol. Contractez la cuisse pour verrouiller le genou, puis levez la jambe tendue jusqu'à environ 45°, sans plier le genou. Redescendez lentement.",
-    "straight-leg-raise.mp4",
-  ],
-  [
-    "Terminal Knee Extension (Band)",
-    "Debout, un pied devant l'autre, élastique passé derrière le genou avant et fixé devant vous à hauteur du genou. Partez genou légèrement plié, puis tendez complètement le genou en poussant vers l'arrière contre l'élastique. Revenez lentement.",
-    "terminal-knee-extension.mp4",
-  ],
+// Consigne affichée : demo.samples.patientInstructions.<clé> (le nom reste
+// celui de la banque : il sert à trouver le dessin et la vidéo).
+const EXERCISE_LIST = [
+  ["Glute Bridge", "gluteBridge", "glute-bridge.mp4"],
+  ["Bodyweight Squat", "bodyweightSquat", "bodyweight-squat.mp4"],
+  ["Straight Leg Raise", "straightLegRaise", "straight-leg-raise.mp4"],
+  ["Terminal Knee Extension (Band)", "terminalKneeExt", "terminal-knee-extension.mp4"],
 ] as const;
+const exercisesFor = (t: DemoT) =>
+  EXERCISE_LIST.map(([name, key, video]) => [name, t(`patientInstructions.${key}`), video] as const);
 
 // Hors du composant : la règle react-hooks/purity refuse Date.now() dans le rendu.
 const daysAgoIso = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
 
 // Historique fictif : 4 semaines, séance prévue 3 fois par semaine — cette
 // semaine 1 faite, puis 3/3, 2/3 et 1/3 (bleu = fait, rouge = manqué).
-function demoHistoryWeeks() {
+function demoHistoryWeeks(t: DemoT) {
   const now = new Date();
   const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7), 18, 15);
   const at = (weeksAgo: number, day: number) => new Date(monday.getTime() + (day - weeksAgo * 7) * 86_400_000).toISOString();
-  const workout = { name: "Renforcement du genou, niveau 2", timesPerWeek: 3, exercises: EXERCISES.map(([name]) => name) };
+  const workout = { name: t("kneeL2"), timesPerWeek: 3, exercises: EXERCISE_LIST.map(([name]) => name) };
   const done: [number, number][] = [[0, 0], [1, 0], [1, 2], [1, 4], [2, 1], [2, 3], [3, 2]];
   return buildHistoryWeeks({
     now,
@@ -84,17 +84,21 @@ async function noop() {
 
 export default async function PatientEcransPrototype({ searchParams }: { searchParams: Promise<{ ecran?: string; depuis?: string }> }) {
   const { ecran = "programme", depuis } = await searchParams;
+  const t = await getTranslations("demo.samples");
+  const tStage = await getTranslations("exercise.stage");
+  const tEquip = await getTranslations("exercise.equipment");
+  const EXERCISES = exercisesFor(t);
 
   const workouts: ProgrammeWorkout[] = [
     {
       id: "demo-seance",
-      name: "Renforcement du genou, niveau 2",
-      description: "Renforcement doux des quadriceps et des fessiers.",
+      name: t("kneeL2"),
+      description: t("kneeL2Description"),
       durationMinutes: 20,
       timesPerWeek: 3,
       doneThisWeek: 1,
       isActive: true,
-      exercises: EXERCISES.map(([name, instructions], i) => ({ id: `ex${i}`, name, instructions, categoryLabel: "Genou / jambe" })),
+      exercises: EXERCISES.map(([name, instructions], i) => ({ id: `ex${i}`, name, instructions, categoryLabel: t("kneeLeg") })),
     },
   ];
 
@@ -110,11 +114,11 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
         needsConsent
         wizard={{
           saveAction: noop,
-          bodyParts: DEMO_BODY_PARTS,
-          stages: Object.entries(STAGE_LABELS) as [InjuryStage, string][],
+          bodyParts: demoBodyParts(t),
+          stages: (Object.keys(STAGE_LABELS) as InjuryStage[]).map((k) => [k, stageLabel(k, tStage)] as [InjuryStage, string]),
           profile: null,
           equipmentOptions: EQUIPMENT_OPTIONS,
-          equipmentLabels: EQUIPMENT_LABELS,
+          equipmentLabels: equipmentLabels(tEquip),
           currentEquipment: new Set(),
           needsConsent: true,
         }}
@@ -128,7 +132,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
       <div className="relative min-w-0 flex-1 pb-20 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0">
         {ecran === "progres" ? (
           <ProgresView
-            conditionName="Prothèse de genou"
+            conditionName={t("conditions.kneeReplacement")}
             hasPain
             phoneTileCount={3}
             adherenceNow={{ pct: 67, done: 8, expected: 12 }}
@@ -148,33 +152,33 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
         ) : ecran === "compte" ? (
           <CompteView
             fullName="Léa Martin"
-            followUp={{ status: "active", line: "3 mois · renouvelée le 4 février" }}
+            followUp={{ status: "active", line: t("followUpLine") }}
           />
         ) : ecran === "informations" ? (
           <InformationsView
             name="Léa Martin"
             email="lea.martin@exemple.fr"
             situation={[
-              { label: "Zones travaillées", value: "Genou / jambe, Hanche / fessiers" },
-              { label: "Étape de récupération", value: "Phase intermédiaire, reprise progressive" },
-              { label: "Avancée de la rééducation", value: "Je marche sans béquilles depuis deux semaines, encore gênée dans les escaliers." },
-              { label: "Ce qui s'est passé", value: "Entorse du genou droit au ski en février, opérée en mars." },
-              { label: "Date de naissance", value: "14 mars 1988" },
-              { label: "Taille / poids", value: "168 cm · 62 kg" },
-              { label: "Niveau d'activité", value: "Modérée (activité régulière)" },
-              { label: "Équipement disponible", value: "Tapis, élastique, chaise" },
+              { label: t("info.zonesLabel"), value: t("info.zones") },
+              { label: t("info.stageLabel"), value: t("info.stage") },
+              { label: t("info.progressLabel"), value: t("info.progress") },
+              { label: t("info.historyLabel"), value: t("info.history") },
+              { label: t("info.birthLabel"), value: t("info.birth") },
+              { label: t("info.sizeLabel"), value: "168 cm · 62 kg" },
+              { label: t("info.activityLabel"), value: t("info.activity") },
+              { label: t("info.equipmentLabel"), value: t("info.equipment") },
             ]}
           />
         ) : ecran === "historique-detail" ? (
           <HistoriqueDetailView
-            name="Renforcement du genou, niveau 2"
-            dateLabel="lundi 28 septembre à 18:15"
-            feedback={{ pain_score: 3, notes: "Un peu raide au début, mieux à la fin." }}
+            name={t("kneeL2")}
+            dateLabel={t("historyDate")}
+            feedback={{ pain_score: 3, notes: t("historyNotes") }}
             exercises={[...EXERCISES.map(([name]) => name), "Quad Set", "Heel Slide", "Banded Clamshell"].map((name) => ({ name, skipped: false }))}
-            back={depuis === "accueil" ? { href: "/patient", label: "Accueil" } : undefined}
+            back={depuis === "accueil" ? { href: "/patient", label: t("backHome") } : undefined}
           />
         ) : ecran === "historique" ? (
-          <HistoriqueView weeks={demoHistoryWeeks()} />
+          <HistoriqueView weeks={demoHistoryWeeks(t)} />
         ) : ecran === "seance" ? (
           // Même enveloppe que app/patient/[workoutId]/seance/page.tsx.
           <main className="p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:p-4 max-sm:short:py-2 sm:min-h-dvh sm:p-8 short:sm:py-3">
@@ -182,7 +186,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
               <WorkoutSession
                 workoutId="demo-seance"
                 patientId="demo-patient"
-                workoutName="Renforcement du genou, niveau 2"
+                workoutName={t("kneeL2")}
                 exercises={await Promise.all(
                   EXERCISES.map(async ([name, instructions, video]) => ({
                     name,
@@ -197,7 +201,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
             </div>
           </main>
         ) : (
-          <ProgrammeView week={4} workouts={workouts} tip="Mieux vaut une séance courte et régulière qu'une longue de temps en temps." />
+          <ProgrammeView week={4} workouts={workouts} tip={t("programmeTip")} />
         )}
       </div>
     </div>

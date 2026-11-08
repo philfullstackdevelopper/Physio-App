@@ -6,6 +6,9 @@
 
 import { useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 
 export default function AccountDeletionCard({
   requestedAt,
@@ -16,6 +19,8 @@ export default function AccountDeletionCard({
   requestAction: (formData: FormData) => Promise<{ ok: true } | { error: string }>;
   cancelAction: () => Promise<{ ok: true } | { error: string }>;
 }) {
+  const t = useTranslations("patient.accountDeletion");
+  const locale = useLocale() as Locale;
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -24,10 +29,9 @@ export default function AccountDeletionCard({
   if (sentAt) {
     return (
       <section className="mt-6 rounded-2xl border border-line bg-surface p-4 text-sm">
-        <p className="font-medium text-ink">Suppression du compte demandée</p>
+        <p className="font-medium text-ink">{t("requestedTitle")}</p>
         <p className="mt-1 text-muted">
-          Demande envoyée le {new Date(sentAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}. EasyPhysio vous recontacte
-          sous 30 jours pour la finaliser.
+          {t("requestedText", { date: new Date(sentAt).toLocaleDateString(intlTag(locale), { day: "numeric", month: "long" }) })}
         </p>
         <button
           type="button"
@@ -41,7 +45,7 @@ export default function AccountDeletionCard({
           }
           className="mt-3 text-sm font-medium text-brand hover:underline disabled:opacity-60"
         >
-          Annuler la demande
+          {t("cancelRequest")}
         </button>
         {error && <p className="mt-2 text-danger">{error}</p>}
       </section>
@@ -57,7 +61,7 @@ export default function AccountDeletionCard({
           className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-danger"
         >
           <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-          Supprimer mon compte
+          {t("deleteAccount")}
         </button>
       ) : (
         <form
@@ -71,27 +75,24 @@ export default function AccountDeletionCard({
           }
           className="rounded-2xl border border-danger/30 bg-danger-soft/40 p-4 text-sm"
         >
-          <p className="font-medium text-ink">Supprimer mon compte</p>
-          <p className="mt-1 text-muted">
-            Votre compte, vos séances et l&apos;accès de vos patients seront supprimés. EasyPhysio vous recontacte sous 30 jours pour
-            finaliser, notamment pour vos patients en cours.
-          </p>
+          <p className="font-medium text-ink">{t("deleteAccount")}</p>
+          <p className="mt-1 text-muted">{t("warning")}</p>
           <textarea
             name="reason"
             rows={2}
-            placeholder="Pourquoi partez-vous ? (facultatif)"
+            placeholder={t("reasonPlaceholder")}
             className="mt-3 w-full rounded-lg border border-line bg-surface px-3 py-2 text-ink focus:border-brand focus:outline-none"
           />
           <label className="mt-2 flex items-start gap-2 text-ink">
             <input type="checkbox" name="confirm" className="mt-0.5 h-4 w-4 accent-danger" />
-            Je demande la suppression de mon compte.
+            {t("confirm")}
           </label>
           <div className="mt-3 flex gap-2">
             <button type="submit" disabled={pending} className="rounded-lg bg-danger px-3 py-2 font-medium text-white disabled:opacity-60">
-              {pending ? "Envoi…" : "Envoyer la demande"}
+              {pending ? t("sending") : t("send")}
             </button>
             <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-muted hover:text-ink">
-              Annuler
+              {t("cancel")}
             </button>
           </div>
           {error && <p className="mt-2 text-danger">{error}</p>}

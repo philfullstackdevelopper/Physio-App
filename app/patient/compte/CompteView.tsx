@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight, CreditCard, Download, LogOut, ShieldCheck, Trash2, User } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import type { Locale } from "@/i18n/locales";
 import { deleteMyAccount } from "./actions";
 import { KINE_FOLLOW_UP_CENTS, LOWEST_PLATFORM_CENTS, eurosFR } from "@/lib/billing/patientPlans";
 
@@ -28,10 +31,13 @@ export interface CompteViewProps {
 // lib/billing/patientPlans.ts) et mène à /patient/suivi. Les cas des anciens
 // modèles (suivi offert, carte à terminer, suivi arrêté), que page.tsx ne
 // produit plus, sont retirés (Philippe, 2026-11-06 : audit, on allège).
-function followUpText(f: FollowUpSummary): { title: string; line: string; badge: string; badgeClass: string; cta: string } {
-  if (f.status === "active") return { title: "Mon suivi", line: f.line, badge: "Actif", badgeClass: "bg-ok-soft text-ok", cta: "Gérer" };
-  if (f.status === "pending_card") return { title: "Mon suivi", line: f.line, badge: "Paiement refusé", badgeClass: "bg-danger-soft text-danger", cta: "Régler" };
-  return { title: "Mon suivi", line: f.line, badge: "Non activé", badgeClass: "bg-app-bg text-muted", cta: "Activer" };
+function followUpText(
+  f: FollowUpSummary,
+  t: (key: string) => string,
+): { title: string; line: string; badge: string; badgeClass: string; cta: string } {
+  if (f.status === "active") return { title: t("fuTitle"), line: f.line, badge: t("fuActiveBadge"), badgeClass: "bg-ok-soft text-ok", cta: t("fuActiveCta") };
+  if (f.status === "pending_card") return { title: t("fuTitle"), line: f.line, badge: t("fuRefusedBadge"), badgeClass: "bg-danger-soft text-danger", cta: t("fuRefusedCta") };
+  return { title: t("fuTitle"), line: f.line, badge: t("fuNoneBadge"), badgeClass: "bg-app-bg text-muted", cta: t("fuNoneCta") };
 }
 
 export default function CompteView({
@@ -41,7 +47,9 @@ export default function CompteView({
   followUp,
   inApp = false,
 }: CompteViewProps) {
-  const f = followUpText(followUp);
+  const t = useTranslations("patient.compte");
+  const locale = useLocale() as Locale;
+  const f = followUpText(followUp, t);
   return (
     // Téléphone (Philippe, 2026-10-04 : tout sur un écran, plus efficace) :
     // cartes resserrées, textes secondaires masqués. Dès sm : deux cartes.
@@ -49,8 +57,8 @@ export default function CompteView({
       <PhoneSettings fullName={fullName} error={error} notice={notice ?? null} f={f} inApp={inApp} />
 
       <div className="mx-auto max-w-7xl max-sm:hidden max-sm:flex max-sm:w-full max-sm:flex-1 max-sm:flex-col max-sm:justify-between">
-        <h1 className="text-xl font-semibold text-ink sm:text-2xl">Paramètres</h1>
-        <p className="mt-1 hidden text-sm text-muted sm:block short:sm:hidden">Gérez votre compte, votre suivi et vos données.</p>
+        <h1 className="text-xl font-semibold text-ink sm:text-2xl">{t("title")}</h1>
+        <p className="mt-1 hidden text-sm text-muted sm:block short:sm:hidden">{t("subtitle")}</p>
 
         {error && <p className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger">{error}</p>}
         {notice && (
@@ -75,7 +83,7 @@ export default function CompteView({
             {/* Modèle du 2026-11-04 : deux paiements distincts (l'ancienne phrase
                 « EasyPhysio ne prend rien » était fausse — Philippe, 2026-11-06). */}
             <p className="mt-2 text-sm text-muted">
-              Deux paiements séparés : l&apos;accès à l&apos;appli, payé à EasyPhysio (dès {eurosFR(LOWEST_PLATFORM_CENTS)} € par mois), et le programme de votre kiné ({eurosFR(KINE_FOLLOW_UP_CENTS)} €), payé directement à lui le mois où il le met à jour.
+              {t("twoPayments", { platform: eurosFR(LOWEST_PLATFORM_CENTS, locale), kine: eurosFR(KINE_FOLLOW_UP_CENTS, locale) })}
             </p>
             <Link
               href="/patient/suivi"
@@ -91,18 +99,19 @@ export default function CompteView({
           <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6 short:sm:p-4">
             <h2 className="hidden items-center gap-2 font-medium text-ink sm:flex">
               <User className="h-4 w-4 text-brand" strokeWidth={1.75} />
-              Mon compte
+              {t("myAccount")}
             </h2>
             <Link
               href="/patient/compte/informations"
               className="flex items-center justify-between gap-3 border-t border-line py-0 first:border-t-0 first:pt-0 hover:opacity-80 max-sm:border-t-0 sm:mt-4 sm:py-4"
             >
               <div>
-                <p className="text-sm font-medium text-ink">Mes informations</p>
-                <p className="text-xs text-muted">{fullName ?? "Profil, situation, coordonnées"}</p>
+                <p className="text-sm font-medium text-ink">{t("myInfo")}</p>
+                <p className="text-xs text-muted">{fullName ?? t("myInfoHint")}</p>
               </div>
               <ArrowRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
             </Link>
+            <LanguageSwitcher variant="row" className="border-t border-line pt-4" />
           </section>
         </div>
 
@@ -111,15 +120,15 @@ export default function CompteView({
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-danger" strokeWidth={1.75} />
             <div className="min-w-0 flex-1">
-              <h2 className="font-medium text-danger">Zone de danger</h2>
+              <h2 className="font-medium text-danger">{t("dangerZone")}</h2>
               <p className="mt-1 text-xs text-muted sm:text-sm">
-                Supprimer votre compte est définitif : profil, séances et messages seront effacés.
+                {t("deleteWarning")}
               </p>
               <form action={deleteMyAccount} className="mt-3 flex gap-2 sm:mt-4 sm:flex-row sm:items-center short:sm:mt-2">
                 <input
                   type="text"
                   name="confirmation"
-                  placeholder="Tapez SUPPRIMER pour confirmer"
+                  placeholder={t("confirmPlaceholder")}
                   required
                   className="w-full min-w-0 rounded-lg border border-line bg-surface px-3 py-2 text-base text-ink sm:text-sm focus:border-danger focus:outline-none focus:ring-2 focus:ring-danger-soft sm:max-w-xs"
                 />
@@ -127,8 +136,8 @@ export default function CompteView({
                   type="submit"
                   className="shrink-0 rounded-full bg-danger px-4 py-2 text-sm font-medium text-white hover:brightness-95"
                 >
-                  <span className="sm:hidden">Supprimer</span>
-                  <span className="hidden sm:inline">Supprimer mon compte</span>
+                  <span className="sm:hidden">{t("delete")}</span>
+                  <span className="hidden sm:inline">{t("deleteAccount")}</span>
                 </button>
               </form>
             </div>
@@ -140,11 +149,11 @@ export default function CompteView({
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted sm:mt-6 sm:gap-x-6 sm:text-sm short:sm:mt-3">
           <Link href="/patient/compte/export" prefetch={false} className="inline-flex items-center gap-1.5 hover:text-ink">
             <Download className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-            Télécharger mes données
+            {t("downloadData")}
           </Link>
           <Link href="/confidentialite" className="hover:text-ink hover:underline">
-            <span className="sm:hidden">Confidentialité</span>
-            <span className="hidden sm:inline">Politique de confidentialité</span>
+            <span className="sm:hidden">{t("privacyShort")}</span>
+            <span className="hidden sm:inline">{t("privacyPolicy")}</span>
           </Link>
           <SignOutOrExitDemo className="hover:text-ink" />
         </div>
@@ -174,11 +183,12 @@ function PhoneSettings({
   f: ReturnType<typeof followUpText>;
   inApp: boolean;
 }) {
+  const t = useTranslations("patient.compte");
   return (
     <div className="flex flex-1 flex-col gap-3 short:gap-2 sm:hidden">
       <div>
-        <h1 className="text-2xl font-semibold text-ink">Paramètres</h1>
-        <p className="mt-0.5 text-sm text-muted short:hidden">Gérez votre compte, votre suivi et vos données.</p>
+        <h1 className="text-2xl font-semibold text-ink">{t("title")}</h1>
+        <p className="mt-0.5 text-sm text-muted short:hidden">{t("subtitle")}</p>
       </div>
 
       {error && <p className="rounded-xl bg-danger-soft p-3 text-sm text-danger">{error}</p>}
@@ -194,15 +204,15 @@ function PhoneSettings({
           <User className="h-5 w-5" strokeWidth={1.75} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-base font-semibold text-ink">{fullName ?? "Mes informations"}</span>
-          <span className="block truncate text-xs text-muted">Mes informations · profil, situation, coordonnées</span>
+          <span className="block truncate text-base font-semibold text-ink">{fullName ?? t("myInfo")}</span>
+          <span className="block truncate text-xs text-muted">{t("myInfoPhoneHint")}</span>
         </span>
         <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
       </Link>
 
       {!inApp && (
       <section>
-        <h2 className="mb-1.5 px-1 text-sm font-semibold text-ink short:hidden">Suivi mensuel</h2>
+        <h2 className="mb-1.5 px-1 text-sm font-semibold text-ink short:hidden">{t("fuSection")}</h2>
         <Link href="/patient/suivi" className="flex items-center gap-3 rounded-2xl bg-surface p-3.5 shadow-soft short:p-2.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
             <CreditCard className="h-[18px] w-[18px]" strokeWidth={1.75} />
@@ -218,26 +228,27 @@ function PhoneSettings({
       )}
 
       <section>
-        <h2 className="mb-1.5 px-1 text-sm font-semibold text-ink short:hidden">Mes données</h2>
+        <h2 className="mb-1.5 px-1 text-sm font-semibold text-ink short:hidden">{t("myData")}</h2>
         <div className="divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-soft">
           <Link href="/patient/compte/export" prefetch={false} className={ROW}>
             <span className={ROW_ICON}>
               <Download className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </span>
-            <span className="flex-1 text-sm font-medium text-ink">Télécharger mes données</span>
+            <span className="flex-1 text-sm font-medium text-ink">{t("downloadData")}</span>
             <ChevronRight className="h-4 w-4 text-muted" strokeWidth={2} />
           </Link>
           <Link href="/confidentialite" className={ROW}>
             <span className={ROW_ICON}>
               <ShieldCheck className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </span>
-            <span className="flex-1 text-sm font-medium text-ink">Politique de confidentialité</span>
+            <span className="flex-1 text-sm font-medium text-ink">{t("privacyPolicy")}</span>
             <ChevronRight className="h-4 w-4 text-muted" strokeWidth={2} />
           </Link>
         </div>
       </section>
 
       <div className="divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-soft">
+        <LanguageSwitcher variant="row" className="px-4 py-3 short:py-2" />
         <SignOutOrExitDemo
           className={ROW}
           labelClassName="flex-1 text-sm font-medium text-ink"
@@ -253,24 +264,24 @@ function PhoneSettings({
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger-soft text-danger">
               <Trash2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </span>
-            <span className="flex-1 text-sm font-medium text-danger">Supprimer mon compte</span>
+            <span className="flex-1 text-sm font-medium text-danger">{t("deleteAccount")}</span>
             <ChevronRight className="h-4 w-4 text-muted transition-transform group-open:rotate-90" strokeWidth={2} />
           </summary>
           <div className="px-4 pb-4">
             <p className="flex items-start gap-1.5 text-xs text-muted">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-danger" strokeWidth={1.75} />
-              Définitif : profil, séances et messages seront effacés.
+              {t("deleteWarningShort")}
             </p>
             <form action={deleteMyAccount} className="mt-2 flex gap-2">
               <input
                 type="text"
                 name="confirmation"
-                placeholder="Tapez SUPPRIMER"
+                placeholder={t("confirmPlaceholderShort")}
                 required
                 className="w-full min-w-0 rounded-lg border border-line bg-surface px-3 py-2 text-base text-ink focus:border-danger focus:outline-none focus:ring-2 focus:ring-danger-soft"
               />
               <button type="submit" className="shrink-0 rounded-full bg-danger px-4 py-2 text-sm font-medium text-white">
-                Supprimer
+                {t("delete")}
               </button>
             </form>
           </div>

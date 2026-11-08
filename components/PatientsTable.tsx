@@ -6,7 +6,8 @@ import { useAppHref } from "@/components/DemoContext";
 import Link from "next/link";
 import { ChevronRight, Info, MessageCircle, RotateCcw, Search, SlidersHorizontal, UserPlus } from "lucide-react";
 import type { PatientRow } from "@/lib/dashboard/patientRows";
-import { STAGE_LABELS, STAGE_SHORT, type InjuryStage } from "@/lib/exercise/prescription";
+import { STAGE_LABELS, stageLabel, stageShort, type InjuryStage } from "@/lib/exercise/prescription";
+import { useTranslations } from "next-intl";
 import PatientMessagesModal from "@/components/PatientMessagesModal";
 import PatientActionsMenu from "@/components/PatientActionsMenu";
 import type { ThreadMessage } from "@/components/MessageThread";
@@ -17,10 +18,7 @@ const TONE_TEXT = { ok: "text-ok", warn: "text-warn", danger: "text-danger", mut
 const TONE_BAR = { ok: "bg-ok", warn: "bg-warn", danger: "bg-danger", muted: "bg-line" } as const;
 const SIGNAL_TEXT = { pain: "text-danger", inactive: "text-warn", ok: "text-ok" } as const;
 
-const ONBOARDING_LABEL: Record<NonNullable<PatientRow["onboardingStage"]>, string> = {
-  invite: "Invitation envoyée",
-  profile: "Profil santé à terminer",
-};
+// Libellés : dashboard.patientsTable.onboarding.<stade>.
 
 /** Patient qui n'a encore rien démarré : inscription non terminée, ou aucune
  *  séance prévue ni faite — séparé des patients suivis dans la liste mobile. */
@@ -30,11 +28,12 @@ function notStarted(row: PatientRow) {
 
 function SignalCell({ row, compact = false }: { row: PatientRow; compact?: boolean }) {
   const size = compact ? "text-xs" : "text-sm";
+  const t = useTranslations("dashboard.patientsTable");
   if (row.onboardingStage) {
     return (
       <span className={`inline-flex items-center gap-1.5 ${size} font-medium text-muted`}>
         <span className="h-1.5 w-1.5 rounded-full bg-warn" />
-        {ONBOARDING_LABEL[row.onboardingStage]}
+        {t(`onboarding.${row.onboardingStage}`)}
       </span>
     );
   }
@@ -65,14 +64,15 @@ function AdherenceCell({ row }: { row: PatientRow }) {
 /** « 2 nouveaux retours » : séances faites depuis la dernière visite de la
  *  fiche (Philippe, 2026-11-02, inspiré de Fullphysio). */
 function NewSessionsBadge({ row }: { row: PatientRow }) {
+  const t = useTranslations("dashboard.patientsTable");
   if (!row.newSessions) return null;
   const n = row.newSessions;
   return (
     <span
-      title={`${n} séance${n > 1 ? "s" : ""} faite${n > 1 ? "s" : ""} depuis votre dernière visite`}
+      title={t("newSessionsTitle", { count: n })}
       className="shrink-0 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white"
     >
-      {n} nouveau{n > 1 ? "x" : ""}
+      {t("newSessions", { count: n })}
     </span>
   );
 }
@@ -108,6 +108,9 @@ export default function PatientsTable({
   deletePatient: (formData: FormData) => Promise<void>;
 }) {
   const router = useRouter();
+  const t = useTranslations("dashboard.patientsTable");
+  const tStage = useTranslations("exercise.stage");
+  const tStageShort = useTranslations("exercise.stageShort");
   // Démo publique : la fiche s'ouvre dans la démo (components/DemoContext.tsx).
   const appHref = useAppHref();
   const [q, setQ] = useState("");
@@ -166,10 +169,10 @@ export default function PatientsTable({
         <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand">
           <UserPlus className="h-5 w-5" strokeWidth={1.75} />
         </span>
-        <p className="mt-4 font-semibold text-ink">Aucun patient pour le moment</p>
-        <p className="mt-1 text-sm text-muted">Ajoutez votre premier patient pour lui assigner une condition et un programme d&apos;exercices.</p>
+        <p className="mt-4 font-semibold text-ink">{t("emptyTitle")}</p>
+        <p className="mt-1 text-sm text-muted">{t("emptyBody")}</p>
         <Link href="/dashboard/patients/new" className="mt-5 inline-flex rounded-full bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark">
-          Ajouter un patient
+          {t("add")}
         </Link>
       </div>
     );
@@ -200,14 +203,14 @@ export default function PatientsTable({
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Rechercher un patient…"
+            placeholder={t("search")}
             className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft max-sm:h-10 max-sm:rounded-xl max-sm:border-0 max-sm:text-base max-sm:shadow-soft"
           />
         </label>
         <div className="flex items-center gap-1 rounded-full border border-line bg-app-bg p-1 max-sm:order-last max-sm:col-span-2 max-sm:-mx-4 max-sm:overflow-x-auto max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none]">
-          {segBtn("tous", "Tous")}
-          {segBtn("surveiller", "À surveiller")}
-          {segBtn("jour", "À jour")}
+          {segBtn("tous", t("segAll"))}
+          {segBtn("surveiller", t("segWatch"))}
+          {segBtn("jour", t("segOk"))}
         </div>
         <button
           type="button"
@@ -218,7 +221,7 @@ export default function PatientsTable({
           }`}
         >
           <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} />
-          Filtres
+          {t("filters")}
           {(conditionId || stage) && (
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[10px] font-semibold text-white">
               {[conditionId, stage].filter(Boolean).length}
@@ -230,19 +233,19 @@ export default function PatientsTable({
       {filtersOpen && (
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <select value={conditionId} onChange={(e) => setConditionId(e.target.value)} className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink sm:w-56">
-            <option value="">Toutes conditions</option>
+            <option value="">{t("allConditions")}</option>
             {conditions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <select value={stage} onChange={(e) => setStage(e.target.value as InjuryStage | "")} className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink sm:w-64">
-            <option value="">Toutes phases</option>
-            {(Object.keys(STAGE_LABELS) as InjuryStage[]).map((s) => <option key={s} value={s}>{STAGE_SHORT[s]} — {STAGE_LABELS[s]}</option>)}
+            <option value="">{t("allPhases")}</option>
+            {(Object.keys(STAGE_LABELS) as InjuryStage[]).map((s) => <option key={s} value={s}>{stageShort(s, tStageShort)} — {stageLabel(s, tStage)}</option>)}
           </select>
         </div>
       )}
 
       <div className="mt-4 min-h-0 flex-1 overflow-auto overscroll-contain rounded-xl border border-line bg-surface max-sm:mt-3 max-sm:rounded-2xl max-sm:border-0 max-sm:shadow-soft">
         {visible.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted">Aucun patient ne correspond à ces critères.</p>
+          <p className="p-8 text-center text-sm text-muted">{t("noMatch")}</p>
         ) : (
           <>
             {/* Grand écran : tableau, à partir de lg seulement — entre 768 et
@@ -251,13 +254,13 @@ export default function PatientsTable({
             <table className="hidden w-full lg:table">
               <thead className="sticky top-0 z-10 bg-surface">
                 <tr className="border-b border-line text-left text-xs font-medium uppercase tracking-wide text-muted">
-                  <th scope="col" className="px-4 py-3 font-medium">Patient</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Phase</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Dernière séance</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Adhérence</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Signal</th>
+                  <th scope="col" className="px-4 py-3 font-medium">{t("colPatient")}</th>
+                  <th scope="col" className="px-4 py-3 font-medium">{t("colPhase")}</th>
+                  <th scope="col" className="px-4 py-3 font-medium">{t("colLastSession")}</th>
+                  <th scope="col" className="px-4 py-3 font-medium">{t("colAdherence")}</th>
+                  <th scope="col" className="px-4 py-3 font-medium">{t("colSignal")}</th>
                   <th scope="col" className="px-2 py-3">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{t("colActions")}</span>
                   </th>
                 </tr>
               </thead>
@@ -283,7 +286,7 @@ export default function PatientsTable({
                             <NewSessionsBadge row={r} />
                           </span>
                           <span className="block truncate text-xs text-muted">
-                            {r.onboardingStage ? "Inscription en cours" : r.conditionName ?? "Condition non assignée"}
+                            {r.onboardingStage ? t("signingUp") : r.conditionName ?? t("noCondition")}
                           </span>
                         </span>
                       </span>
@@ -296,7 +299,7 @@ export default function PatientsTable({
                       <div className="flex items-center justify-end gap-1">
                         {reactivating[r.id] && reactivating[r.id] !== "loading" && (
                           <span className={`max-w-[9rem] truncate text-xs ${reactivating[r.id] === "done" ? "text-ok" : "text-danger"}`}>
-                            {reactivating[r.id] === "done" ? "Invitation renvoyée" : reactivating[r.id]}
+                            {reactivating[r.id] === "done" ? t("resent") : reactivating[r.id]}
                           </span>
                         )}
                         {r.onboardingStage === "invite" ? (
@@ -307,8 +310,8 @@ export default function PatientsTable({
                               handleReactivate(r);
                             }}
                             disabled={reactivating[r.id] === "loading"}
-                            aria-label={`Réactiver ${r.name}`}
-                            title="Renvoyer l'invitation"
+                            aria-label={t("reactivate", { name: r.name })}
+                            title={t("resend")}
                             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-app-bg hover:text-brand disabled:opacity-50"
                           >
                             <RotateCcw className={`h-4 w-4 ${reactivating[r.id] === "loading" ? "animate-spin" : ""}`} strokeWidth={1.75} />
@@ -316,8 +319,8 @@ export default function PatientsTable({
                         ) : r.onboardingStage === "profile" ? (
                           <span
                             onClick={(e) => e.stopPropagation()}
-                            title="CGU déjà acceptées : le patient a un compte actif, il lui suffit de se reconnecter pour terminer son profil santé."
-                            aria-label={`${r.name} : profil santé à terminer`}
+                            title={t("profileHint")}
+                            aria-label={t("profilePending", { name: r.name })}
                             className="flex h-8 w-8 items-center justify-center text-muted"
                           >
                             <Info className="h-4 w-4" strokeWidth={1.75} />
@@ -329,8 +332,8 @@ export default function PatientsTable({
                               e.stopPropagation();
                               setMessagesPatient(r);
                             }}
-                            aria-label={`Messages avec ${r.name}`}
-                            title="Messages"
+                            aria-label={t("messagesWith", { name: r.name })}
+                            title={t("messages")}
                             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-app-bg hover:text-brand"
                           >
                             <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
@@ -344,7 +347,7 @@ export default function PatientsTable({
                             deletePatient={deletePatient}
                           />
                         </span>
-                        <span aria-label={`Voir la fiche de ${r.name}`} className="flex h-8 w-8 items-center justify-center text-muted">
+                        <span aria-label={t("openFile", { name: r.name })} className="flex h-8 w-8 items-center justify-center text-muted">
                           <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.75} />
                         </span>
                       </div>
@@ -364,7 +367,7 @@ export default function PatientsTable({
                 <Fragment key={r.id}>
                 {i === followedCount && notStartedCount > 0 && (
                   <li className="bg-app-bg px-4 pb-2 pt-5 text-xs font-semibold uppercase tracking-wide text-muted max-sm:bg-phone-bg">
-                    Pas encore démarré · {notStartedCount}
+                    {t("notStarted", { count: notStartedCount })}
                   </li>
                 )}
                 <li className={`flex items-center gap-1 px-4 py-3 transition-colors max-sm:active:bg-app-bg ${notStarted(r) ? "bg-app-bg/60" : ""}`}>
@@ -382,7 +385,7 @@ export default function PatientsTable({
                         <NewSessionsBadge row={r} />
                       </span>
                       <span className="mt-0.5 block truncate text-xs text-muted">
-                        {r.onboardingStage ? "Inscription en cours" : r.conditionName ?? "Condition non assignée"}
+                        {r.onboardingStage ? t("signingUp") : r.conditionName ?? t("noCondition")}
                         {r.lastSessionAt && ` · ${r.lastSessionLabel}`}
                       </span>
                       <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
@@ -398,16 +401,16 @@ export default function PatientsTable({
                       type="button"
                       onClick={() => handleReactivate(r)}
                       disabled={reactivating[r.id] === "loading"}
-                      aria-label={`Réactiver ${r.name}`}
-                      title="Renvoyer l'invitation"
+                      aria-label={t("reactivate", { name: r.name })}
+                      title={t("resend")}
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-app-bg hover:text-brand disabled:opacity-50"
                     >
                       <RotateCcw className={`h-4 w-4 ${reactivating[r.id] === "loading" ? "animate-spin" : ""}`} strokeWidth={1.75} />
                     </button>
                   ) : r.onboardingStage === "profile" ? (
                     <span
-                      title="CGU déjà acceptées : le patient a un compte actif, il lui suffit de se reconnecter pour terminer son profil santé."
-                      aria-label={`${r.name} : profil santé à terminer`}
+                      title={t("profileHint")}
+                      aria-label={t("profilePending", { name: r.name })}
                       className="flex h-8 w-8 shrink-0 items-center justify-center text-muted"
                     >
                       <Info className="h-4 w-4" strokeWidth={1.75} />
@@ -416,7 +419,7 @@ export default function PatientsTable({
                     <button
                       type="button"
                       onClick={() => setMessagesPatient(r)}
-                      aria-label={`Messages avec ${r.name}`}
+                      aria-label={t("messagesWith", { name: r.name })}
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-app-bg hover:text-brand"
                     >
                       <MessageCircle className="h-4 w-4" strokeWidth={1.75} />

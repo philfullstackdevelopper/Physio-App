@@ -3,16 +3,19 @@ import { ArrowRight, Calendar, Lightbulb, Mail, ShieldCheck, UserRound } from "l
 import PatientReferralMessage from "@/components/PatientReferralMessage";
 import SignupClosed from "@/components/SignupClosed";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
+import { getTranslations } from "next-intl/server";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
-const STEPS = [
-  { icon: Mail, title: "Vous envoyez le message", body: "à votre kiné" },
-  { icon: UserRound, title: "Votre kiné crée son compte", body: "et vous invite" },
-  { icon: Calendar, title: "Vous accédez à votre programme", body: null },
-];
-
-export default function SignupPatientPage() {
+export default async function SignupPatientPage() {
   // Avant le lancement : pas de création de compte (lib/launchFlags.ts).
   if (!SIGNUPS_OPEN) return <SignupClosed />;
+  const t = await getTranslations("auth.signupPatient");
+  const tShared = await getTranslations("auth.shared");
+  const STEPS = [
+    { icon: Mail, title: t("step1Title"), body: t("step1Body") },
+    { icon: UserRound, title: t("step2Title"), body: t("step2Body") },
+    { icon: Calendar, title: t("step3Title"), body: null },
+  ];
   return (
     // Une page = un écran (audit 2026-10-10) : sur téléphone, seul le message
     // prêt à envoyer reste (les 3 étapes sont déjà résumées par la phrase du
@@ -23,17 +26,22 @@ export default function SignupPatientPage() {
           mock. */}
       <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-emerald-100/60 blur-3xl" />
       <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-blue-100/50 blur-3xl" />
+      {/* Choix de la langue, discret en haut à droite. */}
+      <div className="absolute right-4 top-4 z-10 lg:right-6 lg:top-6">
+        <LanguageSwitcher />
+      </div>
 
       <div className="relative mx-auto w-full max-w-4xl">
         <div className="text-center">
           <h1 className="font-display text-3xl font-semibold leading-tight text-slate-900 max-sm:text-2xl sm:text-4xl short:sm:text-2xl">
-            <span className="text-blue-700">EasyPhysio ·</span>{" "}Votre kiné doit d&apos;abord
-            <br className="max-sm:hidden short:hidden" />{" "}
-            vous inviter
+            {t.rich("title", {
+              brand: (c) => <span className="text-blue-700">{c}</span>,
+              br: () => <br className="max-sm:hidden short:hidden" />,
+            })}
           </h1>
           <p className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-slate-600 max-sm:mt-2 max-sm:text-sm short:mt-1.5 short:text-sm short:sm:max-w-none">
-            EasyPhysio fonctionne avec votre kinésithérapeute.{" "}
-            <span className="max-sm:short:hidden">Pas d&apos;inquiétude, vous pouvez simplement lui envoyer un message tout prêt.</span>
+            {t("worksWith")}{" "}
+            <span className="max-sm:short:hidden">{t("noWorries")}</span>
           </p>
         </div>
 
@@ -43,7 +51,7 @@ export default function SignupPatientPage() {
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-600">
                 <Lightbulb className="h-4.5 w-4.5" strokeWidth={1.75} />
               </span>
-              Comment ça marche ?
+              {t("howItWorks")}
             </p>
 
             <ol className="relative mt-6 space-y-6 short:mt-3 short:space-y-3">
@@ -68,7 +76,7 @@ export default function SignupPatientPage() {
 
             <div className="mt-6 flex items-start gap-2.5 rounded-xl bg-emerald-50 p-3.5 text-sm text-emerald-800 short:mt-3 short:p-2.5">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
-              <span>C&apos;est rapide, simple et sécurisé. Vous n&apos;avez rien d&apos;autre à faire !</span>
+              <span>{t("quick")}</span>
             </div>
           </div>
 
@@ -76,9 +84,9 @@ export default function SignupPatientPage() {
         </div>
 
         <p className="mt-8 text-center text-sm text-slate-500 max-sm:mt-4 short:mt-3">
-          Déjà invité·e par votre kiné ?{" "}
+          {t("alreadyInvited")}{" "}
           <Link href="/login" className="inline-flex items-center gap-1 font-medium text-blue-700 hover:underline">
-            Se connecter <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
+            {tShared("signIn")} <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
           </Link>
         </p>
       </div>

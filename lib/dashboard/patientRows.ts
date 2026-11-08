@@ -5,11 +5,11 @@
 // =============================================================================
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { STAGE_LABELS, STAGE_SHORT, type InjuryStage } from "../exercise/prescription.ts";
+import { stageLabel, stageShort, type InjuryStage } from "../exercise/prescription.ts";
 import { assessSignals, type ProgressSignals } from "../exercise/stageProgress.ts";
 import { computeAdherence, adherenceLabel, adherenceTone, type Adherence } from "../exercise/adherence.ts";
 import { computeSignal, type Signal } from "./patientSignal.ts";
-import { relativeDay } from "../format/relativeDay.ts";
+import { relativeDay, type LibI18n } from "../format/relativeDay.ts";
 import { initials } from "../format/initials.ts";
 
 export interface PatientRowsInput {
@@ -44,7 +44,8 @@ export interface PatientRow {
   lastSessionAt: string | null;
   lastSessionLabel: string;
   adherence: Adherence;
-  adherenceLabel: "Bonne" | "Moyenne" | "Faible" | null;
+  /** « Bonne » / « Moyenne » / « Faible » (ou leur traduction). */
+  adherenceLabel: string | null;
   adherenceTone: "ok" | "warn" | "danger" | "muted";
   signal: Signal;
   /**
@@ -65,7 +66,16 @@ export const NEW_SESSIONS_FALLBACK_DAYS = 7;
 
 const SIGNAL_RANK: Record<Signal["kind"], number> = { pain: 0, inactive: 1, ok: 2 };
 
-export function buildPatientRows({ now = new Date(), patients, profiles, conditions, logs, feedback, recs }: PatientRowsInput): PatientRow[] {
+export function buildPatientRows(
+  { now = new Date(), patients, profiles, conditions, logs, feedback, recs }: PatientRowsInput,
+  i18n?: LibI18n,
+): PatientRow[] {
+  // Libellés « exercise » (phase, adhérence) : traducteur `tx` facultatif.
+  const tx = i18n?.tx;
+  const tStage = tx ? (k: string) => tx(`stage.${k}`) : undefined;
+  const tStageShort = tx ? (k: string) => tx(`stageShort.${k}`) : undefined;
+  const tAdh = tx ? (k: string) => tx(`adherence.${k}`) : undefined;
+  const tSignals = tx ? (k: string, v?: Record<string, string | number>) => tx(`signals.${k}`, v) : undefined;
   const conditionName = new Map(conditions.map((c) => [c.id, c.name]));
   const stageOf = new Map(profiles.map((p) => [p.id, (p.injury_stage as InjuryStage | null) ?? null]));
   const healthConsentOf = new Map(profiles.map((p) => [p.id, p.health_data_consent_at ?? null]));
@@ -97,7 +107,7 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
     const lastSessionAt = completed.length ? completed.reduce((a, b) => (a > b ? a : b)) : null;
     const stage = stageOf.get(p.id) ?? null;
     const sig = signalsBy.get(p.id) ?? { painScores: [], difficulties: [], lastPain: null, lastPainAt: "" };
-    const assessment = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties });
+    const assessment = assessSignals({ painScores: sig.painScores, difficulties: sig.difficulties }, tSignals);
     const adherence = computeAdherence({ completedAt: completed, assignments: recsBy.get(p.id) ?? [], now });
     const termsAcceptedAt = p.terms_accepted_at ?? null;
     const onboardingStage: PatientRow["onboardingStage"] = !termsAcceptedAt
@@ -113,12 +123,12 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
       conditionId: p.condition_id,
       conditionName: p.condition_id ? (conditionName.get(p.condition_id) ?? null) : null,
       stage,
-      stageShort: stage ? STAGE_SHORT[stage] : null,
-      stageLabel: stage ? STAGE_LABELS[stage] : null,
+      stageShort: stage ? stageShort(stage, tStageShort) : null,
+      stageLabel: stage ? stageLabel(stage, tStage) : null,
       lastSessionAt,
-      lastSessionLabel: relativeDay(lastSessionAt, now),
+      lastSessionLabel: relativeDay(lastSessionAt, now, i18n),
       adherence,
-      adherenceLabel: adherenceLabel(adherence.pct),
+      adherenceLabel: tAdh ? adherenceLabel(adherence.pct, tAdh) : adherenceLabel(adherence.pct),
       adherenceTone: adherenceTone(adherence.pct),
       signal: computeSignal({
         concerning: assessment.concerning,
@@ -127,7 +137,7 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
         lastSessionAt,
         createdAt: p.created_at,
         now,
-      }),
+      }, i18n?.t),
       onboardingStage,
       createdAt: p.created_at,
       newSessions: completed.filter((c) => c > seenSince).length,
@@ -152,7 +162,7 @@ export function buildPatientRows({ now = new Date(), patients, profiles, conditi
 }
 
 /** Toutes les requêtes en parallèle ; RLS limite chaque table aux patients du kiné connecté. */
-export async function loadPatientRows(supabase: SupabaseClient, now: Date = new Date()): Promise<PatientRow[]> {
+export async function loadPatientRows(supabase: SupabaseClient, now: Date = new Date(), i18n?: LibI18n): Promise<PatientRow[]> {
   const since14 = new Date(now.getTime() - 14 * 86_400_000).toISOString();
   const [{ data: patients }, { data: profiles }, { data: conditions }, { data: logs }, { data: feedback }, { data: recs }, { data: seenRows }] =
     await Promise.all([
@@ -183,5 +193,5 @@ export async function loadPatientRows(supabase: SupabaseClient, now: Date = new 
       week_count: (r.week_count as number | null) ?? null,
       times_per_week: ((r.workouts as unknown as { times_per_week: number | null } | null)?.times_per_week ?? null),
     })),
-  });
+  }, i18n);
 }

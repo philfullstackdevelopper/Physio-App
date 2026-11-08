@@ -8,6 +8,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { recordMonthlyReviewIfDue } from "@/lib/billing/autoReview";
 import { doseColumnsFromForm, doseColumnsFromRow } from "@/lib/exercise/doseForm";
+import { getTranslations } from "next-intl/server";
+
+// Messages d'erreur dans la langue du kiné (cookie NEXT_LOCALE).
+async function tx(key: string, values?: Record<string, string | number>): Promise<string> {
+  return (await getTranslations("exercise.actions"))(key, values);
+}
+async function dbErr(error: Parameters<typeof friendlyDbError>[0]): Promise<string> {
+  return friendlyDbError(error, undefined, await getTranslations("dashboard.lib"));
+}
 
 // Ensure the caller is an approved instructor; returns their user id.
 // (Philippe, 2026-10-07 : délègue à la garde commune, qui vérifie aussi que
@@ -26,7 +35,7 @@ export async function createSeance(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const stage = String(formData.get("stage") ?? "") || null;
   if (!conditionId || !name) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent("Nom et condition requis.")}`);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(await tx("nameAndConditionRequired"))}`);
   }
 
   const { data, error } = await supabase
@@ -42,7 +51,7 @@ export async function createSeance(formData: FormData) {
     .select("id")
     .single();
   if (error) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent(friendlyDbError(error))}`);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(await dbErr(error))}`);
   }
 
   // Exercices choisis dans la fenêtre « Nouvelle séance », dans l'ordre de clic.
@@ -73,7 +82,7 @@ export async function saveSeance(formData: FormData) {
   // Only the owning instructor can edit (platform séances are read-only).
   const { data: wk } = await supabase.from("workouts").select("created_by, patient_id").eq("id", id).maybeSingle();
   if (!wk || wk.created_by !== userId) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent("Séance non modifiable.")}`);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(await tx("notEditable"))}`);
   }
 
   const name = String(formData.get("name") ?? "").trim();
@@ -91,14 +100,14 @@ export async function saveSeance(formData: FormData) {
   const exerciseIds = formData.getAll("exercise_ids").map(String).filter(Boolean);
   // Une séance sans exercice serait vide pour tous les patients qui l'ont
   // déjà attribuée — même règle que « Ajuster la séance ».
-  if (exerciseIds.length === 0) fail("Une séance doit garder au moins un exercice.");
-  if (!name) fail("Le nom de la séance est requis.");
+  if (exerciseIds.length === 0) fail(await tx("atLeastOne"));
+  if (!name) fail(await tx("nameRequired"));
 
   const { error: updateError } = await supabase
     .from("workouts")
     .update({ name, condition_id: conditionId, stage, duration_minutes: duration, times_per_week: tpw })
     .eq("id", id);
-  if (updateError) fail("Impossible d'enregistrer la séance : " + updateError.message);
+  if (updateError) fail(await tx("saveFailed", { detail: updateError.message }));
 
   // Pas de transaction possible ici : pour ne jamais laisser la séance vide
   // (elle est partagée par tous les patients à qui elle est attribuée), on
@@ -110,19 +119,19 @@ export async function saveSeance(formData: FormData) {
     .from("workout_exercises")
     .select("id")
     .eq("workout_id", id);
-  if (readError) fail("Impossible de lire les exercices de la séance : " + readError.message);
+  if (readError) fail(await tx("readFailed", { detail: readError.message }));
   const oldIds = (oldRows ?? []).map((r) => r.id as string);
 
   const rows = exerciseIds.map((exId, i) => ({ workout_id: id, exercise_id: exId, position: i, ...doseColumnsFromForm(formData, exId) }));
   const { data: inserted, error: insertError } = await supabase.from("workout_exercises").insert(rows).select("id");
-  if (insertError) fail("Impossible d'enregistrer les exercices : " + insertError.message);
+  if (insertError) fail(await tx("saveExercisesFailed", { detail: insertError.message }));
 
   if (oldIds.length) {
     const { error: deleteError } = await supabase.from("workout_exercises").delete().in("id", oldIds);
     if (deleteError) {
       const newIds = (inserted ?? []).map((r) => r.id as string);
       if (newIds.length) await supabase.from("workout_exercises").delete().in("id", newIds);
-      fail("Impossible de mettre à jour les exercices : " + deleteError.message);
+      fail(await tx("updateExercisesFailed", { detail: deleteError.message }));
     }
   }
 
@@ -157,7 +166,7 @@ export async function duplicateSeance(formData: FormData) {
   const { data: created, error } = await supabase
     .from("workouts")
     .insert({
-      name: `${tpl.name} (copie)`,
+      name: await tx("copyName", { name: tpl.name }),
       condition_id: tpl.condition_id,
       stage: tpl.stage,
       duration_minutes: tpl.duration_minutes,
@@ -167,7 +176,7 @@ export async function duplicateSeance(formData: FormData) {
     .select("id")
     .single();
   if (error) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent(friendlyDbError(error))}`);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(await dbErr(error))}`);
   }
 
   // select("*") : recopie aussi les doses (migration 0080) quand il y en a.
@@ -181,7 +190,7 @@ export async function duplicateSeance(formData: FormData) {
       exs.map((e) => ({ workout_id: created.id, exercise_id: e.exercise_id, position: e.position, ...doseColumnsFromRow(e) })),
     );
     if (exError) {
-      redirect(`/dashboard/seances/${created.id}?error=${encodeURIComponent("Exercices non copiés : " + exError.message)}`);
+      redirect(`/dashboard/seances/${created.id}?error=${encodeURIComponent(await tx("copyFailed", { detail: exError.message }))}`);
     }
   }
 
@@ -202,7 +211,7 @@ export async function hideTemplateWorkout(formData: FormData) {
     .from("instructor_hidden_workouts")
     .insert({ instructor_id: userId, workout_id: workoutId });
   if (error) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent(friendlyDbError(error))}`);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(await dbErr(error))}`);
   }
 
   revalidatePath("/dashboard/seances");
@@ -221,7 +230,7 @@ export async function unhideTemplateWorkout(formData: FormData) {
     .eq("instructor_id", userId)
     .eq("workout_id", workoutId);
   if (error) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent(friendlyDbError(error))}`);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(await dbErr(error))}`);
   }
 
   revalidatePath("/dashboard/seances");
@@ -242,7 +251,7 @@ export async function deleteSeance(formData: FormData) {
 
   const { data: wk } = await supabase.from("workouts").select("created_by, name").eq("id", id).maybeSingle();
   if (!wk || wk.created_by !== userId) {
-    redirect(`/dashboard/seances?error=${encodeURIComponent("Séance non trouvée.")}`);
+    redirect(`/dashboard/seances?error=${encodeURIComponent(await tx("notFound"))}`);
   }
 
   const [{ count: recCount }, { count: logCount }] = await Promise.all([
@@ -255,11 +264,11 @@ export async function deleteSeance(formData: FormData) {
 
   if ((recCount ?? 0) > 0 || (logCount ?? 0) > 0) {
     const reasons: string[] = [];
-    if (recCount) reasons.push(`recommandée à ${recCount} patient${recCount > 1 ? "s" : ""}`);
-    if (logCount) reasons.push(`${logCount} séance${logCount > 1 ? "s" : ""} déjà enregistrée${logCount > 1 ? "s" : ""}`);
+    if (recCount) reasons.push(await tx("recommendedTo", { count: recCount }));
+    if (logCount) reasons.push(await tx("alreadyLogged", { count: logCount }));
     redirect(
       `/dashboard/seances?error=${encodeURIComponent(
-        `« ${wk.name} » ne peut pas être supprimée (${reasons.join(", ")}). Retirez-la des recommandations de ces patients d'abord.`,
+        await tx("cannotDelete", { name: wk.name, reasons: reasons.join(", ") }),
       )}`,
     );
   }
@@ -270,8 +279,8 @@ export async function deleteSeance(formData: FormData) {
     // patients, y compris ceux d'autres kinés (bibliothèque partagée).
     const message =
       deleteError.code === "23503"
-        ? `« ${wk.name} » a déjà servi à des patients (les vôtres ou ceux d'autres kinés) : elle ne peut pas être supprimée, pour ne pas effacer leur historique.`
-        : "Impossible de supprimer la séance : " + friendlyDbError(deleteError);
+        ? await tx("alreadyUsed", { name: wk.name })
+        : await tx("deleteFailed", { detail: await dbErr(deleteError) });
     redirect(`/dashboard/seances?error=${encodeURIComponent(message)}`);
   }
   revalidatePath("/dashboard/seances");

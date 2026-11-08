@@ -25,9 +25,20 @@ export function applyAdjustment(current: ExerciseSlot[], removeIds: string[], ad
 const plural = (n: number, word: string, pastParticiple: string) =>
   `${n} ${word}${n > 1 ? "s" : ""} ${pastParticiple}${n > 1 ? "s" : ""}`;
 
-/** « J'ai ajusté votre séance « X » : 1 exercice retiré, 2 exercices ajoutés. » */
-export function adjustmentMessage(workoutName: string, removed: number, added: number, dosesChanged = 0): string {
+/** Traducteur « exercise.adjustMessage » (next-intl) fourni par l'appelant ;
+ *  absent = français. Pas d'import JSON ici : fichier testé par node:test. */
+type Tr = (key: string, values?: Record<string, string | number>) => string;
+
+/** « J'ai ajusté votre séance « X » : 1 exercice retiré, 2 exercices ajoutés. »
+ *  `t` = traducteur dans la langue du PATIENT qui recevra le message. */
+export function adjustmentMessage(workoutName: string, removed: number, added: number, dosesChanged = 0, t?: Tr): string {
   const parts: string[] = [];
+  if (t) {
+    if (removed > 0) parts.push(t("removed", { count: removed }));
+    if (added > 0) parts.push(t("added", { count: added }));
+    if (dosesChanged > 0) parts.push(t("doses", { count: dosesChanged }));
+    return t("message", { name: workoutName, parts: parts.join(", ") });
+  }
   if (removed > 0) parts.push(plural(removed, "exercice", "retiré"));
   if (added > 0) parts.push(plural(added, "exercice", "ajouté"));
   if (dosesChanged > 0) parts.push(`séries ou répétitions modifiées sur ${dosesChanged} exercice${dosesChanged > 1 ? "s" : ""}`);

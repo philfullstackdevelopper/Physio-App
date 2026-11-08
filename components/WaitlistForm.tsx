@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { track } from "@/lib/analytics/track";
 import { joinWaitlist, type WaitlistState } from "@/app/waitlistActions";
@@ -15,6 +16,7 @@ const INITIAL: WaitlistState = { ok: false, error: null };
 type Role = "kine" | "patient";
 
 export default function WaitlistForm() {
+  const t = useTranslations("home.waitlist");
   const [state, formAction, pending] = useActionState(joinWaitlist, INITIAL);
   const [role, setRole] = useState<Role>("kine");
 
@@ -66,7 +68,7 @@ export default function WaitlistForm() {
     return (
       <p role="status" className="mx-auto flex max-w-md items-center justify-center gap-2 text-sm font-medium text-emerald-300">
         <CheckCircle2 className="h-5 w-5 shrink-0" strokeWidth={1.75} />
-        Merci, c&apos;est noté. Nous vous écrirons dès le lancement.
+        {t("thanks")}
       </p>
     );
   }
@@ -84,11 +86,11 @@ export default function WaitlistForm() {
         className="absolute -left-[9999px] h-0 w-0 opacity-0"
       />
 
-      <div className="mx-auto flex w-fit rounded-full bg-white/10 p-1 text-sm" role="group" aria-label="Vous êtes">
+      <div className="mx-auto flex w-fit rounded-full bg-white/10 p-1 text-sm" role="group" aria-label={t("youAre")}>
         {(
           [
-            { key: "kine", label: "Je suis kiné" },
-            { key: "patient", label: "Je suis patient" },
+            { key: "kine", label: t("iAmKine") },
+            { key: "patient", label: t("iAmPatient") },
           ] as const
         ).map((opt) => (
           <button
@@ -107,7 +109,7 @@ export default function WaitlistForm() {
 
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <label htmlFor="waitlist-email" className="sr-only">
-          Votre adresse e-mail
+          {t("emailLabel")}
         </label>
         <input
           id="waitlist-email"
@@ -116,7 +118,7 @@ export default function WaitlistForm() {
           required
           maxLength={254}
           autoComplete="email"
-          placeholder="votre@email.fr"
+          placeholder={t("placeholder")}
           className="min-w-0 flex-1 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-slate-400 focus:border-white/60 focus:outline-none"
         />
         <button
@@ -124,7 +126,7 @@ export default function WaitlistForm() {
           disabled={pending}
           className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-500 active:scale-95 disabled:opacity-60"
         >
-          {pending ? "Envoi…" : "Me prévenir du lancement"}
+          {pending ? t("sending") : t("submit")}
           {!pending && <ArrowRight className="h-4 w-4" strokeWidth={2} />}
         </button>
       </div>
@@ -135,10 +137,13 @@ export default function WaitlistForm() {
         </p>
       )}
       <p className="mt-2 text-xs leading-snug text-slate-400">
-        Votre e-mail ne sert qu&apos;à vous annoncer le lancement.{" "}
-        <Link href="/confidentialite" className="underline underline-offset-2 hover:text-slate-200">
-          Confidentialité
-        </Link>
+        {t.rich("privacyNote", {
+          link: (c) => (
+            <Link href="/confidentialite" className="underline underline-offset-2 hover:text-slate-200">
+              {c}
+            </Link>
+          ),
+        })}
       </p>
     </form>
   );

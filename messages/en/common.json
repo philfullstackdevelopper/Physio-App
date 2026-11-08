@@ -1,0 +1,13 @@
+{
+  "site": {
+    "titleSuffix": "rehab exercise follow-up",
+    "tagline": "Rehab that continues between appointments",
+    "description": "EasyPhysio connects physiotherapists and their patients: tailored exercise programmes, video-guided sessions and progress tracking between appointments."
+  },
+  "language": {
+    "label": "Language",
+    "hint": "App language. You can change it at any time.",
+    "saved": "Language saved"
+  },
+  "reviewBanner": "Translation under review: the French version is the authoritative one."
+}

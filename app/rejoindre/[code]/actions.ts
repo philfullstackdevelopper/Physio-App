@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { isClerkAPIResponseError } from "@clerk/shared/error";
 import { precreateAppUserId } from "@/lib/auth/user-map";
@@ -17,18 +18,19 @@ import { instructorIdFromJoinCode } from "@/lib/patient/joinLink";
 // formule).
 
 export async function joinViaLink(code: string, formData: FormData) {
+  const t = await getTranslations("auth.join.errors");
   const back = (msg: string) => redirect(`/rejoindre/${encodeURIComponent(code)}?error=${encodeURIComponent(msg)}`);
 
   const instructorId = instructorIdFromJoinCode(code);
-  if (!instructorId) back("Ce lien n'est pas valide. Demandez à votre kiné de vous le renvoyer.");
+  if (!instructorId) back(t("invalidLink"));
   const kine = await joinLinkKine(instructorId!);
-  if (!kine || kine.status !== "approved") back("Ce kinésithérapeute n'accepte pas de nouveaux patients pour le moment.");
+  if (!kine || kine.status !== "approved") back(t("kineUnavailable"));
   // Avant le lancement : seul le QR code de l'administrateur fonctionne (lib/launch.ts).
-  if (!canInvitePatients(kine!.email)) back("Les inscriptions de patients ouvriront au lancement d'EasyPhysio.");
+  if (!canInvitePatients(kine!.email)) back(t("notOpen"));
 
   const fullName = String(formData.get("full_name") ?? "").trim().slice(0, 120);
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  if (!fullName || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) back("Indiquez votre nom et une adresse e-mail valide.");
+  if (!fullName || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) back(t("nameAndEmail"));
 
   // Identifiant réservé avant l'invitation, comme pour addPatient.
   let appId: string;
@@ -37,7 +39,7 @@ export async function joinViaLink(code: string, formData: FormData) {
     ({ appId, isNew } = await precreateAppUserId(email));
   } catch (e) {
     console.error("joinViaLink: precreateAppUserId", e);
-    back("Inscription momentanément impossible. Réessayez dans un instant.");
+    back(t("unavailable"));
   }
   const discard = async () => {
     if (!isNew) return;
@@ -55,9 +57,9 @@ export async function joinViaLink(code: string, formData: FormData) {
   if (result !== "OK") {
     await discard();
     if (result === "EMAIL_TAKEN" || result === "IS_KINE") {
-      back("Un compte EasyPhysio existe déjà avec cette adresse : connectez-vous avec elle.");
+      back(t("emailTaken"));
     }
-    back(result === "KINE_UNAVAILABLE" ? "Ce kinésithérapeute n'accepte pas de nouveaux patients pour le moment." : "Inscription momentanément impossible. Réessayez dans un instant.");
+    back(result === "KINE_UNAVAILABLE" ? t("kineUnavailable") : t("unavailable"));
   }
 
   try {

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { MailCheck } from "lucide-react";
 import DotCanvas from "@/components/DotCanvas";
+import { getTranslations } from "next-intl/server";
 
-export default function SignupPendingPage() {
+export default async function SignupPendingPage() {
+  const t = await getTranslations("auth.pending");
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f6f8fd] p-4">
       <DotCanvas />
@@ -12,17 +14,16 @@ export default function SignupPendingPage() {
           <MailCheck className="h-7 w-7" strokeWidth={1.75} />
         </span>
         <h1 className="font-display mt-4 text-2xl font-semibold text-slate-900">
-          Demande envoyée
+          {t("title")}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Nous vérifions chaque nouveau compte praticien avant de l&apos;activer. Vous pourrez
-          vous connecter dès que votre compte sera validé.
+          {t("body")}
         </p>
         <Link
           href="/login"
           className="mt-6 inline-block w-full rounded-xl border border-slate-300 py-2.5 font-medium text-slate-700 transition hover:bg-slate-50"
         >
-          Retour à la connexion
+          {t("backToLogin")}
         </Link>
       </div>
     </main>

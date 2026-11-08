@@ -7,6 +7,7 @@
 // (lib/exercise/doseForm.ts) ; `form` les rattache au bon formulaire même
 // rendus hors de lui.
 
+import { useTranslations } from "next-intl";
 import type { ExerciseDose } from "@/lib/exercise/prescription";
 
 export default function DoseInputs({
@@ -23,6 +24,7 @@ export default function DoseInputs({
   /** Prévient la fenêtre qu'une dose a changé (active « Enregistrer »). */
   onEdit?: () => void;
 }) {
+  const t = useTranslations("exercise.dose");
   const field =
     "w-full min-w-0 rounded-md border border-line bg-surface px-1 py-0.5 text-center text-xs tabular-nums text-ink placeholder:text-muted/70 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft";
   // Un clic dans les champs ne doit pas déclencher le bouton de la carte (retirer l'exercice).
@@ -38,8 +40,8 @@ export default function DoseInputs({
         max={10}
         defaultValue={dose?.sets ?? ""}
         placeholder="3"
-        aria-label={`Séries — ${exerciseName}`}
-        title="Séries"
+        aria-label={t("setsAria", { name: exerciseName })}
+        title={t("setsTitle")}
         className={field}
       />
       <span aria-hidden>×</span>
@@ -52,8 +54,8 @@ export default function DoseInputs({
         max={100}
         defaultValue={dose?.reps ?? ""}
         placeholder="8-12"
-        aria-label={`Répétitions — ${exerciseName}`}
-        title="Répétitions"
+        aria-label={t("repsAria", { name: exerciseName })}
+        title={t("repsTitle")}
         className={field}
       />
       <input
@@ -64,9 +66,9 @@ export default function DoseInputs({
         min={1}
         max={600}
         defaultValue={dose?.holdSeconds ?? ""}
-        placeholder="— s"
-        aria-label={`Maintien en secondes — ${exerciseName}`}
-        title="Maintien (secondes), à la place des répétitions"
+        placeholder={t("holdPlaceholder")}
+        aria-label={t("holdAria", { name: exerciseName })}
+        title={t("holdTitle")}
         className={field}
       />
     </div>

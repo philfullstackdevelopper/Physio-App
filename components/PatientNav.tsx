@@ -3,17 +3,19 @@
 import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Home, CalendarDays, TrendingUp, MessageCircle, Settings, LogOut } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import { initials } from "@/lib/format/initials";
 import PhoneAccountMenu from "@/components/PhoneAccountMenu";
 
 const LINKS = [
-  { href: "/patient", label: "Accueil", icon: Home, exact: true },
-  { href: "/patient/programme", label: "Mon programme", icon: CalendarDays },
-  { href: "/patient/progres", label: "Mes progrès", icon: TrendingUp },
-  { href: "/patient/messages", label: "Messages", icon: MessageCircle },
-  { href: "/patient/compte", label: "Paramètres", icon: Settings },
+  // label = clé de patient.nav.
+  { href: "/patient", label: "home", icon: Home, exact: true },
+  { href: "/patient/programme", label: "programme", icon: CalendarDays },
+  { href: "/patient/progres", label: "progress", icon: TrendingUp },
+  { href: "/patient/messages", label: "messages", icon: MessageCircle },
+  { href: "/patient/compte", label: "settings", icon: Settings },
 ];
 
 // Barre du bas sur téléphone : 4 onglets au lieu de 5 (Philippe, 2026-10-04 :
@@ -21,10 +23,10 @@ const LINKS = [
 // de l'Accueil y mène, et sa page reste rattachée à l'onglet Accueil. Le menu
 // latéral sur ordinateur garde ses 5 entrées, inchangé.
 const MOBILE_LINKS: { href: string; label: string; icon: typeof Home; exact?: boolean; alsoActive?: string[] }[] = [
-  { href: "/patient", label: "Accueil", icon: Home, exact: true, alsoActive: ["/patient/programme"] },
-  { href: "/patient/progres", label: "Progrès", icon: TrendingUp },
-  { href: "/patient/messages", label: "Messages", icon: MessageCircle },
-  { href: "/patient/compte", label: "Paramètres", icon: Settings },
+  { href: "/patient", label: "home", icon: Home, exact: true, alsoActive: ["/patient/programme"] },
+  { href: "/patient/progres", label: "progressShort", icon: TrendingUp },
+  { href: "/patient/messages", label: "messages", icon: MessageCircle },
+  { href: "/patient/compte", label: "settings", icon: Settings },
 ];
 
 // Same shell as DashboardSidebar (dark column on desktop, scrollable bar on
@@ -43,6 +45,7 @@ export default function PatientNav({
   /** Page de prévisualisation (/prototypes/accueil-patient) : quel onglet montrer actif. */
   pathnameOverride?: string;
 }) {
+  const t = useTranslations("patient.nav");
   const realPathname = usePathname();
   const pathname = pathnameOverride ?? realPathname;
 
@@ -93,7 +96,7 @@ export default function PatientNav({
             {LINKS.map((link) => (
               <Link key={link.href} href={link.href} className={linkClass(isActive(link.href, link.exact))}>
                 <link.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                {link.label}
+                {t(link.label)}
                 {link.href === "/patient/messages" && unreadCount > 0 && (
                   <span className="ml-auto rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">
                     {unreadCount}
@@ -134,13 +137,13 @@ export default function PatientNav({
                 }`}
               >
                 <link.icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.1 : 1.6} />
-                {link.label}
+                {t(link.label)}
                 {link.href === "/patient/messages" && unreadCount > 0 && (
                   <>
                     {/* Pastille purement visuelle : texte pour les lecteurs d'écran (Philippe, 2026-10-07). */}
                     <span aria-hidden="true" className="absolute right-[32%] top-2 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-surface" />
                     <span className="sr-only">
-                      {" "}({unreadCount} nouveau{unreadCount > 1 ? "x" : ""} message{unreadCount > 1 ? "s" : ""})
+                      {" "}{t("unreadSr", { count: unreadCount })}
                     </span>
                   </>
                 )}

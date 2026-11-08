@@ -1,4 +1,7 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 import { requireUser } from "@/lib/supabase/require-user";
 import { loadPatientHome } from "@/lib/patient/home-data";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
@@ -16,6 +19,8 @@ import PatientHomeView, { type ProgrammeCard } from "@/components/PatientHomeVie
 export default async function PatientDashboard() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations("patient.home");
 
   // En parallèle (audit du 2026-10-08) : ces trois lectures sont indépendantes.
   const [home, { data: patientRow }] = await Promise.all([
@@ -23,14 +28,14 @@ export default async function PatientDashboard() {
     supabase.from("patients").select("created_at").eq("id", user.id).maybeSingle(),
   ]);
   // Date du jour sous la salutation, heure de Paris (le serveur peut tourner en UTC).
-  const today = new Intl.DateTimeFormat("fr-FR", {
+  const today = new Intl.DateTimeFormat(intlTag(locale), {
     weekday: "long",
     day: "numeric",
     month: "long",
     timeZone: "Europe/Paris",
   }).format(new Date());
 
-  const weeks = buildWeeks((patientRow?.created_at as string | undefined) ?? new Date().toISOString());
+  const weeks = buildWeeks((patientRow?.created_at as string | undefined) ?? new Date().toISOString(), new Date(), locale);
   const rangeStartISO = weeks[0].startISO;
   const rangeEndISO = weeks[weeks.length - 1].endISO;
 
@@ -56,7 +61,7 @@ export default async function PatientDashboard() {
     const entry: SessionDetail = {
       logId: l.id as string,
       workoutName: workout?.name ?? null,
-      time: completedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+      time: completedAt.toLocaleTimeString(intlTag(locale), { hour: "2-digit", minute: "2-digit" }),
       durationMinutes: workout?.duration_minutes ?? null,
       painScore: (f?.pain_score as number | null) ?? null,
       difficulty: (f?.difficulty as number | null) ?? null,
@@ -76,27 +81,27 @@ export default async function PatientDashboard() {
   const weekProgress = home.weekComplete ? 1 : target ? Math.min(home.weekCount / target, 1) : 0;
   const programmeCard: ProgrammeCard = home.weekComplete
     ? {
-        title: "Programme de la semaine terminé",
-        subtitle: "Bravo, vous avez réalisé tout ce qui était prévu cette semaine.",
-        cta: "Revoir mon programme",
+        title: t("weekDoneTitle"),
+        subtitle: t("weekDoneSubtitle"),
+        cta: t("reviewProgramme"),
         done: true,
       }
     : home.activeWorkout
       ? {
           title: home.activeWorkout.name,
           subtitle: [
-            remaining !== null ? `${remaining} séance${remaining > 1 ? "s" : ""} à réaliser` : null,
-            home.activeWorkout.duration_minutes != null ? `${home.activeWorkout.duration_minutes} minutes environ` : null,
+            remaining !== null ? t("remaining", { count: remaining }) : null,
+            home.activeWorkout.duration_minutes != null ? t("aboutMinutes", { minutes: home.activeWorkout.duration_minutes }) : null,
           ]
             .filter(Boolean)
             .join(" · "),
-          cta: "Voir mon programme",
+          cta: t("seeProgramme"),
           done: false,
         }
       : {
-          title: "Votre programme",
-          subtitle: "Votre kiné n'a pas encore assigné de séance.",
-          cta: "Voir mon programme",
+          title: t("yourProgramme"),
+          subtitle: t("noSessionYet"),
+          cta: t("seeProgramme"),
           done: false,
         };
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { getTranslations } from "next-intl/server";
 
 // RGPD droit d'accès / à la portabilité: a patient downloads everything
 // EasyPhysio holds about them, as one JSON file. Extend this as new
@@ -50,8 +51,9 @@ export async function GET() {
   const failed = [profile, patientRow, feedback, recommendedWorkouts, workoutLogs, messages, subscription, personalWorkouts, followUp, monthlyReviews, exerciseResults].some(
     (r) => r.error,
   );
+  const t = await getTranslations("patient.compte");
   if (failed) {
-    return new NextResponse("L'export de vos données a échoué. Merci de réessayer dans quelques instants.", {
+    return new NextResponse(t("exportFailed"), {
       status: 500,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
@@ -76,7 +78,7 @@ export async function GET() {
   return new NextResponse(JSON.stringify(payload, null, 2), {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="easyphysio-mes-donnees-${user.id}.json"`,
+      "Content-Disposition": `attachment; filename="${t("exportFileName")}-${user.id}.json"`,
     },
   });
 }

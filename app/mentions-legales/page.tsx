@@ -1,10 +1,16 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import DotCanvas from "@/components/DotCanvas";
 
 // Renders legal/mentions-legales.md for the app. Keep the two in sync by
 // hand — this is still a DRAFT pending legal review (see the banner below).
-export default function MentionsLegalesPage() {
+// Textes : messages/<langue>/legal.json (« legalNotice ») ; la version anglaise
+// est un brouillon à faire relire par un avocat, d'où le bandeau hors français.
+export default async function MentionsLegalesPage() {
+  const t = await getTranslations("legal.legalNotice");
+  const tCommon = await getTranslations("common");
+  const locale = await getLocale();
   return (
     <div className="relative min-h-screen bg-[#f6f8fd] text-slate-800">
       <DotCanvas />
@@ -12,77 +18,66 @@ export default function MentionsLegalesPage() {
       <SiteHeader />
       <main className="p-6 pt-32 sm:p-8 sm:pt-36">
       <div className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        {locale !== "fr" && (
+          <p className="mb-4 rounded-lg bg-warn-soft px-3 py-2 text-sm text-ink">{tCommon("reviewBanner")}</p>
+        )}
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          <strong>Brouillon.</strong> Les informations ci-dessous sont incomplètes et doivent
-          être finalisées avant toute mise en ligne publique.
+          {t.rich("draft", { b: (c) => <strong>{c}</strong> })}
         </div>
 
-        <h1 className="font-display mt-6 text-2xl font-semibold text-slate-900">Mentions légales</h1>
+        <h1 className="font-display mt-6 text-2xl font-semibold text-slate-900">{t("title")}</h1>
 
         <div className="mt-6 space-y-6 text-sm leading-relaxed text-slate-700">
           <section>
-            <h2 className="font-display font-semibold text-slate-900">Éditeur du site</h2>
-            <p className="mt-1">
-              [Raison sociale à compléter], [forme juridique]. Siège social : [adresse].
-              Directeur de la publication : [nom]. Contact : [email de contact].
-            </p>
+            <h2 className="font-display font-semibold text-slate-900">{t("publisherTitle")}</h2>
+            <p className="mt-1">{t("publisher")}</p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">Hébergement</h2>
+            <h2 className="font-display font-semibold text-slate-900">{t("hostingTitle")}</h2>
             {/* Coordonnées reprises des mentions légales de Scalingo
                 (scalingo.com/legal-notice), vérifiées le 2026-10-10. */}
+            <p className="mt-1">{t("hosting")}</p>
+          </section>
+
+          <section>
+            <h2 className="font-display font-semibold text-slate-900">{t("ipTitle")}</h2>
+            <p className="mt-1">{t("ip")}</p>
+          </section>
+
+          <section>
+            <h2 className="font-display font-semibold text-slate-900">{t("creditsTitle")}</h2>
             <p className="mt-1">
-              Scalingo SAS, société par actions simplifiée. Siège social : 13 rue Jacques Peirotes, 67000 Strasbourg,
-              France. SIRET : 808 665 483 00034. Contact : support@scalingo.com.
+              {t.rich("credits", {
+                everkinetic: (c) => (
+                  <a href="https://github.com/everkinetic/data" className="text-blue-700 underline">
+                    {c}
+                  </a>
+                ),
+                workoutGuide: (c) => (
+                  <a href="https://github.com/bryllim/workout-guide" className="text-blue-700 underline">
+                    {c}
+                  </a>
+                ),
+                license: (c) => (
+                  <a href="https://creativecommons.org/licenses/by-sa/4.0/" className="text-blue-700 underline">
+                    {c}
+                  </a>
+                ),
+              })}
             </p>
           </section>
 
           <section>
-            <h2 className="font-display font-semibold text-slate-900">Propriété intellectuelle</h2>
+            <h2 className="font-display font-semibold text-slate-900">{t("personalDataTitle")}</h2>
             <p className="mt-1">
-              L&apos;ensemble des contenus présents sur EasyPhysio est la propriété de son
-              éditeur, sauf mention contraire.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="font-display font-semibold text-slate-900">Crédits</h2>
-            <p className="mt-1">
-              Certaines illustrations d&apos;exercices proviennent du projet{" "}
-              <a
-                href="https://github.com/everkinetic/data"
-                className="text-blue-700 underline"
-              >
-                Everkinetic
-              </a>
-              , enrichi par{" "}
-              <a
-                href="https://github.com/bryllim/workout-guide"
-                className="text-blue-700 underline"
-              >
-                bryllim/workout-guide
-              </a>
-              , sous licence{" "}
-              <a
-                href="https://creativecommons.org/licenses/by-sa/4.0/"
-                className="text-blue-700 underline"
-              >
-                Creative Commons BY-SA 4.0
-              </a>
-              . Les autres illustrations ont été réalisées pour EasyPhysio dans le même style et sont diffusées sous la
-              même licence.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="font-display font-semibold text-slate-900">Données personnelles</h2>
-            <p className="mt-1">
-              Voir notre{" "}
-              <a href="/confidentialite" className="text-blue-700 underline">
-                politique de confidentialité
-              </a>
-              .
+              {t.rich("personalData", {
+                link: (c) => (
+                  <a href="/confidentialite" className="text-blue-700 underline">
+                    {c}
+                  </a>
+                ),
+              })}
             </p>
           </section>
         </div>

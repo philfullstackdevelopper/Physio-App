@@ -12,6 +12,8 @@ export async function uploadFile(
   bucket: string,
   path: string,
   file: File,
+  /** Traducteur « exercise.storage » (useTranslations) ; absent = français. */
+  t?: (key: string, values?: Record<string, string | number>) => string,
 ): Promise<{ error: string | null; publicUrl: string | null }> {
   const target = await getUploadTarget(bucket, path, file.type || "application/octet-stream");
 
@@ -31,6 +33,6 @@ export async function uploadFile(
     body: file,
     headers: { "Content-Type": file.type || "application/octet-stream" },
   });
-  if (!res.ok) return { error: `Échec de l'envoi (${res.status}).`, publicUrl: null };
+  if (!res.ok) return { error: t ? t("uploadFailedStatus", { status: res.status }) : `Échec de l'envoi (${res.status}).`, publicUrl: null };
   return { error: null, publicUrl: target.publicUrl };
 }

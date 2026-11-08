@@ -17,6 +17,8 @@
 //      lib/billing/autoReview.ts). Le patient accepte le tarif par écrit avant.
 // =============================================================================
 
+import { INTL_TAGS, type Locale } from "../../i18n/locales.ts";
+
 /**
  * Abonnement du kiné à EasyPhysio, TVA comprise, payé d'avance pour toute la
  * durée (Philippe, 2026-11-01, grille validée puis rendue plus rentable).
@@ -86,8 +88,10 @@ export function estimateStripeFeeCents(priceCents: number): number {
   return Math.round(priceCents * STRIPE_FEE_RATE + STRIPE_FEE_FIXED_CENTS);
 }
 
-export const eurosFR = (cents: number, decimals = 2) =>
-  (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+// Le nom reste « eurosFR » (nombreux appels) ; `locale` choisit le format
+// des décimales (fr : « 20,00 », en : « 20.00 »). Le montant reste en euros.
+export const eurosFR = (cents: number, decimals = 2, locale: Locale = "fr") =>
+  (cents / 100).toLocaleString(INTL_TAGS[locale], { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
 // -----------------------------------------------------------------------------
 // Règles de calcul (pures, testées dans reviewModel.test.ts)
@@ -145,10 +149,11 @@ export function previousPeriod(period: string): string {
 
 const MONTHS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
-/** « octobre 2026 ». */
-export function periodLabel(period: string): string {
+/** « octobre 2026 » (en : « October 2026 »). */
+export function periodLabel(period: string, locale: Locale = "fr"): string {
   const [y, m] = period.split("-").map(Number);
-  return `${MONTHS_FR[m - 1]} ${y}`;
+  if (locale === "fr") return `${MONTHS_FR[m - 1]} ${y}`;
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(INTL_TAGS[locale], { month: "long", year: "numeric", timeZone: "UTC" });
 }
 
 /** Numéro de note d'honoraires : « 2026-0007 » (suite par kiné et par année). */

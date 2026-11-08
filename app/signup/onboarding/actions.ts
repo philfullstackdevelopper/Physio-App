@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { rppsInUse, setInstructorStatus, setInstructorRppsVerified } from "@/lib/db/admin";
 import { verifyRpps } from "@/lib/instructor/rppsVerification";
 import { friendlyDbError } from "@/lib/format/dbError";
+import { getTranslations } from "next-intl/server";
 
 // Saves the cabinet/practice details collected right after Clerk signup (see
 // app/signup/onboarding/page.tsx).
@@ -43,20 +44,19 @@ export async function saveInstructorOnboarding(formData: FormData) {
   const rppsNumber = String(formData.get("rpps_number") ?? "").replace(/\s+/g, "");
   const siret = String(formData.get("siret") ?? "").replace(/\s+/g, "") || null;
 
+  const t = await getTranslations("auth.cabinet");
   const missing: string[] = [];
-  if (!cabinetName) missing.push("le nom du cabinet");
-  if (!cabinetAddress) missing.push("l'adresse du cabinet");
-  if (!phone) missing.push("le téléphone professionnel");
+  if (!cabinetName) missing.push(t("missingName"));
+  if (!cabinetAddress) missing.push(t("missingAddress"));
+  if (!phone) missing.push(t("missingPhone"));
   if (missing.length > 0) {
-    redirect(`/signup/onboarding?error=${encodeURIComponent(`Champ(s) manquant(s) : ${missing.join(", ")}.`)}`);
+    redirect(`/signup/onboarding?error=${encodeURIComponent(t("errorMissing", { fields: missing.join(", ") }))}`);
   }
   if (rppsNumber && !/^\d{9,11}$/.test(rppsNumber)) {
-    redirect(
-      `/signup/onboarding?error=${encodeURIComponent("Le numéro RPPS ou ADELI doit contenir uniquement des chiffres.")}`,
-    );
+    redirect(`/signup/onboarding?error=${encodeURIComponent(t("errorRppsDigits"))}`);
   }
   if (siret && !/^\d{14}$/.test(siret)) {
-    redirect(`/signup/onboarding?error=${encodeURIComponent("Le SIRET doit contenir 14 chiffres.")}`);
+    redirect(`/signup/onboarding?error=${encodeURIComponent(t("errorSiretDigits"))}`);
   }
 
   // A confirmed RPPS + name match (see lib/instructor/rppsVerification.ts)
@@ -80,7 +80,7 @@ export async function saveInstructorOnboarding(formData: FormData) {
     .eq("id", user.id);
 
   if (error) {
-    redirect(`/signup/onboarding?error=${encodeURIComponent(friendlyDbError(error))}`);
+    redirect(`/signup/onboarding?error=${encodeURIComponent(friendlyDbError(error, undefined, await getTranslations("dashboard.lib")))}`);
   }
 
   // Badge « RPPS vérifié » : écrit par le serveur (migration 0063).

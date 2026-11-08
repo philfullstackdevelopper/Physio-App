@@ -4,6 +4,11 @@
 // =============================================================================
 
 import type { InjuryStage } from "@/lib/exercise/prescription";
+/** Traducteur fourni par l'appelant (useTranslations / getTranslations de
+ *  next-intl, déjà placé sur le bon espace de noms). Absent = français, le
+ *  texte d'origine : ce fichier est testé par node:test, qui ne sait pas
+ *  importer les fichiers de messages JSON. */
+type Tr = (key: string, values?: Record<string, string | number>) => string;
 
 /** Week (since injury) at which each stage begins. */
 export const STAGE_START_WEEK: Record<InjuryStage, number> = {
@@ -145,7 +150,8 @@ export interface SignalAssessment {
  * dashboard (to raise an alert), so the two can never disagree about who is in
  * trouble.
  */
-export function assessSignals(signals: ProgressSignals): SignalAssessment {
+/** `t` = traducteur « exercise.signals » ; absent = français. */
+export function assessSignals(signals: ProgressSignals, t?: Tr): SignalAssessment {
   const avgPain = mean(signals.painScores);
   const avgDiff = mean(signals.difficulties);
   const samples = onScale(signals.painScores).length + onScale(signals.difficulties).length;
@@ -158,10 +164,11 @@ export function assessSignals(signals: ProgressSignals): SignalAssessment {
   if (!concerning) return { concerning: false, severe: false, cause: "" };
 
   const round = (n: number) => Math.round(n * 10) / 10;
+  // Score passé en texte : « 7.5 » garde son point, comme avant.
   const cause =
     avgPain !== null && avgPain >= PAIN_HOLD
-      ? `douleur élevée (${round(avgPain)}/10)`
-      : `exercices trop difficiles (${round(avgDiff ?? 0)}/10)`;
+      ? t ? t("causePain", { score: String(round(avgPain)) }) : `douleur élevée (${round(avgPain)}/10)`
+      : t ? t("causeDifficulty", { score: String(round(avgDiff ?? 0)) }) : `exercices trop difficiles (${round(avgDiff ?? 0)}/10)`;
   return { concerning, severe, cause };
 }
 
@@ -177,12 +184,14 @@ export function stageWithFeedback(
   referenceISO: string | null | undefined,
   signals: ProgressSignals,
   now: Date = new Date(),
+  /** Traducteur « exercise.signals » ; absent = français. */
+  t?: Tr,
 ): StageDecision {
   const timeStage = currentStage(declared, referenceISO, now);
   const timeIdx = STAGE_ORDER.indexOf(timeStage);
   const declaredIdx = STAGE_ORDER.indexOf(declared);
 
-  const { concerning, severe, cause } = assessSignals(signals);
+  const { concerning, severe, cause } = assessSignals(signals, t);
   const samples = onScale(signals.painScores).length + onScale(signals.difficulties).length;
 
   let idx = timeIdx;
@@ -220,18 +229,20 @@ export function stageWithFeedback(
     // Not in trouble any more, but not yet back to the calendar: they are on the
     // way up. Say so, rather than pretending nothing happened.
     return held
-      ? { stage, held, concerning: false, reason: "remontée progressive après une période difficile" }
-      : { stage, held, concerning: false, reason: "progression normale" };
+      ? { stage, held, concerning: false, reason: t ? t("reasonRecovering") : "remontée progressive après une période difficile" }
+      : { stage, held, concerning: false, reason: t ? t("reasonNormal") : "progression normale" };
   }
 
   // A patient already at their declared stage cannot be braked any further, but
   // the instructor must still be told — silence here would read as "all fine".
-  if (!held) return { stage, held: false, concerning: true, reason: `à surveiller — ${cause}` };
+  if (!held) return { stage, held: false, concerning: true, reason: t ? t("reasonWatch", { cause }) : `à surveiller — ${cause}` };
 
   return {
     stage,
     held: true,
     concerning: true,
-    reason: severe ? `maintien en phase actuelle — ${cause}` : `progression ralentie — ${cause}`,
+    reason: t
+      ? severe ? t("reasonHeld", { cause }) : t("reasonSlowed", { cause })
+      : severe ? `maintien en phase actuelle — ${cause}` : `progression ralentie — ${cause}`,
   };
 }

@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
-import { EQUIPMENT_OPTIONS, EQUIPMENT_LABELS, type EquipmentId } from "@/lib/exercise/equipment";
+import { getTranslations } from "next-intl/server";
+import { STAGE_LABELS, stageLabel, type InjuryStage } from "@/lib/exercise/prescription";
+import { EQUIPMENT_OPTIONS, equipmentLabels, type EquipmentId } from "@/lib/exercise/equipment";
 import OnboardingView from "./OnboardingView";
 import { saveOnboarding } from "./actions";
 
-const STAGES = Object.entries(STAGE_LABELS) as [InjuryStage, string][];
 
 // Shown once, right after a patient's first login (gated from /patient — see
 // app/patient/layout.tsx). Also reachable later via "Modifier ma situation".
@@ -20,6 +20,10 @@ export default async function OnboardingPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  // Libellés dans la langue de l'interface (français : identiques à STAGE_LABELS / EQUIPMENT_LABELS).
+  const tStage = await getTranslations("exercise.stage");
+  const STAGES = (Object.keys(STAGE_LABELS) as InjuryStage[]).map((s) => [s, stageLabel(s, tStage)] as [InjuryStage, string]);
+  const EQUIPMENT_LABELS = equipmentLabels(await getTranslations("exercise.equipment"));
 
   const supabase = await createClient();
   const user = await requireUser(supabase);

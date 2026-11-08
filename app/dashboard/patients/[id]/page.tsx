@@ -13,9 +13,13 @@ import ExerciseGridButton from "@/components/ExerciseGridButton";
 import { recommendVariants, type VariantSeance } from "@/lib/exercise/variants";
 import { relativeDay } from "@/lib/format/relativeDay";
 import { initials } from "@/lib/format/initials";
-import { STAGE_LABELS, doseFromRow, goalPartsFor, type InjuryStage } from "@/lib/exercise/prescription";
+import { STAGE_LABELS, stageLabel, doseFromRow, goalPartsFor, type InjuryStage } from "@/lib/exercise/prescription";
 import { ageFromDob } from "@/lib/exercise/patientProfile";
-import { EQUIPMENT_LABELS, type EquipmentId } from "@/lib/exercise/equipment";
+import { equipmentLabels, type EquipmentId } from "@/lib/exercise/equipment";
+import { bodyPartLabel } from "@/lib/exercise/category";
+import { getTranslations } from "next-intl/server";
+import { getLibI18n } from "@/lib/dashboard/libI18n";
+import { intlTag } from "@/lib/i18n/translator";
 import { type AddableWorkout } from "@/components/AdjustWorkoutModal";
 import KineWeekProgramme, { type KineWorkoutSummary } from "@/components/KineWeekProgramme";
 import PatientActionsMenu from "@/components/PatientActionsMenu";
@@ -47,7 +51,7 @@ type Workout = {
   workout_exercises: WorkoutExercise[];
 };
 
-const ACTIVITY_LABELS: Record<string, string> = { sedentary: "Sédentaire", moderate: "Modérée", active: "Active" };
+const ACTIVITY_LEVELS = ["sedentary", "moderate", "active"];
 export default async function PatientDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; adjusted?: string }> }) {
   const { id } = await params;
   const { error, adjusted } = await searchParams;
@@ -56,10 +60,16 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
   const { user } = await requireApprovedInstructor(supabase);
   const now = new Date();
+  const i18n = await getLibI18n();
+  const locale = i18n.locale;
+  const t = await getTranslations("dashboard.patientDetail");
+  const tStage = await getTranslations("exercise.stage");
+  const EQUIPMENT_LABELS = equipmentLabels(await getTranslations("exercise.equipment"));
+  const tBodyParts = await getTranslations("exercise.bodyParts");
 
   const { data: patient } = await supabase.from("patients").select("id, full_name, email, condition_id, created_at").eq("id", id).maybeSingle();
   if (!patient) redirect("/dashboard/patients");
-  const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || "ce patient";
+  const firstName = ((patient.full_name as string | null) ?? "").split(" ")[0] || t("thisPatient");
 
   const WORKOUT_FIELDS =
     "id, name, description, duration_minutes, times_per_week, stage, created_by, condition_id, patient_id, created_at, workout_exercises ( position, sets, reps, hold_seconds, exercises ( id, name, equipment, exercise_body_parts ( body_part_id ) ) )";
@@ -130,12 +140,12 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     now,
   });
   const tone = adherenceTone(adherence.pct);
-  const pain = buildPainSeries((recentFeedback ?? []) as { pain_score: number | null; created_at: string }[], now);
+  const pain = buildPainSeries((recentFeedback ?? []) as { pain_score: number | null; created_at: string }[], now, undefined, locale);
 
   // Frise : semaines depuis la création du compte patient, et le détail de
   // chaque jour (séance, heure, douleur, difficulté, notes) indexé par date
   // locale — même structure que côté patient (app/patient/page.tsx).
-  const weeks = buildWeeks((patient.created_at as string | null) ?? now.toISOString(), now);
+  const weeks = buildWeeks((patient.created_at as string | null) ?? now.toISOString(), now, locale);
   const resultsByLogId = new Map<string, NonNullable<SessionDetail["exercises"]>>();
   for (const r of [...(resultRows ?? [])].sort((a, b) => (a.position as number) - (b.position as number))) {
     const list = resultsByLogId.get(r.workout_log_id as string) ?? [];
@@ -144,6 +154,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   }
   const exerciseWatch = summarizeExercises(
     ((resultRows ?? []) as ExerciseResultRow[]).filter((r) => r.created_at >= since30),
+    i18n.t,
   )
     .filter((s) => s.watch)
     .map((s) => ({ name: s.name, reason: s.watch! }));
@@ -156,7 +167,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     (dayDetails[localDateKey(completedAt)] ??= []).push({
       logId: l.id as string,
       workoutName: w?.name ?? null,
-      time: completedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+      time: completedAt.toLocaleTimeString(intlTag(locale), { hour: "2-digit", minute: "2-digit" }),
       durationMinutes: w?.duration_minutes ?? null,
       painScore: (f?.pain_score as number | null) ?? null,
       difficulty: (f?.difficulty as number | null) ?? null,
@@ -186,7 +197,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
     currentWeekNumber: currentWeekNumber(weeks, now),
     assignments,
     exerciseCountByWorkoutId: Object.fromEntries(Object.values(workoutSummaries).map((w) => [w.id, w.exercises.length])),
-  });
+  }, i18n.t);
 
   // Fenêtre de séance : exercices ajoutables = tous − masqués. Ceux déjà dans
   // la séance affichée sont retirés par la fenêtre elle-même (SeanceComposer).
@@ -241,7 +252,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       description: w.description,
       durationMinutes: w.duration_minutes,
       timesPerWeek: w.times_per_week,
-      stageLabel: w.stage ? STAGE_LABELS[w.stage as InjuryStage] : null,
+      stageLabel: w.stage ? stageLabel(w.stage as InjuryStage, tStage) : null,
       conditionName: conditionName(w.condition_id) ?? null,
       editHref: w.created_by === user.id ? `/dashboard/seances/${w.id}` : null,
       exerciseNames: [...w.workout_exercises].sort((a, b) => a.position - b.position).map((we) => we.exercises?.name).filter((n): n is string => !!n),
@@ -270,7 +281,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       })),
   });
 
-  const profileUpdated = profile?.updated_at ? new Date(profile.updated_at as string).toLocaleDateString("fr-FR") : null;
+  const profileUpdated = profile?.updated_at ? new Date(profile.updated_at as string).toLocaleDateString(intlTag(locale)) : null;
 
   const lastWorkoutExercises = lastWorkout?.workout_exercises.length ?? 0;
 
@@ -294,6 +305,8 @@ export default async function PatientDetailPage({ params, searchParams }: { para
           grid={buildExerciseGrid(
             (resultRows ?? []) as GridResultRow[],
             (allLogs ?? []).map((l) => ({ id: l.id as string, completed_at: l.completed_at as string })),
+            undefined,
+            i18n.t,
           )}
         />
       }
@@ -304,10 +317,10 @@ export default async function PatientDetailPage({ params, searchParams }: { para
         painPrevious: pain.previous,
         adherencePct: adherence.pct,
         adherenceTone: tone,
-        adherenceLabel: adherenceLabel(adherence.pct),
-        lastSessionLabel: relativeDay(lastLog?.completed_at ?? null, now),
+        adherenceLabel: adherenceLabel(adherence.pct, await getTranslations("exercise.adherence")),
+        lastSessionLabel: relativeDay(lastLog?.completed_at ?? null, now, i18n),
         lastSessionDetail: lastWorkout
-          ? `${lastWorkout.duration_minutes ?? "—"} min · ${lastWorkoutExercises} exercice${lastWorkoutExercises > 1 ? "s" : ""}`
+          ? t("lastSessionDetail", { minutes: lastWorkout.duration_minutes ?? "—", count: lastWorkoutExercises })
           : null,
       }}
       actionsMenu={
@@ -333,30 +346,30 @@ export default async function PatientDetailPage({ params, searchParams }: { para
         <div className="mt-2 space-y-1">
           <p className="text-sm text-ink">
             {[
-              ageFromDob(profile.date_of_birth as string | null) != null ? `${ageFromDob(profile.date_of_birth as string | null)} ans` : null,
+              ageFromDob(profile.date_of_birth as string | null) != null ? t("age", { years: ageFromDob(profile.date_of_birth as string | null)! }) : null,
               profile.height_cm != null ? `${profile.height_cm} cm` : null,
               profile.weight_kg != null ? `${profile.weight_kg} kg` : null,
-              profile.activity_level ? `activité ${ACTIVITY_LABELS[profile.activity_level as string] ?? profile.activity_level}` : null,
-              stage ? STAGE_LABELS[stage] : null,
+              profile.activity_level ? t("activityLine", { level: ACTIVITY_LEVELS.includes(profile.activity_level as string) ? t(`activity.${profile.activity_level as string}`) : (profile.activity_level as string) }) : null,
+              stage ? stageLabel(stage, tStage) : null,
             ].filter(Boolean).join(" · ")}
           </p>
           {((profile.declared_body_part_ids as string[] | null) ?? []).length > 0 && (
             <div className="mt-1.5">
-              <span className="text-sm text-muted">Le patient signale vouloir travailler : </span>
+              <span className="text-sm text-muted">{t("wantsToWork")}</span>
               <span className="inline-flex flex-wrap gap-1 align-middle">
                 {(profile.declared_body_part_ids as string[]).map((bpId) => (
                   <span key={bpId} className="rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-ink">
-                    {bodyParts?.find((bp) => bp.id === bpId)?.label ?? bpId}
+                    {(() => { const bp = bodyParts?.find((b) => b.id === bpId); return bp ? bodyPartLabel(bp, locale, tBodyParts) : bpId; })()}
                   </span>
                 ))}
               </span>
             </div>
           )}
-          {profile.rehab_progress && <p className="text-sm text-muted"><span>Avancement{profileUpdated ? ` (mis à jour le ${profileUpdated})` : ""} :</span> {profile.rehab_progress as string}</p>}
-          {profile.history && <p className="text-sm text-muted"><span>Historique :</span> {profile.history as string}</p>}
+          {profile.rehab_progress && <p className="text-sm text-muted"><span>{profileUpdated ? t("progressUpdated", { date: profileUpdated }) : t("progress")}</span> {profile.rehab_progress as string}</p>}
+          {profile.history && <p className="text-sm text-muted"><span>{t("history")}</span> {profile.history as string}</p>}
           {((profile.equipment as EquipmentId[] | null) ?? []).length > 0 && (
             <div className="mt-1.5">
-              <span className="text-sm text-muted">Équipement disponible : </span>
+              <span className="text-sm text-muted">{t("equipment")}</span>
               <span className="inline-flex flex-wrap gap-1 align-middle">
                 {(profile.equipment as EquipmentId[]).map((eq) => (
                   <span key={eq} className="rounded-full bg-app-bg px-2 py-0.5 text-xs font-medium text-ink">
@@ -368,7 +381,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
           )}
         </div>
       ) : (
-        <p className="mt-2 text-sm text-muted">Le patient n&apos;a pas encore complété son admission.</p>
+        <p className="mt-2 text-sm text-muted">{t("noIntake")}</p>
       )
         }
       />

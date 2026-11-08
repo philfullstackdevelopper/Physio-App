@@ -1,3 +1,4 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingStripeObject, refreshConnectStatus } from "@/lib/billing/connectStatus";
 import { upsertConnectAccount } from "@/lib/db/admin";
@@ -31,7 +32,10 @@ export default async function FacturationPage({
     ? await supabase.from("subscriptions").select("user_id, plan, status, current_period_end, cancel_at_period_end, stripe_account_id").in("user_id", ids)
     : { data: [] };
 
-  const nameOf = new Map((patients ?? []).map((p) => [p.id as string, (p.full_name as string | null) ?? "Patient"]));
+  const t = await getTranslations("billing.facturation");
+  const tOffer = await getTranslations("billing.offers");
+  const locale = await getLocale();
+  const nameOf = new Map((patients ?? []).map((p) => [p.id as string, (p.full_name as string | null) ?? t("patientFallback")]));
   const now = new Date();
   let monthlyCents = 0;
   const subscribers: SubscriberRow[] = [];
@@ -45,19 +49,19 @@ export default async function FacturationPage({
     if (live && !legacy && s.status === "active" && !s.cancel_at_period_end) monthlyCents += KINE_FOLLOW_UP_CENTS;
     subscribers.push({
       patientId: s.user_id as string,
-      name: nameOf.get(s.user_id as string) ?? "Patient",
+      name: nameOf.get(s.user_id as string) ?? t("patientFallback"),
       planLabel: legacy
-        ? "Ancienne formule"
+        ? t("planLegacy")
         : s.status === "trialing"
-          ? "Essai gratuit"
+          ? t("planTrial")
           : isPlatformOfferKey(s.plan)
-            ? platformOffer(s.plan).label
-            : "Suivi mensuel",
+            ? tOffer(platformOffer(s.plan).key)
+            : t("planMonthly"),
       status: refused ? "refused" : s.cancel_at_period_end ? "cancelled" : "active",
       periodEnd: (s.current_period_end as string | null) ?? null,
     });
   }
-  subscribers.sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  subscribers.sort((a, b) => a.name.localeCompare(b.name, locale));
 
   let connectStatus = ((connect?.status as string | null) ?? "not_started") as ConnectStatus;
   // Le statut stocké peut être en retard sur Stripe (webhook manqué), ou

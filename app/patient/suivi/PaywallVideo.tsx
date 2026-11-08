@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import type { Locale } from "@/i18n/locales";
 import { AlertTriangle, Bell, Lock } from "lucide-react";
 import LoopVideo from "@/components/LoopVideo";
 import SubmitButton from "@/components/SubmitButton";
@@ -33,22 +35,24 @@ import { startPlan } from "./actions";
 // debout) d'un côté, les exercices au sol de l'autre. Seulement les six
 // extraits où la caméra bouge le moins (mesuré avec vidstabdetect de ffmpeg ;
 // le Pallof press, ancienne vidéo de cet écran, était le moins stable).
+// `label` : clé du nom de l'exercice dans messages/<langue>/billing.json (paywall.clips).
 type Clip = { file: string; label: string };
 const STANDING: Clip[] = [
-  { file: "salle-v-seated-external-rotation-elbow-on-knee", label: "Rotation externe assise, coude sur le genou" },
-  { file: "salle-v-band-shoulder-external-rotation", label: "Rotation externe d'épaule à l'élastique" },
-  { file: "salle-v-y-balance", label: "Équilibre en Y" },
+  { file: "salle-v-seated-external-rotation-elbow-on-knee", label: "seatedExternalRotation" },
+  { file: "salle-v-band-shoulder-external-rotation", label: "bandShoulderExternalRotation" },
+  { file: "salle-v-y-balance", label: "yBalance" },
 ];
 const FLOOR: Clip[] = [
-  { file: "glute-bridge", label: "Pont fessier" },
-  { file: "cat-cow-stretch", label: "Dos rond, dos creux" },
-  { file: "banded-clamshell", label: "Clamshell à l'élastique" },
+  { file: "glute-bridge", label: "gluteBridge" },
+  { file: "cat-cow-stretch", label: "catCow" },
+  { file: "banded-clamshell", label: "bandedClamshell" },
 ];
 
 // La liste est doublée et descend d'une demi-hauteur : la boucle ne se voit
 // pas. L'espace entre vidéos est un padding (pas un « gap ») pour que les deux
 // moitiés aient exactement la même hauteur. Immobile si « réduire les animations ».
 function Strip({ clips, tile, motion }: { clips: Clip[]; tile: string; motion: string }) {
+  const t = useTranslations("billing.paywall");
   return (
     <div className="h-full overflow-hidden">
       <ul data-loop-group className={`${motion} motion-reduce:[animation:none]`}>
@@ -58,7 +62,7 @@ function Strip({ clips, tile, motion }: { clips: Clip[]; tile: string; motion: s
               <LoopVideo
                 src={`/videos-demo/${c.file}.mp4`}
                 poster={`/videos-demo/${c.file}.jpg`}
-                label={`Démonstration filmée : ${c.label}`}
+                label={t("videoLabel", { label: t(`clips.${c.label}`) })}
                 className="h-full w-full object-cover"
               />
             </div>
@@ -69,7 +73,7 @@ function Strip({ clips, tile, motion }: { clips: Clip[]; tile: string; motion: s
   );
 }
 
-const STOPS = ["Libre", "3 mois", "6 mois"] as const;
+const STOPS = ["stopFree", "stop3", "stop6"] as const;
 const DEFAULT_INDEX = Math.max(0, PLATFORM_OFFERS.findIndex((o) => o.key === DEFAULT_OFFER_KEY));
 
 function initials(name: string): string {
@@ -102,6 +106,12 @@ export default function PaywallVideo({
   const [index, setIndex] = useState(DEFAULT_INDEX);
   const offer = PLATFORM_OFFERS[index];
   const save = savingsPercent(offer);
+  const t = useTranslations("billing.paywall");
+  const tf = useTranslations("billing.format");
+  const tOffer = useTranslations("billing.offers");
+  const tc = useTranslations("common");
+  const locale = useLocale() as Locale;
+  const eur = (cents: number) => tf("eur", { amount: eurosFR(cents, locale) });
 
   return (
     <main className="min-h-dvh bg-slate-950 text-white md:grid md:h-dvh md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
@@ -117,7 +127,7 @@ export default function PaywallVideo({
         <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-transparent via-transparent to-slate-950/70 md:block" />
         <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-slate-950/55 py-1 pl-1 pr-3 backdrop-blur-sm sm:left-6 sm:top-6">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-[11px] font-semibold">{initials(kineName)}</span>
-          <span className="text-xs font-medium">Préparé par {kineName}</span>
+          <span className="text-xs font-medium">{t("preparedBy", { kineName })}</span>
         </div>
       </div>
 
@@ -127,16 +137,16 @@ export default function PaywallVideo({
           <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl short:md:text-2xl">
             {/* (Philippe, 2026-11-06 : audit, on allège) « prêt » seulement si
                 le kiné a déjà attribué une séance ; sinon un titre neutre. */}
-            {programmeReady ? "Votre programme est prêt." : `Votre suivi avec ${kineName}.`}
+            {programmeReady ? t("titleReady") : t("titleWith", { kineName })}
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            {trial ? `${TRIAL_DAYS} jours offerts, puis la durée de votre choix.` : "Choisissez la durée qui vous convient."}
+            {trial ? t("trialSubtitle", { days: TRIAL_DAYS }) : t("chooseSubtitle")}
           </p>
 
           {(refused || error) && (
             <p role="alert" className="mt-3 flex items-start gap-2 rounded-xl bg-red-500/15 p-3 text-sm text-red-200">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
-              {error ?? "Le dernier paiement a été refusé. Choisissez à nouveau une durée."}
+              {error ?? t("refused")}
             </p>
           )}
 
@@ -150,20 +160,20 @@ export default function PaywallVideo({
               step={1}
               value={index}
               onChange={(e) => setIndex(Number(e.target.value))}
-              aria-label="Durée d'engagement"
-              aria-valuetext={offer.label}
+              aria-label={t("durationAria")}
+              aria-valuetext={tOffer(offer.key)}
               className="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-700 accent-blue-500 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-white [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg"
               style={{ background: `linear-gradient(to right, #3b82f6 ${(index / (PLATFORM_OFFERS.length - 1)) * 100}%, #334155 ${(index / (PLATFORM_OFFERS.length - 1)) * 100}%)` }}
             />
             <div className="mt-2 flex justify-between text-xs">
-              {STOPS.map((label, i) => (
+              {STOPS.map((stop, i) => (
                 <button
-                  key={label}
+                  key={stop}
                   type="button"
                   onClick={() => setIndex(i)}
                   className={`transition ${i === index ? "font-semibold text-white" : "text-slate-500 hover:text-slate-300"}`}
                 >
-                  {label}
+                  {t(stop)}
                 </button>
               ))}
             </div>
@@ -172,46 +182,47 @@ export default function PaywallVideo({
           {/* Le prix */}
           <div className="mt-5 flex items-end gap-3 short:md:mt-3" aria-live="polite">
             <p className="font-display text-5xl font-semibold tabular-nums tracking-tight max-sm:text-4xl">
-              {eurosFR(monthlyTotalCents(offer))} €<span className="text-base font-normal text-slate-400"> / mois</span>
+              {eur(monthlyTotalCents(offer))}<span className="text-base font-normal text-slate-400">{` ${t("perMonth")}`}</span>
             </p>
-            {save > 0 && <span className="mb-2 rounded-full bg-emerald-400/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">−{save} %</span>}
+            {save > 0 && <span className="mb-2 rounded-full bg-emerald-400/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">{tf("pct", { n: save })}</span>}
           </div>
           <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
-            {eurosFR(offer.platformCents)} € d&apos;accès à EasyPhysio chaque mois + {eurosFR(KINE_FOLLOW_UP_CENTS)} € versés à {kineName}, les mois où il met à
-            jour votre programme.{offer.commitmentMonths ? ` Engagement ${offer.commitmentMonths} mois sur l'accès, puis résiliable à tout moment.` : " Sans engagement."}
+            {t("split", { platform: eur(offer.platformCents), kine: eur(KINE_FOLLOW_UP_CENTS), kineName })}{" "}
+            {offer.commitmentMonths ? t("splitCommitment", { months: offer.commitmentMonths }) : t("splitNoCommitment")}
           </p>
 
           {trial && (
             <p className="mt-3 flex items-center gap-2 text-xs text-slate-300">
               <Bell className="h-3.5 w-3.5 shrink-0 text-blue-400" strokeWidth={2} />
-              Rappel le {reminderLabel} · premier paiement le {firstChargeLabel}
+              {t("reminder", { reminder: reminderLabel, first: firstChargeLabel })}
             </p>
           )}
 
           <label className="mt-4 flex items-start gap-2.5 text-[11px] leading-snug text-slate-400 short:md:mt-3">
             <input type="checkbox" name="consent" required className="mt-0.5 h-4 w-4 shrink-0 rounded accent-blue-500" />
             <span>
-              J&apos;accepte ces deux montants, prélevés chaque mois par EasyPhysio et par mon kiné, l&apos;engagement choisi et l&apos;accès immédiat (en
-              cas de rétractation, seule la période utilisée est due).{" "}
+              {t("consent")}{" "}
               <Link href="/cgu" target="_blank" className="underline hover:text-white">
-                Conditions
+                {t("conditions")}
               </Link>
             </span>
           </label>
+          {/* Texte d'acceptation traduit à faire relire : le français fait foi. */}
+          {locale !== "fr" && <p className="mt-1.5 text-[11px] leading-snug text-amber-300">{tc("reviewBanner")}</p>}
 
           <SubmitButton
-            pendingText="Redirection…"
+            pendingText={t("redirecting")}
             className="mt-4 w-full rounded-full bg-blue-600 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 active:scale-[0.98] short:md:mt-3"
           >
-            {trial ? "Commencer gratuitement" : "Activer mon suivi"}
+            {trial ? t("startFree") : t("activate")}
           </SubmitButton>
           <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-500">
             <Lock className="h-3 w-3 shrink-0" strokeWidth={2} />
             {/* (Philippe, 2026-11-06 : audit, on allège) « Résiliable à tout
                 moment » retiré d'ici : déjà dit sous le prix. */}
-            {trial ? `Aucun débit avant le ${firstChargeLabel} · ` : ""}
+            {trial ? `${t("noChargeBefore", { date: firstChargeLabel })} · ` : ""}
             <Link href="/patient/compte" className="hover:text-slate-300 hover:underline">
-              Mes données
+              {t("myData")}
             </Link>
           </p>
         </form>

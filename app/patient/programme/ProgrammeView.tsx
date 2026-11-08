@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowRight, CalendarDays, Lightbulb } from "lucide-react";
 import ProgressRing from "@/components/ProgressRing";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
@@ -53,13 +54,16 @@ export default function ProgrammeView({
   workouts: ProgrammeWorkout[];
   tip: string;
 }) {
+  const t = useTranslations("patient.programme");
+  const tc = useTranslations("patient.common");
+  const tGoal = useTranslations("exercise.goal");
   return (
     <main className="flex min-h-[calc(100dvh-var(--phone-chrome))] flex-col p-4 max-sm:short:py-2 sm:min-h-dvh sm:p-6 short:sm:py-4">
       <div className="flex flex-1 flex-col">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold text-ink">Mon programme</h1>
-            <p className="mt-0.5 hidden text-sm text-muted sm:block">Les séances que votre kiné vous a assignées cette semaine.</p>
+            <h1 className="text-2xl font-semibold text-ink">{t("title")}</h1>
+            <p className="mt-0.5 hidden text-sm text-muted sm:block">{t("subtitle")}</p>
           </div>
           {/* Grand écran : le conseil du jour dans la ligne de titre (ne prend
               aucune hauteur, la séance tient sur un écran). Tablette : en
@@ -68,20 +72,20 @@ export default function ProgrammeView({
             <p className="hidden min-w-0 max-w-xl flex-1 items-start gap-2 rounded-2xl border border-line bg-brand-soft px-3.5 py-2 text-xs text-ink/80 shadow-sm lg:flex">
               <Lightbulb className="h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
               <span className="line-clamp-2">
-                <span className="font-semibold text-ink">Conseil du jour · </span>
+                <span className="font-semibold text-ink">{t("tipTitle")} · </span>
                 {tip}
               </span>
             </p>
           )}
           <span className="flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm font-medium text-ink shadow-sm">
             <CalendarDays className="h-4 w-4 text-brand" strokeWidth={1.75} />
-            Semaine {week}
+            {tc("weekN", { n: week })}
           </span>
         </div>
 
         {workouts.length === 0 ? (
           <p className="mt-4 rounded-2xl border border-line bg-surface p-5 text-sm text-muted shadow-sm">
-            Votre praticien n&apos;a pas encore configuré votre programme. Revenez bientôt !
+            {tc("notConfigured")}
           </p>
         ) : (
           <div className="mt-4 flex flex-1 flex-col gap-4 max-sm:short:mt-2">
@@ -92,7 +96,7 @@ export default function ProgrammeView({
                 const complete = target > 0 && done >= target;
                 const cta = (
                   <>
-                    {complete ? "Refaire cette séance" : "Démarrer cette séance"}
+                    {complete ? t("redo") : t("start")}
                     <ArrowRight className="h-4 w-4" strokeWidth={2} />
                   </>
                 );
@@ -110,12 +114,12 @@ export default function ProgrammeView({
                               complete ? "bg-ok-soft text-ok" : "bg-brand/15 text-brand"
                             }`}
                           >
-                            {complete ? "Terminée cette semaine" : "Séance en cours"}
+                            {complete ? t("completeThisWeek") : t("current")}
                           </span>
                         )}
                         <h2 className="mt-1 text-lg font-semibold leading-tight text-ink">{workout.name}</h2>
                         <p className="mt-0.5 line-clamp-1 text-sm text-muted">
-                          {target > 0 ? `${done} / ${target} cette semaine` : `${done} fois cette semaine`}
+                          {target > 0 ? t("doneOfTarget", { done, target }) : t("doneTimes", { done })}
                           {workout.durationMinutes != null && ` · ${workout.durationMinutes} min`}
                           {workout.description && <span className="hidden md:inline"> · {workout.description}</span>}
                         </p>
@@ -128,7 +132,7 @@ export default function ProgrammeView({
                     {/* Petit téléphone (audit 2026-10-10) : marges réduites, nom sur une
                         ligne et zone masquée — la séance tient entière sans défiler. */}
                     <h3 className="mt-4 text-sm font-semibold text-ink max-sm:short:mt-2">
-                      Vos exercices <span className="font-normal text-muted">· {workout.exercises.length}</span>
+                      {t("yourExercises")} <span className="font-normal text-muted">· {workout.exercises.length}</span>
                     </h3>
                     <div className="mt-2 grid flex-1 auto-rows-fr grid-cols-2 gap-2 max-sm:short:mt-1.5 max-sm:short:gap-1.5 lg:grid-cols-3">
                       {workout.exercises.map((ex) => (
@@ -145,13 +149,13 @@ export default function ProgrammeView({
                           <div className="min-w-0 text-center">
                             <p className="line-clamp-2 text-sm font-medium leading-snug text-ink max-sm:short:line-clamp-1">{ex.name}</p>
                             {/* Séries × répétitions de chaque exercice (Philippe, 2026-11-02). */}
-                            <p className="mt-0.5 text-xs font-semibold tabular-nums text-brand">{goalShortFor(ex.instructions, ex.dose)}</p>
+                            <p className="mt-0.5 text-xs font-semibold tabular-nums text-brand">{goalShortFor(ex.instructions, ex.dose, tGoal)}</p>
                             {ex.categoryLabel && <p className="mt-0.5 truncate text-xs text-muted short:hidden">{ex.categoryLabel}</p>}
                           </div>
                         </div>
                       ))}
                       {workout.exercises.length === 0 && (
-                        <p className="text-sm text-muted">Cette séance ne contient pas encore d&apos;exercices.</p>
+                        <p className="text-sm text-muted">{t("noExercises")}</p>
                       )}
                     </div>
 
@@ -166,7 +170,7 @@ export default function ProgrammeView({
             <section className="hidden items-start gap-3 rounded-2xl border border-line bg-brand-soft p-4 shadow-sm sm:flex lg:hidden short:sm:py-3">
               <Lightbulb className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
               <div>
-                <p className="text-sm font-semibold text-ink">Conseil du jour</p>
+                <p className="text-sm font-semibold text-ink">{t("tipTitle")}</p>
                 <p className="mt-1 text-sm text-ink/80">{tip}</p>
               </div>
             </section>

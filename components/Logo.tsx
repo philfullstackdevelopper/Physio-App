@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 /** Logo EasyPhysio — repris à l'identique de la maquette d'identité visuelle
  *  de Philippe (2026-10-07 : « exactement le même ») : public/brand/
@@ -47,8 +48,9 @@ export default function Logo({
   size?: number;
   className?: string;
 }) {
+  const t = useTranslations("home.logo");
   return (
-    <Link href="/" aria-label="EasyPhysio — accueil" className={`flex items-center ${className}`}>
+    <Link href="/" aria-label={t("homeAria")} className={`flex items-center ${className}`}>
       {wordmark ? (
         <LogoLockup height={size} />
       ) : (

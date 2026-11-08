@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 // Standard, low-key cookie notice — typical pattern on French/EU sites.
 // EasyPhysio only uses essential authentication cookies today (no
@@ -13,6 +14,7 @@ import { useEffect, useState } from "react";
 const STORAGE_KEY = "physio-app-cookie-notice-dismissed";
 
 export default function CookieBanner() {
+  const t = useTranslations("home.cookies");
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -31,12 +33,13 @@ export default function CookieBanner() {
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur">
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 text-sm text-slate-600 sm:flex-row sm:justify-between">
         <p>
-          Ce site utilise uniquement des cookies essentiels au fonctionnement de votre
-          connexion, aucun cookie publicitaire ou de mesure d&apos;audience.{" "}
-          <a href="/confidentialite" className="text-blue-700 underline">
-            En savoir plus
-          </a>
-          .
+          {t.rich("text", {
+            link: (c) => (
+              <a href="/confidentialite" className="text-blue-700 underline">
+                {c}
+              </a>
+            ),
+          })}
         </p>
         <button
           onClick={() => {
@@ -45,7 +48,7 @@ export default function CookieBanner() {
           }}
           className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
-          Compris
+          {t("gotIt")}
         </button>
       </div>
     </div>

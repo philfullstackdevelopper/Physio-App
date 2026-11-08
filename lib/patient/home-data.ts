@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isProfileComplete } from "@/lib/exercise/patientProfile";
 import { type InjuryStage } from "@/lib/exercise/prescription";
@@ -94,7 +95,7 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
   const decision = stageWithFeedback(declaredStage, stageDeclaredAt, {
     painScores: rated(feedbackRows ?? [], "pain_score"),
     difficulties: rated(feedbackRows ?? [], "difficulty"),
-  });
+  }, new Date(), await getTranslations("exercise.signals"));
   const stage = decision.stage;
   // « Semaine N » affichée = numérotation de la frise (depuis la création du
   // compte), plus careWeek() : deux « Semaine » différentes sur le même écran

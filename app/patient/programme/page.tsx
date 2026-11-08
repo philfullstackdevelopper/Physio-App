@@ -1,3 +1,5 @@
+import { getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/locales";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { startOfWeekISO } from "@/lib/week";
@@ -132,5 +134,5 @@ export default async function ProgrammePage() {
       })),
   }));
 
-  return <ProgrammeView week={home.week} workouts={workouts} tip={tipOfTheDay()} />;
+  return <ProgrammeView week={home.week} workouts={workouts} tip={tipOfTheDay(new Date(), (await getLocale()) as Locale)} />;
 }

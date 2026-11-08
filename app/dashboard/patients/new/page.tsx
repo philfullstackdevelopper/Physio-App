@@ -7,6 +7,7 @@ import { PHASE_NUMBER, isStage } from "@/lib/exercise/phasePlan";
 import { addPatient } from "../actions";
 import JoinQrCard from "@/components/JoinQrCard";
 import NewPatientView from "@/components/NewPatientView";
+import { getTranslations } from "next-intl/server";
 
 export default async function NewPatientPage({
   searchParams,
@@ -19,6 +20,7 @@ export default async function NewPatientPage({
   const supabase = await createClient();
   const user = await requireUser(supabase);
   const open = canInvitePatients(user.email);
+  const t = await getTranslations("dashboard.newPatient");
 
   // « Première séance (facultatif) » : les séances de la plateforme et du
   // kiné (jamais les copies d'un patient), par pathologie puis par phase.
@@ -31,9 +33,9 @@ export default async function NewPatientPage({
   const groups = new Map<string, { id: string; label: string; rank: number }[]>();
   for (const w of rows ?? []) {
     if (!isPickableSeance(w as Parameters<typeof isPickableSeance>[0])) continue;
-    const condition = (w.conditions as unknown as { name: string } | null)?.name ?? "Autres séances";
+    const condition = (w.conditions as unknown as { name: string } | null)?.name ?? t("otherSessions");
     const stage = w.stage as string | null;
-    const label = `${isStage(stage) ? `Phase ${PHASE_NUMBER[stage]} · ` : ""}${w.name as string}`;
+    const label = isStage(stage) ? t("phaseSession", { n: PHASE_NUMBER[stage], name: w.name as string }) : (w.name as string);
     groups.set(condition, [...(groups.get(condition) ?? []), { id: w.id as string, label, rank: rank(stage) }]);
   }
   const seanceGroups = [...groups.entries()]

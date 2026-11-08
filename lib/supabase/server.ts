@@ -1,6 +1,9 @@
 import { cache } from "react";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import { getLocale } from "next-intl/server";
+import { isLocale, DEFAULT_LOCALE, type Locale } from "@/i18n/locales";
+import { localizingFetch } from "@/lib/i18n/dbContent";
 
 // Supabase client for use in Server Components, Route Handlers, and Server Actions.
 //
@@ -57,6 +60,15 @@ const getAccessToken = cache(async () => {
   }
 });
 
+async function currentLocale(): Promise<Locale> {
+  try {
+    const l = await getLocale();
+    return isLocale(l) ? l : DEFAULT_LOCALE;
+  } catch {
+    return DEFAULT_LOCALE;
+  }
+}
+
 export const createClient = cache(async () => {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,6 +80,9 @@ export const createClient = cache(async () => {
       // Third-Party Auth, and RLS resolves identity via public.app_users
       // (auth.jwt()->>'sub' = the Clerk id; see migration 0018).
       accessToken: getAccessToken,
+      // Textes de la plateforme (consignes, pathologies, séances) dans la
+      // langue de l’interface — voir lib/i18n/dbContent.ts.
+      global: { fetch: localizingFetch(currentLocale) },
     },
   );
 });

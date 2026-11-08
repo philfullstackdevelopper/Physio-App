@@ -6,7 +6,8 @@ import { type BodyPart } from "@/lib/exercise/category";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 import ExerciseInfoModal from "@/components/ExerciseInfoModal";
-import { EQUIPMENT_LABELS, equipmentListLabel, missingEquipment, type EquipmentId } from "@/lib/exercise/equipment";
+import { useTranslations } from "next-intl";
+import { equipmentLabels, equipmentListLabel, missingEquipment, type EquipmentId } from "@/lib/exercise/equipment";
 
 export type PickerExercise = {
   id: string;
@@ -65,10 +66,14 @@ export default function ExerciseLibraryPicker({
   patientEquipment?: string[] | null;
   patientFirstName?: string;
 }) {
+  const t = useTranslations("exercise.picker");
+  const tEquipment = useTranslations("exercise.equipment");
+  const tExEquipment = useTranslations("exercise.exerciseEquipment");
+  const eqLabels = equipmentLabels(tEquipment);
   const knowsEquipment = patientEquipment !== null;
   const ownedLabel = (patientEquipment ?? [])
     .filter((id) => id !== "aucun")
-    .map((id) => EQUIPMENT_LABELS[id as EquipmentId] ?? id)
+    .map((id) => eqLabels[id as EquipmentId] ?? id)
     .join(", ");
   const countByBodyPart = useMemo(() => {
     const counts = new Map<string, number>();
@@ -112,14 +117,14 @@ export default function ExerciseLibraryPicker({
           basses : la liste d'exercices récupère la hauteur (Philippe,
           2026-10-02 : « encore plus de place pour choisir »). */}
       <div className="flex items-center gap-3">
-        <p className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted max-sm:hidden">Ajouter un exercice</p>
+        <p className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted max-sm:hidden">{t("title")}</p>
         <label className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.75} />
           <input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Rechercher un exercice…"
+            placeholder={t("searchPlaceholder")}
             className="w-full rounded-lg border border-line bg-surface py-1.5 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
           />
         </label>
@@ -127,10 +132,10 @@ export default function ExerciseLibraryPicker({
       {/* Matériel du patient + filtre — seulement quand on compose pour un patient. */}
       {knowsEquipment && (
         <div className="mt-2 flex items-center gap-2">
-          <p className="flex min-w-0 flex-1 items-center gap-1.5 text-xs text-muted" title={ownedLabel || "Aucun matériel déclaré"}>
+          <p className="flex min-w-0 flex-1 items-center gap-1.5 text-xs text-muted" title={ownedLabel || t("noEquipmentDeclared")}>
             <Dumbbell className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
             <span className="truncate">
-              {patientFirstName ? `Matériel de ${patientFirstName}` : "Son matériel"} : <span className="font-medium text-ink">{ownedLabel || "aucun"}</span>
+              {patientFirstName ? t("equipmentOf", { name: patientFirstName }) : t("theirEquipment")} <span className="font-medium text-ink">{ownedLabel || t("none")}</span>
             </span>
           </p>
         </div>
@@ -143,14 +148,14 @@ export default function ExerciseLibraryPicker({
           {withRecent && (
             <button
               type="button"
-              title={`${recentList.length} exercice${recentList.length > 1 ? "s" : ""} de vos dernières séances`}
+              title={t("recentTitle", { count: recentList.length })}
               onClick={() => setBodyPartId(RECENT)}
               className={`flex w-20 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border px-1 py-0.5 text-center text-[10px] font-medium leading-tight transition-colors max-sm:w-[5.5rem] max-sm:gap-1 max-sm:rounded-2xl max-sm:px-1.5 max-sm:py-2 max-sm:text-xs md:w-auto md:min-w-0 ${
                 bodyPartId === RECENT ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
               }`}
             >
               <Clock className={`h-5 w-5 shrink-0 max-sm:h-8 max-sm:w-8 ${bodyPartId === RECENT ? "text-brand" : "text-muted"}`} strokeWidth={1.75} />
-              <span className="line-clamp-2">Récents</span>
+              <span className="line-clamp-2">{t("recent")}</span>
             </button>
           )}
           {bodyParts.map((bp) => {
@@ -160,7 +165,7 @@ export default function ExerciseLibraryPicker({
               <button
                 key={bp.id}
                 type="button"
-                title={`${bp.label} — ${count} exercice${count > 1 ? "s" : ""}`}
+                title={t("zoneTitle", { zone: bp.label, count })}
                 onClick={() => setBodyPartId(bp.id)}
                 disabled={count === 0}
                 className={`flex w-20 shrink-0 flex-col items-center rounded-xl border px-1 py-0.5 text-center text-[10px] font-medium leading-tight transition-colors disabled:cursor-not-allowed disabled:opacity-40 max-sm:w-[5.5rem] max-sm:gap-1 max-sm:rounded-2xl max-sm:px-1.5 max-sm:py-2 max-sm:text-xs md:w-auto md:min-w-0 ${
@@ -178,8 +183,8 @@ export default function ExerciseLibraryPicker({
         {filtered.length === 0 && (
           <p className="text-sm text-muted">
             {query
-              ? `Aucun exercice ne correspond à « ${q.trim()} ».`
-              : "Aucun exercice dans cette catégorie."}
+              ? t("noMatch", { query: q.trim() })
+              : t("emptyCategory")}
           </p>
         )}
         {/* Blocs (dessin au-dessus du nom) sur tous les formats : 2 par rangée
@@ -189,7 +194,7 @@ export default function ExerciseLibraryPicker({
         <div className="grid grid-cols-2 content-start gap-2 lg:grid-cols-3">
           {filtered.map((ex) => {
             const marked = selectedIds.has(ex.id);
-            const required = equipmentListLabel(ex.equipment ?? []);
+            const required = equipmentListLabel(ex.equipment ?? [], tExEquipment);
             const missing = missingEquipment(ex.equipment, patientEquipment);
             return (
               // Deux boutons côte à côte dans la même ligne (un bouton ne peut
@@ -198,7 +203,7 @@ export default function ExerciseLibraryPicker({
               <Fragment key={ex.id}>
               {ex.id === firstBlockedId && (
                 <p className="col-span-full mt-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-warn first:mt-0">
-                  <span className="shrink-0">Matériel que {patientFirstName ?? "le patient"} n'a pas</span>
+                  <span className="shrink-0">{t("missingHeading", { name: patientFirstName ?? t("thePatient") })}</span>
                   <span className="h-px flex-1 bg-warn/25" />
                 </p>
               )}
@@ -221,14 +226,14 @@ export default function ExerciseLibraryPicker({
                     <span
                       title={
                         missing.length > 0
-                          ? `Matériel que ${patientFirstName ?? "le patient"} n'a pas : ${equipmentListLabel(missing)}`
-                          : `Matériel nécessaire : ${required}`
+                          ? t("missingTitle", { name: patientFirstName ?? t("thePatient"), list: equipmentListLabel(missing, tExEquipment) })
+                          : t("requiredTitle", { list: required })
                       }
                       className={`max-w-full shrink-0 truncate rounded-full px-1.5 py-0.5 text-[10px] font-medium no-underline ${
                         missing.length > 0 ? "bg-warn-soft text-warn" : "bg-app-bg text-muted"
                       }`}
                     >
-                      {missing.length > 0 ? equipmentListLabel(missing) : required}
+                      {missing.length > 0 ? equipmentListLabel(missing, tExEquipment) : required}
                     </span>
                   )}
                   {marked ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} /> : <Plus className="h-4 w-4 shrink-0 text-brand" strokeWidth={2} />}
@@ -236,8 +241,8 @@ export default function ExerciseLibraryPicker({
                 <button
                   type="button"
                   onClick={() => setInfo({ id: ex.id, name: ex.name })}
-                  aria-label={`Voir la démonstration : ${ex.name}`}
-                  title="Voir la démonstration"
+                  aria-label={t("seeDemoAria", { name: ex.name })}
+                  title={t("seeDemo")}
                   className="absolute right-1 top-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-brand-soft hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
                 >
                   <Info className="h-4 w-4" strokeWidth={1.75} />

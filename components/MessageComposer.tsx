@@ -8,6 +8,7 @@
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ArrowUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 /** Une action serveur qui appelle redirect() fait rejeter sa promesse côté
  *  client avec une erreur « NEXT_REDIRECT;type;url;… » (gérée ensuite par
@@ -23,8 +24,9 @@ function redirectTarget(e: unknown): string | null {
  *  un enfant du <form>) — un double appui envoyait deux fois le message. */
 function SendButton({ canSend, className }: { canSend: boolean; className: string }) {
   const { pending } = useFormStatus();
+  const t = useTranslations("dashboard.messages");
   return (
-    <button type="submit" disabled={!canSend || pending} aria-label={pending ? "Envoi en cours" : "Envoyer"} className={className}>
+    <button type="submit" disabled={!canSend || pending} aria-label={pending ? t("sending") : t("send")} className={className}>
       <ArrowUp className="h-5 w-5" strokeWidth={2.25} />
     </button>
   );
@@ -33,7 +35,7 @@ function SendButton({ canSend, className }: { canSend: boolean; className: strin
 export default function MessageComposer({
   patientId,
   action,
-  placeholder = "Écrire un message…",
+  placeholder: placeholderProp,
   children,
   chat = false,
 }: {
@@ -48,6 +50,8 @@ export default function MessageComposer({
   chat?: boolean;
 }) {
   void chat;
+  const t = useTranslations("dashboard.messages");
+  const placeholder = placeholderProp ?? t("composerPlaceholder");
   const formRef = useRef<HTMLFormElement>(null);
   const [body, setBody] = useState("");
 

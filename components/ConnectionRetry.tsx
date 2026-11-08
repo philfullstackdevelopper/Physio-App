@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LoaderCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // « Problème de connexion » : presque toujours une panne de quelques secondes
 // (Clerk n'a pas répondu à temps). Plutôt que de laisser la personne devant
@@ -26,6 +27,7 @@ function readAttempts(): number {
 export default function ConnectionRetry({ retryHref }: { retryHref: string }) {
   // null = pas encore décidé (premier rendu, identique côté serveur).
   const [auto, setAuto] = useState<boolean | null>(null);
+  const t = useTranslations("auth.connectionRetry");
 
   useEffect(() => {
     const attempts = readAttempts();
@@ -50,7 +52,7 @@ export default function ConnectionRetry({ retryHref }: { retryHref: string }) {
     return (
       <div className="mt-6 flex flex-col items-center gap-3" role="status" aria-live="polite">
         <LoaderCircle className="h-6 w-6 animate-spin text-blue-600" strokeWidth={2} />
-        <p className="text-sm text-slate-500">Nouvelle tentative en cours…</p>
+        <p className="text-sm text-slate-500">{t("retrying")}</p>
       </div>
     );
   }
@@ -62,10 +64,10 @@ export default function ConnectionRetry({ retryHref }: { retryHref: string }) {
         href={retryHref}
         className="mt-6 block w-full rounded-xl bg-blue-600 py-2.5 font-medium text-white shadow-sm transition hover:bg-blue-700"
       >
-        Réessayer
+        {t("retry")}
       </a>
       <Link href="/login" className="mt-3 block text-sm text-slate-500 hover:underline">
-        Ou se reconnecter
+        {t("signInAgain")}
       </Link>
     </>
   );

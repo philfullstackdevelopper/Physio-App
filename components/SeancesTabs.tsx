@@ -2,13 +2,14 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Search, Dumbbell, Trash2, Pencil, EyeOff, Eye, Plus } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 import NewSeanceModal from "@/components/NewSeanceModal";
 import { type PickerExercise } from "@/components/ExerciseLibraryPicker";
 import { type BodyPart } from "@/lib/exercise/category";
-import { STAGE_SHORT, STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
+import { stageLabel, stageShort, type InjuryStage } from "@/lib/exercise/prescription";
 
 type ListItem = {
   id: string;
@@ -57,7 +58,8 @@ function TemplateHideButton({
   hideTemplateWorkout: (formData: FormData) => void;
   unhideTemplateWorkout: (formData: FormData) => void;
 }) {
-  const label = hidden ? "Réafficher" : "Supprimer de ma liste";
+  const t = useTranslations("exercise.seances");
+  const label = hidden ? t("unhide") : t("removeFromList");
   return (
     <div className="shrink-0 max-sm:absolute max-sm:right-1 max-sm:top-1 max-sm:rounded-full max-sm:bg-surface/90">
       <button
@@ -88,12 +90,13 @@ function DeleteSeanceButton({
   blockedReason?: string;
   deleteSeance: (formData: FormData) => void;
 }) {
+  const t = useTranslations("exercise.seances");
   const [confirming, setConfirming] = useState(false);
 
   if (blockedReason) {
     return (
       <span
-        title={`Suppression impossible : ${blockedReason}. Retirez-la des patients concernés d'abord.`}
+        title={t("deleteBlocked", { reason: blockedReason })}
         className="rounded p-1.5 text-muted"
       >
         <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
@@ -109,14 +112,14 @@ function DeleteSeanceButton({
           type="submit"
           className="rounded-md bg-danger px-2 py-1 text-xs font-medium text-white transition hover:opacity-90"
         >
-          Confirmer
+          {t("confirm")}
         </button>
         <button
           type="button"
           onClick={() => setConfirming(false)}
           className="rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors duration-150 hover:bg-app-bg"
         >
-          Annuler
+          {t("cancel")}
         </button>
       </form>
     );
@@ -126,8 +129,8 @@ function DeleteSeanceButton({
     <button
       type="button"
       onClick={() => setConfirming(true)}
-      aria-label={`Supprimer ${seanceName}`}
-      title="Supprimer cette séance"
+      aria-label={t("deleteAria", { name: seanceName })}
+      title={t("delete")}
       className="rounded p-1.5 text-muted transition-colors duration-150 hover:bg-danger-soft hover:text-danger"
     >
       <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
@@ -163,6 +166,8 @@ function SeanceThumb({
   stage?: InjuryStage | null;
   leadExerciseName?: string;
 }) {
+  const tStage = useTranslations("exercise.stage");
+  const tStageShort = useTranslations("exercise.stageShort");
   return (
     <div className="relative h-24 w-full rounded-lg bg-surface max-sm:h-16">
       {leadExerciseName ? (
@@ -179,10 +184,10 @@ function SeanceThumb({
       )}
       {stage && (
         <span
-          title={STAGE_LABELS[stage]}
+          title={stageLabel(stage, tStage)}
           className="absolute right-2 top-2 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-medium text-brand max-sm:hidden"
         >
-          {STAGE_SHORT[stage]}
+          {stageShort(stage, tStageShort)}
         </span>
       )}
     </div>
@@ -208,6 +213,8 @@ function PathologyCard({
   hideTemplateWorkout: (formData: FormData) => void;
   unhideTemplateWorkout: (formData: FormData) => void;
 }) {
+  const tr = useTranslations("exercise.seances");
+  const tStage = useTranslations("exercise.stage");
   // Plusieurs séances par phase possibles (séances A / B des modèles) : la
   // case de phase ouvre la première, des lettres permettent de passer aux autres.
   const byStageAll = new Map<InjuryStage, ListItem[]>();
@@ -231,7 +238,7 @@ function PathologyCard({
           </div>
         )}
         <span className="absolute right-2 top-2 rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-brand max-sm:hidden">
-          {byStage.size || seances.length} niveau{(byStage.size || seances.length) > 1 ? "x" : ""}
+          {tr("levels", { count: byStage.size || seances.length })}
         </span>
       </div>
       <div className="flex flex-1 flex-col gap-2 p-3 max-sm:p-2">
@@ -245,7 +252,7 @@ function PathologyCard({
           />
         </div>
         {byStage.size > 0 && (
-          <div role="group" aria-label={`Niveaux — ${condition}`} className="grid grid-cols-4 gap-1">
+          <div role="group" aria-label={tr("levelsAria", { condition })} className="grid grid-cols-4 gap-1">
             {PHASES.map((ph, i) => {
               const t = byStage.get(ph);
               const on = !!t && current.stage === ph;
@@ -255,7 +262,7 @@ function PathologyCard({
                   type="button"
                   disabled={!t}
                   aria-pressed={on}
-                  title={t ? `${STAGE_LABELS[ph]} — ${t.name}` : `${STAGE_LABELS[ph]} : pas de séance`}
+                  title={t ? tr("phaseWithSeance", { phase: stageLabel(ph, tStage), name: t.name }) : tr("phaseNoSeance", { phase: stageLabel(ph, tStage) })}
                   onClick={() => t && setPicked(t.id)}
                   className={`h-7 rounded-md text-xs font-bold tabular-nums ${
                     on ? "bg-brand text-white" : t ? "bg-brand-soft text-brand hover:bg-brand/15" : "bg-app-bg text-muted/60"
@@ -277,13 +284,13 @@ function PathologyCard({
                 onClick={() => setPicked(t.id)}
                 className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${t.id === current.id ? "bg-brand text-white" : "bg-app-bg text-ink"}`}
               >
-                Toutes phases
+                {tr("allPhases")}
               </button>
             ))}
           </div>
         )}
         {sameStage.length > 1 && (
-          <div role="group" aria-label="Séances de cette phase" className="flex gap-1">
+          <div role="group" aria-label={tr("phaseSeancesAria")} className="flex gap-1">
             {sameStage.map((t, i) => (
               <button
                 key={t.id}
@@ -299,7 +306,7 @@ function PathologyCard({
           </div>
         )}
         <p className="text-xs text-muted max-sm:hidden">
-          {current.stageLabel ?? "Toutes phases"} · {current.exerciseCount ?? current.exerciseNames?.length ?? 0} exercice{(current.exerciseCount ?? current.exerciseNames?.length ?? 0) > 1 ? "s" : ""}
+          {current.stageLabel ?? tr("allPhases")} · {tr("exerciseCount", { count: current.exerciseCount ?? current.exerciseNames?.length ?? 0 })}
         </p>
         <ExerciseNamesList names={current.exerciseNames} />
         {/* Modifier une séance de la plateforme = en faire sa propre copie,
@@ -307,11 +314,11 @@ function PathologyCard({
         <button
           type="button"
           onClick={() => runAction(duplicateSeance, "template_id", current.id)}
-          title="Crée votre version de cette séance dans Mes séances, à modifier librement"
+          title={tr("editTemplateTitle")}
           className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-brand/40 hover:bg-brand-soft hover:text-brand"
         >
           <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-          Modifier
+          {tr("edit")}
         </button>
       </div>
     </div>
@@ -344,6 +351,7 @@ function ExerciseNamesList({ names }: { names?: string[] }) {
 }
 
 function VoirPlusButton({ onClick }: { onClick: () => void }) {
+  const t = useTranslations("exercise.seances");
   return (
     <div className="mt-6 flex justify-center">
       <button
@@ -351,7 +359,7 @@ function VoirPlusButton({ onClick }: { onClick: () => void }) {
         onClick={onClick}
         className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink transition-colors duration-150 hover:bg-app-bg"
       >
-        Voir plus
+        {t("seeMore")}
       </button>
     </div>
   );
@@ -394,6 +402,7 @@ export default function SeancesTabs({
   conditions: { id: string; name: string }[];
   stages: [InjuryStage, string][];
 }) {
+  const t = useTranslations("exercise.seances");
   const [tab, setTab] = useState<Tab>("mine");
   const [mineQuery, setMineQuery] = useState("");
   const [templateQuery, setTemplateQuery] = useState("");
@@ -442,14 +451,15 @@ export default function SeancesTabs({
     });
   }, [templates, templateQuery, showHiddenTemplates, inZone]);
 
+  const otherSeances = t("otherSeances");
   const templateGroups = useMemo(() => {
     const groups = new Map<string, ListItem[]>();
     for (const t of filteredTemplates) {
-      const key = t.conditionName ?? "Autres séances";
+      const key = t.conditionName ?? otherSeances;
       (groups.get(key) ?? groups.set(key, []).get(key)!).push(t);
     }
     return [...groups.entries()].map(([condition, seances]) => ({ condition, seances }));
-  }, [filteredTemplates]);
+  }, [filteredTemplates, otherSeances]);
   const visibleGroups = templateGroups.slice(0, templatesShown);
 
   const zoneLabel = zoneId ? bodyParts.find((bp) => bp.id === zoneId)?.label : undefined;
@@ -458,12 +468,12 @@ export default function SeancesTabs({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4 max-sm:flex-nowrap max-sm:items-center max-sm:gap-2">
         <div>
-          <h1 className="text-2xl font-semibold text-ink">Mes séances</h1>
+          <h1 className="text-2xl font-semibold text-ink">{t("title")}</h1>
         </div>
         <div className="flex items-center gap-4 max-sm:gap-2">
           <Link href="/dashboard/exercises" className="text-sm font-medium text-brand hover:underline max-sm:rounded-full max-sm:bg-surface max-sm:px-3 max-sm:py-2 max-sm:shadow-soft max-sm:hover:no-underline">
-            <span className="max-sm:hidden">Gérer mes exercices →</span>
-            <span className="hidden max-sm:inline">Mes exercices</span>
+            <span className="max-sm:hidden">{t("manageExercises")}</span>
+            <span className="hidden max-sm:inline">{t("myExercises")}</span>
           </Link>
           <button
             type="button"
@@ -471,11 +481,11 @@ export default function SeancesTabs({
               setTab("mine");
               setNewSeanceOpen((v) => !v);
             }}
-            aria-label="Nouvelle séance"
+            aria-label={t("newSeance")}
             className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark max-sm:h-10 max-sm:w-10 max-sm:justify-center max-sm:p-0 max-sm:shadow-soft"
           >
             <Plus className="h-4 w-4 max-sm:h-5 max-sm:w-5" strokeWidth={2} />
-            <span className="max-sm:hidden">Nouvelle séance</span>
+            <span className="max-sm:hidden">{t("newSeance")}</span>
           </button>
         </div>
       </div>
@@ -501,8 +511,8 @@ export default function SeancesTabs({
               : "rounded-full px-3 py-1.5 text-sm font-medium text-muted hover:text-ink max-sm:flex-1"
           }
         >
-          <span className="max-sm:hidden">Mes séances personnalisées</span>
-          <span className="hidden max-sm:inline">Personnalisées</span> ({mine.length})
+          <span className="max-sm:hidden">{t("tabMine")}</span>
+          <span className="hidden max-sm:inline">{t("tabMineShort")}</span> ({mine.length})
         </button>
         <button
           type="button"
@@ -513,8 +523,8 @@ export default function SeancesTabs({
               : "rounded-full px-3 py-1.5 text-sm font-medium text-muted hover:text-ink max-sm:flex-1"
           }
         >
-          <span className="max-sm:hidden">Séances prévues</span>
-          <span className="hidden max-sm:inline">Modèles</span> ({templates.length})
+          <span className="max-sm:hidden">{t("tabTemplates")}</span>
+          <span className="hidden max-sm:inline">{t("tabTemplatesShort")}</span> ({templates.length})
         </button>
       </div>
         <div className="relative min-w-[14rem] flex-1 max-sm:min-w-0">
@@ -532,7 +542,7 @@ export default function SeancesTabs({
                 setTemplatesShown(REVEAL_INITIAL);
               }
             }}
-            placeholder={tab === "mine" ? "Rechercher parmi mes séances…" : "Rechercher un modèle…"}
+            placeholder={tab === "mine" ? t("searchMine") : t("searchTemplates")}
             className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft max-sm:h-10 max-sm:rounded-xl max-sm:border-0 max-sm:shadow-soft"
           />
         </div>
@@ -542,7 +552,7 @@ export default function SeancesTabs({
             onClick={() => setShowHiddenTemplates((v) => !v)}
             className="shrink-0 text-sm font-medium text-brand hover:underline"
           >
-            {showHiddenTemplates ? "Masquer les retirés" : `Voir les retirés (${hiddenTemplateCount})`}
+            {showHiddenTemplates ? t("hideRemoved") : t("showRemoved", { count: hiddenTemplateCount })}
           </button>
         )}
       </div>
@@ -567,7 +577,7 @@ export default function SeancesTabs({
               zoneId === null ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg max-sm:border-transparent max-sm:shadow-soft"
             }`}
           >
-            Toutes
+            {t("allZones")}
             {/* Téléphone (Philippe, 2026-10-12) : même tuile que dans « Ajuster
                 la séance » — pas de compteur, il allongeait la tuile. */}
             <span className={`max-sm:hidden ${zoneId === null ? "text-brand/70" : "text-muted"}`}>{zoneCounts.total}</span>
@@ -615,16 +625,15 @@ export default function SeancesTabs({
           {mine.length === 0 ? (
             <div className="rounded-xl border border-line bg-surface p-2">
               <p className="p-6 text-center text-sm text-muted">
-                Aucune séance personnalisée pour le moment. Créez-en une avec « Nouvelle séance », ou
-                dupliquez un modèle dans l&apos;onglet &laquo; Séances prévues &raquo;.
+                {t("emptyMine")}
               </p>
             </div>
           ) : filteredMine.length === 0 ? (
             <div className="rounded-xl border border-line bg-surface p-2">
               <p className="p-6 text-center text-sm text-muted">
                 {mineQuery.trim()
-                  ? `Aucune séance ne correspond à « ${mineQuery.trim()} ».`
-                  : `Aucune séance personnalisée pour la zone « ${zoneLabel ?? ""} ».`}
+                  ? t("noMatchMine", { query: mineQuery.trim() })
+                  : t("noMineInZone", { zone: zoneLabel ?? "" })}
               </p>
             </div>
           ) : (
@@ -651,7 +660,7 @@ export default function SeancesTabs({
                     <p className="mt-2 font-medium text-ink max-sm:mt-1.5 max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:text-[13px] max-sm:leading-tight">{s.name}</p>
                     {s.exerciseCount === 0 && (
                       <span className="mt-1 inline-flex items-center rounded-full bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">
-                        Aucun exercice
+                        {t("noExercise")}
                       </span>
                     )}
                     <CardMeta s={s} />
@@ -669,14 +678,14 @@ export default function SeancesTabs({
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain max-sm:-mx-1 max-sm:px-1 max-sm:pb-1 sm:-mr-2 sm:pr-2">
           {templates.length === 0 ? (
             <div className="rounded-xl border border-line bg-surface p-2">
-              <p className="p-6 text-center text-sm text-muted">Aucun modèle disponible.</p>
+              <p className="p-6 text-center text-sm text-muted">{t("noTemplates")}</p>
             </div>
           ) : filteredTemplates.length === 0 ? (
             <div className="rounded-xl border border-line bg-surface p-2">
               <p className="p-6 text-center text-sm text-muted">
                 {templateQuery.trim()
-                  ? `Aucun modèle ne correspond à « ${templateQuery.trim()} ».`
-                  : `Aucun modèle pour la zone « ${zoneLabel ?? ""} ».`}
+                  ? t("noMatchTemplates", { query: templateQuery.trim() })
+                  : t("noTemplatesInZone", { zone: zoneLabel ?? "" })}
               </p>
             </div>
           ) : (

@@ -20,6 +20,12 @@
 // clinique. « tapis » n'est jamais indispensable (confort) : aucun exercice
 // ne l'exige.
 
+/** Traducteur fourni par l'appelant (useTranslations / getTranslations de
+ *  next-intl, déjà placé sur le bon espace de noms). Absent = français, le
+ *  texte d'origine : ce fichier est testé par node:test, qui ne sait pas
+ *  importer les fichiers de messages JSON. */
+type Tr = (key: string, values?: Record<string, string | number>) => string;
+
 /** Matériel que le patient peut déclarer avoir chez lui (onboarding). */
 export type EquipmentId =
   | "aucun"
@@ -47,6 +53,13 @@ export const EQUIPMENT_LABELS: Record<EquipmentId, string> = {
 };
 
 export const EQUIPMENT_OPTIONS = Object.keys(EQUIPMENT_LABELS) as EquipmentId[];
+
+/** Les libellés du matériel du patient dans la langue de l'interface.
+ *  `t` = traducteur « exercise.equipment » ; absent = EQUIPMENT_LABELS (français). */
+export function equipmentLabels(t?: Tr): Record<EquipmentId, string> {
+  if (!t) return EQUIPMENT_LABELS;
+  return Object.fromEntries(EQUIPMENT_OPTIONS.map((id) => [id, t(id)])) as Record<EquipmentId, string>;
+}
 
 /** Matériel qu'un exercice peut exiger : celui du patient, plus du matériel
  *  qu'on ne trouve en principe pas à la maison. */
@@ -101,6 +114,14 @@ export function missingEquipment(
 }
 
 /** « Haltères, Chaise ou banc » — pour la pastille et les infobulles. */
-export function equipmentListLabel(ids: readonly string[]): string {
-  return ids.filter(isExerciseEquipmentId).map((id) => EXERCISE_EQUIPMENT_LABELS[id]).join(", ");
+export function equipmentListLabel(ids: readonly string[], t?: Tr): string {
+  const labels = exerciseEquipmentLabels(t);
+  return ids.filter(isExerciseEquipmentId).map((id) => labels[id]).join(", ");
+}
+
+/** Libellés courts du matériel d'un exercice, dans la langue de l'interface.
+ *  `t` = traducteur « exercise.exerciseEquipment » ; absent = EXERCISE_EQUIPMENT_LABELS. */
+export function exerciseEquipmentLabels(t?: Tr): Record<ExerciseEquipmentId, string> {
+  if (!t) return EXERCISE_EQUIPMENT_LABELS;
+  return Object.fromEntries(EXERCISE_EQUIPMENT_OPTIONS.map((id) => [id, t(id)])) as Record<ExerciseEquipmentId, string>;
 }

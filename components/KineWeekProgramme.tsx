@@ -24,6 +24,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Circle, X } from "lucide-react";
 import { daysOfWeek, localDateKey, type WeekInfo } from "@/lib/patient/weeks";
+import { useLocale, useTranslations } from "next-intl";
+import type { Locale } from "@/i18n/locales";
 import { resolveAssignmentForWeek } from "@/lib/exercise/activeRecommendation";
 import { gradeDay, type DayGrade } from "@/lib/exercise/dayGrade";
 import { PAIN_HOLD } from "@/lib/exercise/stageProgress";
@@ -32,7 +34,7 @@ import { SegmentRow, runViewTransition as runSharedViewTransition, type SegmentI
 import type { Recommendation } from "@/lib/exercise/variants";
 import AdjustWorkoutModal, { type AddableExercise, type AddableWorkout, type ModalExercise } from "@/components/AdjustWorkoutModal";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
-import { nextSeance, PHASE_NUMBER, PHASE_PASS, isStage } from "@/lib/exercise/phasePlan";
+import { nextSeance, PHASE_NUMBER, phasePass, isStage } from "@/lib/exercise/phasePlan";
 import { useIsPhone, type SessionDetail } from "@/components/WeekProgramme";
 
 export interface KineAssignment {
@@ -112,6 +114,9 @@ export default function KineWeekProgramme({
   assignAction: (formData: FormData) => void;
   removeAction: (formData: FormData) => void;
 }) {
+  const t = useTranslations("dashboard.weekProgramme");
+  const tPass = useTranslations("exercise.phasePass");
+  const locale = useLocale() as Locale;
   const loggedDateKeys = useMemo(
     () => new Set(Object.keys(dayDetails).filter((k) => dayDetails[k].length > 0)),
     [dayDetails],
@@ -124,14 +129,14 @@ export default function KineWeekProgramme({
       weeks.map((week) => {
         const assignment = resolveAssignmentForWeek(assignments, week.startDateKey);
         const workout = assignment ? (workoutsById[assignment.workoutId] ?? null) : null;
-        const days = daysOfWeek(week, loggedDateKeys);
+        const days = daysOfWeek(week, loggedDateKeys, locale);
         const painAlert = days.some((d) =>
           (dayDetails[localDateKey(d.date)] ?? []).some((s) => s.painScore != null && s.painScore >= WEEK_PAIN_ALERT),
         );
         const hasActivity = days.some((d) => d.hasSession);
         return { week, assignment, workout, painAlert, hasActivity };
       }),
-    [weeks, assignments, workoutsById, loggedDateKeys, dayDetails],
+    [weeks, assignments, workoutsById, loggedDateKeys, dayDetails, locale],
   );
 
   // ---- Navigation frise → semaine → jour (même mécanique que côté patient) --
@@ -242,17 +247,17 @@ export default function KineWeekProgramme({
       // Le rouge (douleur) prime sur tout : c'est l'info que le kiné doit voir
       // en premier. Sinon même logique que côté patient.
       const tone: SegmentTone = painAlert ? "danger" : hasActivity ? "active" : isCurrent ? "current" : "default";
-      const workoutLabel = workout ? workout.name : "Aucune séance";
+      const workoutLabel = workout ? workout.name : t("noSession");
       return {
         key: String(week.weekNumber),
         tone,
-        badge: isCurrent ? "Cette semaine" : undefined,
+        badge: isCurrent ? t("thisWeek") : undefined,
         viewTransitionName: `kine-week-${week.weekNumber}`,
         buttonRef: isCurrent ? currentCardRef : undefined,
         onClick: () => openWeek(week.weekNumber),
-        ariaLabel: `Semaine ${week.weekNumber}, ${week.rangeLabel}, ${workoutLabel}${painAlert ? ", douleur élevée signalée" : ""}${
-          hasActivity ? ", séances réalisées" : ""
-        }${isCurrent ? " — semaine actuelle" : ""}`,
+        ariaLabel: `${t("weekAria", { n: week.weekNumber, range: week.rangeLabel, workout: workoutLabel })}${painAlert ? t("ariaPain") : ""}${
+          hasActivity ? t("ariaDone") : ""
+        }${isCurrent ? t("ariaCurrentWeek") : ""}`,
         content: (
           // Haut de la carte = semaine + dates (compact) ; bas de la carte
           // réservé aux illustrations (Philippe, 2026-09-09, 3e retour :
@@ -265,7 +270,7 @@ export default function KineWeekProgramme({
               {/* « Semaine N » plutôt qu'un numéro seul, dates entre
                   parenthèses (Philippe, 2026-10-01). */}
               <span className="flex items-center gap-1.5 text-xl font-semibold">
-                Semaine {week.weekNumber}
+                {t("weekN", { n: week.weekNumber })}
                 {painAlert ? (
                   <AlertTriangle className="h-5 w-5" strokeWidth={2} />
                 ) : (
@@ -278,7 +283,7 @@ export default function KineWeekProgramme({
                   douleur, jaune à surveiller, vert fait), comme côté patient. */}
               {workout && <span className="mt-3 line-clamp-1 px-2 text-sm font-semibold sm:hidden">{workout.name}</span>}
               <span className="mt-3 flex gap-1.5 sm:hidden" aria-hidden>
-                {daysOfWeek(week, loggedDateKeys).map((d) => {
+                {daysOfWeek(week, loggedDateKeys, locale).map((d) => {
                   const sessions = dayDetails[localDateKey(d.date)] ?? [];
                   const g = gradeDay(d.hasSession, sessions.map((s) => ({ painScore: s.painScore, difficulty: s.difficulty })));
                   const cls =
@@ -313,13 +318,13 @@ export default function KineWeekProgramme({
     return (
       <div className="flex w-full min-w-0 flex-col max-sm:min-h-0 max-sm:flex-1">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink max-sm:text-base" title="Cliquez sur une semaine pour voir le détail jour par jour et changer la séance.">
-            Programme<span className="max-sm:hidden">, semaine par semaine</span>
+          <h2 className="text-lg font-semibold text-ink max-sm:text-base" title={t("stripHint")}>
+            {t("programme")}<span className="max-sm:hidden">{t("weekByWeek")}</span>
           </h2>
           <div className="flex items-center gap-1">
             <button
               type="button"
-              aria-label="Semaines précédentes"
+              aria-label={t("prevWeeks")}
               onClick={() => scrollStrip(-1)}
               className="rounded-full border border-line p-2 text-muted hover:bg-app-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
             >
@@ -327,7 +332,7 @@ export default function KineWeekProgramme({
             </button>
             <button
               type="button"
-              aria-label="Semaines suivantes"
+              aria-label={t("nextWeeks")}
               onClick={() => scrollStrip(1)}
               className="rounded-full border border-line p-2 text-muted hover:bg-app-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
             >
@@ -364,7 +369,7 @@ export default function KineWeekProgramme({
   // ---- Vue 2 : une semaine, jour par jour + assignation -----------------------
   const selectedMeta = weekMeta.find((m) => m.week.weekNumber === selectedWeekNumber) ?? weekMeta[weekMeta.length - 1];
   const selectedWeek = selectedMeta.week;
-  const days = daysOfWeek(selectedWeek, loggedDateKeys);
+  const days = daysOfWeek(selectedWeek, loggedDateKeys, locale);
   const selectedDaySessions = selectedDayKey ? (dayDetails[selectedDayKey] ?? []) : [];
 
   const dayItems: SegmentItem[] = days.map((d) => {
@@ -375,15 +380,15 @@ export default function KineWeekProgramme({
     // exactement ce que l'ancien calendrier affichait.
     const grade = gradeDay(d.hasSession, sessions.map((s) => ({ painScore: s.painScore, difficulty: s.difficulty })));
     const tone: SegmentTone = grade === "grey" && isToday ? "current" : GRADE_TONE[grade];
-    const statusLabel = grade === "red" ? "Douleur élevée" : grade === "yellow" ? "À surveiller" : d.hasSession ? "Réalisée" : "Non fait";
+    const statusLabel = grade === "red" ? t("statusPain") : grade === "yellow" ? t("statusWatch") : d.hasSession ? t("statusDone") : t("statusNotDone");
     return {
       key,
       tone,
-      badge: isToday ? "Aujourd'hui" : undefined,
+      badge: isToday ? t("today") : undefined,
       disabled: sessions.length === 0,
       ringSelected: selectedDayKey === key,
       onClick: () => setSelectedDayKey(selectedDayKey === key ? null : key),
-      ariaLabel: `${d.dayLabel} ${d.dateLabel}, ${statusLabel.toLowerCase()}${isToday ? " — aujourd'hui" : ""}`,
+      ariaLabel: `${d.dayLabel} ${d.dateLabel}, ${statusLabel.toLowerCase()}${isToday ? t("ariaToday") : ""}`,
       content: (
         <>
           <span className="text-sm font-semibold">{d.dayLabel}</span>
@@ -417,11 +422,11 @@ export default function KineWeekProgramme({
     ? nextSeance({ id: current.id, name: current.name, conditionId: current.conditionId ?? null, stage: current.stage ?? null }, addableWorkouts)
     : null;
   const nextChangesPhase = !!next && !!current && next.stage !== current.stage;
-  const nextLabel = next && isStage(next.stage) && nextChangesPhase ? `Passer en phase ${PHASE_NUMBER[next.stage]}` : "Séance suivante";
+  const nextLabel = next && isStage(next.stage) && nextChangesPhase ? t("nextPhase", { n: PHASE_NUMBER[next.stage] }) : t("nextSession");
   // Téléphone : libellé court mais explicite (Philippe, 2026-11-06 : une
   // flèche seule ne disait pas qu'on passe à la séance d'après).
-  const nextShortLabel = next && isStage(next.stage) && nextChangesPhase ? `Phase ${PHASE_NUMBER[next.stage]}` : "Suivante";
-  const passCriterion = nextChangesPhase && isStage(current?.stage) ? PHASE_PASS[current.stage] : null;
+  const nextShortLabel = next && isStage(next.stage) && nextChangesPhase ? t("nextPhaseShort", { n: PHASE_NUMBER[next.stage] }) : t("nextShort");
+  const passCriterion = nextChangesPhase && isStage(current?.stage) ? phasePass(current.stage, tPass) : null;
 
   return (
     // data-week-open : sur téléphone, globals.css masque alors la barre
@@ -440,11 +445,11 @@ export default function KineWeekProgramme({
         <button
           type="button"
           onClick={closeWeek}
-          aria-label="Toutes les semaines"
+          aria-label={t("allWeeks")}
           className="flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink max-sm:absolute max-sm:left-3 max-sm:top-3 max-sm:h-9 max-sm:w-9 max-sm:justify-center max-sm:rounded-full max-sm:bg-app-bg max-sm:text-ink"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-          <span className="max-sm:hidden">Toutes les semaines</span>
+          <span className="max-sm:hidden">{t("allWeeks")}</span>
         </button>
 
         <div className="mt-3 flex flex-wrap items-start justify-between gap-4 max-sm:mt-0 max-sm:gap-2">
@@ -452,7 +457,7 @@ export default function KineWeekProgramme({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                aria-label="Semaine précédente"
+                aria-label={t("prevWeek")}
                 onClick={() => goToWeek(selectedWeek.weekNumber - 1)}
                 disabled={selectedWeek.weekNumber <= 1}
                 className="rounded-full p-1 text-muted hover:bg-app-bg disabled:opacity-30"
@@ -462,7 +467,7 @@ export default function KineWeekProgramme({
               <h2 className="text-lg font-semibold text-ink">{selectedWeek.label}</h2>
               <button
                 type="button"
-                aria-label="Semaine suivante"
+                aria-label={t("nextWeek")}
                 onClick={() => goToWeek(selectedWeek.weekNumber + 1)}
                 disabled={selectedWeek.weekNumber >= weeks.length}
                 className="rounded-full p-1 text-muted hover:bg-app-bg disabled:opacity-30"
@@ -482,18 +487,18 @@ export default function KineWeekProgramme({
               était tronqué à quelques lettres. */}
           <div className={`flex flex-wrap items-center gap-3 max-sm:w-full max-sm:justify-between max-sm:rounded-xl max-sm:bg-app-bg max-sm:px-3 max-sm:py-2 ${next ? "max-sm:gap-y-2" : "max-sm:flex-nowrap"}`}>
             <div className={`text-right max-sm:min-w-0 max-sm:text-left ${next ? "max-sm:basis-full" : ""}`}>
-              <p className="text-xs font-medium text-muted">Séance cette semaine</p>
+              <p className="text-xs font-medium text-muted">{t("sessionThisWeek")}</p>
               <p className={`text-sm max-sm:truncate ${selectedMeta.workout ? "font-semibold text-ink" : "italic text-muted"}`}>
-                {selectedMeta.workout ? selectedMeta.workout.name : "Aucune séance"}
+                {selectedMeta.workout ? selectedMeta.workout.name : t("noSession")}
                 {selectedMeta.workout && selectedMeta.assignment?.weekCount ? (
                   <span className="ml-1 text-xs font-normal text-muted">
                     ({selectedMeta.assignment.weekCount === 1
-                      ? "cette semaine seulement"
-                      : `semaines ${assignmentStartWeek} à ${assignmentStartWeek + selectedMeta.assignment.weekCount - 1}`})
+                      ? t("thisWeekOnly")
+                      : t("weeksRange", { from: assignmentStartWeek, to: assignmentStartWeek + selectedMeta.assignment.weekCount - 1 })})
                   </span>
                 ) : (
                   selectedMeta.workout &&
-                  startedWeekNumber && <span className="ml-1 text-xs font-normal text-muted">(depuis la semaine {startedWeekNumber})</span>
+                  startedWeekNumber && <span className="ml-1 text-xs font-normal text-muted">{t("sinceWeek", { n: startedWeekNumber })}</span>
                 )}
               </p>
             </div>
@@ -528,7 +533,7 @@ export default function KineWeekProgramme({
                   type="submit"
                   name="workout_id"
                   value={next.id}
-                  title={`${next.name}${passCriterion ? ` — critère pour passer : ${passCriterion}` : ""}`}
+                  title={passCriterion ? t("nextTitleCriterion", { name: next.name, criterion: passCriterion }) : next.name}
                   aria-label={nextLabel}
                   className="inline-flex items-center gap-1 rounded-full border border-brand/40 px-3.5 py-2 text-sm font-medium text-brand transition-colors hover:bg-brand-soft max-sm:gap-0.5 max-sm:px-2.5 max-sm:text-xs"
                 >
@@ -556,7 +561,7 @@ export default function KineWeekProgramme({
             const sessions = dayDetails[key] ?? [];
             const isToday = key === todayKey;
             const grade = gradeDay(d.hasSession, sessions.map((s) => ({ painScore: s.painScore, difficulty: s.difficulty })));
-            const statusLabel = grade === "red" ? "Douleur élevée" : grade === "yellow" ? "À surveiller" : d.hasSession ? "Réalisée" : "Non fait";
+            const statusLabel = grade === "red" ? t("statusPain") : grade === "yellow" ? t("statusWatch") : d.hasSession ? t("statusDone") : t("statusNotDone");
             const dot =
               grade === "red"
                 ? "border-danger bg-danger text-white"
@@ -584,7 +589,7 @@ export default function KineWeekProgramme({
                   type="button"
                   disabled={sessions.length === 0}
                   onClick={() => setSelectedDayKey(selectedDayKey === key ? null : key)}
-                  aria-label={`${d.dayLabel} ${d.dateLabel}, ${statusLabel.toLowerCase()}${isToday ? " — aujourd'hui" : ""}`}
+                  aria-label={`${d.dayLabel} ${d.dateLabel}, ${statusLabel.toLowerCase()}${isToday ? t("ariaToday") : ""}`}
                   className="flex w-full items-center gap-3 py-0.5 text-left"
                 >
                   <span className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${dot}`}>
@@ -602,7 +607,7 @@ export default function KineWeekProgramme({
                       <span className="truncate text-sm opacity-80">{d.dateLabel}</span>
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium">
-                      {isToday && <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">Aujourd&apos;hui</span>}
+                      {isToday && <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">{t("today")}</span>}
                       {statusLabel}
                       {worstPain !== null && <span className="tabular-nums">· {worstPain}/10</span>}
                       {sessions.length > 0 && <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />}
@@ -622,13 +627,13 @@ export default function KineWeekProgramme({
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Détail de la journée"
+            aria-label={t("dayDetail")}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-sm rounded-2xl bg-surface p-5 shadow-xl [animation:popIn_0.35s_ease-out_both]"
           >
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-base font-semibold text-ink">Détail de la journée</h2>
-              <button type="button" aria-label="Fermer" onClick={closeDayDetail} className="rounded-full p-1 text-muted hover:bg-app-bg hover:text-ink">
+              <h2 className="text-base font-semibold text-ink">{t("dayDetail")}</h2>
+              <button type="button" aria-label={t("close")} onClick={closeDayDetail} className="rounded-full p-1 text-muted hover:bg-app-bg hover:text-ink">
                 <X className="h-4 w-4" strokeWidth={2} />
               </button>
             </div>
@@ -643,14 +648,14 @@ export default function KineWeekProgramme({
                       ) : (
                         <CheckCircle2 className="h-4 w-4 shrink-0 text-ok" strokeWidth={1.75} />
                       )}
-                      {s.workoutName ?? "Séance"}
+                      {s.workoutName ?? t("session")}
                     </p>
-                    <p className="mt-1 text-xs text-muted">Terminée à {s.time}</p>
+                    <p className="mt-1 text-xs text-muted">{t("finishedAt", { time: s.time })}</p>
                     <ul className="mt-2 space-y-1 text-xs text-muted">
                       {s.durationMinutes != null && <li>{s.durationMinutes} min</li>}
-                      {s.painScore != null && <li className={painHigh ? "font-semibold text-danger" : ""}>Douleur {s.painScore}/10</li>}
-                      {s.difficulty != null && <li>Difficulté {s.difficulty}/10</li>}
-                      {s.notes && <li>« {s.notes} »</li>}
+                      {s.painScore != null && <li className={painHigh ? "font-semibold text-danger" : ""}>{t("painScore", { score: s.painScore })}</li>}
+                      {s.difficulty != null && <li>{t("difficultyScore", { score: s.difficulty })}</li>}
+                      {s.notes && <li>{t("notesQuote", { notes: s.notes })}</li>}
                     </ul>
                     {/* Exercice par exercice (Philippe, 2026-11-02) : lequel gêne, lequel est passé. */}
                     {s.exercises && s.exercises.length > 0 && (
@@ -660,12 +665,12 @@ export default function KineWeekProgramme({
                             <span className={`min-w-0 truncate ${ex.status === "skipped" ? "text-muted line-through" : "text-ink"}`}>{ex.name}</span>
                             <span className="flex shrink-0 items-center gap-1.5 tabular-nums">
                               {ex.status === "skipped" ? (
-                                <span className="rounded-full bg-warn-soft px-1.5 py-0.5 font-medium text-warn">Passé</span>
+                                <span className="rounded-full bg-warn-soft px-1.5 py-0.5 font-medium text-warn">{t("skipped")}</span>
                               ) : (
                                 <>
-                                  {ex.pain != null && <span className={ex.pain >= WEEK_PAIN_ALERT ? "font-semibold text-danger" : "text-muted"}>D {ex.pain}</span>}
-                                  {ex.difficulty != null && <span className="text-muted">Diff. {ex.difficulty}</span>}
-                                  <CheckCircle2 className="h-3.5 w-3.5 text-ok" strokeWidth={2} aria-label="Fait" />
+                                  {ex.pain != null && <span className={ex.pain >= WEEK_PAIN_ALERT ? "font-semibold text-danger" : "text-muted"}>{t("painShort", { score: ex.pain })}</span>}
+                                  {ex.difficulty != null && <span className="text-muted">{t("difficultyShort", { score: ex.difficulty })}</span>}
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-ok" strokeWidth={2} aria-label={t("done")} />
                                 </>
                               )}
                             </span>

@@ -6,17 +6,15 @@ import KineSignupFlow from "@/components/KineSignupFlow";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 import SignupClosed from "@/components/SignupClosed";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
+import { getTranslations } from "next-intl/server";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
-const ENCOURAGEMENTS = [
-  "Créez votre espace en quelques minutes et prescrivez dès aujourd'hui.",
-  "Rejoignez les praticiens qui suivent leurs patients à distance, simplement.",
-  "Un programme prêt à l'emploi vous attend dès la création du compte.",
-  "Votre cabinet, prolongé jusque chez vos patients.",
-];
-
-export default function SignupPage() {
+export default async function SignupPage() {
   // Avant le lancement : pas de création de compte (lib/launchFlags.ts).
   if (!SIGNUPS_OPEN) return <SignupClosed />;
+  const t = await getTranslations("auth.signupKine");
+  const tShared = await getTranslations("auth.shared");
+  const encouragements = [t("encouragement1"), t("encouragement2"), t("encouragement3"), t("encouragement4")];
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#f6f8fd]">
       <DotCanvas />
@@ -27,8 +25,12 @@ export default function SignupPage() {
           className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm backdrop-blur transition-colors hover:text-slate-900"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
-          Retour
+          {tShared("back")}
         </Link>
+      </div>
+      {/* Choix de la langue, en face du bouton Retour. */}
+      <div className="absolute right-4 top-4 z-10 lg:right-6 lg:top-6">
+        <LanguageSwitcher />
       </div>
 
       <div className="relative mx-auto flex min-h-dvh max-w-6xl flex-col lg:flex-row lg:items-center">
@@ -55,7 +57,7 @@ export default function SignupPage() {
             of a static feature list. */}
         <div className="hidden flex-1 flex-col px-16 py-6 lg:sticky lg:top-0 lg:flex lg:h-dvh">
           <p className="mb-6 max-w-sm text-base leading-relaxed text-slate-600">
-            <RandomLine options={ENCOURAGEMENTS} />
+            <RandomLine options={encouragements} />
           </p>
           <div className="min-h-0 flex-1">
             <LoginExerciseShowcase />

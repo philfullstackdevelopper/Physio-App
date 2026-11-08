@@ -7,6 +7,8 @@
 // Pas lié depuis l'appli.
 //   ?ecran=accueil | patients | messages | conversation | fiche | informations | revenus | seances | exercices
 
+import { getTranslations } from "next-intl/server";
+import { getLibI18n } from "@/lib/dashboard/libI18n";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHomeView from "@/components/DashboardHomeView";
 import PatientsTable, { type Segment } from "@/components/PatientsTable";
@@ -25,14 +27,17 @@ import ContributorsView from "@/components/ContributorsView";
 import NewPatientView from "@/components/NewPatientView";
 import JoinQrCard from "@/components/JoinQrCard";
 import { contributorRanking } from "@/lib/exercise/kineExercises";
-import { KINE_FOLLOW_UP_CENTS, platformOffer } from "@/lib/billing/patientPlans";
+import { KINE_FOLLOW_UP_CENTS } from "@/lib/billing/patientPlans";
 
 const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
-import { STAGE_LABELS, type InjuryStage } from "@/lib/exercise/prescription";
-import { DEMO_BODY_PARTS, DEMO_EXERCISES, mockData, mockFiche } from "./mock";
+import { STAGE_LABELS, stageLabel, stageShort, type InjuryStage } from "@/lib/exercise/prescription";
+import { DEMO_EXERCISES, demoBodyParts, demoExercises, mockData, mockFiche } from "./mock";
 import { noopPublish, noopResult, noopVoid } from "./actions";
 
-export const metadata = { title: "Aperçu tableau de bord kiné", robots: { index: false } };
+export async function generateMetadata() {
+  const t = await getTranslations("demo.meta");
+  return { title: t("previewKine"), robots: { index: false } };
+}
 export const dynamic = "force-dynamic";
 
 const PATHS: Record<string, string> = {
@@ -52,11 +57,12 @@ const PATHS: Record<string, string> = {
 
 // Exercices proposés par d'autres kinés et publiés (fictifs) : crédit
 // « Proposé par » sur les cartes, et classement des contributeurs.
-const DEMO_CONTRIB_EXERCISES: { name: string; bodyPartIds: string[]; author: string; authorId: string }[] = [
-  { name: "Montée de marche latérale", bodyPartIds: ["bp-genou"], author: "Claire Fontaine · Kiné du Parc", authorId: "k1" },
-  { name: "Fente arrière contrôlée", bodyPartIds: ["bp-genou", "bp-hanche"], author: "Claire Fontaine · Kiné du Parc", authorId: "k1" },
-  { name: "Pont fessier sur une jambe, élastique", bodyPartIds: ["bp-hanche"], author: "Marc Lefèvre · Cabinet des Lilas", authorId: "k2" },
-  { name: "Rotation thoracique à quatre pattes", bodyPartIds: ["bp-dos"], author: "Julien Roux", authorId: "moi" },
+// Nom affiché : demo.samples.contribExercises.<key>.
+const DEMO_CONTRIB_EXERCISES: { key: string; bodyPartIds: string[]; author: string; authorId: string }[] = [
+  { key: "lateralStepUp", bodyPartIds: ["bp-genou"], author: "Claire Fontaine · Kiné du Parc", authorId: "k1" },
+  { key: "reverseLunge", bodyPartIds: ["bp-genou", "bp-hanche"], author: "Claire Fontaine · Kiné du Parc", authorId: "k1" },
+  { key: "singleLegBridgeBand", bodyPartIds: ["bp-hanche"], author: "Marc Lefèvre · Cabinet des Lilas", authorId: "k2" },
+  { key: "quadrupedThoracicRotation", bodyPartIds: ["bp-dos"], author: "Julien Roux", authorId: "moi" },
 ];
 // Classement de démo : Julien Roux (le kiné de la démo) a 6 exercices publiés.
 const DEMO_RANKING_ROWS = [
@@ -75,7 +81,13 @@ export default async function KineTelephonePrototype({
   // patient / filtre / seance : ce qui a été choisi dans l'écran précédent
   // (components/DemoShell.tsx les garde en traduisant l'adresse de l'appli).
   const { ecran = "accueil", nouvelle, patient, filtre, seance } = await searchParams;
-  const d = mockData();
+  const t = await getTranslations("demo.samples");
+  const tStage = await getTranslations("exercise.stage");
+  const tStageShort = await getTranslations("exercise.stageShort");
+  const i18n = await getLibI18n();
+  const d = mockData(t, new Date(), i18n);
+  const DEMO_BODY_PARTS = demoBodyParts(t);
+  const stages = (Object.keys(STAGE_LABELS) as InjuryStage[]).map((k) => [k, stageLabel(k, tStage)] as [InjuryStage, string]);
 
   let screen: React.ReactNode;
   if (ecran === "patients") {
@@ -119,25 +131,26 @@ export default async function KineTelephonePrototype({
         patientCount={d.rows.length}
         monthlyCents={3 * KINE_FOLLOW_UP_CENTS}
         subscribers={[
-          { patientId: "p1", name: "Léa Martin", planLabel: platformOffer("plan_3m").label, status: "active", periodEnd: inDays(18) },
-          { patientId: "p2", name: "Thomas Bernard", planLabel: platformOffer("plan_1m").label, status: "active", periodEnd: inDays(9) },
-          { patientId: "p3", name: "Camille Dubois", planLabel: platformOffer("plan_6m").label, status: "active", periodEnd: inDays(26) },
-          { patientId: "p4", name: "Julien Moreau", planLabel: "Essai gratuit", status: "active", periodEnd: inDays(6) },
-          { patientId: "p5", name: "Sophie Laurent", planLabel: platformOffer("plan_1m").label, status: "cancelled", periodEnd: inDays(4) },
+          { patientId: "p1", name: "Léa Martin", planLabel: t("plans.plan_3m"), status: "active", periodEnd: inDays(18) },
+          { patientId: "p2", name: "Thomas Bernard", planLabel: t("plans.plan_1m"), status: "active", periodEnd: inDays(9) },
+          { patientId: "p3", name: "Camille Dubois", planLabel: t("plans.plan_6m"), status: "active", periodEnd: inDays(26) },
+          { patientId: "p4", name: "Julien Moreau", planLabel: t("freeTrial"), status: "active", periodEnd: inDays(6) },
+          { patientId: "p5", name: "Sophie Laurent", planLabel: t("plans.plan_1m"), status: "cancelled", periodEnd: inDays(4) },
         ]}
       />
     );
   } else if (ecran === "seances") {
     const names = DEMO_EXERCISES.slice(0, 4).map((e) => e.name);
     const zones = DEMO_BODY_PARTS.filter((b) => ["bp-genou", "bp-dos", "bp-epaule"].includes(b.id));
+    // name / cond : clés de demo.samples.seances / demo.samples.conditions.
     const item = (id: string, name: string, cond: string, stage: InjuryStage, lead: number) => ({
       id,
-      bodyPartIds: [/Genou/.test(name) ? "bp-genou" : /Lomb/.test(name) ? "bp-dos" : "bp-epaule"],
-      name,
-      conditionName: cond,
+      bodyPartIds: [/^knee/.test(name) ? "bp-genou" : /^lowBack/.test(name) ? "bp-dos" : "bp-epaule"],
+      name: t(`seances.${name}`),
+      conditionName: t(`conditions.${cond}`),
       stage,
-      stageLabel: STAGE_LABELS[stage],
-      extra: "4 exercices",
+      stageLabel: stageLabel(stage, tStage),
+      extra: t("exerciseCount", { n: 4 }),
       leadExerciseName: names[lead],
       exerciseNames: names,
       exerciseCount: 4,
@@ -152,14 +165,14 @@ export default async function KineTelephonePrototype({
             exercises={names.map((name, i) => ({ id: `demo-ex-${i}`, name, bodyPartIds: ["bp-genou"] }))}
             bodyParts={zones}
             mine={[
-              item("s1", "Genou, renforcement doux", "Prothèse de genou", "acute", 0),
-              item("s2", "Lombaires, mobilité du matin", "Lombalgie chronique", "subacute", 1),
-              item("s3", "Épaule, retour au geste", "Épaule douloureuse", "recovery", 2),
+              item("s1", "kneeGentle", "kneeReplacement", "acute", 0),
+              item("s2", "lowBackMorning", "lowBack", "subacute", 1),
+              item("s3", "shoulderReturn", "painfulShoulder", "recovery", 2),
             ]}
             templates={[
-              item("t1", "Lombalgie, phase 1", "Lombalgie chronique", "acute", 3),
-              item("t2", "Lombalgie, phase 2", "Lombalgie chronique", "subacute", 0),
-              item("t3", "Genou, phase 1", "Prothèse de genou", "acute", 2),
+              item("t1", "lowBackPhase1", "lowBack", "acute", 3),
+              item("t2", "lowBackPhase2", "lowBack", "subacute", 0),
+              item("t3", "kneePhase1", "kneeReplacement", "acute", 2),
             ]}
             duplicateSeance={noopVoid}
             deleteSeance={noopVoid}
@@ -167,7 +180,7 @@ export default async function KineTelephonePrototype({
             unhideTemplateWorkout={noopVoid}
             createSeance={noopVoid}
             conditions={d.conditions}
-            stages={Object.entries(STAGE_LABELS) as [InjuryStage, string][]}
+            stages={stages}
           />
         </div>
       </main>
@@ -179,7 +192,7 @@ export default async function KineTelephonePrototype({
         <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 flex-col gap-1">
-              <h1 className="text-2xl font-semibold text-ink">Mes exercices</h1>
+              <h1 className="text-2xl font-semibold text-ink">{t("myExercises")}</h1>
               <ContributionSummary
                 contributors={contributorRanking(DEMO_RANKING_ROWS).map((r) => ({ id: r.authorId, label: r.label }))}
                 published={DEMO_PUBLISHED}
@@ -189,7 +202,7 @@ export default async function KineTelephonePrototype({
           </div>
           <ExerciseLibraryGrid
             bodyParts={bodyParts}
-            exercises={[...DEMO_EXERCISES.map((e, i) => ({
+            exercises={[...demoExercises(t).map((e, i) => ({
               id: `ex${i}`,
               name: e.name,
               instructions: e.instructions,
@@ -207,7 +220,7 @@ export default async function KineTelephonePrototype({
             })),
             ...DEMO_CONTRIB_EXERCISES.map((e, i) => ({
               id: `kex${i}`,
-              name: e.name,
+              name: t(`contribExercises.${e.key}`),
               instructions: null,
               media_url: null,
               media_start_seconds: 0,
@@ -242,8 +255,8 @@ export default async function KineTelephonePrototype({
         open
         addPatientAction={noopVoid}
         seanceGroups={[
-          { condition: "Lombalgie chronique", seances: [{ id: "d1", label: "Phase 2 · Lombaires, mobilité du matin" }, { id: "d2", label: "Phase 3 · Lombaires, gainage doux" }] },
-          { condition: "Prothèse de genou", seances: [{ id: "d3", label: "Phase 1 · Genou, renforcement doux" }] },
+          { condition: t("conditions.lowBack"), seances: [{ id: "d1", label: `${stageShort("subacute", tStageShort)} · ${t("seances.lowBackMorning")}` }, { id: "d2", label: `${stageShort("recovery", tStageShort)} · ${t("seances.lowBackCore")}` }] },
+          { condition: t("conditions.kneeReplacement"), seances: [{ id: "d3", label: `${stageShort("acute", tStageShort)} · ${t("seances.kneeGentle")}` }] },
         ]}
         qr={<JoinQrCard instructorId="demo" open demoPath="/demo/patient?ecran=onboarding" />}
       />
@@ -254,9 +267,9 @@ export default async function KineTelephonePrototype({
     // Détail d'une séance de « Mes séances » (s1, s2, s3), dans la même fenêtre
     // que dans l'appli. Enregistrer ne fait rien en démo.
     const seances: Record<string, [string, string, InjuryStage]> = {
-      s1: ["Genou, renforcement doux", "c-genou", "acute"],
-      s2: ["Lombaires, mobilité du matin", "c-lomb", "subacute"],
-      s3: ["Épaule, retour au geste", "c-epaule", "recovery"],
+      s1: [t("seances.kneeGentle"), "c-genou", "acute"],
+      s2: [t("seances.lowBackMorning"), "c-lomb", "subacute"],
+      s3: [t("seances.shoulderReturn"), "c-epaule", "recovery"],
     };
     const id = seance && seances[seance] ? seance : "s1";
     const [name, conditionId, stage] = seances[id];
@@ -265,7 +278,7 @@ export default async function KineTelephonePrototype({
       <main className="min-h-screen max-sm:min-h-0">
         <EditSeanceModal
           conditions={d.conditions}
-          stages={Object.entries(STAGE_LABELS) as [InjuryStage, string][]}
+          stages={stages}
           exercises={pickable}
           bodyParts={DEMO_BODY_PARTS}
           saveSeance={noopVoid}
@@ -291,12 +304,12 @@ export default async function KineTelephonePrototype({
   } else if (ecran === "fiche") {
     // La fiche du patient choisi (Thomas Bernard par défaut).
     const p = d.patientInfo(patient ?? "p2");
-    const f = mockFiche(new Date(), p.id === "p2" ? undefined : p);
+    const f = mockFiche(t, new Date(), p.id === "p2" ? undefined : p, tStage, i18n.locale);
     const highPain = f.stats.painLatest !== null && f.stats.painLatest >= 6;
     screen = (
       <PatientDetailView
         name={p.name}
-        warning={highPain ? { label: "Douleur élevée", detail: `Douleur ${f.stats.painLatest}/10 signalée récemment.` } : null}
+        warning={highPain ? { label: t("highPain"), detail: t("highPainDetail", { score: f.stats.painLatest ?? 0 }) } : null}
         adjusted={false}
         stats={f.stats}
         actionsMenu={
@@ -339,7 +352,7 @@ export default async function KineTelephonePrototype({
         instructorName="Julien Roux"
         unreadCount={d.unreadCount}
         pathnameOverride={PATHS[ecran] ?? "/dashboard"}
-        contributorTitle="Contributeur EasyPhysio"
+        contributorTitle={t("contributorTitle")}
       />
       <div data-phone-pad="" className="relative min-w-0 flex-1 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))]">{screen}</div>
     </div>

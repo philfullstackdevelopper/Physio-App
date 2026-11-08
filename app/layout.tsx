@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
-import { easyPhysioFR } from "@/lib/clerk/localization";
+import { easyPhysioEN, easyPhysioFR } from "@/lib/clerk/localization";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import CookieBanner from "@/components/CookieBanner";
+import type { Locale } from "@/i18n/locales";
 import { siteConfig } from "@/lib/site";
 import AppBridge from "@/components/AppBridge";
 import { appStoreId } from "@/lib/app/storeLinks";
@@ -28,28 +31,37 @@ const brandFont = Plus_Jakarta_Sans({
   weight: ["500", "800"],
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
-  title: {
-    default: `${siteConfig.name}, suivi d'exercices de rééducation`,
-    template: `%s · ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  openGraph: {
-    type: "website",
-    locale: "fr_FR",
-    url: siteConfig.url,
-    siteName: siteConfig.name,
-    title: `${siteConfig.name} · ${siteConfig.tagline}`,
-    description: siteConfig.description,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${siteConfig.name} · ${siteConfig.tagline}`,
-    description: siteConfig.description,
-  },
-  ...(iosAppId ? { itunes: { appId: iosAppId } } : {}),
-};
+// Pack de textes Clerk (connexion, création de compte) pour chaque langue.
+const CLERK_LOCALIZATION = { fr: easyPhysioFR, en: easyPhysioEN } satisfies Record<Locale, unknown>;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations("common.site");
+  const tagline = t("tagline");
+  const description = t("description");
+  return {
+    metadataBase: new URL(siteConfig.url),
+    title: {
+      default: `${siteConfig.name}, ${t("titleSuffix")}`,
+      template: `%s · ${siteConfig.name}`,
+    },
+    description,
+    openGraph: {
+      type: "website",
+      locale: locale === "en" ? "en_GB" : "fr_FR",
+      url: siteConfig.url,
+      siteName: siteConfig.name,
+      title: `${siteConfig.name} · ${tagline}`,
+      description,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${siteConfig.name} · ${tagline}`,
+      description,
+    },
+    ...(iosAppId ? { itunes: { appId: iosAppId } } : {}),
+  };
+}
 
 // viewport-fit: cover lets the patient bottom nav (PatientNav) pad itself
 // with env(safe-area-inset-bottom) so it clears the iOS home indicator —
@@ -60,14 +72,15 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = (await getLocale()) as Locale;
   return (
     <html
-      lang="fr"
+      lang={locale}
       className={`${instrumentSans.variable} ${brandFont.variable} h-full antialiased`}
       // Browser extensions (e.g. LanguageTool) add attributes to <html> before React loads.
       suppressHydrationWarning
@@ -76,12 +89,14 @@ export default function RootLayout({
           data-new-gr-c-s-check-loaded. N'agit que sur les attributs de
           <body> lui-même, pas sur ses enfants. */}
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <ClerkProvider localization={easyPhysioFR}>
-          {children}
-          {/* Appli mobile : notifications (ne fait rien dans un navigateur). */}
-          <AppBridge />
-        </ClerkProvider>
-        <CookieBanner />
+        <NextIntlClientProvider>
+          <ClerkProvider localization={CLERK_LOCALIZATION[locale] ?? easyPhysioFR}>
+            {children}
+            {/* Appli mobile : notifications (ne fait rien dans un navigateur). */}
+            <AppBridge />
+          </ClerkProvider>
+          <CookieBanner />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type { PainSeries } from "@/lib/dashboard/painHistory";
 
 // Courbe SVG maison (pas de librairie) : 0–10 en Y, 30 jours en X.
@@ -15,14 +16,15 @@ export default function PainHistoryChart({
   height?: number;
   className?: string;
 }) {
+  const tr = useTranslations("patient.painChart");
   const H = height;
   const py = (y: number) => PAD_T + (1 - y / 10) * (H - PAD_T - PAD_B);
   if (series.points.length === 0) {
-    return <p className="flex h-32 items-center justify-center text-sm text-muted">Pas encore de ressenti transmis.</p>;
+    return <p className="flex h-32 items-center justify-center text-sm text-muted">{tr("empty")}</p>;
   }
   const path = series.points.map((p, i) => `${i === 0 ? "M" : "L"}${px(p.x).toFixed(1)},${py(p.y).toFixed(1)}`).join(" ");
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className={className} role="img" aria-label="Historique de douleur sur 30 jours">
+    <svg viewBox={`0 0 ${W} ${H}`} className={className} role="img" aria-label={tr("aria")}>
       {(H > 200 ? [0, 2, 4, 6, 8, 10] : [0, 5, 10]).map((v) => (
         <g key={v} className="text-line">
           <line x1={PAD_L} x2={W - PAD_R} y1={py(v)} y2={py(v)} stroke="currentColor" strokeWidth={1} />
@@ -36,7 +38,7 @@ export default function PainHistoryChart({
       {series.points.map((p, i) => (
         <circle key={i} cx={px(p.x)} cy={py(p.y)} r={2.5} fill="currentColor" className="text-danger">
           {/* Un seul nœud texte : plusieurs morceaux dans un <title> SVG faisaient échouer l'hydratation React. */}
-          <title>{`${p.dateLabel} — douleur ${p.score}/10`}</title>
+          <title>{tr("point", { date: p.dateLabel, score: p.score })}</title>
         </circle>
       ))}
     </svg>

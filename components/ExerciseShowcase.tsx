@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import LoopVideo from "@/components/LoopVideo";
 
 // Vitrine d'exercices de la landing : les EXÉCUTIONS FILMÉES par Jules
@@ -14,25 +15,25 @@ import LoopVideo from "@/components/LoopVideo";
 type ShowcaseExercise = {
   /** Nom du fichier dans public/videos-demo/ (sans extension). */
   clip: string;
-  /** Nom affiché. */
-  name: string;
-  /** Zone travaillée. */
-  zone: string;
+  /** Clé du nom affiché et de la zone travaillée (exercise.showcase.<id>). */
+  id: string;
   /** Filmée à la verticale (en salle). */
   tall?: boolean;
 };
 
 // Alternance large / haute : le bandeau garde un rythme régulier.
 const EXERCISES: ShowcaseExercise[] = [
-  { clip: "glute-bridge", name: "Pont fessier", zone: "Lombaires" },
-  { clip: "salle-v-pallof-press", name: "Pallof press", zone: "Tronc", tall: true },
-  { clip: "banded-clamshell", name: "Coquillage avec élastique", zone: "Hanche" },
-  { clip: "salle-v-band-shoulder-external-rotation", name: "Rotation externe d'épaule", zone: "Épaule", tall: true },
-  { clip: "straight-leg-raise", name: "Élévation jambe tendue", zone: "Genou" },
-  { clip: "salle-v-y-balance", name: "Équilibre en Y", zone: "Genou / cheville", tall: true },
+  { clip: "glute-bridge", id: "gluteBridge" },
+  { clip: "salle-v-pallof-press", id: "pallofPress", tall: true },
+  { clip: "banded-clamshell", id: "clamshell" },
+  { clip: "salle-v-band-shoulder-external-rotation", id: "shoulderRotation", tall: true },
+  { clip: "straight-leg-raise", id: "straightLegRaise" },
+  { clip: "salle-v-y-balance", id: "yBalance", tall: true },
 ];
 
 function Tile({ ex, copy }: { ex: ShowcaseExercise; copy: boolean }) {
+  const t = useTranslations("exercise.showcase");
+  const name = t(`${ex.id}.name`);
   return (
     // pr-4 plutôt qu'un gap : les deux moitiés du bandeau ont ainsi
     // exactement la même largeur, et la boucle ne saute pas.
@@ -41,12 +42,12 @@ function Tile({ ex, copy }: { ex: ShowcaseExercise; copy: boolean }) {
         <LoopVideo
           src={`/videos-demo/${ex.clip}.mp4`}
           poster={`/videos-demo/${ex.clip}.jpg`}
-          label={`Démonstration filmée : ${ex.name}`}
+          label={t("label", { name })}
           className={`block h-full object-cover ${ex.tall ? "aspect-[9/16]" : "aspect-video"}`}
         />
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2 pt-6 text-white">
-          <p className="text-sm font-semibold leading-tight">{ex.name}</p>
-          <p className="text-[11px] font-medium text-white/75">{ex.zone}</p>
+          <p className="text-sm font-semibold leading-tight">{name}</p>
+          <p className="text-[11px] font-medium text-white/75">{t(`${ex.id}.zone`)}</p>
         </div>
       </div>
     </li>

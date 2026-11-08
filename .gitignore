@@ -70,3 +70,4 @@ docs/prospection/
 docs/test-illustrations-ia/codex/*
 !docs/test-illustrations-ia/codex/outils/
 docs/test-illustrations-ia/codex/outils/node_modules/
+.i18n-work/

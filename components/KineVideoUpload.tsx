@@ -8,8 +8,12 @@
 
 import { useRef, useState } from "react";
 import { Camera, Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { getKineVideoUploadUrl, saveKineExerciseVideo } from "@/app/dashboard/exercises/actions";
 import { KINE_VIDEO_MAX_MB, KINE_VIDEO_TYPES } from "@/lib/exercise/kineExercises";
+
+/** Traducteur « exercise.kineVideo » (useTranslations) ; absent = français. */
+type Tr = (key: string, values?: Record<string, string | number>) => string;
 
 /** Envoie `file` puis l'attache à l'exercice. Lève une Error lisible. */
 export async function uploadKineVideo(
@@ -17,6 +21,7 @@ export async function uploadKineVideo(
   file: File,
   consent: boolean,
   onProgress?: (percent: number) => void,
+  t?: Tr,
 ): Promise<void> {
   const type = videoType(file);
   const target = await getKineVideoUploadUrl(exerciseId, type, file.size);
@@ -28,8 +33,8 @@ export async function uploadKineVideo(
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100));
     };
-    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Envoi refusé (${xhr.status}).`)));
-    xhr.onerror = () => reject(new Error("Envoi interrompu. Vérifiez votre connexion et réessayez."));
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(t ? t("refused", { status: xhr.status }) : `Envoi refusé (${xhr.status}).`)));
+    xhr.onerror = () => reject(new Error(t ? t("interrupted") : "Envoi interrompu. Vérifiez votre connexion et réessayez."));
     xhr.send(file);
   });
   const saved = await saveKineExerciseVideo(exerciseId, target.key, consent);
@@ -46,9 +51,10 @@ export function videoType(file: File): string {
 }
 
 /** Le fichier choisi est-il acceptable ? Renvoie le message d'erreur, sinon null. */
-export function checkVideoFile(file: File): string | null {
-  if (!KINE_VIDEO_TYPES[videoType(file)]) return "Format non pris en charge : choisissez une vidéo MP4 ou MOV.";
+export function checkVideoFile(file: File, t?: Tr): string | null {
+  if (!KINE_VIDEO_TYPES[videoType(file)]) return t ? t("badFormat") : "Format non pris en charge : choisissez une vidéo MP4 ou MOV.";
   if (file.size > KINE_VIDEO_MAX_MB * 1024 * 1024) {
+    if (t) return t("tooBig", { size: Math.round(file.size / 1024 / 1024), max: KINE_VIDEO_MAX_MB });
     return `Vidéo trop lourde (${Math.round(file.size / 1024 / 1024)} Mo, ${KINE_VIDEO_MAX_MB} Mo au plus). Raccourcissez-la à 20 secondes environ.`;
   }
   return null;
@@ -57,17 +63,16 @@ export function checkVideoFile(file: File): string | null {
 /** Conseils de tournage (Philippe, 2026-11-04 : « inciter à garder la caméra
  *  bien stable et fixe »). */
 export function FilmingTips({ compact = false }: { compact?: boolean }) {
+  const t = useTranslations("exercise.kineVideo");
+  const b = (c: React.ReactNode) => <b>{c}</b>;
   return (
     <div className="rounded-xl border border-brand/30 bg-brand-soft p-3 text-sm text-ink">
-      <p className="font-semibold text-brand">Pour une vidéo nette</p>
+      <p className="font-semibold text-brand">{t("tipsTitle")}</p>
       <ul className={`mt-1.5 list-disc space-y-0.5 pl-5 ${compact ? "text-xs" : "text-[13px]"}`}>
-        <li>
-          <b>Posez le téléphone</b> : sur un trépied, une étagère ou une pile de livres. Ne le tenez pas à la main, et ne
-          bougez pas la caméra pendant l&apos;exercice.
-        </li>
-        <li>Cadrez tout le corps, avec un peu de marge. À l&apos;horizontale pour un exercice au sol, à la verticale debout.</li>
-        <li>Une pièce bien éclairée, un fond dégagé, 2 ou 3 répétitions lentes : 20 secondes suffisent.</li>
-        <li>Filmez-vous ou un collègue, jamais votre patient.</li>
+        <li>{t.rich("tip1", { b })}</li>
+        <li>{t("tip2")}</li>
+        <li>{t("tip3")}</li>
+        <li>{t("tip4")}</li>
       </ul>
     </div>
   );
@@ -83,6 +88,7 @@ export default function KineVideoUpload({
   hasVideo: boolean;
   onUploaded?: () => void;
 }) {
+  const t = useTranslations("exercise.kineVideo");
   const [file, setFile] = useState<File | null>(null);
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -96,7 +102,7 @@ export default function KineVideoUpload({
     setError(null);
     setDone(false);
     if (!f) return;
-    const problem = checkVideoFile(f);
+    const problem = checkVideoFile(f, t);
     if (problem) {
       setError(problem);
       return;
@@ -109,13 +115,13 @@ export default function KineVideoUpload({
     setBusy(true);
     setError(null);
     try {
-      await uploadKineVideo(exerciseId, file, consent, setProgress);
+      await uploadKineVideo(exerciseId, file, consent, setProgress, t);
       setDone(true);
       setFile(null);
       setConsent(false);
       onUploaded?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Envoi impossible.");
+      setError(e instanceof Error ? e.message : t("sendImpossible"));
     } finally {
       setBusy(false);
       setProgress(0);
@@ -132,7 +138,7 @@ export default function KineVideoUpload({
             className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark"
           >
             <Camera className="h-4 w-4" strokeWidth={2} />
-            {hasVideo ? "Refilmer" : "Filmer l'exercice"}
+            {hasVideo ? t("refilm") : t("film")}
           </button>
           <button
             type="button"
@@ -140,7 +146,7 @@ export default function KineVideoUpload({
             className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink hover:bg-app-bg"
           >
             <Upload className="h-4 w-4" strokeWidth={2} />
-            {hasVideo ? "Remplacer la vidéo" : "Choisir une vidéo"}
+            {hasVideo ? t("replace") : t("choose")}
           </button>
           <input ref={cameraRef} type="file" accept="video/*" capture="environment" className="hidden" onChange={(e) => choose(e.target.files?.[0])} />
           <input ref={pickRef} type="file" accept="video/mp4,video/quicktime,video/webm" className="hidden" onChange={(e) => choose(e.target.files?.[0])} />
@@ -148,12 +154,12 @@ export default function KineVideoUpload({
       ) : (
         <div className="flex flex-col gap-2">
           <p className="text-sm text-ink">
-            Vidéo choisie : <b>{file.name}</b> ({Math.max(1, Math.round(file.size / 1024 / 1024))} Mo)
+            {t.rich("chosen", { name: file.name, size: Math.max(1, Math.round(file.size / 1024 / 1024)), b: (c) => <b>{c}</b> })}
           </p>
           <label className="flex items-start gap-2 text-sm text-ink">
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 h-4 w-4 accent-brand" />
             <span>
-              <b>La personne filmée a donné son accord</b> pour que cette vidéo soit montrée aux patients.
+              {t.rich("consent", { b: (c) => <b>{c}</b> })}
             </span>
           </label>
           <div className="flex flex-wrap gap-2">
@@ -163,15 +169,15 @@ export default function KineVideoUpload({
               onClick={send}
               className="rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
             >
-              {busy ? `Envoi… ${progress} %` : "Envoyer la vidéo"}
+              {busy ? t("sendingProgress", { progress }) : t("send")}
             </button>
             <button type="button" disabled={busy} onClick={() => setFile(null)} className="rounded-lg px-3 py-2 text-sm text-muted hover:text-ink">
-              Annuler
+              {t("cancel")}
             </button>
           </div>
         </div>
       )}
-      {done && <p className="text-sm text-ok">Vidéo envoyée. Elle apparaîtra à la prochaine ouverture de la fiche.</p>}
+      {done && <p className="text-sm text-ok">{t("sent")}</p>}
       {error && <p className="rounded-lg bg-danger-soft p-2 text-sm text-danger">{error}</p>}
       <FilmingTips compact />
     </div>

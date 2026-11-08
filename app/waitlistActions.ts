@@ -1,5 +1,6 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { getPool } from "@/lib/db/pool";
 
 // Liste d'attente du lancement (Philippe, 2026-10-12) : formulaire public de
@@ -17,20 +18,21 @@ export async function joinWaitlist(_prev: WaitlistState, formData: FormData): Pr
   // répond « merci » sans rien enregistrer, pour ne pas l'aider à s'adapter.
   if (String(formData.get("website") ?? "").trim() !== "") return { ok: true, error: null };
 
+  const t = await getTranslations("home.waitlist.errors");
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const role = formData.get("role") === "patient" ? "patient" : "kine";
   if (!EMAIL.test(email) || email.length > 254) {
-    return { ok: false, error: "Cette adresse e-mail ne semble pas valide." };
+    return { ok: false, error: t("invalidEmail") };
   }
 
   try {
     const { rows } = await getPool().query<{ r: string }>("select internal.waitlist_add($1, $2) as r", [email, role]);
     const r = rows[0]?.r;
     if (r === "ok") return { ok: true, error: null };
-    if (r === "invalid") return { ok: false, error: "Cette adresse e-mail ne semble pas valide." };
-    return { ok: false, error: "Trop d'inscriptions en ce moment. Réessayez dans une heure." };
+    if (r === "invalid") return { ok: false, error: t("invalidEmail") };
+    return { ok: false, error: t("tooMany") };
   } catch (e) {
     console.error("[waitlist] inscription impossible", e);
-    return { ok: false, error: "L'inscription n'a pas pu être enregistrée. Réessayez dans un instant." };
+    return { ok: false, error: t("failed") };
   }
 }

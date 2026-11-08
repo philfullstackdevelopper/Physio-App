@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ChevronRight } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import type { HistorySlot, HistoryWeek } from "@/lib/patient/historyWeeks";
@@ -16,23 +17,26 @@ import type { HistorySlot, HistoryWeek } from "@/lib/patient/historyWeeks";
 // Une page = un écran (audit des formats, 2026-10-10) : le titre reste en
 // place et seule la liste défile.
 
-const SLOT_STYLE: Record<HistorySlot["status"], { box: string; img: string; label: string }> = {
-  done: { box: "bg-blue-50 ring-blue-100", img: "", label: "Séance faite" },
+const SLOT_STYLE: Record<HistorySlot["status"], { box: string; img: string; label: "slotDone" | "slotMissed" | "slotTodo" }> = {
+  done: { box: "bg-blue-50 ring-blue-100", img: "", label: "slotDone" },
   // Dessins bleus passés au rouge par un filtre de couleur.
-  missed: { box: "bg-red-50 ring-red-100", img: "[filter:hue-rotate(140deg)_saturate(1.8)]", label: "Séance manquée" },
-  todo: { box: "bg-slate-50 ring-slate-100", img: "grayscale opacity-40", label: "Séance à faire" },
+  missed: { box: "bg-red-50 ring-red-100", img: "[filter:hue-rotate(140deg)_saturate(1.8)]", label: "slotMissed" },
+  todo: { box: "bg-slate-50 ring-slate-100", img: "grayscale opacity-40", label: "slotTodo" },
 };
 
 function WeekStrip({ slots }: { slots: HistorySlot[] }) {
+  const t = useTranslations("patient.history");
+  const tc = useTranslations("patient.common");
   return (
     <div className="flex h-16 items-center gap-2 overflow-x-auto rounded-xl [scrollbar-width:none] max-sm:gap-1.5 max-sm:px-2 border border-slate-100 bg-white px-2.5 shadow-sm">
       {slots.map((slot, i) => {
         const s = SLOT_STYLE[slot.status];
+        const title = t("slotTitle", { label: t(s.label), name: slot.workoutName });
         return (
           <div
             key={i}
-            title={`${s.label} : ${slot.workoutName}`}
-            aria-label={`${s.label} : ${slot.workoutName}`}
+            title={title}
+            aria-label={title}
             className={`flex h-12 shrink-0 items-center gap-0.5 rounded-lg px-1 ring-1 max-sm:h-10 max-sm:gap-0 ${s.box}`}
           >
             {slot.exercises.length > 0 ? (
@@ -40,7 +44,7 @@ function WeekStrip({ slots }: { slots: HistorySlot[] }) {
                 <ExerciseIllustration key={j} name={name} animate={false} className={`h-10 w-10 text-blue-600 max-sm:h-7 max-sm:w-7 ${s.img}`} />
               ))
             ) : (
-              <span className="px-2 text-xs text-slate-400">Séance</span>
+              <span className="px-2 text-xs text-slate-400">{tc("session")}</span>
             )}
           </div>
         );
@@ -50,17 +54,18 @@ function WeekStrip({ slots }: { slots: HistorySlot[] }) {
 }
 
 function Legend() {
+  const t = useTranslations("patient.history");
   const dot = "inline-block h-2.5 w-2.5 rounded-full";
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
       <span className="flex items-center gap-1.5">
-        <span className={`${dot} bg-blue-500`} /> Fait
+        <span className={`${dot} bg-blue-500`} /> {t("legendDone")}
       </span>
       <span className="flex items-center gap-1.5">
-        <span className={`${dot} bg-red-500`} /> Manqué
+        <span className={`${dot} bg-red-500`} /> {t("legendMissed")}
       </span>
       <span className="flex items-center gap-1.5">
-        <span className={`${dot} bg-slate-300`} /> À faire
+        <span className={`${dot} bg-slate-300`} /> {t("legendTodo")}
       </span>
     </div>
   );
@@ -72,21 +77,22 @@ export default function HistoriqueView({
   /** Semaines du plus récent au plus ancien (lib/patient/historyWeeks.ts). */
   weeks: HistoryWeek[];
 }) {
+  const t = useTranslations("patient.history");
   const empty = weeks.length === 0;
   return (
     <main className="flex flex-col p-6 max-sm:h-[calc(100dvh-var(--phone-chrome))] max-sm:p-4 sm:h-dvh sm:p-8 short:sm:py-4">
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h1 className="font-display text-3xl font-semibold text-slate-900 short:text-2xl">Historique</h1>
-            <p className="mt-1 text-sm text-slate-500">Vos séances, semaine par semaine.</p>
+            <h1 className="font-display text-3xl font-semibold text-slate-900 short:text-2xl">{t("title")}</h1>
+            <p className="mt-1 text-sm text-slate-500">{t("subtitle")}</p>
           </div>
           {!empty && <Legend />}
         </div>
 
         {empty ? (
           <div className="mt-8 rounded-xl border border-slate-100 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
-            Aucune séance terminée pour le moment.
+            {t("empty")}
           </div>
         ) : (
           <div className="-mx-1 mt-5 min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-1 pb-1 short:mt-3 short:space-y-4">
@@ -98,7 +104,7 @@ export default function HistoriqueView({
                     <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                       {w.label}
                       {w.current && (
-                        <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-semibold text-white">Cette semaine</span>
+                        <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-semibold text-white">{t("thisWeek")}</span>
                       )}
                     </h2>
                     {w.target != null && (
@@ -107,7 +113,7 @@ export default function HistoriqueView({
                           complete ? "bg-emerald-50 text-emerald-700" : w.current ? "bg-slate-100 text-slate-600" : "bg-red-50 text-red-700"
                         }`}
                       >
-                        {w.done}/{w.target} séance{w.target > 1 ? "s" : ""}
+                        {t("doneOfTarget", { done: w.done, target: w.target })}
                       </span>
                     )}
                   </div>

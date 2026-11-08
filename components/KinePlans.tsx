@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { HandNote } from "@/components/HandDrawn";
@@ -12,9 +13,10 @@ import {
   LOWEST_MONTHLY_TOTAL_CENTS,
   LOWEST_PLATFORM_CENTS,
   TRIAL_DAYS,
-  eurosFR,
 } from "@/lib/billing/patientPlans";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 
 // « Et moi, comment je suis payé ? » — modèle définitif (Philippe, 2026-11-04 ;
 // montants : lib/billing/patientPlans.ts). EasyPhysio est GRATUIT pour le kiné.
@@ -60,7 +62,13 @@ function Choice<T extends string | number>({
   );
 }
 
+// Textes : messages/<langue>/home.json (home.plans).
 export default function KinePlans() {
+  const t = useTranslations("home.plans");
+  const tag = intlTag(useLocale() as Locale);
+  // fr-FR : identique à eurosFR de patientPlans.
+  const euros = (cents: number) =>
+    (cents / 100).toLocaleString(tag, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const [patients, setPatients] = useState<(typeof PATIENT_CHOICES)[number]>(10);
   const href = SIGNUPS_OPEN ? "/signup/kine" : "#liste-attente";
 
@@ -69,48 +77,51 @@ export default function KinePlans() {
       <div className="grid gap-3 rounded-3xl border border-slate-200/70 bg-white/60 p-3 shadow-sm sm:grid-cols-[1.1fr_1fr]">
         {/* Le choix et le partage des 9,99 € */}
         <div className="flex flex-col justify-center gap-5 rounded-2xl bg-blue-50/60 p-6 max-sm:gap-4 max-sm:p-4 sm:short:gap-4 sm:short:p-5">
-          <Choice label="Patients suivis" options={PATIENT_CHOICES} value={patients} onChange={setPatients} render={(n) => String(n)} />
+          <Choice label={t("patientsFollowed")} options={PATIENT_CHOICES} value={patients} onChange={setPatients} render={(n) => String(n)} />
           <div className="text-sm leading-snug text-slate-600">
             <p>
-              Chaque patient paie de {eurosFR(LOWEST_MONTHLY_TOTAL_CENTS)} à {eurosFR(HIGHEST_MONTHLY_TOTAL_CENTS)}&nbsp;€ par mois selon son engagement, après {TRIAL_DAYS} jours offerts, en deux parts&nbsp;:
+              {t("patientPays", {
+                low: euros(LOWEST_MONTHLY_TOTAL_CENTS),
+                high: euros(HIGHEST_MONTHLY_TOTAL_CENTS),
+                trialDays: TRIAL_DAYS,
+              })}
             </p>
             <ul className="mt-2 space-y-1">
               <li className="flex justify-between gap-3">
-                <span>Votre programme, versé directement à vous</span>
-                <span className="font-semibold tabular-nums text-slate-900">{eurosFR(KINE_FOLLOW_UP_CENTS)}&nbsp;€</span>
+                <span>{t("kineShare")}</span>
+                <span className="font-semibold tabular-nums text-slate-900">{t("amount", { value: euros(KINE_FOLLOW_UP_CENTS) })}</span>
               </li>
               <li className="flex justify-between gap-3">
-                <span>L&apos;accès à l&apos;appli, payé à EasyPhysio</span>
-                <span className="font-semibold tabular-nums text-slate-900">{eurosFR(LOWEST_PLATFORM_CENTS)} à {eurosFR(HIGHEST_PLATFORM_CENTS)}&nbsp;€</span>
+                <span>{t("platformShare")}</span>
+                <span className="font-semibold tabular-nums text-slate-900">{t("range", { low: euros(LOWEST_PLATFORM_CENTS), high: euros(HIGHEST_PLATFORM_CENTS) })}</span>
               </li>
             </ul>
-            <p className="mt-2 text-xs text-slate-500">Vos honoraires ne sont prélevés que les mois où vous mettez à jour son programme.</p>
+            <p className="mt-2 text-xs text-slate-500">{t("feesNote")}</p>
           </div>
         </div>
 
         {/* Ce que le kiné touche */}
         <div className="relative flex flex-col justify-center rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm max-sm:p-4 sm:short:p-5">
           <HandNote direction="down" className="absolute -right-3 -top-7 rotate-3 max-lg:hidden">
-            et l&apos;appli est gratuite
+            {t("handNote")}
           </HandNote>
-          <p className="text-sm font-medium text-slate-500">Pour vous, chaque mois</p>
+          <p className="text-sm font-medium text-slate-500">{t("forYou")}</p>
           <p className="flex items-baseline gap-2">
             <span className="font-display text-5xl font-semibold tracking-tight tabular-nums text-slate-900 max-sm:text-4xl" aria-live="polite">
-              {eurosFR(KINE_NET_CENTS * patients)}&nbsp;€
+              {t("amount", { value: euros(KINE_NET_CENTS * patients) })}
             </span>
           </p>
           <p className="mt-2 text-sm text-slate-600">
-            {patients} patients × {eurosFR(KINE_NET_CENTS)}&nbsp;€ ({eurosFR(KINE_FOLLOW_UP_CENTS)}&nbsp;€ moins les frais de carte). EasyPhysio ne prend rien sur vos
-            honoraires.
+            {t("calc", { patients, net: euros(KINE_NET_CENTS), fee: euros(KINE_FOLLOW_UP_CENTS) })}
           </p>
           <Link
             href={href}
             className="mt-5 inline-flex w-fit items-center gap-1.5 rounded-full bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.97] sm:short:mt-4"
           >
-            {SIGNUPS_OPEN ? "Créer mon compte gratuit" : "Rejoindre la liste d'attente"}
+            {SIGNUPS_OPEN ? t("createFreeAccount") : t("joinWaitlist")}
             <ArrowRight className="h-4 w-4" strokeWidth={2} />
           </Link>
-          <p className="mt-3 text-xs text-slate-500">Inscription gratuite, sans engagement, patients illimités. Vous ne payez jamais EasyPhysio.</p>
+          <p className="mt-3 text-xs text-slate-500">{t("footnote")}</p>
         </div>
       </div>
     </div>

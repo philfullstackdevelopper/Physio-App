@@ -101,11 +101,14 @@ export function computeAdherence({ completedAt, assignments, now = new Date() }:
   return { pct, done, expected };
 }
 
-export function adherenceLabel(pct: number | null): "Bonne" | "Moyenne" | "Faible" | null {
+/** `t` = traducteur « exercise.adherence » (next-intl) ; absent = français. */
+export function adherenceLabel(pct: number | null): "Bonne" | "Moyenne" | "Faible" | null;
+export function adherenceLabel(pct: number | null, t: (key: string) => string): string | null;
+export function adherenceLabel(pct: number | null, t?: (key: string) => string): string | null {
   if (pct === null) return null;
-  if (pct >= 80) return "Bonne";
-  if (pct >= 50) return "Moyenne";
-  return "Faible";
+  if (pct >= 80) return t ? t("good") : "Bonne";
+  if (pct >= 50) return t ? t("average") : "Moyenne";
+  return t ? t("low") : "Faible";
 }
 
 export function adherenceTone(pct: number | null): "ok" | "warn" | "danger" | "muted" {

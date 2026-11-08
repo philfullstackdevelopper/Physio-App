@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import WavingHand from "@/components/WavingHand";
 import WeekProgramme, { type SessionDetail } from "@/components/WeekProgramme";
@@ -49,6 +50,9 @@ export default function PatientHomeView({
   currentWeekNumber,
   pending,
 }: PatientHomeViewProps) {
+  const t = useTranslations("patient.home");
+  const tb = useTranslations("patient.homeBrake");
+  const tc = useTranslations("patient.common");
   return (
     /* Téléphone : la page occupe exactement l'écran au-dessus de la barre
        d'onglets, et la frise prend toute la place restante (Philippe,
@@ -72,7 +76,7 @@ export default function PatientHomeView({
           <div className="group flex items-center sm:rounded-2xl sm:border sm:border-line sm:bg-surface sm:px-5 sm:py-4 sm:shadow-md">
             <div className="flex min-w-0 items-baseline gap-2 sm:block">
               <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
-                <span className="truncate">Bonjour {firstName}</span>
+                <span className="truncate">{t("hello", { name: firstName })}</span>
                 <WavingHand className="h-7 w-7 shrink-0 sm:h-9 sm:w-9" />
               </h1>
               <p className="text-xs capitalize text-muted max-sm:truncate sm:mt-0.5 sm:text-sm">{today}</p>
@@ -101,7 +105,7 @@ export default function PatientHomeView({
               {week > 0 && (
                 <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/75">
                   {programmeCard.done && <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />}
-                  Semaine {week}
+                  {tc("weekN", { n: week })}
                 </p>
               )}
               <p className="mt-0.5 text-base font-semibold text-white">{programmeCard.title}</p>
@@ -126,7 +130,7 @@ export default function PatientHomeView({
                       ))}
                     </div>
                     <span className="shrink-0 text-xs font-semibold text-white">
-                      {Math.min(weekCount, target)}/{target} séance{target > 1 ? "s" : ""}
+                      {t("weekDots", { done: Math.min(weekCount, target), target })}
                     </span>
                   </div>
                 )}
@@ -152,20 +156,18 @@ export default function PatientHomeView({
         {(decision.concerning || decision.held) &&
           (decision.held && !decision.concerning ? (
             <div className="rounded-2xl border border-line bg-surface p-5 pl-4 shadow-sm border-l-[3px] border-l-brand">
-              <p className="font-medium text-ink">Vous allez mieux</p>
+              <p className="font-medium text-ink">{tb("betterTitle")}</p>
               <p className="mt-1 text-sm text-muted">
-                Vos retours s&apos;améliorent. Votre kiné les voit et fera évoluer votre programme
-                à votre rythme.
+                {tb("betterText")}
               </p>
             </div>
           ) : (
             <div className="rounded-2xl border border-line bg-surface p-5 pl-4 shadow-sm border-l-[3px] border-l-warn">
               <p className="font-medium text-ink">
-                Vos derniers retours ont été transmis
+                {tb("concernTitle")}
               </p>
               <p className="mt-1 text-sm text-muted">
-                Votre kiné voit ce que vous ressentez et pourra adapter votre programme. D&apos;ici là,
-                allez-y doucement, sans forcer — et parlez-lui si la douleur persiste.
+                {tb("concernText")}
               </p>
             </div>
           ))}

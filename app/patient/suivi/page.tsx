@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { isLegacySubscription, isPlatformSubscription, patientMustSubscribe, subscriptionNeedsRefresh, type SubscriptionRow } from "@/lib/billing/patientPlans";
@@ -65,12 +66,13 @@ export default async function SuiviPage({
     subscription: (sub as unknown as SubscriptionRow | null) ?? null,
   });
 
+  const t = await getTranslations("billing.suivi");
   // Appli mobile : ni prix ni paiement (règles d'Apple / Google), seulement l'état de l'accès.
   if (await nativeAppPlatform()) {
     return (
       <AppAccessNotice
         active={!required}
-        kineName={(kine?.full_name as string | null) ?? "Votre kiné"}
+        kineName={(kine?.full_name as string | null) ?? t("kineFallbackCap")}
         until={endsAt}
       />
     );
@@ -79,7 +81,7 @@ export default async function SuiviPage({
   return (
     <SuiviView
       sp={sp}
-      kineName={(kine?.full_name as string | null) ?? "votre kiné"}
+      kineName={(kine?.full_name as string | null) ?? t("kineFallback")}
       kineReady={kineReady}
       required={required}
       programmeReady={(assignedCount ?? 0) > 0}

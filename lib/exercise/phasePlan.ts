@@ -27,6 +27,12 @@ export const PHASE_PASS: Record<Stage, string> = {
   return_to_sport: "Tests de saut et de course validés par le kiné",
 };
 
+/** PHASE_PASS dans la langue de l'interface (`t` = traducteur
+ *  « exercise.phasePass », fourni par l'appelant ; absent = français). */
+export function phasePass(stage: Stage, t?: (key: string) => string): string {
+  return t ? t(stage) : PHASE_PASS[stage];
+}
+
 export const PHASE_NUMBER: Record<Stage, number> = { acute: 1, subacute: 2, recovery: 3, return_to_sport: 4 };
 
 export function isStage(s: string | null | undefined): s is Stage {

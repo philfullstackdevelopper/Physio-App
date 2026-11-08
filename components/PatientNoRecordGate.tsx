@@ -1,5 +1,6 @@
 import { AlertCircle, LogOut, Trash2 } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
+import { getTranslations } from "next-intl/server";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 import SubmitButton from "@/components/SubmitButton";
 import { deleteOrphanIdentity } from "@/app/patient/compte/actions";
@@ -15,7 +16,9 @@ import { deleteOrphanIdentity } from "@/app/patient/compte/actions";
 // Clerk account existed but no instructor had ever invited it, so
 // resolveAppUserId() minted a brand-new app_users row with no matching
 // patients row to go with it).
-export default function PatientNoRecordGate() {
+export default async function PatientNoRecordGate() {
+  const t = await getTranslations("patient.noRecord");
+  const tc = await getTranslations("patient.common");
   return (
     <main className="relative min-h-screen bg-[#f6f8fd]">
       <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col lg:flex-row lg:items-stretch">
@@ -26,13 +29,10 @@ export default function PatientNoRecordGate() {
             </span>
 
             <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-              <span className="text-blue-700">EasyPhysio ·</span>{" "}Compte non associé à un kinésithérapeute
+              <span className="text-blue-700">EasyPhysio ·</span>{" "}{t("title")}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
-              Nous ne retrouvons aucun profil patient lié à ce compte. EasyPhysio est réservé aux
-              patients invités par leur kinésithérapeute : si vous pensez avoir reçu une invitation,
-              vérifiez que vous êtes connecté·e avec la même adresse e-mail, ou contactez directement
-              votre praticien pour qu&rsquo;il vérifie votre inscription.
+              {t("text")}
             </p>
 
             {/* Compte supprimé (par le patient ou par son kiné) dont l'identifiant
@@ -40,18 +40,17 @@ export default function PatientNoRecordGate() {
                 pour pouvoir être invité·e par un autre kinésithérapeute
                 (Philippe, 2026-10-10). N'agit que sur l'identifiant connecté. */}
             <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-sm font-medium text-slate-900">Votre ancien compte a été supprimé ?</p>
+              <p className="text-sm font-medium text-slate-900">{t("deletedTitle")}</p>
               <p className="mt-1 text-sm leading-relaxed text-slate-500">
-                Supprimez cet identifiant de connexion pour libérer votre adresse e-mail : un kinésithérapeute
-                pourra alors vous inviter à nouveau.
+                {t("deletedText")}
               </p>
               <form action={deleteOrphanIdentity} className="mt-3">
                 <SubmitButton
-                  pendingText="Suppression…"
+                  pendingText={t("deleting")}
                   className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700"
                 >
                   <Trash2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                  Supprimer cet identifiant
+                  {t("deleteLogin")}
                 </SubmitButton>
               </form>
             </div>
@@ -62,7 +61,7 @@ export default function PatientNoRecordGate() {
                 className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-slate-200 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
               >
                 <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                Se déconnecter
+                {tc("signOut")}
               </button>
             </SignOutButton>
           </div>

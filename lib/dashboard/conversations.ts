@@ -4,7 +4,7 @@
 // aperçu, compteur de non-lus (messages du patient jamais ouverts).
 
 import { initials } from "../format/initials.ts";
-import { STAGE_SHORT, type InjuryStage } from "../exercise/prescription.ts";
+import { stageShort, type InjuryStage } from "../exercise/prescription.ts";
 
 export interface ConversationRow {
   patientId: string;
@@ -23,14 +23,15 @@ export function buildConversations(input: {
   profiles: { id: string; injury_stage: string | null }[];
   conditions: { id: string; name: string }[];
   messages: { patient_id: string; body: string; created_at: string; sender: string; read_by_instructor_at: string | null }[];
-}): ConversationRow[] {
+}, tStageShort?: (key: string) => string): ConversationRow[] {
+  // `tStageShort` = traducteur de « exercise.stageShort » (facultatif).
   const conditionName = new Map(input.conditions.map((c) => [c.id, c.name]));
   const stageOf = new Map(input.profiles.map((p) => [p.id, p.injury_stage as InjuryStage | null]));
 
   const rows: ConversationRow[] = input.patients.map((p) => {
     const cond = p.condition_id ? (conditionName.get(p.condition_id) ?? null) : null;
     const stage = stageOf.get(p.id) ?? null;
-    const conditionLabel = cond ? (stage ? `${cond} · ${STAGE_SHORT[stage]}` : cond) : null;
+    const conditionLabel = cond ? (stage ? `${cond} · ${stageShort(stage, tStageShort)}` : cond) : null;
     const own = input.messages.filter((m) => m.patient_id === p.id);
     const last = own.reduce<(typeof own)[number] | null>(
       (best, m) => (!best || m.created_at > best.created_at ? m : best),

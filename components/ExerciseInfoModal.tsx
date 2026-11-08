@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { signExerciseVideo, signFilmedVideoByName } from "@/lib/storage/video-actions";
@@ -29,6 +30,7 @@ export default function ExerciseInfoModal({
   /** Contenu en bas de la fenêtre, ex. « Ajouter / Remplacer la vidéo » dans « Mes exercices ». */
   footer?: ReactNode;
 }) {
+  const t = useTranslations("exercise.info");
   // undefined = en cours de chargement ; null = lecture impossible.
   const [details, setDetails] = useState<Details | null | undefined>(undefined);
   const [videoFailed, setVideoFailed] = useState(false);
@@ -90,7 +92,7 @@ export default function ExerciseInfoModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={`Démonstration : ${exercise.name}`}
+        aria-label={t("dialogAria", { name: exercise.name })}
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[min(40rem,calc(100dvh-2rem))] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-surface shadow-xl [animation:popIn_0.25s_ease-out_both]"
       >
@@ -100,7 +102,7 @@ export default function ExerciseInfoModal({
             ref={closeRef}
             type="button"
             onClick={onClose}
-            aria-label="Fermer"
+            aria-label={t("close")}
             className="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted hover:bg-app-bg hover:text-ink"
           >
             <X className="h-4 w-4" strokeWidth={2} />
@@ -129,7 +131,7 @@ export default function ExerciseInfoModal({
             ) : details === undefined ? (
               // Pendant le chargement : pas de dessin qui clignote avant la vidéo
               // (Philippe, 2026-11-01 : le (i) doit montrer la vidéo).
-              <div className="flex h-56 w-full items-center justify-center text-sm text-muted">Chargement de la vidéo…</div>
+              <div className="flex h-56 w-full items-center justify-center text-sm text-muted">{t("loadingVideo")}</div>
             ) : (
               // Pas (encore) de vidéo pour cet exercice : le dessin, en secours.
               <ExerciseIllustration name={exercise.name} className="h-56 w-full p-4 text-brand" />
@@ -138,16 +140,16 @@ export default function ExerciseInfoModal({
 
           <div className="mt-4 text-sm leading-relaxed text-ink" aria-live="polite">
             {details === undefined ? (
-              <p className="text-muted">Chargement des consignes…</p>
+              <p className="text-muted">{t("loadingInstructions")}</p>
             ) : details === null ? (
-              <p className="text-muted">Les consignes de cet exercice n&apos;ont pas pu être chargées.</p>
+              <p className="text-muted">{t("instructionsFailed")}</p>
             ) : details.instructions ? (
               <>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted">Consignes</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t("instructions")}</p>
                 <p className="mt-1 whitespace-pre-line">{details.instructions}</p>
               </>
             ) : (
-              <p className="text-muted">Pas de consignes écrites pour cet exercice.</p>
+              <p className="text-muted">{t("noInstructions")}</p>
             )}
           </div>
           {footer && <div className="mt-4 border-t border-line pt-4">{footer}</div>}

@@ -27,6 +27,8 @@
 // contrôles lisent les mêmes chiffres. Ne jamais réécrire ces montants ailleurs.
 // =============================================================================
 
+import { INTL_TAGS, type Locale } from "../../i18n/locales.ts";
+
 /** Programme du kiné, centimes, par mois où il met à jour le programme (honoraires). */
 export const KINE_FOLLOW_UP_CENTS = 600;
 /** Essai gratuit à la première souscription (aucun prélèvement pendant ces jours-là). */
@@ -125,8 +127,9 @@ export function commitmentEnd(offer: PlatformOffer, paidStart: Date): string | n
   return d.toISOString();
 }
 
-export function eurosFR(cents: number): string {
-  return (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/** « 12,99 » (en : « 12.99 ») ; le nom reste « eurosFR », le montant reste en euros. */
+export function eurosFR(cents: number, locale: Locale = "fr"): string {
+  return (cents / 100).toLocaleString(INTL_TAGS[locale], { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // ---------------------------------------------------------------------------

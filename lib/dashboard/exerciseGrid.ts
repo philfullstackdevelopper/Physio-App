@@ -2,6 +2,10 @@
 // option C validée) : une ligne par exercice, une colonne par séance faite
 // (les 8 dernières), la douleur dans chaque case, « P » quand il a été passé,
 // et une tendance en bout de ligne.
+//
+// Langue : `t` = traducteur de « dashboard.lib », facultatif (français sinon).
+
+import type { Tr } from "../format/relativeDay.ts";
 
 export interface GridResultRow {
   workout_log_id: string;
@@ -26,7 +30,7 @@ export interface ExerciseGrid {
 /** Écart de douleur moyenne (fin − début) à partir duquel on parle de tendance. */
 export const TREND_DELTA = 1.5;
 
-export function buildExerciseGrid(results: GridResultRow[], logs: GridLog[], maxSessions = 8): ExerciseGrid {
+export function buildExerciseGrid(results: GridResultRow[], logs: GridLog[], maxSessions = 8, t?: Tr): ExerciseGrid {
   const withResults = new Set(results.map((r) => r.workout_log_id));
   const sessions = logs
     .filter((l) => withResults.has(l.id))
@@ -56,15 +60,15 @@ export function buildExerciseGrid(results: GridResultRow[], logs: GridLog[], max
     const skipped = cells.filter((c) => c?.status === "skipped").length;
     const pains = cells.map((c) => (c?.status === "done" ? c.pain : null)).filter((n): n is number => n != null);
     const firstSeen = cells.findIndex((c) => c != null);
-    let trend: ExerciseGrid["rows"][number]["trend"] = { label: "Stable", tone: "flat" };
-    if (skipped >= 2) trend = { label: `Passé ${skipped} fois`, tone: "skip" };
+    let trend: ExerciseGrid["rows"][number]["trend"] = { label: t ? t("grid.stable") : "Stable", tone: "flat" };
+    if (skipped >= 2) trend = { label: t ? t("grid.skipped", { count: skipped }) : `Passé ${skipped} fois`, tone: "skip" };
     else if (pains.length >= 3) {
       const half = Math.floor(pains.length / 2);
       const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
       const delta = avg(pains.slice(-half)) - avg(pains.slice(0, half));
-      if (delta >= TREND_DELTA) trend = { label: "En hausse", tone: "up" };
-      else if (delta <= -TREND_DELTA) trend = { label: "En baisse", tone: "down" };
-    } else if (firstSeen > 0) trend = { label: "Ajouté récemment", tone: "new" };
+      if (delta >= TREND_DELTA) trend = { label: t ? t("grid.up") : "En hausse", tone: "up" };
+      else if (delta <= -TREND_DELTA) trend = { label: t ? t("grid.down") : "En baisse", tone: "down" };
+    } else if (firstSeen > 0) trend = { label: t ? t("grid.new") : "Ajouté récemment", tone: "new" };
     return { name, cells, trend };
   });
 

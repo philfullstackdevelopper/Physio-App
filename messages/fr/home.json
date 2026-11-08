@@ -1,0 +1,208 @@
+{
+  "header": {
+    "nav": {
+      "practitioners": "Praticiens",
+      "comparison": "Comparaison",
+      "pricing": "Tarifs",
+      "faq": "FAQ"
+    },
+    "mySpace": "Mon espace",
+    "signIn": "Se connecter",
+    "createAccount": "Créer un compte",
+    "waitlist": "Liste d'attente",
+    "signingOut": "Déconnexion en cours",
+    "signOut": "Se déconnecter"
+  },
+  "footer": {
+    "tagline": "Les programmes de rééducation de votre kiné, suivis sérieusement à la maison.",
+    "hosting": "Vos données sont hébergées en France et ne sont jamais revendues.",
+    "changelog": "<b>Octobre 2026</b> · messagerie repensée, kinés vérifiés automatiquement par leur numéro RPPS.",
+    "columns": {
+      "product": "Produit",
+      "space": "Espace",
+      "legal": "Légal"
+    },
+    "links": {
+      "comparison": "Comparaison",
+      "pricing": "Tarifs",
+      "patientLogin": "Connexion patient",
+      "createKineAccount": "Créer un compte praticien",
+      "waitlist": "Liste d'attente",
+      "faq": "Questions fréquentes",
+      "cgu": "CGU",
+      "privacy": "Politique de confidentialité",
+      "legalNotice": "Mentions légales"
+    },
+    "copyright": "© 2026 EasyPhysio · fait en France, entre deux séances de kiné",
+    "illustrations": "Certaines illustrations :"
+  },
+  "landing": {
+    "heroTitle": "« Oui oui, j'ai fait mes exercices. »",
+    "heroTitleNow": "Maintenant,",
+    "heroTitleSee": "vous le voyez.",
+    "heroShort": "Vos patients font leurs exercices guidés chez eux. Vous voyez qui les a faits, et qui a eu mal.",
+    "tryDemo": "Essayer la démo",
+    "createAccount": "Créer un compte",
+    "notifyMe": "Être prévenu",
+    "heroLong": "Vos patients suivent chez eux le programme que vous avez choisi, guidés pas à pas. Vous voyez qui l'a fait, et qui a eu mal, avant le prochain rendez-vous.",
+    "createKineAccount": "Créer un compte praticien",
+    "joinWaitlist": "Rejoindre la liste d'attente",
+    "haveProgramme": "J'ai déjà un programme",
+    "handNote": "ce que voit votre patient",
+    "kineTitle": "Lundi matin, 8 h : vous savez déjà qui a travaillé.",
+    "kineBody": "Qui a fait ses séances, qui a signalé une douleur, qui n'a pas ouvert l'appli. Et deux clics pour ajuster un programme.",
+    "comparisonTitle": "Une feuille d'exercices finit souvent au fond d'un tiroir.",
+    "comparisonBody1": "Elle ne montre pas le mouvement et ne vous dit pas si ça fait mal.",
+    "comparisonBody2": "Sur le téléphone, le patient voit l'exercice et vous signale sa douleur.",
+    "showcaseTitle": "Des exercices que vos patients comprennent du premier coup.",
+    "showcaseBody": "292 mouvements dessinés et animés, et les exercices clés filmés par un kiné.",
+    "testimonialsTitle1": "Utilisé au cabinet,",
+    "testimonialsTitle2": "et surtout à la maison",
+    "pricingTitle": "« Et moi, comment je suis payé ? »",
+    "faqTitle": "Questions fréquentes",
+    "finalTitleOpen": "Essayez avec un seul patient.",
+    "finalTitleWaitlist": "Soyez prévenu du lancement.",
+    "finalBodyOpen": "Créez votre compte, composez un premier programme, invitez un patient. Vous verrez dès la première semaine si ça change vos consultations.",
+    "finalBodyWaitlist": "EasyPhysio est en phase de test et ouvre bientôt. Laissez votre e-mail : nous vous écrivons dès que vous pouvez créer votre compte et inviter vos premiers patients.",
+    "finalNote": "Vous composez le programme et vous l'ajustez ; l'app ne le modifie pas à votre place.",
+    "signIn": "Se connecter",
+    "haveAccount": "Vous avez déjà un compte ?"
+  },
+  "plans": {
+    "patientsFollowed": "Patients suivis",
+    "patientPays": "Chaque patient paie de {low} à {high} € par mois selon son engagement, après {trialDays} jours offerts, en deux parts :",
+    "kineShare": "Votre programme, versé directement à vous",
+    "amount": "{value} €",
+    "platformShare": "L'accès à l'appli, payé à EasyPhysio",
+    "range": "{low} à {high} €",
+    "feesNote": "Vos honoraires ne sont prélevés que les mois où vous mettez à jour son programme.",
+    "handNote": "et l'appli est gratuite",
+    "forYou": "Pour vous, chaque mois",
+    "calc": "{patients} patients × {net} € ({fee} € moins les frais de carte). EasyPhysio ne prend rien sur vos honoraires.",
+    "createFreeAccount": "Créer mon compte gratuit",
+    "joinWaitlist": "Rejoindre la liste d'attente",
+    "footnote": "Inscription gratuite, sans engagement, patients illimités. Vous ne payez jamais EasyPhysio."
+  },
+  "faq": {
+    "q1": "Comment reprendre le sport sans risquer une rechute ?",
+    "a1": "Votre programme avance par étapes définies par votre kiné : on ne passe à la suivante que lorsque la précédente est acquise. Si vous signalez une douleur, votre kiné le voit et peut adapter le programme.",
+    "q2": "Puis-je faire mes exercices seul(e), sans risque ?",
+    "a2": "Chaque exercice est montré en vidéo ou en dessin animé, avec des consignes écrites. Pendant la séance, un rappel vous dit de vous arrêter en cas de douleur vive. À la fin, vous notez votre douleur, et votre kiné la voit.",
+    "q3": "Comment mon kiné peut-il me suivre à distance ?",
+    "a3": "Il voit votre assiduité, vos séances complétées et vos retours de douleur ou de difficulté au fil du temps, et ajuste votre programme entre deux rendez-vous en cabinet.",
+    "q4": "Faut-il du matériel ou une caméra chez moi ?",
+    "a4": "Non, un téléphone suffit : les exercices se suivent à l'écran, avec le dessin et les consignes sous les yeux. Aucune caméra ni montre connectée. Si un exercice demande un objet (élastique, chaise), votre kiné le sait d'après ce que vous avez déclaré.",
+    "q5": "Que deviennent mes données de santé ?",
+    "a5": "Elles servent uniquement à votre suivi : vos séances et vos ressentis sont visibles par vous et par votre praticien, jamais revendus ni utilisés à des fins publicitaires.",
+    "q6": "Combien coûte l'application pour moi, patient ?",
+    "a6": "Après {trialDays} jours offerts, vous choisissez une offre : {offers} par mois. Chaque total réunit l'accès à l'appli ({low} € à {high} € selon l'engagement), payé chaque mois à EasyPhysio, et {kine} € pour le programme de votre kiné, payés directement à lui, seulement les mois où il met à jour votre programme. Vous recevez deux factures distinctes, et vous pouvez résilier à tout moment depuis l'appli. Acte non remboursé par l'Assurance Maladie.",
+    "offerNoCommitment": "{total} € sans engagement",
+    "offerCommitmentFirst": "{total} € avec un engagement de {months} mois",
+    "offerCommitment": "{total} € avec {months} mois",
+    "offersJoin": "{head} ou {last}",
+    "q7": "Je suis praticien : comment essayer avec mes patients ?",
+    "a7Open": "Créez votre compte praticien, composez un premier programme depuis la bibliothèque d'exercices, connectez votre compte Stripe pour être payé directement par vos patients, puis invitez-les. Ils recevront leur accès sans rien installer d'autre que l'app sur leur téléphone.",
+    "a7Waitlist": "EasyPhysio est en phase de test : inscrivez-vous sur la liste d'attente en bas de cette page, nous vous écrivons à l'ouverture. Ensuite, créez votre compte praticien, composez un premier programme depuis la bibliothèque d'exercices, connectez votre compte Stripe pour être payé directement par vos patients, puis invitez-les. Ils recevront leur accès sans rien installer d'autre que l'app sur leur téléphone."
+  },
+  "testimonials": {
+    "julien": {
+      "quote": "Je vois qui a fait ses exercices avant même d'ouvrir le dossier. Je commence la consultation par ce qui s'est passé à la maison.",
+      "role": "Kinésithérapeute",
+      "highlight": "Moins de temps passé à reconstituer la semaine du patient."
+    },
+    "claire": {
+      "quote": "Je savais enfin quoi faire le soir, et dans quel ordre. La démonstration m'évite de deviner le mouvement entre deux rendez-vous.",
+      "role": "Patiente, rééducation épaule",
+      "highlight": "Moins d'hésitation entre deux séances."
+    },
+    "nadia": {
+      "quote": "Les retours de douleur changent tout : j'ajuste le programme le jour même au lieu d'attendre la séance suivante.",
+      "role": "Kinésithérapeute",
+      "highlight": "Des ajustements le jour même, pas la semaine suivante."
+    },
+    "trust1": "Données hébergées en France",
+    "trust2": "Kinés vérifiés par leur numéro RPPS",
+    "trust3": "Données jamais revendues",
+    "portrait": "Portrait de {name}",
+    "kines": "Kinés",
+    "patients": "Patients",
+    "illustrative": "Témoignages illustratifs",
+    "previous": "Témoignage précédent",
+    "next": "Témoignage suivant"
+  },
+  "comparison": {
+    "easySub": "avec votre kiné",
+    "fitness": "Appli fitness généraliste",
+    "fitnessSub": "sans suivi clinique",
+    "paper": "Feuille papier",
+    "paperSub": "photocopiée",
+    "rowDemos": "Démonstrations et consignes claires",
+    "rowTracking": "Suivi de l'évolution par le kiné",
+    "rowPain": "Signalement de douleur en temps réel",
+    "rowRemote": "Ajustement du programme à distance",
+    "total": "Score total"
+  },
+  "waitlist": {
+    "thanks": "Merci, c'est noté. Nous vous écrirons dès le lancement.",
+    "youAre": "Vous êtes",
+    "iAmKine": "Je suis kiné",
+    "iAmPatient": "Je suis patient",
+    "emailLabel": "Votre adresse e-mail",
+    "placeholder": "votre@email.fr",
+    "sending": "Envoi…",
+    "submit": "Me prévenir du lancement",
+    "privacyNote": "Votre e-mail ne sert qu'à vous annoncer le lancement. <link>Confidentialité</link>",
+    "errors": {
+      "invalidEmail": "Cette adresse e-mail ne semble pas valide.",
+      "tooMany": "Trop d'inscriptions en ce moment. Réessayez dans une heure.",
+      "failed": "L'inscription n'a pas pu être enregistrée. Réessayez dans un instant."
+    }
+  },
+  "showcase": {
+    "label": "Démonstration filmée : {name}",
+    "gluteBridge": {
+      "name": "Pont fessier",
+      "zone": "Lombaires"
+    },
+    "pallofPress": {
+      "name": "Pallof press",
+      "zone": "Tronc"
+    },
+    "clamshell": {
+      "name": "Coquillage avec élastique",
+      "zone": "Hanche"
+    },
+    "shoulderRotation": {
+      "name": "Rotation externe d'épaule",
+      "zone": "Épaule"
+    },
+    "straightLegRaise": {
+      "name": "Élévation jambe tendue",
+      "zone": "Genou"
+    },
+    "yBalance": {
+      "name": "Équilibre en Y",
+      "zone": "Genou / cheville"
+    }
+  },
+  "intro": {
+    "tagline": "Vos exercices de kiné, à la maison"
+  },
+  "notFound": {
+    "metaTitle": "Page introuvable",
+    "title": "Cette page s'est étirée un peu trop loin.",
+    "body": "Elle n'existe pas, ou plus. Rien de cassé de votre côté : on reprend depuis le début.",
+    "back": "Revenir à l'accueil"
+  },
+  "connectionError": {
+    "title": "Problème de connexion",
+    "body": "Impossible de vérifier votre session pour le moment — probablement un problème réseau passager. Vous êtes sans doute toujours connecté, et rien de ce que vous avez déjà enregistré n'est perdu."
+  },
+  "cookies": {
+    "text": "Ce site utilise uniquement des cookies essentiels au fonctionnement de votre connexion, aucun cookie publicitaire ou de mesure d'audience. <link>En savoir plus</link>.",
+    "gotIt": "Compris"
+  },
+  "logo": {
+    "homeAria": "EasyPhysio — accueil"
+  }
+}

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import type { Locale } from "@/i18n/locales";
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle, ArrowRight, ArrowLeft, X } from "lucide-react";
 import { daysOfWeek, localDateKey, type WeekInfo } from "@/lib/patient/weeks";
 // La frise elle-même (segments-flèches, tons, view transition) vit dans
@@ -60,8 +62,11 @@ export default function WeekProgramme({
    *  2026-10-01). */
   pending?: boolean;
 }) {
+  const t = useTranslations("patient.weekProgramme");
+  const tc = useTranslations("patient.common");
+  const locale = useLocale() as Locale;
   const loggedDateKeys = new Set(Object.keys(dayDetails).filter((k) => dayDetails[k].length > 0));
-  const weekHasActivity = (week: WeekInfo) => daysOfWeek(week, loggedDateKeys).some((d) => d.hasSession);
+  const weekHasActivity = (week: WeekInfo) => daysOfWeek(week, loggedDateKeys, locale).some((d) => d.hasSession);
   const todayKey = localDateKey(new Date());
   const isPhone = useIsPhone();
 
@@ -133,7 +138,7 @@ export default function WeekProgramme({
   }, [view, isPhone]);
 
   const selectedWeek = weeks.find((w) => w.weekNumber === selectedWeekNumber) ?? weeks[weeks.length - 1];
-  const days = daysOfWeek(selectedWeek, loggedDateKeys);
+  const days = daysOfWeek(selectedWeek, loggedDateKeys, locale);
   const selectedDaySessions = selectedDayKey ? (dayDetails[selectedDayKey] ?? []) : [];
 
   useEffect(() => {
@@ -174,29 +179,27 @@ export default function WeekProgramme({
       return {
         key: String(week.weekNumber),
         tone: active ? "active" : isCurrent ? "current" : "default",
-        badge: isCurrent ? "Vous êtes ici" : undefined,
+        badge: isCurrent ? t("youAreHere") : undefined,
         viewTransitionName: `week-strip-${week.weekNumber}`,
         buttonRef: isCurrent ? currentCardRef : undefined,
         onClick: () => openWeek(week.weekNumber),
-        ariaLabel: `Semaine ${week.weekNumber}, ${week.rangeLabel}${active ? ", séances réalisées" : ""}${
-          isCurrent ? " — semaine actuelle" : ""
-        }`,
+        ariaLabel: t("weekAria", { n: week.weekNumber, range: week.rangeLabel, active: String(active), current: String(isCurrent) }),
         content: (
           <>
             {/* « Semaine N » plutôt qu'un numéro seul, dates entre
                 parenthèses (Philippe, 2026-10-01). */}
             <span className="flex items-center gap-1.5 text-2xl font-semibold">
-              Semaine {week.weekNumber}
+              {tc("weekN", { n: week.weekNumber })}
               {active && <CheckCircle2 className="h-5 w-5" strokeWidth={2} />}
             </span>
             <span className="text-sm font-medium opacity-90 sm:text-xs">({week.rangeLabel})</span>
             {/* Téléphone : la carte est haute — une ligne d'état et les 7 jours
                 de la semaine en pastilles (vert = séance faite). */}
             <span className="mt-3 text-sm font-medium opacity-90 sm:hidden">
-              {active ? "Séances réalisées" : isCurrent ? "Semaine en cours" : week.weekNumber > currentWeekNumber ? "À venir" : "Aucune séance"}
+              {active ? t("sessionsDone") : isCurrent ? t("currentWeek") : week.weekNumber > currentWeekNumber ? t("upcoming") : t("noSession")}
             </span>
             <span className="mt-4 flex gap-1 sm:hidden" aria-hidden>
-              {daysOfWeek(week, loggedDateKeys).map((d) => (
+              {daysOfWeek(week, loggedDateKeys, locale).map((d) => (
                 <span
                   key={d.dayLabel}
                   className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${
@@ -224,14 +227,14 @@ export default function WeekProgramme({
           <div>
             {pending ? (
               <>
-                <h2 className="text-base font-semibold text-ink sm:text-lg">Votre programme arrive bientôt</h2>
+                <h2 className="text-base font-semibold text-ink sm:text-lg">{t("pendingTitle")}</h2>
                 <p className="mt-1 text-xs text-muted sm:text-sm">
-                  Votre kiné prépare vos exercices personnalisés. Ils apparaîtront ici dès qu&apos;ils seront prêts.{" "}
+                  {t("pendingText")}{" "}
                   {/* « Modifier », pas « Compléter » : on n'arrive sur l'accueil
                       qu'après l'onboarding (app/patient/layout.tsx), donc la
                       situation est toujours déjà renseignée. */}
                   <Link href="/patient/onboarding" className="font-medium text-brand hover:underline">
-                    Modifier ma situation en attendant
+                    {t("editSituation")}
                   </Link>
                 </p>
               </>
@@ -239,10 +242,10 @@ export default function WeekProgramme({
               <>
                 {/* Téléphone : pas de titre, la frise parle d'elle-même (Philippe,
                     2026-10-07). Ordinateur : inchangé. */}
-                <h2 className="text-base font-semibold text-ink max-sm:hidden sm:text-lg">Mon programme, semaine par semaine</h2>
+                <h2 className="text-base font-semibold text-ink max-sm:hidden sm:text-lg">{t("title")}</h2>
                 <p className="mt-1 text-xs text-muted max-sm:hidden sm:text-sm">
-                  <span className="sm:hidden">Touchez une semaine pour voir chaque jour.</span>
-                  <span className="hidden sm:inline">Cliquez sur une semaine pour voir le détail jour par jour.</span>
+                  <span className="sm:hidden">{t("hintTouch")}</span>
+                  <span className="hidden sm:inline">{t("hintClick")}</span>
                 </p>
               </>
             )}
@@ -251,7 +254,7 @@ export default function WeekProgramme({
           <div className="hidden items-center gap-1 sm:flex">
             <button
               type="button"
-              aria-label="Semaines précédentes"
+              aria-label={t("prevWeeks")}
               onClick={() => scrollStrip(-1)}
               className="rounded-full border border-line p-2 text-muted hover:bg-app-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
             >
@@ -259,7 +262,7 @@ export default function WeekProgramme({
             </button>
             <button
               type="button"
-              aria-label="Semaines suivantes"
+              aria-label={t("nextWeeks")}
               onClick={() => scrollStrip(1)}
               className="rounded-full border border-line p-2 text-muted hover:bg-app-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
             >
@@ -302,17 +305,17 @@ export default function WeekProgramme({
     return {
       key,
       tone: d.hasSession ? "active" : isToday ? "current" : "default",
-      badge: isToday ? "Aujourd'hui" : undefined,
+      badge: isToday ? t("today") : undefined,
       disabled: sessions.length === 0,
       ringSelected: selectedDayKey === key,
       onClick: () => openDay(key),
-      ariaLabel: `${d.dayLabel} ${d.dateLabel}${d.hasSession ? ", séance réalisée" : ", non fait"}${isToday ? " — aujourd'hui" : ""}`,
+      ariaLabel: t("dayAria", { day: d.dayLabel, date: d.dateLabel, done: String(d.hasSession), today: String(isToday) }),
       content: (
         <>
           <span className="text-sm font-semibold">{d.dayLabel}</span>
           <span className="text-[11px] opacity-80">{d.dateLabel}</span>
           {d.hasSession ? <CheckCircle2 className="h-4 w-4" strokeWidth={2} /> : <Circle className="h-4 w-4" strokeWidth={1.5} />}
-          <span className="text-[11px]">{d.hasSession ? "Réalisée" : "Non fait"}</span>
+          <span className="text-[11px]">{d.hasSession ? t("done") : t("notDone")}</span>
         </>
       ),
     };
@@ -343,13 +346,13 @@ export default function WeekProgramme({
           className="flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-          Toutes les semaines
+          {t("allWeeks")}
         </button>
 
         <div className="mt-3 flex items-center gap-2">
           <button
             type="button"
-            aria-label="Semaine précédente"
+            aria-label={t("prevWeek")}
             onClick={() => goToWeek(selectedWeek.weekNumber - 1)}
             disabled={selectedWeek.weekNumber <= 1}
             className="rounded-full p-1 text-muted hover:bg-app-bg disabled:opacity-30"
@@ -359,7 +362,7 @@ export default function WeekProgramme({
           <h2 className="text-lg font-semibold text-ink">{selectedWeek.label}</h2>
           <button
             type="button"
-            aria-label="Semaine suivante"
+            aria-label={t("nextWeek")}
             onClick={() => goToWeek(selectedWeek.weekNumber + 1)}
             disabled={selectedWeek.weekNumber >= weeks.length}
             className="rounded-full p-1 text-muted hover:bg-app-bg disabled:opacity-30"
@@ -394,7 +397,7 @@ export default function WeekProgramme({
                   type="button"
                   disabled={sessions.length === 0}
                   onClick={() => openDay(key)}
-                  aria-label={`${d.dayLabel} ${d.dateLabel}${d.hasSession ? ", séance réalisée" : ", non fait"}${isToday ? " — aujourd'hui" : ""}`}
+                  aria-label={t("dayAria", { day: d.dayLabel, date: d.dateLabel, done: String(d.hasSession), today: String(isToday) })}
                   className="flex w-full items-center gap-3 py-0.5 text-left"
                 >
                   <span
@@ -410,8 +413,8 @@ export default function WeekProgramme({
                       <span className="truncate text-sm opacity-80">{d.dateLabel}</span>
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium">
-                      {isToday && <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">Aujourd&apos;hui</span>}
-                      {d.hasSession ? "Réalisée" : "Non fait"}
+                      {isToday && <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">{t("today")}</span>}
+                      {d.hasSession ? t("done") : t("notDone")}
                       {sessions.length > 0 && <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />}
                     </span>
                   </span>
@@ -449,15 +452,15 @@ export default function WeekProgramme({
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Séances du jour"
+            aria-label={t("daySessions")}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-sm rounded-2xl bg-surface p-5 shadow-xl [animation:popIn_0.35s_ease-out_both]"
           >
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-base font-semibold text-ink">Séances du jour</h2>
+              <h2 className="text-base font-semibold text-ink">{t("daySessions")}</h2>
               <button
                 type="button"
-                aria-label="Fermer"
+                aria-label={tc("close")}
                 onClick={closeDayDetail}
                 className="rounded-full p-1 text-muted hover:bg-app-bg hover:text-ink"
               >
@@ -469,20 +472,20 @@ export default function WeekProgramme({
                 <div key={s.logId}>
                   <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-ok" strokeWidth={1.75} />
-                    {s.workoutName ?? "Séance"}
+                    {s.workoutName ?? tc("session")}
                   </p>
-                  <p className="mt-1 text-xs text-muted">Terminée à {s.time}</p>
+                  <p className="mt-1 text-xs text-muted">{t("finishedAt", { time: s.time })}</p>
                   <ul className="mt-2 space-y-1 text-xs text-muted">
                     {s.durationMinutes != null && <li>{s.durationMinutes} min</li>}
-                    {s.painScore != null && <li>Douleur {s.painScore}/10</li>}
-                    {s.difficulty != null && <li>Difficulté {s.difficulty}/10</li>}
+                    {s.painScore != null && <li>{t("pain", { score: s.painScore })}</li>}
+                    {s.difficulty != null && <li>{t("difficulty", { score: s.difficulty })}</li>}
                     {s.notes && <li>« {s.notes} »</li>}
                   </ul>
                   <Link
                     href={`/patient/historique/${s.logId}?depuis=accueil`}
                     className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline"
                   >
-                    Voir le détail
+                    {t("seeDetail")}
                     <ArrowRight className="h-3 w-3" strokeWidth={2} />
                   </Link>
                 </div>

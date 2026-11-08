@@ -1,3 +1,5 @@
+import { getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/locales";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { computeAdherence, ADHERENCE_WINDOW_DAYS } from "@/lib/exercise/adherence";
@@ -36,7 +38,7 @@ export default async function ProgresPage() {
   const adherencePrev = computeAdherence({ completedAt, assignments, now: new Date(now.getTime() - ADHERENCE_WINDOW_DAYS * 86_400_000) });
   const adherenceDelta = adherenceNow.pct !== null && adherencePrev.pct !== null ? adherenceNow.pct - adherencePrev.pct : null;
 
-  const pain = buildPainSeries((feedback30 ?? []) as { pain_score: number | null; created_at: string }[]);
+  const pain = buildPainSeries((feedback30 ?? []) as { pain_score: number | null; created_at: string }[], undefined, undefined, (await getLocale()) as Locale);
   const avg = (rows: { pain_score: number | null }[]) => {
     const vals = rows.map((r) => r.pain_score).filter((v): v is number => v != null);
     return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;

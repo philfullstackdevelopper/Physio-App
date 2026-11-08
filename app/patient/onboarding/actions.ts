@@ -5,12 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { EQUIPMENT_OPTIONS, type EquipmentId } from "@/lib/exercise/equipment";
 import { friendlyDbError } from "@/lib/format/dbError";
+import { getTranslations } from "next-intl/server";
 
 // Saves the patient's onboarding profile into `patient_profiles`.
 // RLS ensures a patient can only write their own row (id = auth.uid()).
 export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> {
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  const t = await getTranslations("patient.onboarding.errors");
+  const tConsent = await getTranslations("patient.consent");
 
   // app/patient/layout.tsx already blocks reaching this page without a
   // `patients` row (PatientNoRecordGate) — this is defense in depth for the
@@ -21,9 +24,7 @@ export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> 
   const { data: patient } = await supabase.from("patients").select("id").eq("id", user.id).maybeSingle();
   if (!patient) {
     redirect(
-      `/patient/onboarding?error=${encodeURIComponent(
-        "Aucun profil patient n'est associé à ce compte — contactez votre kinésithérapeute.",
-      )}`,
+      `/patient/onboarding?error=${encodeURIComponent(t("noPatient"))}`,
     );
   }
 
@@ -49,14 +50,14 @@ export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> 
   // neither did we when debugging this from server logs alone (Philippe,
   // 2026-09-09).
   const missing: string[] = [];
-  if (declaredBodyPartIds.length === 0) missing.push("au moins une zone du corps");
-  if (!validStage) missing.push("l'étape de récupération");
-  if (!dateOfBirth) missing.push("la date de naissance");
-  if (!heightCm) missing.push("la taille");
-  if (!weightKg) missing.push("le poids");
-  if (!validActivity) missing.push("le niveau d'activité");
+  if (declaredBodyPartIds.length === 0) missing.push(t("fieldBodyPart"));
+  if (!validStage) missing.push(t("fieldStage"));
+  if (!dateOfBirth) missing.push(t("fieldDob"));
+  if (!heightCm) missing.push(t("fieldHeight"));
+  if (!weightKg) missing.push(t("fieldWeight"));
+  if (!validActivity) missing.push(t("fieldActivity"));
   if (missing.length > 0) {
-    redirect(`/patient/onboarding?error=${encodeURIComponent(`Champ(s) manquant(s) : ${missing.join(", ")}.`)}`);
+    redirect(`/patient/onboarding?error=${encodeURIComponent(t("missing", { list: missing.join(", ") }))}`);
   }
 
   // Valeurs plausibles, vérifiées ICI aussi (audit du 2026-10-08) : les
@@ -64,11 +65,11 @@ export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> 
   const invalid: string[] = [];
   const dob = new Date(dateOfBirth);
   const age = (Date.now() - dob.getTime()) / (365.25 * 86_400_000);
-  if (Number.isNaN(dob.getTime()) || age < 0 || age > 120) invalid.push("la date de naissance");
-  if (!Number.isFinite(heightCm) || heightCm < 50 || heightCm > 250) invalid.push("la taille (entre 50 et 250 cm)");
-  if (!Number.isFinite(weightKg) || weightKg < 20 || weightKg > 350) invalid.push("le poids (entre 20 et 350 kg)");
+  if (Number.isNaN(dob.getTime()) || age < 0 || age > 120) invalid.push(t("fieldDob"));
+  if (!Number.isFinite(heightCm) || heightCm < 50 || heightCm > 250) invalid.push(t("invalidHeight"));
+  if (!Number.isFinite(weightKg) || weightKg < 20 || weightKg > 350) invalid.push(t("invalidWeight"));
   if (invalid.length > 0) {
-    redirect(`/patient/onboarding?error=${encodeURIComponent(`Vérifiez ${invalid.join(", ")}.`)}`);
+    redirect(`/patient/onboarding?error=${encodeURIComponent(t("check", { list: invalid.join(", ") }))}`);
   }
 
   // RGPD article 9: health data needs explicit, specific consent. Asked once —
@@ -97,9 +98,7 @@ export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> 
     const consented = formData.get("health_data_consent") === "on";
     if (!consented) {
       redirect(
-        `/patient/onboarding?error=${encodeURIComponent(
-          "Merci de cocher la case de consentement pour continuer.",
-        )}`,
+        `/patient/onboarding?error=${encodeURIComponent(tConsent("required"))}`,
       );
     }
     healthDataConsentAt = new Date().toISOString();
@@ -124,7 +123,7 @@ export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> 
     { onConflict: "id" },
   );
   if (error) {
-    redirect(`/patient/onboarding?error=${encodeURIComponent(friendlyDbError(error))}`);
+    redirect(`/patient/onboarding?error=${encodeURIComponent(friendlyDbError(error, undefined, await getTranslations("dashboard.lib")))}`);
   }
 
   // Onboarding terminé → directement dans l'appli. Pas de redirect() ni de

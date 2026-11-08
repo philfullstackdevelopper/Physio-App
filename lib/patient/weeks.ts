@@ -7,13 +7,20 @@
 // back/forward to look, and the strip stops at the current week (there's
 // nothing to show beyond today).
 
+import { INTL_TAGS, type Locale } from "../../i18n/locales.ts";
+
+// Libellés de ce fichier écrits ici par langue, pas dans messages/ : weeks.ts
+// est chargé par les tests node:test (historyWeeks.test.ts), qui n'importent
+// ni les .json ni lib/i18n/translator.ts. Français par défaut.
+const WEEK_WORD: Record<Locale, string> = { fr: "Semaine", en: "Week" };
+
 function mondayOf(d: Date): Date {
   const dow = (d.getDay() + 6) % 7; // Sunday=0 -> 6, Monday=1 -> 0
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow);
 }
 
-function fmt(d: Date): string {
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+function fmt(d: Date, locale: Locale = "fr"): string {
+  return d.toLocaleDateString(INTL_TAGS[locale], { day: "numeric", month: "short" });
 }
 
 /** Local (not UTC) calendar-date key, e.g. "2026-09-17" — used to match a
@@ -50,7 +57,7 @@ export interface WeekInfo {
 /** Every week from the patient's first Monday through at least the end of the
  *  current calendar year (Philippe, 2026-09-08: the timeline should visibly
  *  run on past "today", not dead-end there — future weeks just render empty). */
-export function buildWeeks(patientCreatedAtISO: string, now: Date = new Date()): WeekInfo[] {
+export function buildWeeks(patientCreatedAtISO: string, now: Date = new Date(), locale: Locale = "fr"): WeekInfo[] {
   const firstMonday = mondayOf(new Date(patientCreatedAtISO));
   const currentMonday = mondayOf(now);
   const yearEndMonday = mondayOf(new Date(now.getFullYear(), 11, 31));
@@ -69,8 +76,8 @@ export function buildWeeks(patientCreatedAtISO: string, now: Date = new Date()):
       startISO: cursor.toISOString(),
       endISO: end.toISOString(),
       startDateKey: localDateKey(cursor),
-      label: `Semaine ${n}`,
-      rangeLabel: `${fmt(cursor)} – ${fmt(lastDay)}`,
+      label: `${WEEK_WORD[locale]} ${n}`,
+      rangeLabel: `${fmt(cursor, locale)} – ${fmt(lastDay, locale)}`,
     });
     cursor = end;
     n++;
@@ -87,6 +94,7 @@ export function currentWeekNumber(weeks: WeekInfo[], now: Date = new Date()): nu
 }
 
 export const WEEKDAY_LABELS_LONG = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+const WEEKDAY_LABELS_LONG_EN = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export interface WeekDay {
   /** 0 = Monday .. 6 = Sunday */
@@ -98,7 +106,7 @@ export interface WeekDay {
 }
 
 /** `loggedDateKeys` = the localDateKey()s that have at least one session. */
-export function daysOfWeek(week: WeekInfo, loggedDateKeys: Set<string>): WeekDay[] {
+export function daysOfWeek(week: WeekInfo, loggedDateKeys: Set<string>, locale: Locale = "fr"): WeekDay[] {
   const start = new Date(week.startISO);
   return Array.from({ length: 7 }, (_, i) => {
     const date = new Date(start);
@@ -106,8 +114,8 @@ export function daysOfWeek(week: WeekInfo, loggedDateKeys: Set<string>): WeekDay
     return {
       index: i,
       date,
-      dayLabel: WEEKDAY_LABELS_LONG[i],
-      dateLabel: fmt(date),
+      dayLabel: (locale === "en" ? WEEKDAY_LABELS_LONG_EN : WEEKDAY_LABELS_LONG)[i],
+      dateLabel: fmt(date, locale),
       hasSession: loggedDateKeys.has(localDateKey(date)),
     };
   });

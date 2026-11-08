@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
@@ -27,13 +28,15 @@ import { PLATFORM_SIGNATURE_ACCOUNT, platformVatRateId, refreshPatientSubscripti
 // l'accès : une résiliation pendant l'engagement prend effet à sa fin.
 
 const fail = (msg: string): never => redirect(`/patient/suivi?error=${encodeURIComponent(msg)}`);
+// Messages d'erreur dans la langue du patient (cookie de langue).
+const tr = () => getTranslations("billing.suiviActions");
 
 /** Le patient connecté, l'état des paiements de son kiné et son abonnement actuel. */
 async function context() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
   const { data: patient } = await supabase.from("patients").select("id, instructor_id, full_name").eq("id", user.id).maybeSingle();
-  if (!patient) fail("Compte patient introuvable.");
+  if (!patient) fail((await tr())("patientNotFound"));
   const instructorId = patient!.instructor_id as string;
   const [{ data: kine }, { data: connect }, { data: sub }] = await Promise.all([
     supabase.from("instructors").select("status, full_name").eq("id", instructorId).maybeSingle(),
@@ -49,13 +52,14 @@ async function context() {
 }
 
 export async function startPlan(formData: FormData) {
+  const t = await tr();
   const key = formData.get("plan");
-  if (!isPlatformOfferKey(key)) fail("Choisissez une offre.");
-  if (formData.get("consent") !== "on") fail("Cochez la case pour accepter les deux montants et le prélèvement mensuel.");
+  if (!isPlatformOfferKey(key)) fail(t("chooseOffer"));
+  if (formData.get("consent") !== "on") fail(t("consentRequired"));
   // L'accès est vendu par EasyPhysio : pas besoin que le kiné ait activé
   // Stripe. Sa part (6 €) démarre quand ses paiements sont actifs.
   const { user, patient, kine, sub } = await context();
-  if (((kine?.status as string | null) ?? "approved") !== "approved") fail("Votre kinésithérapeute ne propose pas de suivi pour le moment.");
+  if (((kine?.status as string | null) ?? "approved") !== "approved") fail(t("kineUnavailable"));
 
   const offer = platformOffer(key as Parameters<typeof platformOffer>[0]);
   const stripe = getStripe();
@@ -87,7 +91,11 @@ export async function startPlan(formData: FormData) {
       ...signedSubscriptionMetadata(user.id, offer.key, PLATFORM_SIGNATURE_ACCOUNT),
       ...(commitUntil ? { commit_until: commitUntil } : {}),
     };
-    const kineName = (kine?.full_name as string | null) ?? "votre kinésithérapeute";
+    const kineName = (kine?.full_name as string | null) ?? t("kineFallback");
+    // Langue de la page de paiement Stripe = celle du patient. Le nom et la
+    // description du produit restent en français : ils figurent sur la
+    // facture d'EasyPhysio (TVA).
+    const locale = (await getLocale()) === "en" ? "en" : "fr";
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
@@ -114,11 +122,14 @@ export async function startPlan(formData: FormData) {
       },
       custom_text: {
         submit: {
-          message: `Votre carte servira aussi à ${kineName}, qui prélèvera ses honoraires de ${eurosFR(KINE_FOLLOW_UP_CENTS)} € directement, seulement les mois où il met à jour votre programme.`,
+          message: t("checkoutNote", {
+            kineName,
+            amount: (await getTranslations("billing.format"))("eur", { amount: eurosFR(KINE_FOLLOW_UP_CENTS, locale) }),
+          }),
         },
       },
       metadata,
-      locale: "fr",
+      locale,
       success_url: `${base}/patient/suivi/retour?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/patient/suivi?checkout=annule`,
     });
@@ -126,7 +137,7 @@ export async function startPlan(formData: FormData) {
   } catch (e) {
     console.error("startPlan:", e);
   }
-  if (!url) fail("Le paiement est momentanément indisponible. Réessayez dans quelques minutes.");
+  if (!url) fail(t("paymentUnavailable"));
   redirect(url!);
 }
 
@@ -142,9 +153,10 @@ function accountOf(sub: { stripe_account_id?: unknown } | null): string | null {
  * honoraires du kiné, eux, ne sont jamais dus sans mise à jour du programme).
  */
 export async function cancelPlan() {
+  const t = await tr();
   const { sub } = await context();
   const id = sub?.stripe_subscription_id as string | undefined;
-  if (!id) fail("Aucun abonnement en cours.");
+  if (!id) fail(t("noSubscription"));
   const account = accountOf(sub);
   const stripe = getStripe();
   try {
@@ -159,22 +171,23 @@ export async function cancelPlan() {
     await refreshPatientSubscription(id!, account);
   } catch (e) {
     console.error("cancelPlan:", e);
-    fail("La résiliation n'a pas pu être enregistrée. Réessayez.");
+    fail(t("cancelFailed"));
   }
   redirect("/patient/suivi?arret=1");
 }
 
 /** Annuler la résiliation : l'abonnement d'accès continue. */
 export async function resumePlan() {
+  const t = await tr();
   const { sub } = await context();
   const id = sub?.stripe_subscription_id as string | undefined;
-  if (!id || accountOf(sub)) fail("Aucun abonnement à reprendre.");
+  if (!id || accountOf(sub)) fail(t("nothingToResume"));
   try {
     await getStripe().subscriptions.update(id!, { cancel_at_period_end: false, cancel_at: "" });
     await refreshPatientSubscription(id!, null);
   } catch (e) {
     console.error("resumePlan:", e);
-    fail("La reprise n'a pas pu être enregistrée. Réessayez.");
+    fail(t("resumeFailed"));
   }
   redirect("/patient/suivi?reprise=1");
 }

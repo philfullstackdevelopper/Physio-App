@@ -16,6 +16,7 @@ import ConversationList from "@/components/ConversationList";
 import MessageThread, { type ThreadMessage } from "@/components/MessageThread";
 import MessageComposer from "@/components/MessageComposer";
 import MarkThreadRead from "@/components/MarkThreadRead";
+import { useTranslations } from "next-intl";
 
 export default function KineMessagesView({
   conversations,
@@ -37,6 +38,7 @@ export default function KineMessagesView({
   markConversationRead: (patientId: string) => Promise<void>;
   sendInboxMessage: (formData: FormData) => void | Promise<void>;
 }) {
+  const t = useTranslations("dashboard.messages");
   const selectedId = selected?.patientId ?? null;
   // Téléphone : quel écran montrer.
   const phoneThread = explicitlyOpened && !!selected;
@@ -59,7 +61,7 @@ export default function KineMessagesView({
     >
       <div className={`mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col p-6 sm:p-8 short:sm:py-5 ${phoneThread ? "max-sm:p-0" : "max-sm:px-4 max-sm:pb-3 max-sm:pt-2"}`}>
         <div className={`flex flex-wrap items-center justify-between gap-4 max-sm:gap-3 ${onlyWhenList}`}>
-          <h1 className="text-2xl font-semibold text-ink">Messages</h1>
+          <h1 className="text-2xl font-semibold text-ink">{t("title")}</h1>
           <form method="get" action="/dashboard/messages" className="relative w-full sm:w-80">
             {selectedId && <input type="hidden" name="patient" value={selectedId} />}
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.75} />
@@ -67,8 +69,8 @@ export default function KineMessagesView({
               type="search"
               name="q"
               defaultValue={q}
-              placeholder="Rechercher un patient…"
-              aria-label="Rechercher un patient"
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("search")}
               className="w-full rounded-xl border border-line bg-surface py-2.5 pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft max-sm:h-10 max-sm:border-0 max-sm:py-2 max-sm:text-base max-sm:shadow-soft"
             />
           </form>
@@ -87,24 +89,24 @@ export default function KineMessagesView({
             // Téléphone : plus de grande carte blanche autour — chaque
             // conversation est sa propre carte (ConversationList).
             className={`min-h-0 rounded-2xl border border-line bg-surface max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent ${onlyWhenList}`}
-            aria-label="Conversations"
+            aria-label={t("conversations")}
           >
             <ConversationList rows={conversations} selectedId={selectedId} query={q} />
           </section>
 
           <section
             className={`flex min-h-0 flex-col rounded-2xl border border-line bg-surface max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent ${onlyWhenThread}`}
-            aria-label="Fil de discussion"
+            aria-label={t("thread")}
           >
             {!selected ? (
-              <p className="m-auto p-6 text-center text-sm text-muted">Aucun patient pour l&apos;instant.</p>
+              <p className="m-auto p-6 text-center text-sm text-muted">{t("noPatient")}</p>
             ) : (
               <>
                 {explicitlyOpened && <MarkThreadRead patientId={selected.patientId} action={markConversationRead} />}
                 <header className="flex items-center gap-3 border-b border-line px-5 py-3 max-sm:gap-2 max-sm:bg-surface max-sm:px-2 max-sm:pb-2.5 max-sm:pt-[calc(0.625rem+env(safe-area-inset-top))]">
                   <Link
                     href={backHref}
-                    aria-label="Retour aux conversations"
+                    aria-label={t("backToConversations")}
                     className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink max-lg:flex"
                   >
                     <ArrowLeft className="h-5 w-5" strokeWidth={2} />
@@ -114,14 +116,14 @@ export default function KineMessagesView({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-base font-semibold text-ink">{selected.name}</p>
-                    <p className="truncate text-sm text-muted max-sm:text-xs">{selected.conditionLabel ?? "Condition non assignée"}</p>
+                    <p className="truncate text-sm text-muted max-sm:text-xs">{selected.conditionLabel ?? t("noCondition")}</p>
                   </div>
                   <Link
                     href={`/dashboard/patients/${selected.patientId}`}
                     className="shrink-0 text-sm font-medium text-brand hover:underline max-sm:flex max-sm:h-10 max-sm:items-center max-sm:gap-0.5 max-sm:pr-2"
                   >
-                    <span className="max-sm:hidden">Voir la fiche</span>
-                    <span className="hidden max-sm:inline">Fiche</span>
+                    <span className="max-sm:hidden">{t("openFile")}</span>
+                    <span className="hidden max-sm:inline">{t("file")}</span>
                     <ChevronRight className="hidden h-4 w-4 max-sm:block" strokeWidth={2} />
                   </Link>
                 </header>

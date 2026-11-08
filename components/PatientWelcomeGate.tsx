@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { SignOutButton } from "@clerk/nextjs";
 import { AlertCircle, HeartHandshake, LogOut, ShieldCheck } from "lucide-react";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
@@ -25,6 +26,11 @@ import { acceptTerms } from "@/app/patient/actions";
 // ?error= que rien ne lisait, et « Se déconnecter » est offert comme sur les
 // autres barrières (onboarding, PatientNoRecordGate).
 export default function PatientWelcomeGate({ instructorName }: { instructorName: string | null }) {
+  const t = useTranslations("patient.welcome");
+  const tConsent = useTranslations("patient.consent");
+  const tc = useTranslations("patient.common");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const [state, formAction, pending] = useActionState(acceptTerms, { error: null } as {
     error: string | null;
     accepted?: boolean;
@@ -45,7 +51,7 @@ export default function PatientWelcomeGate({ instructorName }: { instructorName:
           className="absolute bottom-4 left-4 z-10 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-slate-600 lg:bottom-6 lg:left-6"
         >
           <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-          Se déconnecter
+          {tc("signOut")}
         </button>
       </SignOutButton>
 
@@ -58,18 +64,16 @@ export default function PatientWelcomeGate({ instructorName }: { instructorName:
             </span>
 
             <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-              <span className="text-blue-700">EasyPhysio ·</span>{" "}Bienvenue{instructorName ? "" : " !"}
+              <span className="text-blue-700">EasyPhysio ·</span>{" "}{instructorName ? t("welcome") : t("welcomeExcl")}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
-              {instructorName ? (
-                <>
-                  <span className="font-medium text-slate-700">{instructorName}</span> vous a inscrit·e sur
-                  EasyPhysio pour suivre votre programme d&rsquo;exercices.
-                </>
-              ) : (
-                <>Votre kinésithérapeute vous a inscrit·e sur EasyPhysio pour suivre votre programme d&rsquo;exercices.</>
-              )}{" "}
-              Avant de commencer, il reste une étape.
+              {instructorName
+                ? t.rich("invitedBy", {
+                    name: instructorName,
+                    b: (c) => <span className="font-medium text-slate-700">{c}</span>,
+                  })
+                : t("invitedByPhysio")}{" "}
+              {t("oneStepLeft")}
             </p>
 
             <form action={formAction} className="mt-8">
@@ -80,15 +84,18 @@ export default function PatientWelcomeGate({ instructorName }: { instructorName:
               <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 text-sm leading-relaxed text-slate-600">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-700" strokeWidth={1.75} />
                 <p>
-                  En continuant, vous acceptez les{" "}
-                  <Link
-                    href="/cgu"
-                    target="_blank"
-                    className="font-medium text-blue-700 underline underline-offset-2"
-                  >
-                    conditions générales d&rsquo;utilisation
-                  </Link>{" "}
-                  d&rsquo;EasyPhysio.
+                  {tConsent.rich("cguAccept", {
+                    link: (c) => (
+                      <Link
+                        href="/cgu"
+                        target="_blank"
+                        className="font-medium text-blue-700 underline underline-offset-2"
+                      >
+                        {c}
+                      </Link>
+                    ),
+                  })}
+                  {locale !== "fr" && <span className="mt-1 block text-xs text-slate-500">{tCommon("reviewBanner")}</span>}
                 </p>
               </div>
 
@@ -104,7 +111,7 @@ export default function PatientWelcomeGate({ instructorName }: { instructorName:
                 disabled={pending || accepted}
                 className="mt-4 w-full rounded-full bg-blue-600 py-2.5 text-sm font-medium text-white shadow-sm transition active:scale-[0.98] hover:bg-blue-700 disabled:opacity-60"
               >
-                {pending || accepted ? "Enregistrement…" : <>J&rsquo;accepte et je continue</>}
+                {pending || accepted ? tc("saving") : t("accept")}
               </button>
             </form>
           </div>

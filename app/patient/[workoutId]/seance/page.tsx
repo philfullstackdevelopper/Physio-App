@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
@@ -88,12 +89,13 @@ export default async function SeancePage({
     workout_exercises: WorkoutExerciseRow[];
   };
 
+  const tc = await getTranslations("patient.common");
   const exercises: SessionExercise[] = await Promise.all(
     [...(workout.workout_exercises ?? [])]
       .sort((a, b) => a.position - b.position)
       .map(async (we) => ({
         id: we.exercises?.id ?? null,
-        name: we.exercises?.name ?? "Exercice",
+        name: we.exercises?.name ?? tc("exercise"),
         dose: doseFromRow(we),
         instructions: we.exercises?.instructions ?? null,
         // Vidéo chez Cloudflare R2 : lien signé fabriqué ici, côté serveur.

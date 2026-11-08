@@ -1,5 +1,6 @@
 import type { ComponentProps } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { AlertCircle, LogOut, X } from "lucide-react";
 import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
@@ -18,6 +19,7 @@ export default function OnboardingView({
   needsConsent: boolean;
   wizard: ComponentProps<typeof OnboardingWizard>;
 }) {
+  const t = useTranslations("patient.onboarding");
   return (
     // h-dvh (hauteur VISIBLE) et non h-screen (2026-10-10) : sur téléphone,
     // « 100vh » compte aussi la zone cachée derrière les barres du navigateur
@@ -44,7 +46,7 @@ export default function OnboardingView({
           className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 max-sm:right-3 max-sm:top-1 transition-colors hover:text-slate-700 lg:right-6 lg:top-6"
         >
           <X className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-          Annuler
+          {t("cancel")}
         </Link>
       )}
 

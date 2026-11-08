@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Activity, ArrowDown, ArrowRight, ArrowUp, LineChart, MapPin, TrendingUp } from "lucide-react";
 import { adherenceLabel, adherenceTone } from "@/lib/exercise/adherence";
 import type { buildPainSeries } from "@/lib/dashboard/painHistory";
@@ -58,16 +59,18 @@ export default function ProgresView({
   painDelta: number | null;
   pain: ReturnType<typeof buildPainSeries>;
 }) {
+  const t = useTranslations("patient.progress");
+  const tAdh = useTranslations("exercise.adherence");
   return (
     // Téléphone (Philippe, 2026-10-04 : « no scrolling at all ») : les 3
     // chiffres côte à côte, phrases longues masquées, « Zone concernée »
     // ramenée à une ligne sous le titre. Dès sm : inchangé.
     <main className="p-4 pt-5 max-sm:flex max-sm:pt-2 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:flex-col sm:min-h-screen sm:p-8">
       <div className="mx-auto max-w-5xl max-sm:flex max-sm:w-full max-sm:flex-1 max-sm:flex-col">
-        <h1 className="text-2xl font-semibold text-ink">Mes progrès</h1>
+        <h1 className="text-2xl font-semibold text-ink">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted max-sm:mt-0.5">
-          Suivez vos résultats au fil du temps (30 derniers jours).
-          {conditionName && <span className="sm:hidden"> Zone : {conditionName}.</span>}
+          {t("subtitle")}
+          {conditionName && <span className="sm:hidden"> {t("zoneLine", { name: conditionName })}</span>}
         </p>
         {/* Téléphone sans douleur enregistrée : la carte du graphique (seul lien
             vers l'historique) est masquée — on garde l'accès ici (Philippe,
@@ -77,7 +80,7 @@ export default function ProgresView({
             href="/patient/historique"
             className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-brand hover:underline sm:hidden"
           >
-            Historique
+            {t("history")}
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
           </Link>
         )}
@@ -89,8 +92,8 @@ export default function ProgresView({
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand">
               <LineChart className="h-6 w-6" strokeWidth={1.75} />
             </span>
-            <p className="mt-3 text-base font-semibold text-ink">Pas encore de résultats</p>
-            <p className="mt-1 text-sm text-muted">Vos progrès apparaîtront ici après vos premières séances.</p>
+            <p className="mt-3 text-base font-semibold text-ink">{t("emptyTitle")}</p>
+            <p className="mt-1 text-sm text-muted">{t("emptyText")}</p>
           </div>
         )}
 
@@ -103,18 +106,18 @@ export default function ProgresView({
             <span className="mb-2 block sm:hidden">
               <AdherenceRing pct={adherenceNow.pct} />
             </span>
-            <p className="text-xs font-medium text-muted">Adhérence</p>
+            <p className="text-xs font-medium text-muted">{t("adherence")}</p>
             <p className="mt-1 text-xl font-semibold tabular-nums text-ink sm:text-2xl">{adherenceNow.pct !== null ? `${adherenceNow.pct}%` : "—"}</p>
             {adherenceNow.pct !== null && (
               <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${TONE_BG[adherenceTone(adherenceNow.pct)]}`}>
-                {adherenceLabel(adherenceNow.pct)}
+                {adherenceLabel(adherenceNow.pct, tAdh)}
               </span>
             )}
             <p className="mt-1 text-xs text-muted sm:hidden">
-              {adherenceNow.done}/{adherenceNow.expected} séances
+              {t("adherenceShort", { done: adherenceNow.done, expected: adherenceNow.expected })}
             </p>
             <p className="mt-1 hidden text-xs text-muted sm:block">
-              Vous avez suivi {adherenceNow.done} séance{adherenceNow.done > 1 ? "s" : ""} sur {adherenceNow.expected} attendue{adherenceNow.expected > 1 ? "s" : ""}
+              {t("adherenceLong", { done: adherenceNow.done, expected: adherenceNow.expected })}
             </p>
           </div>
           <div className={`rounded-xl border border-line bg-surface p-3 shadow-sm sm:p-4 ${PHONE_TILE} ${painAvgNow === null ? "max-sm:hidden" : ""}`}>
@@ -122,8 +125,8 @@ export default function ProgresView({
               <Activity className="h-4 w-4" strokeWidth={2} />
             </span>
             <p className="text-xs font-medium text-muted">
-              <span className="sm:hidden">Douleur</span>
-              <span className="hidden sm:inline">Douleur moyenne</span>
+              <span className="sm:hidden">{t("pain")}</span>
+              <span className="hidden sm:inline">{t("painAvg")}</span>
             </p>
             <p className="mt-1 text-xl font-semibold tabular-nums text-ink sm:text-2xl">{painAvgNow !== null ? (
                 <>
@@ -142,7 +145,7 @@ export default function ProgresView({
                 )}
                 {painDelta <= 0 ? "" : "+"}
                 {painDelta.toFixed(1)}
-                <span className="hidden sm:inline"> vs la période précédente</span>
+                <span className="hidden sm:inline"> {t("vsPrevious")}</span>
               </p>
             )}
           </div>
@@ -151,15 +154,15 @@ export default function ProgresView({
               <TrendingUp className="h-4 w-4" strokeWidth={2} />
             </span>
             <p className="text-xs font-medium text-muted">
-              <span className="sm:hidden">Tendance</span>
-              <span className="hidden sm:inline">Adhérence — tendance</span>
+              <span className="sm:hidden">{t("trend")}</span>
+              <span className="hidden sm:inline">{t("trendLong")}</span>
             </p>
             <p className={`mt-1 text-xl font-semibold sm:text-2xl tabular-nums ${adherenceDelta !== null && adherenceDelta >= 0 ? "text-ok" : "text-ink"}`}>
               {adherenceDelta !== null ? `${adherenceDelta >= 0 ? "+" : ""}${adherenceDelta}%` : "—"}
             </p>
             <p className="mt-1 text-xs text-muted">
-              <span className="sm:hidden">vs 28 j avant</span>
-              <span className="hidden sm:inline">vs les 28 jours précédents</span>
+              <span className="sm:hidden">{t("vs28Short")}</span>
+              <span className="hidden sm:inline">{t("vs28")}</span>
             </p>
           </div>
         </div>
@@ -173,11 +176,11 @@ export default function ProgresView({
             <div className="flex items-center justify-between gap-2">
               <h2 className="flex items-center gap-2 text-base font-semibold text-ink sm:text-lg">
                 <LineChart className="h-4 w-4 text-brand sm:hidden" strokeWidth={2} />
-                Évolution de la douleur
+                {t("painEvolution")}
               </h2>
               <Link href="/patient/historique" className="flex shrink-0 items-center gap-1 text-sm font-medium text-brand hover:underline">
-                <span className="sm:hidden">Historique</span>
-                <span className="hidden sm:inline">Historique complet</span>
+                <span className="sm:hidden">{t("history")}</span>
+                <span className="hidden sm:inline">{t("fullHistory")}</span>
                 <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
               </Link>
             </div>
@@ -190,10 +193,10 @@ export default function ProgresView({
             <section className="hidden rounded-2xl border border-line bg-surface p-5 shadow-sm sm:block">
               <h2 className="flex items-center gap-1.5 text-lg font-semibold text-ink">
                 <MapPin className="h-4 w-4 text-brand" strokeWidth={1.75} />
-                Zone concernée
+                {t("zone")}
               </h2>
               <p className="mt-3 text-sm text-ink">{conditionName}</p>
-              <p className="mt-1 text-xs text-muted">Programme défini par votre praticien.</p>
+              <p className="mt-1 text-xs text-muted">{t("zoneNote")}</p>
             </section>
           )}
         </div>
