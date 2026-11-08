@@ -8,24 +8,17 @@
 // webhook Stripe plateforme lit encore pour d'anciennes sessions ou
 // factures déjà émises.
 // =============================================================================
-import { createHmac, timingSafeEqual } from "node:crypto";
 import type Stripe from "stripe";
 import { getStripe } from "./stripe";
 import { upsertPlatformBilling, upsertPlatformInvoice } from "@/lib/db/admin";
-import { periodLastDay, planMonthsOf } from "./reviewModel";
+import { periodLastDay } from "./reviewModel";
+import { verify } from "./signing";
 
+const validSig = (instructorId: string, given: string | undefined) => verify(`platform_billing:${instructorId}`, given);
 
-function sig(instructorId: string): string {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) throw new Error("STRIPE_SECRET_KEY is not set.");
-  return createHmac("sha256", key).update(`platform_billing:${instructorId}`).digest("hex");
-}
-
-function validSig(instructorId: string, given: string | undefined): boolean {
-  if (!given || !/^[0-9a-f]+$/i.test(given)) return false;
-  const a = Buffer.from(given, "hex");
-  const b = Buffer.from(sig(instructorId), "hex");
-  return a.length === b.length && timingSafeEqual(a, b);
+/** Durée payée d'avance d'une ancienne facture kiné (1, 3, 6 ou 12 mois ; 1 par défaut). */
+function planMonthsOf(value: number): number {
+  return [1, 3, 6, 12].includes(value) ? value : 1;
 }
 
 /** Après le Checkout « setup » (retour du kiné ou webhook plateforme). Rejouable. */

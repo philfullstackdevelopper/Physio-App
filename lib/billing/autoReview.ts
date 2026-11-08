@@ -20,6 +20,11 @@ import { feeNoteNumber, periodLabel, periodOf } from "./reviewModel";
 import { KINE_FOLLOW_UP_CENTS, eurosFR, kineFollowUpChargeable, type SubscriptionRow } from "./patientPlans";
 import { ensureKineCard } from "./patientSubscription";
 
+/** Libellé du paiement chez Stripe (relevé du kiné, reçu du patient). */
+export function reviewChargeDescription(period: string, feeNoteYear: number, feeNoteSeq: number, amountCents: number = KINE_FOLLOW_UP_CENTS): string {
+  return `Programme mensuel hors nomenclature - ${periodLabel(period)} - note n° ${feeNoteNumber(feeNoteYear, feeNoteSeq)} (${eurosFR(amountCents)} €)`;
+}
+
 export async function recordMonthlyReviewIfDue(p: {
   supabase: SupabaseClient;
   instructorId: string;
@@ -94,8 +99,11 @@ export async function recordMonthlyReviewIfDue(p: {
       accountId,
       customerId: followUp!.stripe_customer_id!,
       paymentMethodId: followUp!.stripe_payment_method_id!,
-      description: `Programme mensuel hors nomenclature - ${periodLabel(period)} - note n° ${feeNoteNumber(review.fee_note_year, review.fee_note_seq)} (${eurosFR(KINE_FOLLOW_UP_CENTS)} €)`,
+      description: reviewChargeDescription(period, review.fee_note_year, review.fee_note_seq),
+      receiptEmail: (patient?.email as string | null) ?? null,
     });
+    // Refus ou validation demandée par la banque : le patient voit un bouton
+    // « Payer » sur son appli (app/patient/suivi, ReviewPaymentNotice).
   } catch (e) {
     console.error("[autoReview] prélèvement automatique impossible", e);
   }

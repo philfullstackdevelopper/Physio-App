@@ -10,14 +10,27 @@ import {
   KINE_FOLLOW_UP_CENTS,
   TRIAL_DAYS,
   commitmentEnd,
+  commitmentEndOfSubscription,
   eurosFR,
   isPlatformOfferKey,
   isPlatformSubscription,
   platformOffer,
+  subscriptionGivesAccess,
   type SubscriptionRow,
 } from "@/lib/billing/patientPlans";
 import { signedSubscriptionMetadata } from "@/lib/billing/subscriptionSignature";
-import { PLATFORM_SIGNATURE_ACCOUNT, platformVatRateId, refreshPatientSubscription } from "@/lib/billing/patientSubscription";
+import {
+  PLATFORM_SIGNATURE_ACCOUNT,
+  cardChangeMetadata,
+  patientPortalConfigurationId,
+  platformVatRateId,
+  refreshPatientSubscription,
+} from "@/lib/billing/patientSubscription";
+import { followUpForCharge } from "@/lib/db/admin";
+import { createReviewPaymentCheckout } from "@/lib/billing/followUp";
+import { reviewPayableByPatient } from "@/lib/billing/reviewPayment";
+import { reviewChargeDescription } from "@/lib/billing/autoReview";
+import { periodLabel } from "@/lib/billing/reviewModel";
 
 // Modèle définitif (Philippe, 2026-11-04 ; lib/billing/patientPlans.ts) : le
 // patient choisit une offre d'accès à la plateforme (sans engagement, 3 mois
@@ -61,12 +74,18 @@ export async function startPlan(formData: FormData) {
   const { user, patient, kine, sub } = await context();
   if (((kine?.status as string | null) ?? "approved") !== "approved") fail(t("kineUnavailable"));
 
+  // Un seul abonnement à la fois (audit du 2026-11-08) : un abonnement en
+  // essai ou actif — même résilié pour la fin de période — n'en ouvre pas un
+  // deuxième (le patient annule plutôt sa résiliation).
+  if (subscriptionGivesAccess((sub as unknown as SubscriptionRow | null) ?? null)) fail(t("alreadySubscribed"));
+
   const offer = platformOffer(key as Parameters<typeof platformOffer>[0]);
   const stripe = getStripe();
   let url: string | null = null;
   try {
     // Abonnement d'accès en échec de paiement : on l'arrête avant d'en créer
-    // un nouveau (un seul abonnement par patient).
+    // un nouveau (un seul abonnement par patient). Si Stripe annonce sa fin
+    // APRÈS la création du nouveau, la base l'ignore (migration 0086).
     const onPlatform = isPlatformSubscription((sub as unknown as SubscriptionRow | null) ?? null);
     if (onPlatform && sub?.stripe_subscription_id && ["past_due", "unpaid", "incomplete"].includes(sub.status as string)) {
       await stripe.subscriptions.cancel(sub.stripe_subscription_id as string).catch(() => null);
@@ -82,7 +101,9 @@ export async function startPlan(formData: FormData) {
       customerId = c.id;
     }
     // Essai gratuit seulement à la toute première souscription ; l'engagement
-    // court à partir du premier mois payé.
+    // court à partir du premier mois payé. commit_until n'est qu'une
+    // estimation : la résiliation et « Mon suivi » recalculent la fin
+    // d'engagement sur l'abonnement réel (commitmentEndOfSubscription).
     const firstTime = !sub;
     const paidStart = new Date(Date.now() + (firstTime ? TRIAL_DAYS * 86_400_000 : 0));
     const commitUntil = commitmentEnd(offer, paidStart);
@@ -100,6 +121,10 @@ export async function startPlan(formData: FormData) {
       mode: "subscription",
       customer: customerId,
       payment_method_collection: "always",
+      // Carte seulement (audit du 2026-11-08) : la carte est ensuite copiée
+      // chez le kiné pour ses 6 € ; un mandat SEPA ou un moyen Link ne peut
+      // pas l'être.
+      payment_method_types: ["card"],
       line_items: [
         {
           quantity: 1,
@@ -162,11 +187,24 @@ export async function cancelPlan() {
   try {
     const opts = account ? { stripeAccount: account } : undefined;
     const live = await stripe.subscriptions.retrieve(id!, undefined, opts);
-    const commitUntil = !account ? live.metadata?.commit_until : undefined;
+    // Fin d'engagement calculée sur l'abonnement réel (fin de l'essai ou début).
+    const commitUntil = !account
+      ? commitmentEndOfSubscription({
+          plan: live.metadata?.plan,
+          trial_end: live.trial_end,
+          start_date: live.start_date,
+          commit_until: live.metadata?.commit_until,
+        })
+      : null;
+    // proration_behavior "none" : jamais de remboursement ni de facture au
+    // prorata — les mois engagés restent dus, le mois en cours va à son terme.
     if (commitUntil && new Date(commitUntil) > new Date()) {
-      await stripe.subscriptions.update(id!, { cancel_at: Math.floor(new Date(commitUntil).getTime() / 1000) });
+      await stripe.subscriptions.update(id!, {
+        cancel_at: Math.floor(new Date(commitUntil).getTime() / 1000),
+        proration_behavior: "none",
+      });
     } else {
-      await stripe.subscriptions.update(id!, { cancel_at_period_end: true }, opts);
+      await stripe.subscriptions.update(id!, { cancel_at_period_end: true, proration_behavior: "none" }, opts);
     }
     await refreshPatientSubscription(id!, account);
   } catch (e) {
@@ -183,11 +221,132 @@ export async function resumePlan() {
   const id = sub?.stripe_subscription_id as string | undefined;
   if (!id || accountOf(sub)) fail(t("nothingToResume"));
   try {
-    await getStripe().subscriptions.update(id!, { cancel_at_period_end: false, cancel_at: "" });
+    await getStripe().subscriptions.update(id!, { cancel_at_period_end: false, cancel_at: "", proration_behavior: "none" });
     await refreshPatientSubscription(id!, null);
   } catch (e) {
     console.error("resumePlan:", e);
     fail(t("resumeFailed"));
   }
   redirect("/patient/suivi?reprise=1");
+}
+
+/** Abonnement d'accès en cours sur le compte d'EasyPhysio (carte, factures), ou fin avec un message. */
+async function platformSubOrFail(t: Awaited<ReturnType<typeof tr>>) {
+  const ctx = await context();
+  const sub = ctx.sub;
+  if (!sub?.stripe_subscription_id || !sub.stripe_customer_id || accountOf(sub) || !isPlatformSubscription(sub as unknown as SubscriptionRow)) {
+    fail(t("noSubscription"));
+  }
+  return { ...ctx, subscriptionId: sub!.stripe_subscription_id as string, customerId: sub!.stripe_customer_id as string };
+}
+
+/**
+ * Changer de carte (audit du 2026-11-08) : page Stripe d'enregistrement de
+ * carte (carte seulement, aucun prélèvement). Au retour, elle devient la carte
+ * de l'abonnement d'accès, et la copie chez le kiné est refaite
+ * (lib/billing/patientSubscription.ts finalizePatientCardChange).
+ */
+export async function changeCard() {
+  const t = await tr();
+  const { user, subscriptionId, customerId } = await platformSubOrFail(t);
+  let url: string | null = null;
+  try {
+    const base = await requestOrigin();
+    const session = await getStripe().checkout.sessions.create({
+      mode: "setup",
+      customer: customerId,
+      payment_method_types: ["card"],
+      metadata: cardChangeMetadata(user.id, subscriptionId),
+      locale: (await getLocale()) === "en" ? "en" : "fr",
+      success_url: `${base}/patient/suivi/carte?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${base}/patient/suivi`,
+    });
+    url = session.url;
+  } catch (e) {
+    console.error("changeCard:", e);
+  }
+  if (!url) fail(t("paymentUnavailable"));
+  redirect(url!);
+}
+
+/** Mes factures EasyPhysio : portail client Stripe, en lecture (factures seulement). */
+export async function openInvoices() {
+  const t = await tr();
+  const { customerId } = await platformSubOrFail(t);
+  let url: string | null = null;
+  try {
+    const base = await requestOrigin();
+    const session = await getStripe().billingPortal.sessions.create({
+      customer: customerId,
+      configuration: await patientPortalConfigurationId(),
+      locale: (await getLocale()) === "en" ? "en" : "fr",
+      return_url: `${base}/patient/suivi`,
+    });
+    url = session.url;
+  } catch (e) {
+    console.error("openInvoices:", e);
+  }
+  if (!url) fail(t("paymentUnavailable"));
+  redirect(url!);
+}
+
+/**
+ * Régler soi-même les honoraires d'un mois que la banque a refusés ou dont
+ * elle demande la validation (3-D Secure). Page de paiement Stripe sur le
+ * compte du KINÉ (ses honoraires, 0 % pour EasyPhysio), pour ce mois précis :
+ * même note d'honoraires, même montant. Le webhook marque le mois payé.
+ */
+export async function payReview(formData: FormData) {
+  const t = await tr();
+  const reviewId = String(formData.get("review_id") ?? "");
+  const supabase = await createClient();
+  const user = await requireUser(supabase);
+  // Lecture par la session du patient : la règle d'accès ne lui rend que SES mois.
+  const { data: review } = reviewId
+    ? await supabase
+        .from("monthly_reviews")
+        .select("id, patient_id, instructor_id, period, amount_cents, payment_status, fee_note_year, fee_note_seq")
+        .eq("id", reviewId)
+        .eq("patient_id", user.id)
+        .maybeSingle()
+    : { data: null };
+  if (!review || !reviewPayableByPatient(review.payment_status as string)) fail(t("reviewNotPayable"));
+
+  const [{ data: connect }, followUp] = await Promise.all([
+    supabase
+      .from("instructor_connect_accounts")
+      .select("stripe_connect_account_id, status")
+      .eq("instructor_id", review!.instructor_id as string)
+      .maybeSingle(),
+    followUpForCharge(user.id),
+  ]);
+  const accountId = connect?.status === "active" ? ((connect.stripe_connect_account_id as string | null) ?? null) : null;
+  if (!accountId) fail(t("reviewKineUnavailable"));
+
+  let url: string | null = null;
+  try {
+    const base = await requestOrigin();
+    const locale = (await getLocale()) === "en" ? "en" : "fr";
+    const period = review!.period as string;
+    url = await createReviewPaymentCheckout({
+      reviewId: review!.id as string,
+      amountCents: review!.amount_cents as number,
+      accountId: accountId!,
+      // Client du patient chez le kiné (carte copiée), s'il vit bien sur ce compte.
+      customerId:
+        followUp && followUp.instructor_id === review!.instructor_id && followUp.connect_account_id === accountId
+          ? followUp.stripe_customer_id
+          : null,
+      productName: t("reviewProductName", { period: periodLabel(period, locale) }),
+      description: reviewChargeDescription(period, review!.fee_note_year as number, review!.fee_note_seq as number, review!.amount_cents as number),
+      receiptEmail: user.email ?? null,
+      locale,
+      successUrl: `${base}/patient/suivi?paye=1`,
+      cancelUrl: `${base}/patient/suivi`,
+    });
+  } catch (e) {
+    console.error("payReview:", e);
+  }
+  if (!url) fail(t("paymentUnavailable"));
+  redirect(url!);
 }

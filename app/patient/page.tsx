@@ -7,6 +7,9 @@ import { loadPatientHome } from "@/lib/patient/home-data";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
 import type { SessionDetail } from "@/components/WeekProgramme";
 import PatientHomeView, { type ProgrammeCard } from "@/components/PatientHomeView";
+import { loadUnpaidReviews } from "@/lib/billing/feeNotes";
+import { nativeAppPlatform } from "@/lib/app/nativeAppServer";
+import ReviewPaymentNotice from "./suivi/ReviewPaymentNotice";
 
 // Philippe, 2026-09-08: Accueil is now the week-by-week programme browser
 // (moved here from /patient/programme, which is now reserved for "what's
@@ -23,9 +26,14 @@ export default async function PatientDashboard() {
   const t = await getTranslations("patient.home");
 
   // En parallèle (audit du 2026-10-08) : ces trois lectures sont indépendantes.
-  const [home, { data: patientRow }] = await Promise.all([
+  const [home, { data: patientRow }, unpaid, native] = await Promise.all([
     loadPatientHome(supabase, user.id),
     supabase.from("patients").select("created_at").eq("id", user.id).maybeSingle(),
+    // Honoraires du kiné refusés / à confirmer (audit Stripe du 2026-11-08) :
+    // bandeau « Payer » au-dessus de l'accueil, seulement s'il y en a. Jamais
+    // dans l'appli mobile (pas de paiement dans l'appli : règles des stores).
+    loadUnpaidReviews(supabase, user.id),
+    nativeAppPlatform(),
   ]);
   // Date du jour sous la salutation, heure de Paris (le serveur peut tourner en UTC).
   const today = new Intl.DateTimeFormat(intlTag(locale), {
@@ -105,7 +113,7 @@ export default async function PatientDashboard() {
           done: false,
         };
 
-  return (
+  const view = (
     <PatientHomeView
       firstName={home.fullName ? home.fullName.split(" ")[0] : ""}
       today={today}
@@ -120,5 +128,15 @@ export default async function PatientDashboard() {
       currentWeekNumber={currentWeekNumber(weeks)}
       pending={!home.activeWorkout}
     />
+  );
+  if (native || unpaid.length === 0) return view;
+  const tSuivi = await getTranslations("billing.suivi");
+  return (
+    <>
+      <div className="px-4 pt-3 sm:px-8 sm:pt-5">
+        <ReviewPaymentNotice reviews={unpaid} kineName={tSuivi("kineFallback")} />
+      </div>
+      {view}
+    </>
   );
 }

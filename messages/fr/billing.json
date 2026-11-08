@@ -75,7 +75,11 @@
     "failed": "Paiements refusés (non encaissés)",
     "stripeFees": "Frais de paiement Stripe (estimés, déductibles)",
     "invoice": "Facture EasyPhysio ({count, plural, =0 {0 patient actif} =1 {1 patient actif} other {# patients actifs}}, déductible)",
-    "taxNote": "Ces recettes sont des honoraires (bénéfices non commerciaux, art. 92 du CGI), à reporter avec vos autres honoraires. Informations générales : votre comptable ou votre AGA reste votre référence."
+    "taxNote": "Ces recettes sont des honoraires (bénéfices non commerciaux, art. 92 du CGI), à reporter avec vos autres honoraires. Informations générales : votre comptable ou votre AGA reste votre référence.",
+    "statusActionRequired": "À confirmer",
+    "statusRefunded": "Remboursé",
+    "statusDisputed": "Contesté",
+    "refunded": "Remboursés ou contestés (non encaissés)"
   },
   "csv": {
     "date": "Date",
@@ -90,7 +94,10 @@
     "statusPaid": "Encaissé",
     "statusPending": "En cours",
     "statusFailed": "Refusé",
-    "filename": "recettes-easyphysio-{month}.csv"
+    "filename": "recettes-easyphysio-{month}.csv",
+    "statusActionRequired": "À confirmer par le patient",
+    "statusRefunded": "Remboursé",
+    "statusDisputed": "Contesté"
   },
   "feeNote": {
     "profession": "Masseur-kinésithérapeute",
@@ -110,7 +117,10 @@
     "paid": "Réglé par carte",
     "pending": "Paiement en cours",
     "failed": "Paiement refusé — à régulariser",
-    "fallbackPatient": "Patient"
+    "fallbackPatient": "Patient",
+    "actionRequired": "Paiement en attente de confirmation par le patient",
+    "refunded": "Remboursé",
+    "disputed": "Paiement contesté auprès de la banque"
   },
   "suivi": {
     "kineFallback": "votre kiné",
@@ -147,7 +157,12 @@
     "cancelling": "Résiliation…",
     "confirmCancel": "Confirmer la résiliation",
     "kineNotReady": "{kineName} ne propose pas de suivi pour le moment.",
-    "none": "Aucun abonnement en cours."
+    "none": "Aucun abonnement en cours.",
+    "cardChanged": "C'est noté : votre nouvelle carte sera utilisée pour les prochains paiements.",
+    "reviewPaid": "Merci : votre paiement est en cours d'enregistrement.",
+    "opening": "Ouverture…",
+    "changeCard": "Changer de carte",
+    "invoices": "Mes factures"
   },
   "paywall": {
     "clips": {
@@ -202,6 +217,16 @@
     "noSubscription": "Aucun abonnement en cours.",
     "cancelFailed": "La résiliation n'a pas pu être enregistrée. Réessayez.",
     "nothingToResume": "Aucun abonnement à reprendre.",
-    "resumeFailed": "La reprise n'a pas pu être enregistrée. Réessayez."
+    "resumeFailed": "La reprise n'a pas pu être enregistrée. Réessayez.",
+    "alreadySubscribed": "Vous avez déjà un abonnement en cours. Pour le garder, annulez plutôt sa résiliation.",
+    "reviewNotPayable": "Ce paiement n'est plus à régler.",
+    "reviewKineUnavailable": "Votre kinésithérapeute ne peut pas recevoir de paiement en ligne pour le moment.",
+    "reviewProductName": "Programme mensuel hors nomenclature — {period}"
+  },
+  "reviewPayment": {
+    "actionRequired": "Votre banque demande de confirmer le paiement des honoraires de {kineName} pour {period} ({amount}).",
+    "failed": "Le paiement des honoraires de {kineName} pour {period} ({amount}) a été refusé par votre banque.",
+    "pay": "Payer",
+    "opening": "Ouverture…"
   }
 }

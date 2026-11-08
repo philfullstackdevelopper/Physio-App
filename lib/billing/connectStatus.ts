@@ -5,9 +5,9 @@
 // le webhook `account.updated`.
 //
 // Server-only (clé secrète Stripe, connexion Postgres directe).
-import { createHmac, timingSafeEqual } from "node:crypto";
 import type Stripe from "stripe";
 import { upsertConnectAccount } from "@/lib/db/admin";
+import { sign, verify } from "./signing";
 import { getStripe } from "./stripe";
 
 export type ConnectStatus = "active" | "onboarding";
@@ -23,20 +23,16 @@ export function connectStatusFromAccount(
 // Le webhook n'a aucune session et ne peut pas lire instructor_connect_accounts
 // (FORCE ROW LEVEL SECURITY sur Scalingo, aucune fonction `internal` de
 // lecture). On range donc l'id du kiné dans les metadata du compte Stripe —
-// SIGNÉ (HMAC, clé = STRIPE_SECRET_KEY, jamais connue du kiné) : sans
+// SIGNÉ (HMAC, clé STRIPE_SIGNING_SECRET de lib/billing/signing.ts, jamais connue du kiné) : sans
 // signature, un kiné qui modifierait ces metadata pourrait faire pointer la
 // fiche d'un AUTRE kiné vers son propre compte et détourner les paiements de
 // ses patients (CLAUDE.md §3, la raison même de cette table à part).
 
-function signature(instructorId: string, accountId: string): string {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) throw new Error("STRIPE_SECRET_KEY is not set.");
-  return createHmac("sha256", key).update(`connect:${instructorId}:${accountId}`).digest("hex");
-}
+const payload = (instructorId: string, accountId: string) => `connect:${instructorId}:${accountId}`;
 
 /** Metadata à poser sur le compte Connect d'un kiné. */
 export function connectAccountMetadata(instructorId: string, accountId: string): Record<string, string> {
-  return { instructor_id: instructorId, instructor_sig: signature(instructorId, accountId) };
+  return { instructor_id: instructorId, instructor_sig: sign(payload(instructorId, accountId)) };
 }
 
 /**
@@ -48,6 +44,8 @@ export function isMissingStripeObject(err: unknown): boolean {
   const e = err as { code?: string; type?: string; message?: string } | null;
   if (!e) return false;
   if (e.code === "resource_missing" || e.code === "account_invalid") return true;
+  // Compte que le kiné a déconnecté d'EasyPhysio (« application access may have been revoked »).
+  if (e.type === "StripePermissionError" && /does not have access to account|access may have been revoked/i.test(e.message ?? "")) return true;
   return e.type === "StripeInvalidRequestError" && /no such|does not exist|exists in (test|live) mode/i.test(e.message ?? "");
 }
 
@@ -56,9 +54,7 @@ export function verifiedInstructorId(account: Pick<Stripe.Account, "id" | "metad
   const instructorId = account.metadata?.instructor_id;
   const sig = account.metadata?.instructor_sig;
   if (!instructorId || !sig) return null;
-  const expected = Buffer.from(signature(instructorId, account.id), "hex");
-  const given = Buffer.from(sig, "hex");
-  return given.length === expected.length && timingSafeEqual(given, expected) ? instructorId : null;
+  return verify(payload(instructorId, account.id), sig) ? instructorId : null;
 }
 
 /**

@@ -77,7 +77,11 @@
     "failed": "Declined payments (not collected)",
     "stripeFees": "Stripe payment fees (estimated, deductible)",
     "invoice": "EasyPhysio invoice ({count, plural, =0 {0 active patients} =1 {1 active patient} other {# active patients}}, deductible)",
-    "taxNote": "This income is professional fees (« bénéfices non commerciaux », art. 92 of the French General Tax Code, CGI), to be declared with your other fees. General information only: your accountant or your AGA remains your reference."
+    "taxNote": "This income is professional fees (« bénéfices non commerciaux », art. 92 of the French General Tax Code, CGI), to be declared with your other fees. General information only: your accountant or your AGA remains your reference.",
+    "statusActionRequired": "To be confirmed",
+    "statusRefunded": "Refunded",
+    "statusDisputed": "Disputed",
+    "refunded": "Refunded or disputed (not collected)"
   },
   "csv": {
     "_review": "Draft translation — needs review by a lawyer before launch",
@@ -93,7 +97,10 @@
     "statusPaid": "Collected",
     "statusPending": "Pending",
     "statusFailed": "Declined",
-    "filename": "easyphysio-income-{month}.csv"
+    "filename": "easyphysio-income-{month}.csv",
+    "statusActionRequired": "To be confirmed by the patient",
+    "statusRefunded": "Refunded",
+    "statusDisputed": "Disputed"
   },
   "feeNote": {
     "_review": "Draft translation — needs review by a lawyer before launch",
@@ -114,7 +121,10 @@
     "paid": "Paid by card",
     "pending": "Payment pending",
     "failed": "Payment declined — to be settled",
-    "fallbackPatient": "Patient"
+    "fallbackPatient": "Patient",
+    "actionRequired": "Payment awaiting the patient's confirmation",
+    "refunded": "Refunded",
+    "disputed": "Payment disputed with the bank"
   },
   "suivi": {
     "_review": "Draft translation — needs review by a lawyer before launch",
@@ -152,7 +162,12 @@
     "cancelling": "Cancelling…",
     "confirmCancel": "Confirm cancellation",
     "kineNotReady": "{kineName} doesn't offer follow-up at the moment.",
-    "none": "No current subscription."
+    "none": "No current subscription.",
+    "cardChanged": "Done: your new card will be used for upcoming payments.",
+    "reviewPaid": "Thank you: your payment is being recorded.",
+    "opening": "Opening…",
+    "changeCard": "Change card",
+    "invoices": "My invoices"
   },
   "paywall": {
     "_review": "Draft translation — needs review by a lawyer before launch (acceptance text); exercise names by the partner physio",
@@ -208,6 +223,16 @@
     "noSubscription": "No current subscription.",
     "cancelFailed": "The cancellation couldn't be saved. Please try again.",
     "nothingToResume": "No subscription to resume.",
-    "resumeFailed": "The resumption couldn't be saved. Please try again."
+    "resumeFailed": "The resumption couldn't be saved. Please try again.",
+    "alreadySubscribed": "You already have a subscription. To keep it, undo its cancellation instead.",
+    "reviewNotPayable": "This payment no longer needs to be made.",
+    "reviewKineUnavailable": "Your physiotherapist can't receive online payments at the moment.",
+    "reviewProductName": "Monthly programme (outside the French fee schedule) — {period}"
+  },
+  "reviewPayment": {
+    "actionRequired": "Your bank asks you to confirm the payment of {kineName}'s fees for {period} ({amount}).",
+    "failed": "Your bank declined the payment of {kineName}'s fees for {period} ({amount}).",
+    "pay": "Pay",
+    "opening": "Opening…"
   }
 }

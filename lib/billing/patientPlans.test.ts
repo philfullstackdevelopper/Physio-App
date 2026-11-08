@@ -7,6 +7,7 @@ import {
   PLATFORM_OFFERS,
   TRIAL_DAYS,
   commitmentEnd,
+  commitmentEndOfSubscription,
   kineFollowUpChargeable,
   monthlyTotalCents,
   offersSummaryFR,
@@ -89,4 +90,29 @@ test("paywall : obligatoire sauf kiné suspendu, accès offert (test) ou abonnem
 test("relecture chez Stripe quand la période est dépassée", () => {
   assert.equal(subscriptionNeedsRefresh(platform("plan_1m", "active", past), now), true);
   assert.equal(subscriptionNeedsRefresh(platform("plan_1m", "active", later), now), false);
+});
+
+test("fin d'engagement : calculée depuis la fin réelle de l'essai, ou le début de l'abonnement", () => {
+  const trialEnd = Date.UTC(2026, 10, 18, 12) / 1000; // 18 novembre 2026
+  const start = Date.UTC(2026, 10, 8, 12) / 1000;
+  const sixMonths = commitmentEndOfSubscription({ plan: "plan_6m", trial_end: trialEnd, start_date: start });
+  assert.equal(sixMonths, commitmentEnd(platformOffer("plan_6m"), new Date(trialEnd * 1000)));
+  assert.equal(new Date(sixMonths!).getUTCMonth(), 4); // mai 2027
+  // Sans essai : depuis le début.
+  const threeMonths = commitmentEndOfSubscription({ plan: "plan_3m", trial_end: null, start_date: start });
+  assert.equal(new Date(threeMonths!).getUTCMonth(), 1); // février 2027
+  // Sans engagement, ou formule inconnue : pas de fin d'engagement.
+  assert.equal(commitmentEndOfSubscription({ plan: "plan_1m", trial_end: trialEnd, start_date: start }), null);
+  assert.equal(commitmentEndOfSubscription({ plan: "patient_monthly", start_date: start, commit_until: "x" }), null);
+  // Dates absentes : la metadata posée à l'ouverture du paiement sert de secours.
+  assert.equal(commitmentEndOfSubscription({ plan: "plan_3m", commit_until: "2027-02-18T00:00:00.000Z" }), "2027-02-18T00:00:00.000Z");
+});
+
+test("un seul abonnement : un abonnement en essai ou actif (même résilié) bloque une nouvelle souscription", () => {
+  const future = "2099-01-01T00:00:00Z";
+  const base = { plan: "plan_3m", current_period_end: future, cancel_at_period_end: false, stripe_account_id: null };
+  assert.equal(subscriptionGivesAccess({ ...base, status: "trialing" }), true);
+  assert.equal(subscriptionGivesAccess({ ...base, status: "active", cancel_at_period_end: true }), true);
+  assert.equal(subscriptionGivesAccess({ ...base, status: "past_due" }), false);
+  assert.equal(subscriptionGivesAccess({ ...base, status: "canceled" }), false);
 });

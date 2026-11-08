@@ -18,9 +18,10 @@
 import "server-only";
 import type Stripe from "stripe";
 import { getStripe } from "./stripe";
-import { upsertFollowUp, upsertSubscription } from "@/lib/db/admin";
+import { followUpForCharge, upsertFollowUp, upsertSubscription } from "@/lib/db/admin";
 import { hasValidSubscriptionSignature } from "./subscriptionSignature";
 import { EARLY_ACCESS_PLAN_KEY, KINE_FOLLOW_UP_CENTS, PLATFORM_VAT_RATE, isPlatformOfferKey } from "./patientPlans";
+import { sign, verify } from "./signing";
 
 /** Clé de signature des abonnements qui vivent sur le compte d'EasyPhysio. */
 export const PLATFORM_SIGNATURE_ACCOUNT = "platform";
@@ -63,7 +64,10 @@ export async function syncPatientSubscription(sub: Stripe.Subscription, accountI
     }
   }
 
-  await upsertSubscription({
+  // La base ignore un message en retard sur un ANCIEN abonnement quand un plus
+  // récent est vivant (migration 0086) — ex. la fin d'un abonnement refusé,
+  // annoncée après la souscription de son remplaçant.
+  const applied = await upsertSubscription({
     userId,
     plan,
     stripeCustomerId: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
@@ -72,7 +76,9 @@ export async function syncPatientSubscription(sub: Stripe.Subscription, accountI
     currentPeriodEnd: periodEndISO(sub),
     stripeAccountId: accountId,
     cancelAtPeriodEnd,
+    stripeCreated: sub.created ? new Date(sub.created * 1000).toISOString() : null,
   });
+  if (!applied) console.warn(`[abonnement] ${sub.id} (${sub.status}) ignoré : un abonnement plus récent est en cours.`);
   return userId;
 }
 
@@ -88,6 +94,21 @@ export async function refreshPatientSubscription(stripeSubscriptionId: string, a
   } catch (e) {
     console.error("[abonnement] relecture impossible :", e);
   }
+}
+
+/**
+ * Webhook customer.subscription.* : les événements peuvent arriver dans le
+ * désordre, on recopie donc l'état ACTUEL de l'abonnement chez Stripe plutôt
+ * que la photo contenue dans l'événement (qui ne sert qu'en secours).
+ */
+export async function syncPatientSubscriptionFromEvent(sub: Stripe.Subscription, accountId: string | null): Promise<void> {
+  let fresh = sub;
+  try {
+    fresh = await getStripe().subscriptions.retrieve(sub.id, undefined, accountId ? { stripeAccount: accountId } : undefined);
+  } catch (e) {
+    console.warn(`[abonnement] ${sub.id} : relecture impossible, on garde l'événement`, e);
+  }
+  await syncPatientSubscription(fresh, accountId);
 }
 
 function cardLabel(pm: Stripe.PaymentMethod | null): string | null {
@@ -113,10 +134,23 @@ export async function ensureKineCard(p: {
 }): Promise<boolean> {
   const stripe = getStripe();
   try {
-    const sub = await stripe.subscriptions.retrieve(p.platformSubscriptionId, { expand: ["default_payment_method"] });
-    const pm = (sub.default_payment_method as Stripe.PaymentMethod | null) ?? null;
+    // La carte ACTUELLE (audit du 2026-11-08) : celle de l'abonnement, sinon
+    // celle par défaut du client — après un changement de carte, c'est la
+    // nouvelle qui est copiée, jamais une ancienne.
+    const sub = await stripe.subscriptions.retrieve(p.platformSubscriptionId, {
+      expand: ["default_payment_method", "customer.invoice_settings.default_payment_method"],
+    });
+    const customerObj = typeof sub.customer === "string" ? null : sub.customer;
+    const customerDefault =
+      customerObj && !("deleted" in customerObj && customerObj.deleted)
+        ? ((customerObj as Stripe.Customer).invoice_settings?.default_payment_method as Stripe.PaymentMethod | string | null)
+        : null;
+    const pm =
+      (sub.default_payment_method as Stripe.PaymentMethod | null) ??
+      (customerDefault && typeof customerDefault !== "string" ? customerDefault : null);
     const platformCustomer = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-    if (!pm) return false;
+    // Cartes seulement : un mandat SEPA ne peut pas être copié chez le kiné.
+    if (!pm || pm.type !== "card") return false;
     const clone = await stripe.paymentMethods.create(
       { customer: platformCustomer, payment_method: pm.id },
       { stripeAccount: p.connectAccountId, idempotencyKey: `clone-${pm.id}-${p.connectAccountId}` },
@@ -144,6 +178,100 @@ export async function ensureKineCard(p: {
     console.error("[abonnement] copie de la carte chez le kiné impossible :", e);
     return false;
   }
+}
+
+/**
+ * Le patient a changé de carte : la copie chez son kiné est périmée. On
+ * repasse son suivi en « carte à copier » ; le prochain prélèvement du kiné
+ * (lib/billing/autoReview.ts) recopie alors la NOUVELLE carte. Ne lève jamais.
+ */
+export async function markKineCardStale(patientId: string): Promise<void> {
+  try {
+    const f = await followUpForCharge(patientId);
+    if (!f || f.status !== "active") return;
+    await upsertFollowUp({
+      patientId,
+      instructorId: f.instructor_id,
+      priceCents: f.price_cents,
+      status: "pending_card",
+      stripeCustomerId: null,
+      stripePaymentMethodId: null,
+      cardLabel: null,
+    });
+  } catch (e) {
+    console.error("[abonnement] carte du kiné non marquée à recopier :", e);
+  }
+}
+
+// ---- Changement de carte par le patient --------------------------------------
+// Checkout en mode « setup », CARTE seulement, sur le compte d'EasyPhysio. Une
+// fois la carte enregistrée, elle devient la carte de l'abonnement d'accès et
+// du client, et la copie chez le kiné est refaite au prochain prélèvement.
+
+const cardChangePayload = (userId: string, subscriptionId: string) => `card_change:${userId}:${subscriptionId}`;
+
+export function cardChangeMetadata(userId: string, subscriptionId: string): Record<string, string> {
+  return {
+    kind: "patient_card",
+    user_id: userId,
+    subscription_id: subscriptionId,
+    card_sig: sign(cardChangePayload(userId, subscriptionId)),
+  };
+}
+
+/**
+ * Après le Checkout « changement de carte » (retour du patient ou webhook
+ * plateforme). Rejouable. Renvoie l'id du patient, ou null si la session
+ * n'est pas une des nôtres / pas terminée.
+ */
+export async function finalizePatientCardChange(sessionId: string): Promise<string | null> {
+  const stripe = getStripe();
+  const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["setup_intent", "setup_intent.payment_method"] });
+  const meta = session.metadata;
+  if (session.mode !== "setup" || session.status !== "complete" || meta?.kind !== "patient_card") return null;
+  const userId = meta.user_id;
+  const subscriptionId = meta.subscription_id;
+  if (!userId || !subscriptionId || !verify(cardChangePayload(userId, subscriptionId), meta.card_sig)) return null;
+  const setupIntent = session.setup_intent as Stripe.SetupIntent | null;
+  const pm = (setupIntent?.payment_method as Stripe.PaymentMethod | null) ?? null;
+  const customerId = typeof session.customer === "string" ? session.customer : (session.customer?.id ?? null);
+  if (!pm || pm.type !== "card" || !customerId || setupIntent?.status !== "succeeded") return null;
+
+  await stripe.customers.update(customerId, { invoice_settings: { default_payment_method: pm.id } });
+  await stripe.subscriptions.update(subscriptionId, { default_payment_method: pm.id });
+  await markKineCardStale(userId);
+  return userId;
+}
+
+/** Webhook plateforme `checkout.session.completed` en mode setup : changement de carte d'un patient ? */
+export function isPatientCardSession(session: Stripe.Checkout.Session): boolean {
+  return session.mode === "setup" && session.metadata?.kind === "patient_card";
+}
+
+/**
+ * Portail client Stripe du patient : factures d'EasyPhysio seulement. Le
+ * changement de carte passe par notre propre page (carte seulement, recopie
+ * chez le kiné) et la résiliation par « Mon suivi » (règles d'engagement) :
+ * les deux sont donc fermés dans le portail. Configuration créée une fois
+ * puis retrouvée par sa metadata.
+ */
+export async function patientPortalConfigurationId(): Promise<string> {
+  const stripe = getStripe();
+  const existing = await stripe.billingPortal.configurations.list({ active: true, limit: 100 });
+  const found = existing.data.find((c) => c.metadata?.easyphysio === "patient_invoices");
+  if (found) return found.id;
+  const created = await stripe.billingPortal.configurations.create({
+    name: "EasyPhysio — factures patient",
+    features: {
+      invoice_history: { enabled: true },
+      payment_method_update: { enabled: false },
+      customer_update: { enabled: false },
+      subscription_cancel: { enabled: false },
+      subscription_update: { enabled: false },
+    },
+    metadata: { easyphysio: "patient_invoices" },
+  });
+  return created.id;
 }
 
 /**
