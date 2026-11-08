@@ -636,7 +636,7 @@ export default function KineWeekProgramme({
                   </span>
                   <span className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 max-sm:short:py-1.5 ${row}`}>
                     <span className="flex min-w-0 items-baseline gap-2">
-                      <span className="text-base font-semibold capitalize">{d.dayLabel}</span>
+                      <span className="inline-block text-base font-semibold first-letter:uppercase">{d.dayLabel}</span>
                       <span className="truncate text-sm opacity-80">{d.dateLabel}</span>
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium">

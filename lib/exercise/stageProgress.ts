@@ -167,8 +167,8 @@ export function assessSignals(signals: ProgressSignals, t?: Tr): SignalAssessmen
   // Score passé en texte : « 7.5 » garde son point, comme avant.
   const cause =
     avgPain !== null && avgPain >= PAIN_HOLD
-      ? t ? t("causePain", { score: String(round(avgPain)) }) : `douleur élevée (${round(avgPain)}/10)`
-      : t ? t("causeDifficulty", { score: String(round(avgDiff ?? 0)) }) : `exercices trop difficiles (${round(avgDiff ?? 0)}/10)`;
+      ? t ? t("causePain", { score: round(avgPain) }) : `douleur élevée (${String(round(avgPain)).replace(".", ",")}/10)`
+      : t ? t("causeDifficulty", { score: round(avgDiff ?? 0) }) : `exercices trop difficiles (${String(round(avgDiff ?? 0)).replace(".", ",")}/10)`;
   return { concerning, severe, cause };
 }
 

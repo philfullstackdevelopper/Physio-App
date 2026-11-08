@@ -50,7 +50,7 @@
     "today": "Aujourd'hui",
     "sessionsToday": "Séances faites aujourd'hui",
     "painReports": "Douleurs signalées aujourd'hui",
-    "noPainToday": "aucune aujourd'hui",
+    "noPainToday": "rien à signaler",
     "patientsFollowed": "Patients suivis",
     "toFollow": "Patients à suivre",
     "unreadCount": "{count, plural, one {# message non lu} other {# messages non lus}}",

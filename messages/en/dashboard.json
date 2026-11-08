@@ -50,7 +50,7 @@
     "today": "Today",
     "sessionsToday": "Sessions done today",
     "painReports": "Pain reports today",
-    "noPainToday": "none today",
+    "noPainToday": "nothing to report",
     "patientsFollowed": "Patients followed",
     "toFollow": "Patients to follow up",
     "unreadCount": "{count, plural, one {# unread message} other {# unread messages}}",
