@@ -3,15 +3,14 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
-import { isClerkAPIResponseError } from "@clerk/shared/error";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { precreateAppUserId } from "@/lib/auth/user-map";
 import { canInvitePatients } from "@/lib/launch";
-import { requestOrigin } from "@/lib/requestOrigin";
 import type { ThreadMessage } from "@/components/MessageThread";
 import { friendlyDbError } from "@/lib/format/dbError";
-import { deleteAppUserById } from "@/lib/db/admin";
+import { deleteAppUserById, joinLinkKine } from "@/lib/db/admin";
+import { invitePatient } from "@/lib/patient/invitation";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { notifyNewMessage } from "@/lib/push/notify";
 import { getTranslations } from "next-intl/server";
@@ -42,8 +41,6 @@ export async function addPatient(formData: FormData) {
     redirect(`/dashboard/patients/new?error=${encodeURIComponent(t("fillAll"))}`);
   }
 
-  const origin = await requestOrigin();
-
   // Reserve the internal uuid BEFORE the invite goes out, so patients.id and
   // app_users.app_id agree from day one (resolveAppUserId will find this row
   // by email on the patient's first login and attach their Clerk id).
@@ -66,52 +63,21 @@ export async function addPatient(formData: FormData) {
     }
   };
 
-  // Send the Clerk invitation. The patient sets their password via Clerk's own
-  // flow — no Supabase invite link, no token confirmation route needed anymore.
-  // redirectUrl must point at a page rendering <SignUp/> (not <SignIn/>):
-  // that's the component that reads the __clerk_ticket Clerk appends to this
-  // URL and completes the invited identity, instead of the generic
-  // instructor-facing /signup marketing page.
-  //
-  // Données de santé (audit HDS, 2026-11-08) : Clerk est hébergé aux USA et
-  // non certifié HDS. Il ne doit pas pouvoir savoir qu'une personne est suivie
-  // par un kiné : ni « role: patient » ni nom du kiné dans les métadonnées,
-  // ni nom du kiné dans l'adresse de retour (Clerk la conserve). /invitation
-  // affiche alors « Votre kinésithérapeute ». Seul le nom de la personne part
-  // chez Clerk, comme pour n'importe quel compte.
-  //
-  // Bug fixed 2026-09-09: this was previously `redirectTo`, which isn't a
-  // real field on Clerk's CreateParams — the SDK silently dropped it, so
-  // every invitation fell back to Clerk's own generic hosted acceptance page
-  // ("My Application", no EasyPhysio branding at all).
-  try {
-    const client = await clerkClient();
-    await client.invitations.createInvitation({
-      emailAddress: email,
-      redirectUrl: `${origin}/invitation`,
-      publicMetadata: { full_name: fullName },
-    });
-  } catch (e) {
-    // Clerk throws a ClerkAPIResponseError whose own top-level `.message` is
-    // a generic summary (e.g. "Unprocessable Entity") — the actual reason
-    // ("email already exists", "invitation already pending", ...) lives in
-    // `.errors[]`, not `.message`. Matching on `.message` (as this used to)
-    // meant the friendly duplicate-email message never fired, and every
-    // failure — including a genuine duplicate — fell through to the same
-    // opaque "Impossible d'inviter ce patient." with no way to diagnose it.
-    const clerkErrors = isClerkAPIResponseError(e) ? e.errors : [];
-    // Full detail stays server-side only (console.error) — the redirect URL
-    // must never carry Clerk's raw error text (browser history, referrer
-    // headers, server access logs all see query params). The user only ever
-    // gets one of a fixed set of pre-approved, code-mapped messages below.
-    console.error("addPatient: Clerk invitation failed", clerkErrors.length ? clerkErrors : e);
-    const isDuplicate = clerkErrors.some((ce) => ce.code === "duplicate_record" || ce.code === "form_identifier_exists");
-    const isPending = clerkErrors.some((ce) => ce.code === "invitation_already_pending" || ce.code === "duplicate_invitation");
-    const message = isDuplicate
-      ? t("duplicate")
-      : isPending
-        ? t("pendingInvite")
-        : t("inviteFailed");
+  // Adresse déjà utilisée par un compte kiné (audit du 2026-11-08) : un
+  // message clair plutôt que le générique « un compte existe déjà ». Seulement
+  // si l'identifiant existait déjà (un neuf ne peut pas être celui d'un kiné).
+  if (!appIdIsNew) {
+    const asKine = await joinLinkKine(appId).catch(() => null);
+    if (asKine) redirect(`/dashboard/patients/new?error=${encodeURIComponent(t("isKine"))}`);
+  }
+
+  // Invitation Clerk (lib/patient/invitation.ts : rien qui révèle le suivi
+  // chez un kiné, validité fixée à 30 jours). Le patient choisit son mot de
+  // passe depuis l'e-mail. Le détail d'une erreur Clerk reste dans les
+  // journaux du serveur : l'adresse de la page ne porte qu'un message choisi.
+  const outcome = await invitePatient(email, fullName, "addPatient");
+  if (outcome !== "sent") {
+    const message = outcome === "duplicate" ? t("duplicate") : outcome === "pending" ? t("pendingInvite") : t("inviteFailed");
     await discardReservedId();
     redirect(`/dashboard/patients/new?error=${encodeURIComponent(message)}`);
   }
@@ -196,30 +162,10 @@ export async function reactivatePatient(formData: FormData): Promise<{ ok: true 
   if (!patient.email) return { error: t("noEmail") };
 
 
-  const origin = await requestOrigin();
-
-  try {
-    const client = await clerkClient();
-    await client.invitations.createInvitation({
-      emailAddress: patient.email,
-      // Rien qui révèle le suivi chez un kiné (voir addPatient ci-dessus).
-      redirectUrl: `${origin}/invitation`,
-      publicMetadata: { full_name: patient.full_name },
-    });
-  } catch (e) {
-    // Même logique de lecture d'erreur que addPatient ci-dessus : le détail
-    // utile est dans `.errors[]`, jamais dans `.message`.
-    const clerkErrors = isClerkAPIResponseError(e) ? e.errors : [];
-    const isPending = clerkErrors.some((ce) => ce.code === "invitation_already_pending" || ce.code === "duplicate_invitation");
-    if (isPending) return { ok: true }; // une invitation est déjà en cours — rien de plus à faire, pas une erreur à afficher
-    console.error("reactivatePatient: Clerk invitation failed", clerkErrors.length ? clerkErrors : e);
-    const isDuplicate = clerkErrors.some((ce) => ce.code === "duplicate_record" || ce.code === "form_identifier_exists");
-    return {
-      error: isDuplicate
-        ? t("hasAccount")
-        : t("resendFailed"),
-    };
-  }
+  const outcome = await invitePatient(patient.email as string, (patient.full_name as string | null) ?? null, "reactivatePatient");
+  // Une invitation déjà en cours n'est pas une erreur : rien de plus à faire.
+  if (outcome === "duplicate") return { error: t("hasAccount") };
+  if (outcome === "failed") return { error: t("resendFailed") };
 
   revalidatePath("/dashboard/patients");
   return { ok: true };

@@ -1,17 +1,28 @@
 "use server";
 
 // Lien signé vers une vidéo d'exercice (Cloudflare R2), demandé par la fenêtre
-// « démo d'un exercice » (components/ExerciseInfoModal.tsx), qui lit la fiche
-// depuis le navigateur. Réservé aux utilisateurs connectés.
+// « démo d'un exercice » (components/ExerciseInfoModal.tsx). Réservé aux
+// utilisateurs connectés.
+//
+// Sécurité (audit du 2026-11-08) : avant, le navigateur envoyait le chemin
+// « r2:… » et le serveur signait N'IMPORTE QUEL fichier du bucket — y compris
+// la vidéo non publiée d'un autre kiné. Désormais on reçoit l'id de
+// l'exercice, et on ne signe que SA vidéo, relue avec la session de la
+// personne connectée : les règles d'accès (RLS) de la table exercises
+// décident, exactement comme pour l'affichage de la fiche.
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { resolveMediaUrl } from "./r2-videos";
 import { FILMED_VIDEO_FILES } from "@/lib/exercise/filmedVideos";
 
-export async function signExerciseVideo(mediaUrl: string | null): Promise<string | null> {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function signExerciseVideo(exerciseId: string): Promise<string | null> {
+  if (typeof exerciseId !== "string" || !UUID.test(exerciseId)) return null;
   const supabase = await createClient();
   await requireUser(supabase);
-  return resolveMediaUrl(mediaUrl);
+  const { data } = await supabase.from("exercises").select("media_url").eq("id", exerciseId).maybeSingle();
+  return resolveMediaUrl((data?.media_url as string | null | undefined) ?? null);
 }
 
 /** Vidéo de Jules d'un exercice filmé, par son nom, SANS connexion : pour la

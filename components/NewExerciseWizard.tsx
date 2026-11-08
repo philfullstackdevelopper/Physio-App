@@ -82,7 +82,8 @@ export default function NewExerciseWizard({
   const [consent, setConsent] = useState(false);
   const [scope, setScope] = useState<"bank" | "patient">("bank");
   const [patientId, setPatientId] = useState<string>("");
-  const [makePublic, setMakePublic] = useState(true);
+  // Décoché par défaut (audit du 2026-11-08) : partager avec tous les kinés est un choix.
+  const [makePublic, setMakePublic] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -130,7 +130,9 @@
     "invitationsClosed": "Les invitations de patients ouvriront au lancement d'EasyPhysio. D'ici là, vous pouvez découvrir tout le reste de votre espace.",
     "firstSession": "Première séance",
     "optional": "(facultatif)",
-    "later": "Plus tard, depuis sa fiche"
+    "later": "Plus tard, depuis sa fiche",
+    "connectNotice": "Vos paiements Stripe ne sont pas encore activés : d’ici là, vous ne recevrez pas les {amount} € de vos patients pour leur programme (les mois où vous le mettez à jour).",
+    "connectLink": "Activer mes paiements"
   },
   "patientActions": {
     "fillAll": "Veuillez remplir tous les champs.",
@@ -152,7 +154,8 @@
     "copyFailed": "Impossible de créer la séance du patient.",
     "notRecommended": "Cette séance n'est pas recommandée à ce patient.",
     "keepOne": "Une séance doit garder au moins un exercice.",
-    "cancelSubFailed": "La formule du patient n'a pas pu être résiliée. Réessayez dans quelques minutes."
+    "cancelSubFailed": "La formule du patient n'a pas pu être résiliée. Réessayez dans quelques minutes.",
+    "isKine": "Cette adresse est celle d'un compte kiné EasyPhysio : elle ne peut pas être invitée comme patient. Demandez à la personne une autre adresse."
   },
   "patientDetail": {
     "thisPatient": "ce patient",

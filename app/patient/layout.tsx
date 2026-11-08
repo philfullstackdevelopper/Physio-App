@@ -60,7 +60,10 @@ export default async function PatientLayout({ children }: { children: React.Reac
   // to be a problem for the clients »). Plus aucun prélèvement : seul le kiné
   // déclenche un prélèvement, et il n'a plus accès.
   const kine = patient.instructors as unknown as { full_name: string | null; status: string | null } | null;
-  const kineSuspended = kine?.status === "suspended";
+  // Kiné refusé par l'administrateur : même traitement (audit du 2026-11-08) —
+  // il ne peut ni suivre ni facturer, son patient ne doit donc rien payer.
+  // Un kiné « en attente » reste soumis au cas général.
+  const kineSuspended = kine?.status === "suspended" || kine?.status === "rejected";
 
   const pathname = (await headers()).get("x-pathname") ?? "";
   const onOnboardingPath = pathname.startsWith(ONBOARDING_PATH);

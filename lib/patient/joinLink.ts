@@ -6,33 +6,32 @@
 //
 //   /rejoindre/<identifiant du kiné>.<signature>
 //
+// Clé (audit du 2026-11-08) : JOIN_LINK_SECRET, un secret dédié. Avant, la
+// signature utilisait CLERK_SECRET_KEY ; elle reste ACCEPTÉE en lecture pour
+// que les QR codes déjà imprimés marchent toujours, mais les nouveaux liens
+// sont signés avec JOIN_LINK_SECRET dès qu'il est réglé sur Scalingo.
+//
 // SERVEUR UNIQUEMENT.
 // =============================================================================
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { signJoinCode, verifyJoinCode } from "./joinLinkCode";
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function key(): string {
-  const k = process.env.CLERK_SECRET_KEY;
-  if (!k) throw new Error("CLERK_SECRET_KEY is not set.");
+function signingKey(): string {
+  const k = process.env.JOIN_LINK_SECRET || process.env.CLERK_SECRET_KEY;
+  if (!k) throw new Error("JOIN_LINK_SECRET (ou CLERK_SECRET_KEY) n'est pas réglé.");
   return k;
 }
 
-function signature(instructorId: string): string {
-  return createHmac("sha256", key()).update(`join-link:${instructorId.toLowerCase()}`).digest("base64url").slice(0, 16);
+function verifyingKeys(): string[] {
+  return [process.env.JOIN_LINK_SECRET, process.env.CLERK_SECRET_KEY].filter((k): k is string => !!k);
 }
 
 /** Code à mettre dans l'adresse /rejoindre/<code>. */
 export function joinCodeFor(instructorId: string): string {
-  return `${instructorId.toLowerCase()}.${signature(instructorId)}`;
+  return signJoinCode(signingKey(), instructorId);
 }
 
 /** Identifiant du kiné si le code est authentique, sinon null. */
 export function instructorIdFromJoinCode(code: string): string | null {
-  const [id, sig] = decodeURIComponent(code).split(".");
-  if (!id || !sig || !UUID.test(id)) return null;
-  const expected = Buffer.from(signature(id));
-  const given = Buffer.from(sig);
-  return given.length === expected.length && timingSafeEqual(given, expected) ? id.toLowerCase() : null;
+  return verifyJoinCode(verifyingKeys(), code);
 }
