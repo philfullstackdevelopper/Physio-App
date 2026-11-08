@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { resolveMediaUrl } from "./r2-videos";
 import { FILMED_VIDEO_FILES } from "@/lib/exercise/filmedVideos";
+import { platformExerciseName } from "@/lib/exercise/exerciseNames";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -31,7 +32,8 @@ export async function signExerciseVideo(exerciseId: string): Promise<string | nu
  *  montrées sur l'accueil (lib/exercise/filmedVideos.ts) : aucun autre fichier
  *  ne peut être demandé par ce chemin. */
 export async function signFilmedVideoByName(name: string): Promise<string | null> {
-  const file = FILMED_VIDEO_FILES[name];
+  // Nom affiché en français ou nom anglais en base : les deux sont reconnus.
+  const file = FILMED_VIDEO_FILES[name] ?? FILMED_VIDEO_FILES[platformExerciseName(name)];
   if (!file) return null;
   return resolveMediaUrl(`r2:${file}`);
 }

@@ -79,7 +79,7 @@ export default function PatientHomeView({
                 <span className="truncate">{t("hello", { name: firstName })}</span>
                 <WavingHand className="h-7 w-7 shrink-0 sm:h-9 sm:w-9" />
               </h1>
-              <p className="text-xs capitalize text-muted max-sm:truncate sm:mt-0.5 sm:text-sm">{today}</p>
+              <p className="text-xs text-muted first-letter:uppercase max-sm:truncate sm:mt-0.5 sm:text-sm">{today}</p>
             </div>
           </div>
 

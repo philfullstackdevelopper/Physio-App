@@ -328,6 +328,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
         patientId={patient.id}
         patientName={firstName}
         deletePatient={deletePatient}
+        shortcuts
         messages={{
           patient: { id: patient.id, name: (patient.full_name as string | null) ?? "Patient", initials: initials(patient.full_name as string | null) },
           unreadCount: unreadCount ?? 0,

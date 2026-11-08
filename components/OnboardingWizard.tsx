@@ -42,6 +42,8 @@ export default function OnboardingWizard({
   currentEquipment,
   needsConsent,
   hasError,
+  kineBodyPartId = null,
+  kineName = null,
 }: {
   /** Renvoie { ok: true } une fois enregistré : on ouvre alors l'appli par un
    *  vrai chargement de page (voir app/patient/onboarding/actions.ts). */
@@ -54,6 +56,10 @@ export default function OnboardingWizard({
   currentEquipment: Set<EquipmentId>;
   needsConsent: boolean;
   hasError?: boolean;
+  /** Zone de la condition attribuée par le kiné (onboarding/page.tsx) : déjà
+   *  cochée au premier passage, marquée « Choisi par … ». */
+  kineBodyPartId?: string | null;
+  kineName?: string | null;
 }) {
   const t = useTranslations("patient.onboarding");
   const tSit = useTranslations("patient.situation");
@@ -77,7 +83,14 @@ export default function OnboardingWizard({
   // next to what caused it.
   const [step, setStep] = useState(hasError ? STEP_LABELS.length - 1 : 0);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [bodyPartIds, setBodyPartIds] = useState<Set<string>>(new Set(profile?.declared_body_part_ids ?? []));
+  // Zones déjà enregistrées par le patient ; sinon (premier passage) celle
+  // choisie par le kiné, déjà cochée — le patient peut en ajouter ou l'ôter
+  // (Philippe, 2026-11-08).
+  const kineZone = kineBodyPartId && bodyParts.some((bp) => bp.id === kineBodyPartId) ? kineBodyPartId : null;
+  const savedZones = profile?.declared_body_part_ids ?? [];
+  const [bodyPartIds, setBodyPartIds] = useState<Set<string>>(
+    new Set(savedZones.length > 0 ? savedZones : kineZone ? [kineZone] : []),
+  );
   const [bodyPartError, setBodyPartError] = useState(false);
   const toggleBodyPart = (id: string) => {
     setBodyPartError(false);
@@ -159,7 +172,7 @@ export default function OnboardingWizard({
         {/* Étape 1 : Votre situation */}
         <div ref={(el) => { stepRefs.current[0] = el; }} hidden={step !== 0} className="flex flex-col gap-3">
           <div>
-            <span className={labelClass}>{t("bodyPartsQuestion")}</span>
+            <span className={labelClass}>{kineZone ? t("bodyPartsQuestionKine") : t("bodyPartsQuestion")}</span>
             {/* 9 body parts in 5 columns -> 2 rows instead of 3 (Philippe,
                 2026-09-09: the onboarding card must fit without scrolling —
                 paired with the wider max-w-xl column in page.tsx). */}
@@ -178,6 +191,12 @@ export default function OnboardingWizard({
                   >
                     <BodyPartIllustration slug={bp.slug} className="h-10 w-10 short:h-8 short:w-8" active={active} />
                     <span className="text-[11px] font-medium leading-tight text-slate-700">{bp.label}</span>
+                    {bp.id === kineZone && (
+                      <span className="max-w-full truncate rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                        <span className="max-sm:hidden">{kineName ? t("chosenBy", { name: kineName }) : t("chosenByKine")}</span>
+                        <span className="sm:hidden">{t("chosenShort")}</span>
+                      </span>
+                    )}
                   </button>
                 );
               })}

@@ -10,6 +10,7 @@ import NewSeanceModal from "@/components/NewSeanceModal";
 import { type PickerExercise } from "@/components/ExerciseLibraryPicker";
 import { type BodyPart } from "@/lib/exercise/category";
 import { stageLabel, stageShort, type InjuryStage } from "@/lib/exercise/prescription";
+import { exerciseNameMatches } from "@/lib/exercise/exerciseNames";
 
 type ListItem = {
   id: string;
@@ -431,7 +432,7 @@ export default function SeancesTabs({
       (s) =>
         s.name.toLowerCase().includes(q) ||
         s.conditionName?.toLowerCase().includes(q) ||
-        s.exerciseNames?.some((n) => n.toLowerCase().includes(q)),
+        s.exerciseNames?.some((n) => exerciseNameMatches(n, q)),
     );
   }, [mine, mineQuery, inZone]);
 
@@ -446,7 +447,7 @@ export default function SeancesTabs({
       return (
         t.name.toLowerCase().includes(q) ||
         t.conditionName?.toLowerCase().includes(q) ||
-        t.exerciseNames?.some((n) => n.toLowerCase().includes(q))
+        t.exerciseNames?.some((n) => exerciseNameMatches(n, q))
       );
     });
   }, [templates, templateQuery, showHiddenTemplates, inZone]);

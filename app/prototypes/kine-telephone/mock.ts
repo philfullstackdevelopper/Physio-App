@@ -10,6 +10,7 @@ import { buildConversations } from "@/lib/dashboard/conversations";
 import type { UnreadMessageRow } from "@/lib/dashboard/unreadMessages";
 import type { LibI18n, Tr } from "@/lib/format/relativeDay";
 import { stageLabel } from "@/lib/exercise/prescription";
+import { exerciseNameFor } from "@/lib/exercise/exerciseNames";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
 import type { SessionDetail } from "@/components/WeekProgramme";
 
@@ -191,7 +192,7 @@ export function mockFiche(t: DemoT, now = new Date(), patient?: FichePatient, tS
   // dans la séance n'y est pas reproposé.
   const exercises = names.map((name, i) => {
     const idx = DEMO_EXERCISES.findIndex((e) => e.name === name);
-    return { id: idx >= 0 ? `a${idx}` : `e${i + 1}`, name };
+    return { id: idx >= 0 ? `a${idx}` : `e${i + 1}`, name: exerciseNameFor(name, locale) };
   });
   // Sans patient : Thomas Bernard (douleur élevée la semaine dernière). Avec un
   // patient : ses séances fictives, la douleur la plus récente en premier.
@@ -221,7 +222,7 @@ export function mockFiche(t: DemoT, now = new Date(), patient?: FichePatient, tS
     patientConditionId: DEMO_CONDITION_IDS[patient?.conditionId ?? ""] ?? "c-genou",
     patientStage: "acute" as const,
     bodyParts: demoBodyParts(t),
-    addableExercises: DEMO_EXERCISES.map((e, i) => ({ id: `a${i}`, name: e.name, bodyPartIds: e.bodyPartIds, equipment: e.equipment })),
+    addableExercises: DEMO_EXERCISES.map((e, i) => ({ id: `a${i}`, name: exerciseNameFor(e.name, locale), bodyPartIds: e.bodyPartIds, equipment: e.equipment })),
     addableWorkouts: (
       [
         ["kneePhase1B", "kneeReplacement", "bp-genou", "acute"], ["kneePhase2", "kneeReplacement", "bp-genou", "subacute"], ["kneeReturnToSport", "kneeReplacement", "bp-genou", "return_to_sport"],

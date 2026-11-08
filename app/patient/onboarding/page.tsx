@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { getTranslations } from "next-intl/server";
 import { STAGE_LABELS, stageLabel, type InjuryStage } from "@/lib/exercise/prescription";
 import { EQUIPMENT_OPTIONS, equipmentLabels, type EquipmentId } from "@/lib/exercise/equipment";
+import { mainBodyPartId } from "@/lib/exercise/category";
 import OnboardingView from "./OnboardingView";
 import { saveOnboarding } from "./actions";
 
@@ -28,10 +29,29 @@ export default async function OnboardingPage({
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const { data: bodyParts } = await supabase
-    .from("body_parts")
-    .select("id, slug, label")
-    .order("position");
+  const [{ data: bodyParts }, { data: patient }] = await Promise.all([
+    supabase.from("body_parts").select("id, slug, label, position").order("position"),
+    supabase.from("patients").select("condition_id, instructors ( full_name )").eq("id", user.id).maybeSingle(),
+  ]);
+
+  // Zone choisie par le kiné (Philippe, 2026-11-08) : celle de la condition
+  // qu'il a attribuée (patients.condition_id), déduite des exercices de ses
+  // séances (mainBodyPartId). Déjà cochée au questionnaire, avec la mention
+  // « Choisi par … ». Pas de condition attribuée : rien de coché, comme avant.
+  const conditionId = (patient?.condition_id as string | null) ?? null;
+  const { data: conditionWorkouts } = conditionId
+    ? await supabase
+        .from("workouts")
+        .select("workout_exercises ( exercises ( exercise_body_parts ( body_part_id ) ) )")
+        .eq("condition_id", conditionId)
+    : { data: null };
+  type WorkoutTags = { workout_exercises: { exercises: { exercise_body_parts: { body_part_id: string }[] | null } | null }[] | null };
+  const exerciseTags = ((conditionWorkouts ?? []) as unknown as WorkoutTags[]).flatMap((w) =>
+    (w.workout_exercises ?? []).map((we) => (we.exercises?.exercise_body_parts ?? []).map((t) => t.body_part_id)),
+  );
+  const kineBodyPartId = conditionId ? mainBodyPartId(exerciseTags, bodyParts ?? []) : null;
+  // Jointure plusieurs-vers-un (patients → instructors) : un objet, pas un tableau.
+  const kineName = (patient?.instructors as unknown as { full_name: string | null } | null)?.full_name ?? null;
 
   // Pre-fill if the patient is editing an existing profile.
   const { data: profile } = await supabase
@@ -54,6 +74,8 @@ export default async function OnboardingPage({
       wizard={{
         saveAction: saveOnboarding,
         bodyParts: bodyParts ?? [],
+        kineBodyPartId,
+        kineName,
         stages: STAGES,
         profile,
         equipmentOptions: EQUIPMENT_OPTIONS,

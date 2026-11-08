@@ -23,6 +23,7 @@ import { addWeeksToKey } from "@/lib/exercise/activeRecommendation";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import DoseInputs from "@/components/DoseInputs";
 import type { ExerciseDose } from "@/lib/exercise/prescription";
+import { exerciseNameMatches } from "@/lib/exercise/exerciseNames";
 
 /** Le petit (i) d'une carte d'exercice : ouvre sa vidéo et ses consignes
  *  (Philippe, 2026-11-01). Posé À CÔTÉ du bouton de la carte (un bouton ne
@@ -335,7 +336,14 @@ export default function AdjustWorkoutModal({
   recommendations,
   recentIds,
   saveAsMineAction,
+  hideTrigger = false,
+  openOnEvent,
 }: {
+  /** Pas de bouton : la fenêtre ne s'ouvre que par `openOnEvent` (« Ajuster
+   *  la séance » dans l'en-tête de la fiche, 2026-11-08). */
+  hideTrigger?: boolean;
+  /** Nom d'un événement `window` qui ouvre la fenêtre (ADJUST_CURRENT_WEEK_EVENT). */
+  openOnEvent?: string;
   /** Variantes plus faciles / plus difficiles, calculées pour la séance de la
    *  semaine en cours (forWorkoutId) ; masquées pour une autre séance. */
   recommendations?: { forWorkoutId: string; items: Recommendation[] } | null;
@@ -524,7 +532,7 @@ export default function AdjustWorkoutModal({
   const filteredWorkouts = useMemo(() => {
     if (templateQuery) {
       return addableWorkouts.filter(
-        (w) => w.name.toLowerCase().includes(templateQuery) || w.exerciseNames.some((n) => n.toLowerCase().includes(templateQuery)),
+        (w) => w.name.toLowerCase().includes(templateQuery) || w.exerciseNames.some((n) => exerciseNameMatches(n, templateQuery)),
       );
     }
     // The category tiles only render once there's enough séances to be worth
@@ -562,6 +570,16 @@ export default function AdjustWorkoutModal({
   );
 
   const triggerDisabled = !workout && addableWorkouts.length === 0;
+  // Ouverture depuis un autre bouton (en-tête de la fiche patient). Sans
+  // tableau de dépendances : l'écouteur appelle toujours l'openModal à jour.
+  useEffect(() => {
+    if (!openOnEvent) return;
+    const onOpen = () => {
+      if (!triggerDisabled && !open) openModal();
+    };
+    window.addEventListener(openOnEvent, onOpen);
+    return () => window.removeEventListener(openOnEvent, onOpen);
+  });
   // Période choisie : à partir de la semaine sélectionnée dans la frise.
   const fromKey = weekStartDate ?? thisWeekStartDateKey();
   const shortDate = (d: Date) => d.toLocaleDateString(intlTag(locale), { day: "numeric", month: "short", timeZone: "UTC" });
@@ -618,6 +636,7 @@ export default function AdjustWorkoutModal({
 
   return (
     <>
+      {!hideTrigger && (
       <button
         ref={triggerRef}
         type="button"
@@ -630,6 +649,7 @@ export default function AdjustWorkoutModal({
             exercices, ou « Changer de séance ») — Philippe, 2026-10-02. */}
         {workout ? t("adjust") : t("choose")}
       </button>
+      )}
 
       {/* Portail vers document.body, comme NewSeanceModal : un ancêtre avec
           un `transform` (animation d'entrée) limiterait sinon le fond

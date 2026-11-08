@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeAdherence, adherenceLabel, adherenceTone } from "./adherence.ts";
+import { computeAdherence, adherenceLabel, adherenceTone, thisWeekSessions } from "./adherence.ts";
 
 // Jeudi 2026-09-03, 12:00 — lundi de la semaine en cours : 2026-08-31.
 const now = new Date(2026, 8, 3, 12);
@@ -107,4 +107,19 @@ test("des séances en trop une semaine ne rattrapent pas une semaine vide", () =
   assert.equal(a.expected, 7);
   assert.equal(a.done, 3);
   assert.equal(a.pct, 43);
+});
+
+test("thisWeekSessions : séances depuis lundi et rythme de la séance effective", () => {
+  const w = thisWeekSessions({
+    // jeudi, mercredi, lundi (cette semaine) ; dimanche dernier (semaine passée)
+    completedAt: [daysAgo(0), daysAgo(1), daysAgo(3), daysAgo(4)],
+    assignments: [{ weekStartDate: "2026-07-06", workoutId: "w1", timesPerWeek: 3 }],
+    now,
+  });
+  assert.deepEqual(w, { done: 3, target: 3 });
+  assert.deepEqual(thisWeekSessions({ completedAt: [daysAgo(0)], assignments: [], now }), { done: 1, target: null });
+  assert.deepEqual(
+    thisWeekSessions({ completedAt: [], assignments: [{ weekStartDate: "2026-08-31", workoutId: "w1", timesPerWeek: null }], now }),
+    { done: 0, target: 1 },
+  );
 });

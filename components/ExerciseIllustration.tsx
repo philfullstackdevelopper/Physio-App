@@ -18,6 +18,7 @@
 import { ImageOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { EXERCISE_ILLUSTRATION_MAP } from "@/lib/exercise/illustrationMap";
+import { platformExerciseName } from "@/lib/exercise/exerciseNames";
 import { EIGHT_FRAME_LOOP_SLUGS, EIGHT_FRAME_SLOW_SLUGS, EIGHT_FRAME_SLUGS } from "@/lib/exercise/illustrationFrames";
 
 /** Real 3-frame vendored illustration for exercises matched in EXERCISE_ILLUSTRATION_MAP.
@@ -123,7 +124,8 @@ export default function ExerciseIllustration({
   /** Image fixe montrée quand animate=false : début (défaut) ou plein mouvement. */
   still?: "start" | "middle";
 }) {
-  const vendoredSlug = EXERCISE_ILLUSTRATION_MAP[name];
+  // Nom affiché en français (lib/exercise/exerciseNames.ts) ou nom anglais en base.
+  const vendoredSlug = EXERCISE_ILLUSTRATION_MAP[name] ?? EXERCISE_ILLUSTRATION_MAP[platformExerciseName(name)];
   if (vendoredSlug) {
     return (
       <VendoredIllustration slug={vendoredSlug} name={name} className={className} animate={animate} still={still} />

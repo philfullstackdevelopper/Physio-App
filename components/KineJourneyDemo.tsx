@@ -17,6 +17,7 @@ import {
   LogOut,
   MessageCircle,
   MoreVertical,
+  PencilLine,
   Plus,
   Repeat,
   Search,
@@ -118,14 +119,13 @@ const STATIC: Phase = PHASES[0];
 
 type Tone = "ok" | "warn" | "danger";
 const TONE_TEXT: Record<Tone, string> = { ok: "text-ok", warn: "text-warn", danger: "text-danger" };
-const TONE_BAR: Record<Tone, string> = { ok: "bg-ok", warn: "bg-warn", danger: "bg-danger" };
 
 // condition / last / signal : clés dans demo.journey.rows.
 const PATIENT_ROWS = [
-  { initials: "MT", name: "Marc T.", condition: "gonarthrosis", phase: 1, last: "today", adherence: 82, adhTone: "ok" as Tone, signal: "pain7", signalTone: "danger" as Tone },
-  { initials: "SR", name: "Sophie R.", condition: "shoulderTendinopathy", phase: 2, last: "daysAgo4", adherence: 41, adhTone: "warn" as Tone, signal: "lastSession4", signalTone: "warn" as Tone },
-  { initials: "PM", name: "Paul M.", condition: "chronicLowBack", phase: 3, last: "yesterday", adherence: 94, adhTone: "ok" as Tone, signal: "upToDate", signalTone: "ok" as Tone },
-  { initials: "JL", name: "Julie L.", condition: "ankleSprain", phase: 2, last: "today", adherence: 88, adhTone: "ok" as Tone, signal: "upToDate", signalTone: "ok" as Tone },
+  { initials: "MT", name: "Marc T.", condition: "gonarthrosis", phase: 1, last: "today", done: 2, target: 3, signal: "pain7", signalTone: "danger" as Tone },
+  { initials: "SR", name: "Sophie R.", condition: "shoulderTendinopathy", phase: 2, last: "daysAgo4", done: 0, target: 3, signal: "lastSession4", signalTone: "warn" as Tone },
+  { initials: "PM", name: "Paul M.", condition: "chronicLowBack", phase: 3, last: "yesterday", done: 3, target: 3, signal: "upToDate", signalTone: "ok" as Tone },
+  { initials: "JL", name: "Julie L.", condition: "ankleSprain", phase: 2, last: "today", done: 2, target: 3, signal: "upToDate", signalTone: "ok" as Tone },
 ];
 
 // label : clé dans demo.journey.sidebar.
@@ -207,9 +207,20 @@ function PatientHeader() {
   return (
     <div className="flex items-start justify-between gap-3">
       <p className="text-xl font-semibold text-ink">Marc T.</p>
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink">
-        <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} />
-        {t("manage")}
+      {/* Comme la vraie fiche (2026-11-08) : « Ajuster la séance » et « Écrire » à côté de « Gérer ». */}
+      <span className="flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-3 py-1.5 text-xs font-medium text-white">
+          <PencilLine className="h-3.5 w-3.5" strokeWidth={1.75} />
+          {t("headerAdjust")}
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink">
+          <MessageCircle className="h-3.5 w-3.5 text-brand" strokeWidth={1.75} />
+          {t("headerWrite", { name: "Marc" })}
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink">
+          <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} />
+          {t("manage")}
+        </span>
       </span>
     </div>
   );
@@ -377,7 +388,7 @@ export default function KineJourneyDemo() {
                   </div>
                   <div className="mt-3 rounded-xl border border-line bg-surface">
                     <div className="grid gap-x-2 grid-cols-[minmax(0,2.5fr)_0.8fr_1fr_0.9fr_minmax(0,1.6fr)_2.25rem] border-b border-line px-3 py-2 text-[10px] font-medium uppercase tracking-wide text-muted">
-                      <span>{t("colPatient")}</span><span>{t("colPhase")}</span><span>{t("lastSession")}</span><span>{t("adherence")}</span><span>{t("colSignal")}</span><span />
+                      <span>{t("colPatient")}</span><span>{t("colPhase")}</span><span>{t("lastSession")}</span><span>{t("colSessions")}</span><span>{t("colSignal")}</span><span />
                     </div>
                     {PATIENT_ROWS.map((r) => (
                       <div
@@ -394,13 +405,19 @@ export default function KineJourneyDemo() {
                             <span className="block truncate text-[10px] text-muted">{t(`rows.${r.condition}`)}</span>
                           </span>
                         </span>
-                        <span><span className="rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-semibold text-brand">{t("phaseN", { n: r.phase })}</span></span>
-                        <span className="text-xs font-semibold tabular-nums text-ink">{t(`rows.${r.last}`)}</span>
-                        <span className="pr-3">
-                          <span className={`text-sm font-semibold tabular-nums ${TONE_TEXT[r.adhTone]}`}>{r.adherence} %</span>
-                          <span className="mt-1 block h-1 w-full rounded-full bg-line">
-                            <span className={`block h-1 rounded-full ${TONE_BAR[r.adhTone]}`} style={{ width: `${r.adherence}%` }} />
+                        {/* Comme PatientsTable (2026-11-08) : segments de phase + « Phase N » en petit. */}
+                        <span className="flex flex-col items-start gap-1 whitespace-nowrap">
+                          <span aria-hidden className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4].map((i) => (
+                              <span key={i} className={`h-1 w-2.5 rounded-full ${i <= r.phase ? "bg-brand" : "bg-line"}`} />
+                            ))}
                           </span>
+                          <span className="text-[10px] font-medium text-ink">{t("phaseN", { n: r.phase })}</span>
+                        </span>
+                        <span className="text-xs font-semibold tabular-nums text-ink">{t(`rows.${r.last}`)}</span>
+                        <span className="flex flex-wrap items-baseline gap-x-1 tabular-nums">
+                          <span className="text-sm font-semibold text-ink">{r.done}</span>
+                          <span className="text-[10px] text-muted">{t("weekDoneOf", { target: r.target })}</span>
                         </span>
                         <span className={`flex min-w-0 items-center gap-1 text-[11px] font-medium ${TONE_TEXT[r.signalTone]}`}>
                           {r.signalTone === "ok" && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-ok" />}

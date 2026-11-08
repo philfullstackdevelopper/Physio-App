@@ -87,7 +87,6 @@
     "sets": "{count, plural, one {# set} other {# sets}}",
     "reps": "{reps} reps",
     "asComfortable": "as feels comfortable",
-    "setsDone": "Sets done",
     "setAria": "Set {n}",
     "setDoneAria": "Set {n} done",
     "painDuring": "Pain during the exercise",
@@ -136,7 +135,8 @@
     "finishSession": "Finish the session",
     "doneExercise": "I’ve finished this exercise",
     "fullscreenAria": "View the video full screen",
-    "fullscreenTitle": "Full screen"
+    "fullscreenTitle": "Full screen",
+    "setsHint": "Tap a set once you have done it"
   },
   "illustration": {
     "aria": "Demonstration: {name}",

@@ -18,13 +18,17 @@ const UNREAD_LIMIT = 4;
 // Téléphone : lignes « À traiter » montrées sous les 4 cases (écran assez haut).
 const PHONE_ROWS = 3;
 
-function Delta({ tile }: { tile: Tile }) {
+// `bad` = la case compte quelque chose d'inquiétant (douleurs) : une hausse
+// est alors rouge, une baisse verte — et à 0 rien d'alarmant, juste
+// « aucune aujourd'hui » en gris (Philippe, 2026-11-08).
+function Delta({ tile, bad = false }: { tile: Tile; bad?: boolean }) {
   const t = useTranslations("dashboard.home");
+  if (bad && tile.value === 0) return <span className="flex items-center gap-1 text-xs text-muted">{t("noPainToday")}</span>;
   if (tile.delta === null) return null;
   if (tile.delta === 0) return <span className="flex items-center gap-1 text-xs text-muted"><Minus className="h-3 w-3" strokeWidth={2} />{t("sameAsYesterday")}</span>;
   const up = tile.delta > 0;
   return (
-    <span className={`flex items-center gap-1 text-xs ${up ? "text-ok" : "text-danger"}`}>
+    <span className={`flex items-center gap-1 text-xs ${up !== bad ? "text-ok" : "text-danger"}`}>
       {up ? <ArrowUp className="h-3 w-3" strokeWidth={2} /> : <ArrowDown className="h-3 w-3" strokeWidth={2} />}
       {t("vsYesterday", { n: Math.abs(tile.delta) })}
     </span>
@@ -34,13 +38,20 @@ function Delta({ tile }: { tile: Tile }) {
 // Une cellule de la barre d'indicateurs : valeur + libellé + écart sur une
 // seule ligne (même principe que la barre de la fiche patient), pour que
 // l'accueil tienne sur un écran sans scroller (Philippe, 2026-10-02).
+// Rouge / orange seulement quand il y a vraiment quelque chose : un 0 reste
+// gris neutre (Philippe, 2026-11-08 : « 0 Douleurs » en rouge alarmait).
+function toneColor(value: number, tone: "ok" | "danger" | "warn" | "ink") {
+  if (value === 0 && (tone === "danger" || tone === "warn")) return "text-muted";
+  return { ok: "text-ok", danger: "text-danger", warn: "text-warn", ink: "text-ink" }[tone];
+}
+
 function StatTile({ value, label, tone, tile }: { value: number; label: string; tone: "ok" | "danger" | "warn" | "ink"; tile?: Tile }) {
-  const color = { ok: "text-ok", danger: "text-danger", warn: "text-warn", ink: "text-ink" }[tone];
+  const color = toneColor(value, tone);
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-3">
       <p className={`text-2xl font-semibold tabular-nums ${color}`}>{value}</p>
       <p className="text-sm text-ink">{label}</p>
-      {tile && <Delta tile={tile} />}
+      {tile && <Delta tile={tile} bad={tone === "danger"} />}
     </div>
   );
 }
@@ -52,7 +63,7 @@ const PHONE_SQUARE = "flex aspect-square flex-col justify-between rounded-2xl bg
 const PHONE_TAP = "transition-transform duration-150 active:scale-[0.97]";
 
 function PhoneSquare({ value, label, tone, tile, href }: { value: number; label: string; tone: "ok" | "danger" | "warn" | "ink"; tile?: Tile; href?: string }) {
-  const color = { ok: "text-ok", danger: "text-danger", warn: "text-warn", ink: "text-ink" }[tone];
+  const color = toneColor(value, tone);
   const inner = (
     <>
       <p className={`text-4xl font-semibold tabular-nums ${color}`}>{value}</p>
@@ -61,11 +72,28 @@ function PhoneSquare({ value, label, tone, tile, href }: { value: number; label:
           {label}
           {href && <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />}
         </p>
-        {tile && <div className="mt-0.5"><Delta tile={tile} /></div>}
+        {tile && <div className="mt-0.5"><Delta tile={tile} bad={tone === "danger"} /></div>}
       </div>
     </>
   );
   return href ? <Link href={href} className={`${PHONE_SQUARE} ${PHONE_TAP}`}>{inner}</Link> : <div className={PHONE_SQUARE}>{inner}</div>;
+}
+
+// Aucun patient à traiter : un état calme plutôt qu'un vide (Philippe,
+// 2026-11-08) — coche verte, « Rien à signaler », une ligne en gris.
+function CalmState({ phone = false }: { phone?: boolean }) {
+  const t = useTranslations("dashboard.home");
+  return (
+    <div className={`flex items-center gap-3 ${phone ? "rounded-2xl bg-surface px-4 py-4 shadow-soft" : "rounded-xl bg-app-bg px-3 py-3"}`}>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ok-soft text-ok">
+        <CheckCircle2 className="h-5 w-5" strokeWidth={1.75} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-ink">{t("calmTitle")}</span>
+        <span className="block text-sm text-muted">{phone ? t("calmBodyShort") : t("calmBody")}</span>
+      </span>
+    </div>
+  );
 }
 
 export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome; unreadRows: UnreadMessageRow[] }) {
@@ -169,12 +197,7 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
               </ul>
             </>
           ) : (
-            <p className="flex items-center gap-3 rounded-2xl bg-surface px-4 py-4 text-sm text-muted shadow-soft">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ok-soft text-ok">
-                <CheckCircle2 className="h-5 w-5" strokeWidth={1.75} />
-              </span>
-              {t("allClear")}
-            </p>
+            <CalmState phone />
           )}
         </section>
 
@@ -194,11 +217,17 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
           <h2 className="text-lg font-semibold text-ink">{t("toFollow")}</h2>
 
           {nothingToFollow ? (
-            <p className="mt-3 text-sm text-muted">{t("nothingToFollow")}</p>
+            <div className="mt-3"><CalmState /></div>
           ) : (
             // minmax(0,1fr) : sans lui, une ligne longue élargissait la colonne
             // au-delà de l'écran sur iPad en portrait (audit 2026-10-10).
             <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              {h.toTreat.length === 0 && (
+                <div>
+                  <h3 className="text-xs font-medium uppercase tracking-wide text-muted">{t("toTreat")}</h3>
+                  <div className="mt-2"><CalmState /></div>
+                </div>
+              )}
               {h.toTreat.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between">

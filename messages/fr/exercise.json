@@ -84,7 +84,6 @@
     "sets": "{count} séries",
     "reps": "{reps} répétitions",
     "asComfortable": "selon votre aisance",
-    "setsDone": "Séries faites",
     "setAria": "Série {n}",
     "setDoneAria": "Série {n} faite",
     "painDuring": "Douleur pendant l'exercice",
@@ -133,7 +132,8 @@
     "finishSession": "Terminer la séance",
     "doneExercise": "J'ai terminé cet exercice",
     "fullscreenAria": "Voir la vidéo en plein écran",
-    "fullscreenTitle": "Plein écran"
+    "fullscreenTitle": "Plein écran",
+    "setsHint": "Touchez une série quand vous l’avez faite"
   },
   "illustration": {
     "aria": "Démonstration : {name}",

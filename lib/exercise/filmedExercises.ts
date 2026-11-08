@@ -6,7 +6,10 @@
 // données aux patients, les séances de la plateforme et les exercices créés par
 // un kiné restent tels quels.
 // Pour tout réafficher : mettre ONLY_FILMED_EXERCISES à false (lib/launchFlags.ts).
+// Noms ANGLAIS (en base) ; un nom affiché en français est d'abord ramené à son
+// nom anglais (platformExerciseName, lib/exercise/exerciseNames.ts).
 import { ONLY_FILMED_EXERCISES } from "@/lib/launchFlags";
+import { platformExerciseName } from "@/lib/exercise/exerciseNames";
 
 export const FILMED_EXERCISE_NAMES: ReadonlySet<string> = new Set<string>([
   "Bodyweight Squat",
@@ -78,7 +81,7 @@ export const FILMED_EXERCISE_NAMES: ReadonlySet<string> = new Set<string>([
 export function isPickableExercise(ex: { name: unknown; created_by?: unknown }): boolean {
   if (!ONLY_FILMED_EXERCISES) return true;
   if (ex.created_by) return true;
-  return FILMED_EXERCISE_NAMES.has(String(ex.name));
+  return FILMED_EXERCISE_NAMES.has(platformExerciseName(String(ex.name)));
 }
 
 /** Séance proposable à un kiné : la sienne, ou une séance de la plateforme dont
@@ -89,5 +92,5 @@ export function isPickableSeance(w: {
 }): boolean {
   if (!ONLY_FILMED_EXERCISES || w.created_by) return true;
   const rows = w.workout_exercises ?? [];
-  return rows.length > 0 && rows.every((r) => FILMED_EXERCISE_NAMES.has(String((r.exercises ?? r.exercise)?.name ?? "")));
+  return rows.length > 0 && rows.every((r) => FILMED_EXERCISE_NAMES.has(platformExerciseName(String((r.exercises ?? r.exercise)?.name ?? ""))));
 }

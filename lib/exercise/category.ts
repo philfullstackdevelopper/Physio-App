@@ -44,3 +44,29 @@ export function primaryBodyPart(bodyPartIds: string[], bodyParts: BodyPart[]): B
   if (tagged.length > 0) return tagged.reduce((best, bp) => (bp.position < best.position ? bp : best));
   return bodyParts.length > 0 ? bodyParts[bodyParts.length - 1] : null;
 }
+
+/**
+ * La zone du corps travaillée par une condition (Philippe, 2026-11-08 : au
+ * questionnaire d'arrivée, la zone choisie par le kiné est déjà cochée). Une
+ * condition n'a pas de zone en base : on prend celle qui revient le plus
+ * souvent parmi les exercices de ses séances (même étiquettes que les
+ * listes d'exercices). À égalité, la première dans l'ordre de `body_parts`.
+ * `exerciseTags` : une liste d'identifiants de zones par exercice.
+ */
+export function mainBodyPartId(
+  exerciseTags: string[][],
+  bodyParts: Pick<BodyPart, "id" | "position">[],
+): string | null {
+  const count = new Map<string, number>();
+  for (const tags of exerciseTags) for (const id of new Set(tags)) count.set(id, (count.get(id) ?? 0) + 1);
+  let best: Pick<BodyPart, "id" | "position"> | null = null;
+  let bestCount = 0;
+  for (const bp of [...bodyParts].sort((a, b) => a.position - b.position)) {
+    const n = count.get(bp.id) ?? 0;
+    if (n > bestCount) {
+      best = bp;
+      bestCount = n;
+    }
+  }
+  return best?.id ?? null;
+}
