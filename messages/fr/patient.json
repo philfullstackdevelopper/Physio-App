@@ -137,7 +137,8 @@
     },
     "bodyPartsQuestionKine": "Votre kiné a choisi la zone à travailler. Vous pouvez en ajouter une.",
     "chosenBy": "Choisi par {name}",
-    "chosenByKine": "Choisi par votre kiné"
+    "chosenByKine": "Choisi par votre kiné",
+    "chosenShort": "Par votre kiné"
   },
   "situation": {
     "activity": {

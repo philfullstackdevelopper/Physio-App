@@ -138,7 +138,8 @@
     },
     "bodyPartsQuestionKine": "Your physio has chosen the area to work on. You can add another one.",
     "chosenBy": "Chosen by {name}",
-    "chosenByKine": "Chosen by your physio"
+    "chosenByKine": "Chosen by your physio",
+    "chosenShort": "By your physio"
   },
   "situation": {
     "_review": "Draft translation — needs review by the partner physio before launch",

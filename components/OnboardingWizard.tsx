@@ -193,7 +193,8 @@ export default function OnboardingWizard({
                     <span className="text-[11px] font-medium leading-tight text-slate-700">{bp.label}</span>
                     {bp.id === kineZone && (
                       <span className="max-w-full truncate rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
-                        {kineName ? t("chosenBy", { name: kineName }) : t("chosenByKine")}
+                        <span className="max-sm:hidden">{kineName ? t("chosenBy", { name: kineName }) : t("chosenByKine")}</span>
+                        <span className="sm:hidden">{t("chosenShort")}</span>
                       </span>
                     )}
                   </button>
