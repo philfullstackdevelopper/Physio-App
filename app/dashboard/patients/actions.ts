@@ -20,7 +20,7 @@ import { notifyNewMessage } from "@/lib/push/notify";
 // records the patient row owned by the inviting instructor.
 export async function addPatient(formData: FormData) {
   const supabase = await createClient();
-  const { user, instructor } = await requireApprovedInstructor(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   // Avant le lancement : aucune invitation de vrai patient (lib/launch.ts).
   if (!canInvitePatients(user.email)) {
@@ -67,8 +67,14 @@ export async function addPatient(formData: FormData) {
   // redirectUrl must point at a page rendering <SignUp/> (not <SignIn/>):
   // that's the component that reads the __clerk_ticket Clerk appends to this
   // URL and completes the invited identity, instead of the generic
-  // instructor-facing /signup marketing page. The kiné's name rides along as
-  // a query param so /invitation can greet the patient by name.
+  // instructor-facing /signup marketing page.
+  //
+  // Données de santé (audit HDS, 2026-11-08) : Clerk est hébergé aux USA et
+  // non certifié HDS. Il ne doit pas pouvoir savoir qu'une personne est suivie
+  // par un kiné : ni « role: patient » ni nom du kiné dans les métadonnées,
+  // ni nom du kiné dans l'adresse de retour (Clerk la conserve). /invitation
+  // affiche alors « Votre kinésithérapeute ». Seul le nom de la personne part
+  // chez Clerk, comme pour n'importe quel compte.
   //
   // Bug fixed 2026-09-09: this was previously `redirectTo`, which isn't a
   // real field on Clerk's CreateParams — the SDK silently dropped it, so
@@ -78,12 +84,8 @@ export async function addPatient(formData: FormData) {
     const client = await clerkClient();
     await client.invitations.createInvitation({
       emailAddress: email,
-      redirectUrl: `${origin}/invitation${instructor?.full_name ? `?kine=${encodeURIComponent(instructor.full_name)}` : ""}`,
-      // instructor_name rides along in metadata (not just the redirect query
-      // param above) so Clerk's own invitation EMAIL template can reference
-      // {{public_metadata.instructor_name}} — the in-app /invitation page
-      // was already personalized, the raw email itself wasn't.
-      publicMetadata: { full_name: fullName, role: "patient", instructor_name: instructor?.full_name ?? null },
+      redirectUrl: `${origin}/invitation`,
+      publicMetadata: { full_name: fullName },
     });
   } catch (e) {
     // Clerk throws a ClerkAPIResponseError whose own top-level `.message` is
@@ -170,7 +172,7 @@ export async function addPatient(formData: FormData) {
 // CLAUDE.md §5).
 export async function reactivatePatient(formData: FormData): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
-  const { user, instructor } = await requireApprovedInstructor(supabase);
+  const { user } = await requireApprovedInstructor(supabase);
 
   // Avant le lancement : aucune invitation renvoyée non plus (lib/launch.ts).
   if (!canInvitePatients(user.email)) return { error: INVITATIONS_CLOSED_MESSAGE };
@@ -195,8 +197,9 @@ export async function reactivatePatient(formData: FormData): Promise<{ ok: true 
     const client = await clerkClient();
     await client.invitations.createInvitation({
       emailAddress: patient.email,
-      redirectUrl: `${origin}/invitation${instructor?.full_name ? `?kine=${encodeURIComponent(instructor.full_name)}` : ""}`,
-      publicMetadata: { full_name: patient.full_name, role: "patient", instructor_name: instructor?.full_name ?? null },
+      // Rien qui révèle le suivi chez un kiné (voir addPatient ci-dessus).
+      redirectUrl: `${origin}/invitation`,
+      publicMetadata: { full_name: patient.full_name },
     });
   } catch (e) {
     // Même logique de lecture d'erreur que addPatient ci-dessus : le détail
