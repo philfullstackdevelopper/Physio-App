@@ -14,15 +14,23 @@ Outil : **Expo** (SDK 58), qui construit l'appli iPhone sur ses propres Mac, dan
 
 ---
 
-## Ce qu'il faut avant de publier
+## Où on en est (2026-11-08)
 
-| Étape | Qui | Délai |
+| Étape | Qui | État |
 |---|---|---|
-| 1. SIRET de la société | Philippe | — |
-| 2. Numéro D-U-N-S (gratuit, dnb.com) | Philippe | 1 à 4 semaines |
-| 3. Compte **Apple Developer** en tant qu'**organisation** (99 $/an). Apple exige qu'une appli de santé soit publiée par une société, pas par un particulier (règle 5.1.1 ix). | Philippe | ~1 semaine |
-| 4. Compte **Google Play Console** en tant qu'organisation (25 $ une fois). Un compte d'organisation évite les 14 jours de test obligatoires avec 12 testeurs. | Philippe | quelques jours |
-| 5. Compte **Expo** gratuit (expo.dev) | Philippe | 5 min |
+| Code de l'appli (dossier `mobile/`) | Claude | ✅ fait ; vérifié le 2026-11-08 : 20/20 contrôles Expo, l'appli se compile pour iPhone et Android |
+| Icône et écran de démarrage | Claude | ✅ redessinés en vecteur à partir du logo du site (`assets/`, source `store/icons/easyphysio-icon.svg`) |
+| Textes des fiches, réponses confidentialité, notes pour les testeurs | Claude | ✅ `store/FICHE-MAGASINS.md` |
+| Captures d'écran App Store et Google Play, image de présentation Google | Claude | ✅ `store/screenshots/` |
+| 1. Créer la société (SIRET) | Philippe | ⏳ pas encore fait |
+| 2. Numéro D-U-N-S (gratuit, dnb.com, avec le SIREN) | Philippe | ⏳ 1 à 4 semaines après le SIRET |
+| 3. Compte **Apple Developer** en tant qu'**organisation** (99 $/an). Apple exige qu'une appli de santé soit publiée par une société, pas par un particulier (règle 5.1.1 ix). | Philippe | ⏳ ~1 semaine après le D-U-N-S |
+| 4. Compte **Google Play Console** en tant qu'organisation (25 $ une fois). Un compte d'organisation évite les 14 jours de test obligatoires avec 12 testeurs. | Philippe | ⏳ quelques jours après le D-U-N-S |
+| 5. Compte **Expo** gratuit (expo.dev) | Philippe | ⏳ 5 minutes, possible dès maintenant |
+| 6. Adresse e-mail de contact + trous des textes légaux (`[SIREN]`, `[email de contact]`…), ajout de l'appli, de PostHog et d'Expo dans la politique de confidentialité | Philippe (+ relecture juriste) | ⏳ dès que la société existe ; brouillon dans `store/FICHE-MAGASINS.md` §7 |
+| 7. Deux comptes de démonstration pour les testeurs (kiné + patient avec programme) | Philippe, depuis `/admin` | ⏳ 2 minutes, juste avant la soumission |
+
+Sans attendre la société, avec un compte Expo, on peut déjà **essayer l'appli sur un téléphone Android** (commande « Essayer sur son téléphone » ci-dessous). Pour l'iPhone, il faut le compte Apple Developer.
 
 ## Les commandes, dans l'ordre (dans ce dossier `mobile/`)
 
@@ -61,17 +69,23 @@ Sans `APPLE_TEAM_ID` et `ANDROID_CERT_SHA256`, ces liens s'ouvrent simplement da
 - **Fiche de confidentialité** (« App Privacy » chez Apple, « Sécurité des données » chez Google) : données de santé (programme, douleur, séances), coordonnées (nom, e-mail), liées à la personne, jamais utilisées pour de la publicité.
 - **Déclaration « appli de santé »** chez Google, et dans la description : « EasyPhysio n'est pas un dispositif médical ; il ne pose pas de diagnostic et ne remplace pas votre kinésithérapeute ».
 - **Suppression du compte** dans l'appli : patient (Paramètres → supprimer mon compte, immédiat), kiné (Mes informations → Supprimer mon compte : demande traitée sous 30 jours depuis `/admin`).
-- Logo et captures d'écran : à faire (les images de `assets/` sont celles d'Expo, provisoires).
+- Logo, captures d'écran et textes des fiches : prêts dans `store/` (voir `store/FICHE-MAGASINS.md`).
 
 ## Le risque connu
 
-Parcours choisi (Philippe, 2026-11-07, « comme Netflix ») : le patient scanne le QR code du kiné, s'inscrit et paie **sur le site**, puis télécharge l'appli et s'y connecte. L'appli ne montre jamais de prix, de bouton « payer » ni de phrase « payez sur le site » (Apple l'interdit, hors cas ci-dessous) ; un patient non activé lit seulement « votre kiné peut vous aider ».
+Parcours choisi (Philippe, 2026-11-07, « comme Netflix ») : le patient scanne le QR code du kiné, s'inscrit (et, si son kiné fait payer son suivi, accepte le prix et enregistre sa carte) **sur le site**, puis télécharge l'appli et s'y connecte. L'appli ne montre jamais de prix, de bouton « payer » ni de phrase « payez sur le site » ; un patient non activé lit seulement « votre kiné peut vous aider ».
 
-Les 6 € du kiné ne posent pas de problème (prestation d'un professionnel de santé, règle 3.1.3 d). **L'accès à 2,99–6,99 € est le point délicat** : Apple demande qu'un abonnement acheté sur le site soit aussi proposé en achat intégré (règle 3.1.3 b). C'est souvent toléré pour une appli de connexion sans aucune mention de paiement, sans garantie. Dans les notes pour le testeur : comptes de démonstration déjà actifs, inscription uniquement sur invitation du kiné, honoraires du kiné payés au kiné.
+Avec le modèle de facturation du 2026-11-01, il y a deux flux d'argent, tous les deux **hors de l'appli** :
+- **Kiné → EasyPhysio** : abonnement à un outil professionnel, acheté sur le site. Règle Apple 3.1.3 (f) : une appli gratuite qui accompagne un outil web payant n'a pas besoin d'achat intégré, tant qu'elle ne pousse pas à acheter.
+- **Patient → kiné** : honoraires du kiné pour son suivi (programme mensuel « hors nomenclature »), 0 % pour EasyPhysio. C'est le paiement d'un service rendu par un professionnel de santé, pas un contenu numérique vendu par EasyPhysio (règles 3.1.3 (d) et 3.1.5).
+
+Le risque est plus faible qu'avec l'ancien modèle (accès patient payé à EasyPhysio), mais pas nul : un testeur peut estimer que l'accès patient est « débloqué » par un paiement fait ailleurs. Les arguments sont déjà dans les notes pour le testeur (`store/FICHE-MAGASINS.md` §6).
+
+Second risque : Apple refuse parfois une appli qui « n'est qu'un site dans une appli » (règle 4.2). Nos réponses : notifications, Face ID, écran hors connexion, liens qui ouvrent l'appli, caméra pour filmer les exercices.
 
 Si Apple refuse, dans l'ordre :
-1. Faire appel avec ces arguments.
+1. Répondre au testeur / faire appel avec ces arguments.
 2. En France (Union européenne, loi DMA) : demander à Apple le droit d'afficher un lien vers le paiement sur le site (« External Purchase Link »), avec des frais réduits (à vérifier au moment de la demande).
-3. En dernier recours : l'accès en achat intégré Apple (15 % pour les petites entreprises), sur la seule part EasyPhysio ; les 6 € du kiné restent hors appli.
+3. En dernier recours : l'abonnement en achat intégré Apple (15 % pour les petites entreprises) ; les honoraires du kiné restent hors appli.
 
 Google accepte une appli « connexion seule » sans paiement intégré.
