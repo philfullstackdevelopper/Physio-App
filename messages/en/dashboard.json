@@ -90,7 +90,8 @@
     "mainNav": "Main navigation",
     "exitDemo": "Leave the demo",
     "signOut": "Sign out",
-    "print": "Print or save as PDF"
+    "print": "Print or save as PDF",
+    "myCabinet": "My practice"
   },
   "infos": {
     "title": "My details",
@@ -111,6 +112,10 @@
       "confirmRequired": "Tick the box to confirm.",
       "requestFailed": "The request couldn't be sent. Please try again later.",
       "cancelFailed": "The cancellation couldn't be saved."
+    },
+    "cabinet": {
+      "label": "My practice",
+      "hint": "Your colleagues and shared exercises"
     }
   },
   "patients": {
@@ -316,5 +321,41 @@
     "aria": "QR code to join your follow-up",
     "download": "Download to print",
     "atLaunch": "Active at launch, like email invitations."
+  },
+  "cabinet": {
+    "title": "My practice",
+    "intro": "Find the physios from your practice and share the exercises you create with them. Your patients stay yours: no colleague can see them.",
+    "joinTitle": "Join my practice",
+    "joinHelp": "Is your practice already on EasyPhysio? Search for it: a physio from the practice will approve your request.",
+    "createTitle": "Register my practice",
+    "createHelp": "Not there yet? Register it: your colleagues will find it when they sign up.",
+    "createButton": "Register my practice",
+    "pendingTitle": "Request sent to {name}",
+    "pendingHelp": "A physio from the practice needs to approve it. Meanwhile, your account works as usual.",
+    "cancelRequest": "Cancel my request",
+    "shareHelp": "Exercises you create as « Shared with my practice » are visible to these physios, who can give them to their patients.",
+    "toExercises": "My exercises",
+    "requestsTitle": "{count, plural, one {One request to join the practice} other {# requests to join the practice}}",
+    "requestsHelp": "Only accept physios you know: they will see the practice's shared exercises.",
+    "accept": "Accept",
+    "refuse": "Decline",
+    "membersTitle": "{count, plural, one {# physio in the practice} other {# physios in the practice}}",
+    "you": "(you)",
+    "since": "since {date}",
+    "founder": "Founder",
+    "remove": "Remove",
+    "removeAria": "Remove {name} from the practice",
+    "leave": "Leave the practice",
+    "leaveConfirm": "Your shared exercises will no longer be visible to your colleagues. Leave the practice?",
+    "leaveLastConfirm": "You are the last physio in the practice: it will be deleted. Continue?",
+    "leaveYes": "Yes, leave",
+    "leaveNo": "Cancel",
+    "errors": {
+      "alreadyIn": "You already belong to a practice (or a request is pending).",
+      "notFound": "This practice no longer exists.",
+      "notAllowed": "This action isn't possible.",
+      "nameRequired": "Enter the practice name.",
+      "unknown": "Something went wrong. Please try again."
+    }
   }
 }

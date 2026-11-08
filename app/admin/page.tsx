@@ -9,6 +9,7 @@ import Waitlist from "./Waitlist";
 import TestAccounts from "./TestAccounts";
 import KineExercises, { type AdminKineExercise } from "./KineExercises";
 import { listAccountDeletions, listKineExercises, type AccountDeletionRow } from "@/lib/db/admin";
+import { adminListCabinets, type AdminCabinetRow } from "@/lib/db/cabinets";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import AdminSummary, { sinceLabel, type AdminTodo } from "./AdminSummary";
 import { CONTRIBUTOR_THRESHOLD } from "@/lib/exercise/kineExercises";
@@ -68,6 +69,14 @@ export default async function AdminPage({
     deletions = await listAccountDeletions();
   } catch (e) {
     console.error("[admin] demandes de suppression : liste indisponible", e);
+  }
+
+  // Cabinets (migration 0085) : liste vide tant qu'elle n'est pas appliquée.
+  let cabinets: AdminCabinetRow[] = [];
+  try {
+    cabinets = await adminListCabinets();
+  } catch (e) {
+    console.error("[admin] cabinets : liste indisponible", e);
   }
 
   let kineExercises: AdminKineExercise[] | null = null;
@@ -365,6 +374,29 @@ export default async function AdminPage({
                   Demandé le {dateFmt.format(new Date(d.requested_at))} · {d.patient_count} patient{d.patient_count > 1 ? "s" : ""}
                 </p>
                 {d.reason && <p className="mt-1 text-slate-700">« {d.reason} »</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {cabinets.length > 0 && (
+        <section id="cabinets" className="mt-12 scroll-mt-6">
+          <h2 className="font-display text-xl font-semibold text-slate-900">Cabinets</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Créés et rejoints par les kinés eux-mêmes ; une demande pour rejoindre est validée par un membre du cabinet.
+          </p>
+          <ul className="mt-4 space-y-2">
+            {cabinets.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+                <span className="font-medium text-slate-900">
+                  {c.name} {c.city && <span className="font-normal text-slate-500">· {c.city}</span>}
+                </span>
+                <span className="text-slate-500">
+                  {c.members} kiné{c.members > 1 ? "s" : ""}
+                  {c.pending > 0 && <> · {c.pending} demande{c.pending > 1 ? "s" : ""} en attente</>}
+                  {" · "}créé le {dateFmt.format(new Date(c.created_at))}
+                </span>
               </li>
             ))}
           </ul>

@@ -90,7 +90,8 @@
     "mainNav": "Navigation principale",
     "exitDemo": "Quitter la démo",
     "signOut": "Se déconnecter",
-    "print": "Imprimer ou enregistrer en PDF"
+    "print": "Imprimer ou enregistrer en PDF",
+    "myCabinet": "Mon cabinet"
   },
   "infos": {
     "title": "Mes informations",
@@ -111,6 +112,10 @@
       "confirmRequired": "Cochez la case pour confirmer.",
       "requestFailed": "La demande n'a pas pu être envoyée. Réessayez plus tard.",
       "cancelFailed": "L'annulation n'a pas pu être enregistrée."
+    },
+    "cabinet": {
+      "label": "Mon cabinet",
+      "hint": "Vos collègues et les exercices partagés"
     }
   },
   "patients": {
@@ -316,5 +321,41 @@
     "aria": "QR code pour rejoindre votre suivi",
     "download": "Télécharger pour imprimer",
     "atLaunch": "Actif au lancement, comme les invitations par e-mail."
+  },
+  "cabinet": {
+    "title": "Mon cabinet",
+    "intro": "Retrouvez les kinés de votre cabinet et partagez avec eux les exercices que vous créez. Vos patients restent les vôtres : aucun collègue ne les voit.",
+    "joinTitle": "Rejoindre mon cabinet",
+    "joinHelp": "Votre cabinet est déjà sur EasyPhysio ? Cherchez-le : un kiné du cabinet validera votre demande.",
+    "createTitle": "Inscrire mon cabinet",
+    "createHelp": "Il n'y est pas encore ? Inscrivez-le : vos collègues le retrouveront à leur inscription.",
+    "createButton": "Inscrire mon cabinet",
+    "pendingTitle": "Demande envoyée à {name}",
+    "pendingHelp": "Un kiné du cabinet doit la valider. En attendant, votre compte fonctionne normalement.",
+    "cancelRequest": "Annuler ma demande",
+    "shareHelp": "Les exercices que vous créez en « Partagé avec mon cabinet » sont visibles par ces kinés, qui peuvent les donner à leurs patients.",
+    "toExercises": "Mes exercices",
+    "requestsTitle": "{count, plural, one {Une demande pour rejoindre le cabinet} other {# demandes pour rejoindre le cabinet}}",
+    "requestsHelp": "N'acceptez que des kinés que vous connaissez : ils verront les exercices partagés du cabinet.",
+    "accept": "Accepter",
+    "refuse": "Refuser",
+    "membersTitle": "{count, plural, one {# kiné dans le cabinet} other {# kinés dans le cabinet}}",
+    "you": "(vous)",
+    "since": "depuis le {date}",
+    "founder": "Fondateur",
+    "remove": "Retirer",
+    "removeAria": "Retirer {name} du cabinet",
+    "leave": "Quitter le cabinet",
+    "leaveConfirm": "Vos exercices partagés ne seront plus visibles par vos collègues. Quitter le cabinet ?",
+    "leaveLastConfirm": "Vous êtes le dernier kiné du cabinet : il sera supprimé. Continuer ?",
+    "leaveYes": "Oui, quitter",
+    "leaveNo": "Annuler",
+    "errors": {
+      "alreadyIn": "Vous faites déjà partie d'un cabinet (ou une demande est en cours).",
+      "notFound": "Ce cabinet n'existe plus.",
+      "notAllowed": "Cette action n'est pas possible.",
+      "nameRequired": "Indiquez le nom du cabinet.",
+      "unknown": "Une erreur est survenue. Réessayez."
+    }
   }
 }

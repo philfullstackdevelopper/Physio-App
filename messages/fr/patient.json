@@ -162,7 +162,9 @@
     "deletedTitle": "Votre ancien compte a été supprimé ?",
     "deletedText": "Supprimez cet identifiant de connexion pour libérer votre adresse e-mail : un kinésithérapeute pourra alors vous inviter à nouveau.",
     "deleting": "Suppression…",
-    "deleteLogin": "Supprimer cet identifiant"
+    "deleteLogin": "Supprimer cet identifiant",
+    "kineTitle": "Vous êtes kinésithérapeute ?",
+    "kineText": "Créer mon espace kiné avec ce compte."
   },
   "actions": {
     "acceptFailed": "L'acceptation n'a pas pu être enregistrée. Vérifiez votre connexion et réessayez.",

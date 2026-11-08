@@ -194,7 +194,12 @@
     "reviewNote": "Message from EasyPhysio:",
     "sending": "Sending…",
     "resubmit": "Resubmit for review",
-    "makePublic": "Make public for everyone"
+    "makePublic": "Make public for everyone",
+    "sharedWithCabinet": "Shared with the practice",
+    "fromMyCabinet": "My practice",
+    "cabinetShort": "Practice",
+    "noneFromCabinet": "No exercise shared by your colleagues yet.",
+    "sharedBy": "Shared by {name}"
   },
   "picker": {
     "thePatient": "the patient",
@@ -345,7 +350,8 @@
   "exercisesPage": {
     "title": "My exercises",
     "mySessions": "My sessions",
-    "unnamedPatient": "Unnamed patient"
+    "unnamedPatient": "Unnamed patient",
+    "aColleague": "a colleague"
   },
   "seances": {
     "edit": "Edit",
@@ -569,7 +575,9 @@
     "next": "Next: {step} →",
     "uploadingVideo": "Sending the video… {progress}%",
     "creating": "Creating…",
-    "create": "Create the exercise"
+    "create": "Create the exercise",
+    "shareCabinet": "Share with my practice ({name})",
+    "shareCabinetText": "Physios from your practice can give it to their patients. They can't edit it."
   },
   "kineVideo": {
     "refused": "Upload refused ({status}).",

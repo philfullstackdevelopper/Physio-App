@@ -6,26 +6,33 @@ import { createClient } from "@/lib/supabase/server";
 import { rppsInUse, setInstructorStatus, setInstructorRppsVerified } from "@/lib/db/admin";
 import { verifyRpps } from "@/lib/instructor/rppsVerification";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
+import { createCabinet, requestJoinCabinet } from "@/lib/db/cabinets";
+import { splitPostalCity } from "@/lib/cabinet/address";
+import { parsePendingCabinet, type PendingCabinet } from "@/lib/cabinet/pendingCabinet";
 
 const PENDING_CABINET_COOKIE = "pending_cabinet";
-
-type PendingCabinet = {
-  cabinetName: string;
-  cabinetAddress: string;
-  phone: string;
-  /** Facultatif depuis le 2026-11-02 (inscription libre). */
-  rppsNumber: string | null;
-  siret: string | null;
-};
 
 function readPendingCabinet(raw: string | undefined): PendingCabinet | null {
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(decodeURIComponent(raw));
-    if (!parsed?.cabinetName || !parsed?.cabinetAddress || !parsed?.phone) return null;
-    return parsed as PendingCabinet;
+    return parsePendingCabinet(JSON.parse(decodeURIComponent(raw)));
   } catch {
     return null;
+  }
+}
+
+// Cabinet choisi à l'inscription (migration 0085) : rejoindre (demande en
+// attente, validée par un collègue) ou créer (le kiné en devient fondateur).
+// Jamais bloquant : en cas d'échec, le kiné le refait depuis « Mon cabinet ».
+async function applyCabinetChoice(appId: string, c: PendingCabinet): Promise<void> {
+  try {
+    if (c.mode === "join" && c.cabinetId) {
+      await requestJoinCabinet(appId, c.cabinetId);
+    } else {
+      await createCabinet(appId, { name: c.cabinetName, address: c.cabinetAddress, ...splitPostalCity(c.cabinetAddress) });
+    }
+  } catch (e) {
+    console.error("finalize : cabinet non enregistré", e);
   }
 }
 
@@ -49,7 +56,9 @@ function readPendingCabinet(raw: string | undefined): PendingCabinet | null {
 // chargement vers elle (ClientRedirect). Philippe, 2026-11-04.
 export default async function SignupFinalizePage() {
   const to = await destination();
-  return <ClientRedirect to={to} />;
+  // Le cookie du cabinet a servi : on l'efface (sinon une 2e inscription dans
+  // le même navigateur, dans les 15 min, le réutiliserait).
+  return <ClientRedirect to={to} clearCookies={[PENDING_CABINET_COOKIE]} />;
 }
 
 async function destination(): Promise<string> {
@@ -106,7 +115,7 @@ async function destination(): Promise<string> {
       [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
       email.split("@")[0];
 
-    // Inscription libre (Philippe, 2026-11-02 : le kiné paie son accès, on ne
+    // Inscription libre (Philippe, 2026-11-02 ; EasyPhysio est gratuit pour le kiné depuis le 2026-11-04 : on ne
     // vérifie plus son inscription à l'Ordre). Le RPPS, facultatif, ne sert
     // plus qu'à la pastille « RPPS vérifié » — jamais à bloquer. Un numéro
     // déjà porté par un autre compte n'a simplement pas la pastille.
@@ -129,7 +138,9 @@ async function destination(): Promise<string> {
     });
 
     if (error) {
-      return (`/connection-error?next=${encodeURIComponent("/dashboard")}`);
+      // Revenir ICI (pas sur /dashboard : sans fiche kiné, /dashboard renvoie
+      // vers l'espace patient et le kiné restait coincé, audit 2026-11-08).
+      return (`/connection-error?next=${encodeURIComponent("/signup/finalize")}`);
     }
 
     // Badge « RPPS vérifié » : écrit par le serveur (migration 0063).
@@ -137,7 +148,13 @@ async function destination(): Promise<string> {
     // Validé d'office dès que le cabinet est renseigné → directement dans
     // l'appli. Cabinet manquant (cookie perdu) → on le demande d'abord.
     if (pendingCabinet) {
-      await setInstructorStatus(appId, "approved");
+      try {
+        await setInstructorStatus(appId, "approved");
+      } catch (e) {
+        // Rattrapé à la prochaine visite de /dashboard (fiche avec cabinet).
+        console.error("finalize : validation différée", e);
+      }
+      await applyCabinetChoice(appId, pendingCabinet);
       return ("/dashboard");
     }
     return ("/signup/onboarding");
@@ -148,7 +165,11 @@ async function destination(): Promise<string> {
   if ((existing.status ?? "approved") !== "pending") return ("/dashboard");
   // Resté « en attente » d'avant l'inscription libre, cabinet renseigné : validé.
   if (existing.cabinet_name) {
-    await setInstructorStatus(appId, "approved");
+    try {
+      await setInstructorStatus(appId, "approved");
+    } catch (e) {
+      console.error("finalize : validation différée", e);
+    }
     return ("/dashboard");
   }
   return ("/signup/onboarding");

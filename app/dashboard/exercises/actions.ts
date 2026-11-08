@@ -38,6 +38,8 @@ export type CreateKineExerciseInput = {
   patientId: string | null;
   /** « Rendre public pour tous » coché (banque seulement). */
   makePublic: boolean;
+  /** « Partagé avec mon cabinet » (banque seulement, migration 0085). */
+  shareWithCabinet?: boolean;
   /** « Partir de cet exercice » : l'exercice de la plateforme repris. */
   sourceExerciseId: string | null;
 };
@@ -62,6 +64,8 @@ export async function createKineExercise(input: CreateKineExerciseInput): Promis
   const patientId = input.scope === "patient" ? String(input.patientId ?? "") : null;
   if (input.scope === "patient" && !UUID.test(patientId ?? "")) return { error: t("pickPatient") };
   const makePublic = input.scope === "bank" && input.makePublic === true;
+  // Visible par les kinés actifs de son cabinet (la base vérifie qu'il en a un).
+  const shareWithCabinet = input.scope === "bank" && input.shareWithCabinet === true;
 
   // « Partir de cet exercice » : on reprend sa vidéo (celle de Jules) tant que
   // le kiné n'envoie pas la sienne. Lecture sous ses droits : il ne peut
@@ -89,6 +93,8 @@ export async function createKineExercise(input: CreateKineExerciseInput): Promis
       created_by: userId,
       patient_id: patientId,
       publication_status: makePublic ? "pending" : "private",
+      // Colonne ajoutée par 0085 : écrite seulement quand le partage est demandé.
+      ...(shareWithCabinet ? { visibility: "cabinet" } : {}),
       source_exercise_id: sourceId,
       media_url: mediaUrl,
     })

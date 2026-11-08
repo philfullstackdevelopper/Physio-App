@@ -7,7 +7,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ChevronRight, Dumbbell, ListChecks, Wallet } from "lucide-react";
+import { Building2, ChevronRight, Dumbbell, ListChecks, Wallet } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { initials } from "@/lib/format/initials";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -17,6 +17,7 @@ const TILES = [
   { href: "/dashboard/seances", key: "sessions", icon: Dumbbell, tone: "bg-brand-soft text-brand" },
   { href: "/dashboard/exercises", key: "exercises", icon: ListChecks, tone: "bg-violet-soft text-violet" },
   { href: "/dashboard/facturation", key: "billing", icon: Wallet, tone: "bg-ok-soft text-ok" },
+  { href: "/dashboard/cabinet", key: "cabinet", icon: Building2, tone: "bg-warn-soft text-warn" },
 ];
 
 export default function KineInfosView({ instructorName, footer }: { instructorName: string | null; footer?: ReactNode }) {

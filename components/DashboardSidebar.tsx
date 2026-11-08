@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { LayoutDashboard, UsersRound, MessageCircle, Dumbbell, ListChecks, Wallet, LogOut, CircleUserRound, ChevronLeft, BadgeCheck } from "lucide-react";
+import { LayoutDashboard, UsersRound, MessageCircle, Dumbbell, ListChecks, Wallet, LogOut, CircleUserRound, ChevronLeft, BadgeCheck, Building2 } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import { initials } from "@/lib/format/initials";
 
@@ -16,6 +16,7 @@ const LINKS = [
   { href: "/dashboard/seances", label: "mySessions", icon: Dumbbell },
   { href: "/dashboard/exercises", label: "myExercises", icon: ListChecks },
   { href: "/dashboard/facturation", label: "billing", icon: Wallet },
+  { href: "/dashboard/cabinet", label: "myCabinet", icon: Building2 },
 ];
 
 // Téléphone : 4 onglets en bas, comme l'appli patient (5 = trop, Philippe
@@ -32,7 +33,7 @@ const MOBILE_LINKS: { href: string; label: string; icon: typeof LayoutDashboard;
     href: "/dashboard/informations",
     label: "myInfo",
     icon: CircleUserRound,
-    alsoActive: ["/dashboard/seances", "/dashboard/exercises", "/dashboard/facturation"],
+    alsoActive: ["/dashboard/seances", "/dashboard/exercises", "/dashboard/facturation", "/dashboard/cabinet"],
   },
 ];
 
@@ -144,7 +145,7 @@ function backTarget(pathname: string): { href: string; label: string } | null {
     return { href: "/dashboard/seances", label: "mySessions" };
   }
   if (pathname === "/dashboard/patients/new") return { href: "/dashboard/patients", label: "myPatients" };
-  if (["/dashboard/seances", "/dashboard/exercises", "/dashboard/facturation"].some((p) => pathname.startsWith(p))) {
+  if (["/dashboard/seances", "/dashboard/exercises", "/dashboard/facturation", "/dashboard/cabinet"].some((p) => pathname.startsWith(p))) {
     return { href: "/dashboard/informations", label: "myInfo" };
   }
   return null;
@@ -156,12 +157,15 @@ export default function DashboardSidebar({
   instructorName,
   contributorTitle = null,
   unreadCount,
+  cabinetRequests = 0,
   pathnameOverride,
 }: {
   instructorName: string | null;
   /** « Contributeur EasyPhysio » à partir de 5 exercices publiés (comme un statut sous un profil GitHub). */
   contributorTitle?: string | null;
   unreadCount: number;
+  /** Demandes en attente pour rejoindre le cabinet du kiné (migration 0085). */
+  cabinetRequests?: number;
   /** Page de prévisualisation (/prototypes/kine-telephone) : quel onglet montrer actif. */
   pathnameOverride?: string;
 }) {
@@ -192,6 +196,11 @@ export default function DashboardSidebar({
               {link.href === "/dashboard/messages" && unreadCount > 0 && (
                 <span className="ml-auto rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">
                   {unreadCount}
+                </span>
+              )}
+              {link.href === "/dashboard/cabinet" && cabinetRequests > 0 && (
+                <span className="ml-auto rounded-full bg-warn px-1.5 text-[11px] font-semibold text-white">
+                  {cabinetRequests}
                 </span>
               )}
             </Link>

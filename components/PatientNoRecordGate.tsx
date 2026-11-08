@@ -1,4 +1,6 @@
-import { AlertCircle, LogOut, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, LogOut, Stethoscope, Trash2 } from "lucide-react";
+import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 import { SignOutButton } from "@clerk/nextjs";
 import { getTranslations } from "next-intl/server";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
@@ -34,6 +36,23 @@ export default async function PatientNoRecordGate() {
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
               {t("text")}
             </p>
+
+            {/* Kiné dont le compte a été créé par un autre chemin que
+                l'inscription kiné (ex. « Continuer avec Google » sur la page de
+                connexion) : il arrivait ici sans issue (audit 2026-11-08).
+                /signup/finalize crée sa fiche kiné puis demande son cabinet. */}
+            {SIGNUPS_OPEN && (
+              <Link
+                href="/signup/finalize"
+                className="mt-6 flex items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 transition hover:border-blue-200"
+              >
+                <Stethoscope className="h-5 w-5 shrink-0 text-blue-700" strokeWidth={1.75} />
+                <span>
+                  <span className="block text-sm font-medium text-slate-900">{t("kineTitle")}</span>
+                  <span className="block text-sm text-slate-600">{t("kineText")}</span>
+                </span>
+              </Link>
+            )}
 
             {/* Compte supprimé (par le patient ou par son kiné) dont l'identifiant
                 de connexion est resté : le supprimer libère l'adresse e-mail,

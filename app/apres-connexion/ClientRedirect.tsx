@@ -16,11 +16,14 @@ import { LOCALE_COOKIE, LOCALE_GUESSED_COOKIE, type Locale } from "@/i18n/locale
 //
 // Jamais d'écran vide : un message s'affiche tout de suite, et un lien de
 // secours apparaît si la page ne s'est pas ouverte au bout de 4 secondes.
-export default function ClientRedirect({ to, locale }: { to: string; locale?: Locale | null }) {
+export default function ClientRedirect({ to, locale, clearCookies }: { to: string; locale?: Locale | null; clearCookies?: string[] }) {
   const t = useTranslations("auth.redirect");
   const [slow, setSlow] = useState(false);
+  const clearKey = (clearCookies ?? []).join(",");
 
   useEffect(() => {
+    // Cookies de passage devenus inutiles (ex. « pending_cabinet » après l'inscription).
+    for (const name of clearKey ? clearKey.split(",") : []) document.cookie = `${name}=; path=/; max-age=0`;
     // Langue enregistrée sur le compte → appliquée à cet appareil avant
     // d'ouvrir l'app (voir page.tsx).
     if (locale) {
@@ -33,7 +36,7 @@ export default function ClientRedirect({ to, locale }: { to: string; locale?: Lo
       clearTimeout(go);
       clearTimeout(fallback);
     };
-  }, [to, locale]);
+  }, [to, locale, clearKey]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f6f8fd] p-6">

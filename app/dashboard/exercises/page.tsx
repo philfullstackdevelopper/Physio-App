@@ -9,6 +9,7 @@ import { hideExercise, requestExercisePublication, unhideExercise } from "./acti
 import { contributorRanking, type PublicationStatus } from "@/lib/exercise/kineExercises";
 import ContributionSummary from "@/components/ContributionSummary";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
+import { cabinetView } from "@/lib/db/cabinets";
 
 export default async function ExercisesPage({
   searchParams,
@@ -35,6 +36,17 @@ export default async function ExercisesPage({
       "id, name, instructions, media_url, media_start_seconds, created_by, search_keywords, equipment, publication_status, patient_id, review_note, author_label, exercise_body_parts(body_part_id)",
     )
     .order("name");
+
+  // Cabinet (migration 0085) : exercices partagés et noms des collègues. Tant
+  // que la migration n'est pas appliquée, pas de cabinet → rien de plus n'est lu.
+  const cabinet = await cabinetView(user.id).catch(() => null);
+  const inCabinet = cabinet?.me.status === "active";
+  const colleagueName = new Map((cabinet?.members ?? []).map((m) => [m.id, m.name ?? ""]));
+  const sharedIds = new Set<string>();
+  if (inCabinet) {
+    const { data: shared } = await supabase.from("exercises").select("id").eq("visibility", "cabinet");
+    for (const r of shared ?? []) sharedIds.add(r.id as string);
+  }
 
   const { data: hiddenRows } = await supabase
     .from("instructor_hidden_exercises")
@@ -73,6 +85,8 @@ export default async function ExercisesPage({
     patient_id: (ex.patient_id as string | null) ?? null,
     review_note: (ex.review_note as string | null) ?? null,
     author_label: (ex.author_label as string | null) ?? null,
+    cabinetShared: sharedIds.has(ex.id),
+    sharedBy: sharedIds.has(ex.id) && ex.created_by && ex.created_by !== user.id ? colleagueName.get(ex.created_by as string) || t("aColleague") : null,
   })));
 
   return (
@@ -101,6 +115,7 @@ export default async function ExercisesPage({
               patients: (patientRows ?? []).map((p) => ({ id: p.id as string, name: (p.full_name as string | null) || t("unnamedPatient") })),
               publishedCount,
               requestPublication: requestExercisePublication,
+              cabinetName: inCabinet ? cabinet?.cabinet.name ?? null : null,
             }}
             hideExercise={hideExercise}
             unhideExercise={unhideExercise}

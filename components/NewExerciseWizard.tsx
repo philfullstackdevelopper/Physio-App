@@ -16,7 +16,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { X, Plus, Trash2, Camera, Upload, Globe, User, BookOpen, Check } from "lucide-react";
+import { X, Plus, Trash2, Camera, Upload, Globe, User, BookOpen, Check, Building2 } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { EXERCISE_EQUIPMENT_OPTIONS, exerciseEquipmentLabels } from "@/lib/exercise/equipment";
 import { parseSteps } from "@/lib/exercise/steps";
@@ -49,6 +49,7 @@ export default function NewExerciseWizard({
   patients,
   defaultBodyPartId,
   publishedCount,
+  cabinetName = null,
   onClose,
   demo = false,
 }: {
@@ -59,6 +60,8 @@ export default function NewExerciseWizard({
   defaultBodyPartId: string | null;
   /** Exercices de ce kiné déjà publiés (récompense). */
   publishedCount: number;
+  /** Cabinet actif du kiné (migration 0085) : propose « Partagé avec mon cabinet ». */
+  cabinetName?: string | null;
   onClose: () => void;
   /** Démo publique (/demo/kine) : tout le formulaire fonctionne, rien n'est enregistré. */
   demo?: boolean;
@@ -83,6 +86,7 @@ export default function NewExerciseWizard({
   const [scope, setScope] = useState<"bank" | "patient">("bank");
   const [patientId, setPatientId] = useState<string>("");
   const [makePublic, setMakePublic] = useState(true);
+  const [shareCabinet, setShareCabinet] = useState(!!cabinetName);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -154,6 +158,7 @@ export default function NewExerciseWizard({
         scope,
         patientId: scope === "patient" ? patientId : null,
         makePublic: scope === "bank" && makePublic,
+        shareWithCabinet: scope === "bank" && !!cabinetName && shareCabinet,
         sourceExerciseId: source?.id ?? null,
       });
       if ("error" in res) throw new Error(res.error);
@@ -446,6 +451,18 @@ export default function NewExerciseWizard({
                 )}
                 {scope === "patient" && patients.length === 0 && <p className="mt-2 text-sm text-muted">{t("noPatients")}</p>}
               </div>
+
+              {scope === "bank" && cabinetName && (
+                <label className="flex items-start gap-3 rounded-xl border border-line p-3">
+                  <input type="checkbox" checked={shareCabinet} onChange={(e) => setShareCabinet(e.target.checked)} className="mt-1 h-4 w-4 accent-brand" />
+                  <span className="text-sm text-ink">
+                    <span className="flex items-center gap-1.5 font-semibold">
+                      <Building2 className="h-4 w-4 text-brand" strokeWidth={2} /> {t("shareCabinet", { name: cabinetName })}
+                    </span>
+                    <span className="mt-0.5 block text-muted">{t("shareCabinetText")}</span>
+                  </span>
+                </label>
+              )}
 
               {scope === "bank" && (
                 <label className="flex items-start gap-3 rounded-xl border-[1.5px] border-ok bg-ok-soft p-3">

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SignUp } from "@clerk/nextjs";
+import { ArrowLeft, Building2, Search, Users } from "lucide-react";
 import { brandedHeaderTitle } from "@/lib/clerk/brandedTitle";
 import { compactClerkElements } from "@/lib/clerk/compact";
-import { findCabinetByRpps } from "@/app/signup/kine/actions";
+import { findCabinetByRpps, searchCabinetsForSignup } from "@/app/signup/kine/actions";
+import type { CabinetSearchResult } from "@/lib/db/cabinets";
 import { useTranslations } from "next-intl";
 
 // Cabinet details FIRST, account creation LAST — the order a professional
@@ -27,15 +29,24 @@ const COOKIE_MAX_AGE = 60 * 15; // 15 min — plenty for filling out Clerk's for
 const fieldClass =
   "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 shadow-sm short:mt-1 short:py-2 transition-colors placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
 
-// Inscription libre (Philippe, 2026-11-02) : le kiné paie son accès, on ne
+// Inscription libre (Philippe, 2026-11-02 ; gratuit pour le kiné depuis le 2026-11-04) : on ne
 // vérifie donc plus qu'il est inscrit à l'Ordre. Le RPPS est FACULTATIF et ne
 // sert plus que de raccourci : s'il est reconnu par l'Annuaire Santé, une
 // carte « C'est bien vous ? » propose de remplir le cabinet en un clic.
 // Sinon, le kiné remplit simplement nom du cabinet, adresse et téléphone.
 type Found = { fullName: string; cabinetName: string | null; cabinetAddress: string | null; phone: string | null };
 
+// Cabinets (Philippe, 2026-11-08) : avant le formulaire, « Votre cabinet est-il
+// déjà sur EasyPhysio ? ». Le kiné le cherche et demande à le REJOINDRE (un
+// collègue validera, migration 0085), sinon il l'INSCRIT avec le formulaire
+// habituel et en devient le fondateur. Le choix part dans le même cookie,
+// lu par app/signup/finalize.
 export default function KineSignupFlow() {
   const [step, setStep] = useState<"cabinet" | "account">("cabinet");
+  const [mode, setMode] = useState<"search" | "join" | "create">("search");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<CabinetSearchResult[] | null>(null);
+  const [joining, setJoining] = useState<CabinetSearchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState({ cabinetName: "", cabinetAddress: "", phone: "", rppsNumber: "", siret: "" });
   const [lookup, setLookup] = useState<"idle" | "searching" | "notFound">("idle");
@@ -46,6 +57,59 @@ export default function KineSignupFlow() {
 
   const set = (key: keyof typeof fields) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setFields((f) => ({ ...f, [key]: e.target.value }));
+
+  // Recherche au fil de la frappe (300 ms après la dernière lettre).
+  useEffect(() => {
+    if (mode !== "search") return;
+    const q = query.trim();
+    // Moins de 2 lettres : rien à chercher (la liste est masquée à l'affichage).
+    if (q.length < 2) return;
+    let live = true;
+    const timer = setTimeout(async () => {
+      const found = await searchCabinetsForSignup(q).catch(() => []);
+      if (live) setResults(found);
+    }, 300);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [query, mode]);
+
+  const startJoin = (c: CabinetSearchResult) => {
+    setJoining(c);
+    setMode("join");
+    setError(null);
+  };
+
+  const saveAndContinue = (payload: Record<string, unknown>) => {
+    document.cookie = `${COOKIE_NAME}=${encodeURIComponent(JSON.stringify(payload))}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`;
+    setError(null);
+    setStep("account");
+  };
+
+  const handleJoin = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!joining) return;
+    const phone = fields.phone.trim();
+    const rppsNumber = fields.rppsNumber.replace(/\s+/g, "");
+    if (!phone) {
+      setError(t("errorPhone"));
+      return;
+    }
+    if (rppsNumber && !/^\d{9,11}$/.test(rppsNumber)) {
+      setError(t("errorRppsDigitsOrEmpty"));
+      return;
+    }
+    saveAndContinue({
+      mode: "join",
+      cabinetId: joining.id,
+      cabinetName: joining.name,
+      cabinetAddress: joining.address ?? [joining.postal_code, joining.city].filter(Boolean).join(" "),
+      phone,
+      rppsNumber: rppsNumber || null,
+      siret: null,
+    });
+  };
 
   const searchRpps = async () => {
     const rpps = fields.rppsNumber.replace(/\s+/g, "");
@@ -92,12 +156,7 @@ export default function KineSignupFlow() {
       return;
     }
 
-    const payload = encodeURIComponent(
-      JSON.stringify({ cabinetName, cabinetAddress, phone, rppsNumber: rppsNumber || null, siret: siret || null }),
-    );
-    document.cookie = `${COOKIE_NAME}=${payload}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`;
-    setError(null);
-    setStep("account");
+    saveAndContinue({ mode: "create", cabinetName, cabinetAddress, phone, rppsNumber: rppsNumber || null, siret: siret || null });
   };
 
   if (step === "account") {
@@ -120,9 +179,142 @@ export default function KineSignupFlow() {
     );
   }
 
+  const title = (
+    <h1 className="font-display text-2xl font-semibold text-slate-900">{t.rich("title", { brand: (c) => <span className="text-blue-700">{c}</span> })}</h1>
+  );
+  const haveAccount = (
+    <p className="mt-6 text-center text-sm text-slate-500 short:mt-3">
+      {tShared("haveAccount")}{" "}
+      <Link href="/login" className="font-medium text-blue-700 hover:underline">
+        {tShared("signIn")}
+      </Link>
+    </p>
+  );
+
+  if (mode === "search") {
+    return (
+      <div>
+        {title}
+        <p className="mt-3 font-medium text-slate-900 short:mt-2">{t("chooseQuestion")}</p>
+        <p className="mt-1 text-sm leading-relaxed text-slate-600 short:hidden">{t("chooseHelp")}</p>
+        <div className="relative mt-4 short:mt-2">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" strokeWidth={1.75} />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchAria")}
+            autoFocus
+            className={`${fieldClass} mt-0 pl-10 short:mt-0`}
+          />
+        </div>
+        {results && query.trim().length >= 2 && (
+          <ul className="mt-3 flex max-h-64 flex-col gap-2 overflow-y-auto short:max-h-40" aria-live="polite">
+            {results.length === 0 && <li className="px-1 text-sm text-slate-500">{t("searchNone")}</li>}
+            {results.map((c) => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => startJoin(c)}
+                  className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600"
+                >
+                  <Building2 className="h-5 w-5 shrink-0 text-blue-600" strokeWidth={1.75} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium text-slate-900">{c.name}</span>
+                    <span className="block truncate text-xs text-slate-500">
+                      {[c.postal_code, c.city].filter(Boolean).join(" ") || c.address}
+                      {" · "}
+                      {t("kineCount", { count: c.members })}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-sm font-medium text-blue-700">{t("join")}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            setMode("create");
+            setError(null);
+            if (!fields.cabinetName && query.trim().length >= 2) setFields((f) => ({ ...f, cabinetName: query.trim() }));
+          }}
+          className="mt-4 w-full rounded-xl border border-dashed border-slate-300 px-3.5 py-2.5 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 short:mt-3"
+        >
+          {t("createInstead")}
+        </button>
+        {haveAccount}
+      </div>
+    );
+  }
+
+  if (mode === "join" && joining) {
+    return (
+      <div>
+        {title}
+        <button
+          type="button"
+          onClick={() => {
+            setMode("search");
+            setError(null);
+          }}
+          className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
+          {t("changeCabinet")}
+        </button>
+        <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+          <p className="flex items-center gap-2 font-medium text-slate-900">
+            <Users className="h-4 w-4 text-blue-600" strokeWidth={1.75} />
+            {t("joinTitle", { name: joining.name })}
+          </p>
+          <p className="mt-1 text-sm text-slate-600">{t("joinHelp")}</p>
+        </div>
+        {error && <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+        <form onSubmit={handleJoin} className="mt-4 flex flex-col gap-4 short:mt-3 short:gap-2.5">
+          <label>
+            <span className="text-sm font-medium text-slate-700">{t("phoneShortLabel")}</span>
+            <input type="tel" name="phone" required value={fields.phone} onChange={set("phone")} placeholder={t("phonePlaceholder")} className={fieldClass} />
+          </label>
+          <label>
+            <span className="text-sm font-medium text-slate-700">
+              {t("rppsLabel")} <span className="font-normal text-slate-400">{t("optional")}</span>
+            </span>
+            <input
+              type="text"
+              name="rpps_number"
+              inputMode="numeric"
+              value={fields.rppsNumber}
+              onChange={set("rppsNumber")}
+              placeholder={t("rppsPlaceholder")}
+              className={fieldClass}
+            />
+          </label>
+          <button type="submit" className="mt-2 rounded-xl bg-blue-600 py-2.5 font-medium text-white transition hover:bg-blue-700 short:mt-1">
+            {tShared("continue")}
+          </button>
+        </form>
+        {haveAccount}
+      </div>
+    );
+  }
+
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold text-slate-900">{t.rich("title", { brand: (c) => <span className="text-blue-700">{c}</span> })}</h1>
+      {title}
+      <button
+        type="button"
+        onClick={() => {
+          setMode("search");
+          setError(null);
+        }}
+        className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 short:mt-1"
+      >
+        <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
+        {t("backToSearch")}
+      </button>
       <p className="mt-2 text-sm leading-relaxed text-slate-600 short:hidden">
         {t("intro")}
       </p>
@@ -255,12 +447,7 @@ export default function KineSignupFlow() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-500 short:mt-3">
-        {tShared("haveAccount")}{" "}
-        <Link href="/login" className="font-medium text-blue-700 hover:underline">
-          {tShared("signIn")}
-        </Link>
-      </p>
+      {haveAccount}
     </div>
   );
 }

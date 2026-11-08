@@ -165,7 +165,9 @@
     "deletedTitle": "Was your old account deleted?",
     "deletedText": "Delete this login to free up your email address: a physiotherapist will then be able to invite you again.",
     "deleting": "Deleting…",
-    "deleteLogin": "Delete this login"
+    "deleteLogin": "Delete this login",
+    "kineTitle": "Are you a physiotherapist?",
+    "kineText": "Create my physio space with this account."
   },
   "actions": {
     "acceptFailed": "Your acceptance couldn't be saved. Check your connection and try again.",

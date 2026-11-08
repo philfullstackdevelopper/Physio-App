@@ -50,6 +50,10 @@ export interface LibraryExercise {
   patient_id: string | null;
   review_note: string | null;
   author_label: string | null;
+  /** Partagé avec le cabinet (migration 0085). */
+  cabinetShared?: boolean;
+  /** Collègue du cabinet qui l'a partagé (nom), sinon null. */
+  sharedBy?: string | null;
 }
 
 /** Ce qu'il faut pour créer un exercice (absent dans les maquettes). */
@@ -59,6 +63,8 @@ export interface LibraryCreator {
   requestPublication: (exerciseId: string) => Promise<{ ok: true } | { error: string }>;
   /** Démo publique : le formulaire fonctionne sans rien enregistrer. */
   demo?: boolean;
+  /** Cabinet actif du kiné (migration 0085), sinon null. */
+  cabinetName?: string | null;
 }
 
 /** Three-dot menu on an exercise card — hide/unhide, the only action for now. */
@@ -143,6 +149,9 @@ export default function ExerciseLibraryGrid({
   const [showCreateForm, setShowCreateForm] = useState(false);
   // « Créés par moi » : les exercices du kiné, avec leur statut.
   const [mineOnly, setMineOnly] = useState(false);
+  // « Mon cabinet » : les exercices partagés par les collègues (migration 0085).
+  const [cabinetOnly, setCabinetOnly] = useState(false);
+  const cabinetCount = useMemo(() => exercises.filter((ex) => !!ex.sharedBy).length, [exercises]);
   const [publishMsg, setPublishMsg] = useState<string | null>(null);
   const [publishing, startPublishing] = useTransition();
   const patientName = useMemo(() => new Map((creator?.patients ?? []).map((p) => [p.id, p.name])), [creator]);
@@ -163,6 +172,7 @@ export default function ExerciseLibraryGrid({
   function selectBodyPart(id: string) {
     setSelectedId(id);
     setMineOnly(false);
+    setCabinetOnly(false);
     setQuery("");
   }
 
@@ -188,6 +198,11 @@ export default function ExerciseLibraryGrid({
   // matching exercise even with no keyword recorded for it.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    if (cabinetOnly) {
+      return exercises.filter(
+        (ex) => !!ex.sharedBy && (!q || ex.name.toLowerCase().includes(q) || ex.instructions?.toLowerCase().includes(q)),
+      );
+    }
     if (mineOnly) {
       return exercises.filter(
         (ex) => ex.created_by === currentUserId && (!q || ex.name.toLowerCase().includes(q) || ex.instructions?.toLowerCase().includes(q)),
@@ -205,7 +220,7 @@ export default function ExerciseLibraryGrid({
     return selectedId
       ? exercises.filter((ex) => ex.bodyPartIds.includes(selectedId) && !ex.hidden)
       : [];
-  }, [exercises, selectedId, query, mineOnly, currentUserId]);
+  }, [exercises, selectedId, query, mineOnly, cabinetOnly, currentUserId]);
 
   // Exercices de la plateforme et publiés : base de la recherche de doublons.
   const wizardLibrary = useMemo(
@@ -243,6 +258,7 @@ export default function ExerciseLibraryGrid({
   const pillFor = (ex: LibraryExercise): { label: string; tone: string } | null => {
     if (ex.created_by === currentUserId) {
       if (ex.patient_id) return { label: t("forPatient", { name: patientName.get(ex.patient_id) ?? t("aPatient") }), tone: "bg-violet-50 text-violet-700" };
+      if (ex.cabinetShared && ex.publication_status !== "published") return { label: t("sharedWithCabinet"), tone: "bg-warn-soft text-warn" };
       const status = STATUS_PILL[ex.publication_status] ? ex.publication_status : "private";
       return { label: statusPillLabel(status, tStatus), tone: STATUS_PILL[status].tone };
     }
@@ -271,7 +287,10 @@ export default function ExerciseLibraryGrid({
         {creator && mineCount > 0 && (
           <button
             type="button"
-            onClick={() => setMineOnly((v) => !v)}
+            onClick={() => {
+              setMineOnly((v) => !v);
+              setCabinetOnly(false);
+            }}
             aria-pressed={mineOnly}
             className={`shrink-0 rounded-lg border px-3 py-2 text-sm font-medium transition max-sm:h-10 max-sm:rounded-xl max-sm:px-3 ${
               mineOnly ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-ink hover:bg-app-bg"
@@ -280,6 +299,23 @@ export default function ExerciseLibraryGrid({
             <span className="max-sm:hidden">{t("createdByMe")} · </span>
             <span className="sm:hidden">{t("me")} · </span>
             {mineCount}
+          </button>
+        )}
+        {cabinetCount > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setCabinetOnly((v) => !v);
+              setMineOnly(false);
+            }}
+            aria-pressed={cabinetOnly}
+            className={`shrink-0 rounded-lg border px-3 py-2 text-sm font-medium transition max-sm:h-10 max-sm:rounded-xl max-sm:px-3 ${
+              cabinetOnly ? "border-warn bg-warn-soft text-warn" : "border-line bg-surface text-ink hover:bg-app-bg"
+            }`}
+          >
+            <span className="max-sm:hidden">{t("fromMyCabinet")} · </span>
+            <span className="sm:hidden">{t("cabinetShort")} · </span>
+            {cabinetCount}
           </button>
         )}
         {creator && (
@@ -294,7 +330,7 @@ export default function ExerciseLibraryGrid({
         )}
       </div>
 
-      {!query.trim() && !mineOnly && (
+      {!query.trim() && !mineOnly && !cabinetOnly && (
         // Téléphone : les catégories sur une seule ligne qui glisse au doigt,
         // au lieu de 3-4 lignes de pastilles avant le premier exercice.
         // Ordinateur (Philippe, 2026-10-12) : mêmes tuiles que le sélecteur
@@ -335,7 +371,9 @@ export default function ExerciseLibraryGrid({
       <div className="grid grid-cols-1 gap-3 max-sm:grid-cols-2 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.length === 0 ? (
           <p className="col-span-full rounded-xl border border-line bg-surface p-6 text-center text-sm text-muted">
-            {mineOnly
+            {cabinetOnly
+              ? t("noneFromCabinet")
+              : mineOnly
               ? t("noneCreated")
               : query.trim()
                 ? t("noMatch", { query: query.trim() })
@@ -373,6 +411,9 @@ export default function ExerciseLibraryGrid({
                 <p className="mt-2 font-medium text-ink max-sm:mt-1.5 max-sm:line-clamp-2 max-sm:min-h-[2.5em] max-sm:text-[13px] max-sm:leading-tight">{ex.name}</p>
                 {ex.created_by && ex.created_by !== currentUserId && ex.publication_status === "published" && (
                   <ContributorCredit label={ex.author_label} className="mt-1 max-sm:mt-0.5 max-sm:justify-center" />
+                )}
+                {ex.sharedBy && ex.publication_status !== "published" && (
+                  <p className="mt-1 truncate text-xs text-muted max-sm:mt-0.5 max-sm:text-[11px]">{t("sharedBy", { name: ex.sharedBy })}</p>
                 )}
                 {(() => {
                   const pill = pillFor(ex);
@@ -427,6 +468,7 @@ export default function ExerciseLibraryGrid({
           patients={creator.patients}
           defaultBodyPartId={selectedId}
           publishedCount={creator.publishedCount}
+          cabinetName={creator.cabinetName ?? null}
           onClose={() => setShowCreateForm(false)}
           demo={creator.demo}
         />

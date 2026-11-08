@@ -84,7 +84,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     );
   }
 
-  const [unreadCount, { count: publishedCount }, tContributor] = await Promise.all([
+  const [unreadCount, { count: publishedCount }, tContributor, { count: cabinetRequests }] = await Promise.all([
     loadUnreadCount(supabase, user.id),
     // Titre « Contributeur EasyPhysio » sous le nom (migration 0081).
     supabase
@@ -93,6 +93,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .eq("created_by", user.id)
       .eq("publication_status", "published"),
     getTranslations("exercise.contributor"),
+    // Demandes pour rejoindre son cabinet (migration 0085 ; table absente → 0).
+    supabase
+      .from("cabinet_members")
+      .select("instructor_id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .neq("instructor_id", user.id),
   ]);
 
   return (
@@ -100,6 +106,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <DashboardSidebar
         instructorName={instructor.full_name ?? null}
         unreadCount={unreadCount}
+        cabinetRequests={cabinetRequests ?? 0}
         contributorTitle={contributorTitle(publishedCount ?? 0, tContributor)}
       />
       {/* min-w-0 : sans ça, un contenu large (tableau, etc.) forcerait tout le

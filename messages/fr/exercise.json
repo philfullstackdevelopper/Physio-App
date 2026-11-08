@@ -191,7 +191,12 @@
     "reviewNote": "Message d'EasyPhysio :",
     "sending": "Envoi…",
     "resubmit": "Renvoyer pour vérification",
-    "makePublic": "Rendre public pour tous"
+    "makePublic": "Rendre public pour tous",
+    "sharedWithCabinet": "Partagé avec le cabinet",
+    "fromMyCabinet": "Mon cabinet",
+    "cabinetShort": "Cabinet",
+    "noneFromCabinet": "Aucun exercice partagé par vos collègues pour l'instant.",
+    "sharedBy": "Partagé par {name}"
   },
   "picker": {
     "thePatient": "le patient",
@@ -342,7 +347,8 @@
   "exercisesPage": {
     "title": "Mes exercices",
     "mySessions": "Mes séances",
-    "unnamedPatient": "Patient sans nom"
+    "unnamedPatient": "Patient sans nom",
+    "aColleague": "un collègue"
   },
   "seances": {
     "edit": "Modifier",
@@ -563,7 +569,9 @@
     "next": "Suivant : {step} →",
     "uploadingVideo": "Envoi de la vidéo… {progress} %",
     "creating": "Création…",
-    "create": "Créer l'exercice"
+    "create": "Créer l'exercice",
+    "shareCabinet": "Partager avec mon cabinet ({name})",
+    "shareCabinetText": "Les kinés de votre cabinet pourront le donner à leurs patients. Ils ne peuvent pas le modifier."
   },
   "kineVideo": {
     "refused": "Envoi refusé ({status}).",
