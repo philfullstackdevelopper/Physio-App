@@ -8,7 +8,7 @@
     "s2": "EasyPhysio met à disposition des kinésithérapeutes un outil de suivi d'exercices à distance pour leurs patients. EasyPhysio n'est pas un dispositif médical et ne dispense pas de soin : le programme d'exercices est établi et validé par le kinésithérapeute, qui reste seul responsable du suivi clinique de son patient.",
     "s3Title": "3. Deux services distincts",
     "s3Intro": "L'application est gratuite pour le kinésithérapeute. Le patient souscrit deux services distincts, vendus par deux vendeurs distincts, qui font l'objet de deux paiements et de deux factures distincts :",
-    "s3Platform": "<b>l'accès à la plateforme EasyPhysio</b> ({low} € à {high} € TTC par mois selon l'offre), vendu par EasyPhysio : application, vidéos, messagerie et hébergement sécurisé des données de santé ;",
+    "s3Platform": "<b>l'accès à la plateforme EasyPhysio</b> ({low} € à {high} € par mois selon l'offre, TVA non applicable), vendu par EasyPhysio : application, vidéos, messagerie et hébergement sécurisé des données de santé ;",
     "s3Kine": "<b>le programme de son kinésithérapeute</b> ({kine} € par mois), vendu par le kinésithérapeute : la mise à jour de son programme d'exercices hors nomenclature.",
     "s3Total": "Soit de {low} € à {high} € par mois selon l'offre choisie, les 6,00 € du kinésithérapeute n'étant dus que les mois où il met à jour le programme. Accès : {offers}. L'engagement ne porte que sur l'accès à la plateforme ; à son terme, l'accès continue au même prix, mois par mois, résiliable à tout moment. EasyPhysio ne perçoit aucune part des honoraires du kinésithérapeute, et le kinésithérapeute aucune part de l'accès à la plateforme.",
     "offer": "{label} {price} €",

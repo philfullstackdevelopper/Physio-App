@@ -13,6 +13,7 @@ import {
   commitmentEndOfSubscription,
   eurosFR,
   isPlatformOfferKey,
+  PLATFORM_INVOICE_FOOTER,
   isPlatformSubscription,
   platformOffer,
   subscriptionGivesAccess,
@@ -23,7 +24,6 @@ import {
   PLATFORM_SIGNATURE_ACCOUNT,
   cardChangeMetadata,
   patientPortalConfigurationId,
-  platformVatRateId,
   refreshPatientSubscription,
 } from "@/lib/billing/patientSubscription";
 import { followUpForCharge } from "@/lib/db/admin";
@@ -91,12 +91,16 @@ export async function startPlan(formData: FormData) {
       await stripe.subscriptions.cancel(sub.stripe_subscription_id as string).catch(() => null);
     }
     // Même client Stripe chez EasyPhysio si possible.
+    // Mention « TVA non applicable » sur chaque facture d'accès (micro-entreprise).
     let customerId: string | null = onPlatform ? ((sub?.stripe_customer_id as string | null) ?? null) : null;
-    if (!customerId) {
+    if (customerId) {
+      await stripe.customers.update(customerId, { invoice_settings: { footer: PLATFORM_INVOICE_FOOTER } });
+    } else {
       const c = await stripe.customers.create({
         email: user.email ?? undefined,
         name: (patient.full_name as string | null) ?? undefined,
         metadata: { patient_id: user.id },
+        invoice_settings: { footer: PLATFORM_INVOICE_FOOTER },
       });
       customerId = c.id;
     }
@@ -115,7 +119,7 @@ export async function startPlan(formData: FormData) {
     const kineName = (kine?.full_name as string | null) ?? t("kineFallback");
     // Langue de la page de paiement Stripe = celle du patient. Le nom et la
     // description du produit restent en français : ils figurent sur la
-    // facture d'EasyPhysio (TVA).
+    // facture d'EasyPhysio.
     const locale = (await getLocale()) === "en" ? "en" : "fr";
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -128,11 +132,9 @@ export async function startPlan(formData: FormData) {
       line_items: [
         {
           quantity: 1,
-          tax_rates: [await platformVatRateId()],
           price_data: {
             currency: "eur",
             unit_amount: offer.platformCents,
-            tax_behavior: "inclusive",
             recurring: { interval: "month" },
             product_data: {
               name: `Accès à la plateforme EasyPhysio — ${offer.label.toLowerCase()}`,

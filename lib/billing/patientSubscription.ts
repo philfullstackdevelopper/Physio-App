@@ -20,7 +20,7 @@ import type Stripe from "stripe";
 import { getStripe } from "./stripe";
 import { followUpForCharge, upsertFollowUp, upsertSubscription } from "@/lib/db/admin";
 import { hasValidSubscriptionSignature } from "./subscriptionSignature";
-import { EARLY_ACCESS_PLAN_KEY, KINE_FOLLOW_UP_CENTS, PLATFORM_VAT_RATE, isPlatformOfferKey } from "./patientPlans";
+import { EARLY_ACCESS_PLAN_KEY, KINE_FOLLOW_UP_CENTS, isPlatformOfferKey } from "./patientPlans";
 import { sign, verify } from "./signing";
 
 /** Clé de signature des abonnements qui vivent sur le compte d'EasyPhysio. */
@@ -270,28 +270,6 @@ export async function patientPortalConfigurationId(): Promise<string> {
       subscription_update: { enabled: false },
     },
     metadata: { easyphysio: "patient_invoices" },
-  });
-  return created.id;
-}
-
-/**
- * Taux de TVA 20 % « inclus dans le prix » du compte EasyPhysio, créé une seule
- * fois puis retrouvé (pour que la facture d'accès affiche la TVA).
- */
-export async function platformVatRateId(): Promise<string> {
-  const stripe = getStripe();
-  const percentage = PLATFORM_VAT_RATE * 100;
-  const existing = await stripe.taxRates.list({ active: true, inclusive: true, limit: 100 });
-  const found = existing.data.find((r) => r.percentage === percentage && r.metadata?.easyphysio === "tva_fr_20");
-  if (found) return found.id;
-  const created = await stripe.taxRates.create({
-    display_name: "TVA",
-    jurisdiction: "FR",
-    country: "FR",
-    percentage,
-    inclusive: true,
-    description: "TVA française 20 % (accès à la plateforme EasyPhysio)",
-    metadata: { easyphysio: "tva_fr_20" },
   });
   return created.id;
 }

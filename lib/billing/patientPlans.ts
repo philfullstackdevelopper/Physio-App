@@ -5,7 +5,7 @@
 // vendeurs distincts, prélevés en deux paiements distincts sur la même carte :
 //
 //   1. ACCÈS À LA PLATEFORME — vendu par EasyPhysio, abonnement mensuel sur le
-//      compte d'EasyPhysio (TVA 20 % incluse, facture EasyPhysio). Dû CHAQUE
+//      compte d'EasyPhysio (sans TVA, facture EasyPhysio). Dû CHAQUE
 //      mois d'accès, que le kiné agisse ou non : c'est le prix de l'appli,
 //      jamais une part de l'acte du kiné. Trois offres (Philippe, 2026-11-04) :
 //      sans engagement 6,99 €, engagement 3 mois 3,99 €, engagement 6 mois
@@ -33,8 +33,13 @@ import { INTL_TAGS, type Locale } from "../../i18n/locales.ts";
 export const KINE_FOLLOW_UP_CENTS = 600;
 /** Essai gratuit à la première souscription (aucun prélèvement pendant ces jours-là). */
 export const TRIAL_DAYS = 10;
-/** TVA sur l'accès à la plateforme (les honoraires du kiné en sont exonérés). */
-export const PLATFORM_VAT_RATE = 0.2;
+/**
+ * Pas de TVA sur l'accès à la plateforme (Philippe, 2026-11-08) : EasyPhysio est
+ * une micro-entreprise en franchise en base de TVA. La facture porte cette
+ * mention à la place. Si l'entreprise devient redevable de la TVA (dépassement
+ * du seuil, passage en société), il faudra la réintroduire ici et au paiement.
+ */
+export const PLATFORM_INVOICE_FOOTER = "TVA non applicable, art. 293 B du CGI.";
 
 export type PlatformOfferKey = "plan_1m" | "plan_3m" | "plan_6m";
 
@@ -43,7 +48,7 @@ export interface PlatformOffer {
   /** Durée d'engagement de l'abonnement d'accès, en mois (0 = sans engagement). */
   commitmentMonths: 0 | 3 | 6;
   label: string;
-  /** Accès à la plateforme, TTC, centimes, par mois. */
+  /** Accès à la plateforme, prix payé par le patient, centimes, par mois. */
   platformCents: number;
 }
 
@@ -90,14 +95,9 @@ export function stripeFeeCents(amountCents: number): number {
   return Math.round(amountCents * 0.015 + 25);
 }
 
-/** Accès hors TVA, centimes. */
-export function platformHtCents(offer: PlatformOffer): number {
-  return Math.round(offer.platformCents / (1 + PLATFORM_VAT_RATE));
-}
-
-/** Ce que garde EasyPhysio par patient et par mois, hors TVA, après frais de carte (estimation). */
+/** Ce que garde EasyPhysio par patient et par mois, après frais de carte (estimation, sans TVA). */
 export function platformNetCents(offer: PlatformOffer): number {
-  return platformHtCents(offer) - stripeFeeCents(offer.platformCents);
+  return offer.platformCents - stripeFeeCents(offer.platformCents);
 }
 
 /** Ce que touche le kiné par patient et par mois de mise à jour, après frais de carte (estimation). */

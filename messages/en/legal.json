@@ -9,7 +9,7 @@
     "s2": "EasyPhysio provides physiotherapists with a tool for following their patients' exercises remotely. EasyPhysio is not a medical device and does not provide care: the exercise programme is drawn up and approved by the physiotherapist, who remains solely responsible for the clinical follow-up of their patient.",
     "s3Title": "3. Two separate services",
     "s3Intro": "The app is free for the physiotherapist. The patient subscribes to two separate services, sold by two separate sellers, which are paid for and invoiced separately:",
-    "s3Platform": "<b>access to the EasyPhysio platform</b> (€{low} to €{high} per month incl. VAT depending on the plan), sold by EasyPhysio: app, videos, messaging and secure hosting of health data;",
+    "s3Platform": "<b>access to the EasyPhysio platform</b> (€{low} to €{high} per month depending on the plan, VAT not applicable), sold by EasyPhysio: app, videos, messaging and secure hosting of health data;",
     "s3Kine": "<b>their physiotherapist's programme</b> (€{kine} per month), sold by the physiotherapist: updating their exercise programme « hors nomenclature » (outside the French national fee schedule).",
     "s3Total": "That is €{low} to €{high} per month depending on the plan chosen, the physiotherapist's €{kine} being due only in months when they update the programme. Access: {offers}. The commitment only covers access to the platform; at the end of it, access continues at the same price, month by month, and can be cancelled at any time. EasyPhysio receives no share of the physiotherapist's fees, and the physiotherapist receives no share of the platform access.",
     "offer": "{months, plural, =0 {no commitment} other {#-month commitment}}: €{price}",

@@ -12,7 +12,6 @@ import {
   monthlyTotalCents,
   offersSummaryFR,
   patientMustSubscribe,
-  platformHtCents,
   platformNetCents,
   platformOffer,
   stripeFeeCents,
@@ -34,8 +33,8 @@ test("trois offres : 12,99 / 9,99 / 8,99 € = accès 6,99 / 3,99 / 2,99 € + 6
 test("ce que chacun garde : kiné ≈ 5,66 € quelle que soit l'offre ; EasyPhysio selon l'offre", () => {
   assert.equal(stripeFeeCents(600), 34);
   assert.equal(KINE_NET_CENTS, 566);
-  assert.deepEqual(PLATFORM_OFFERS.map(platformHtCents), [583, 333, 249]);
-  assert.deepEqual(PLATFORM_OFFERS.map(platformNetCents), [548, 302, 220]);
+  // Sans TVA (micro-entreprise) : EasyPhysio garde le prix moins les frais de carte.
+  assert.deepEqual(PLATFORM_OFFERS.map(platformNetCents), [664, 368, 270]);
 });
 
 test("engagement : compté à partir du premier mois payé (après l'essai)", () => {
