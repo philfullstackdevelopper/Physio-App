@@ -1,9 +1,14 @@
+import path from "node:path";
 import type { NextConfig } from "next";
-import createNextIntlPlugin from "next-intl/plugin";
 
 // Langues de l'interface (français / anglais) : next-intl lit la langue du
 // cookie et charge les textes de messages/<langue>/ (i18n/request.ts).
-const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+// On indique directement à Next où se trouve ce fichier (alias
+// « next-intl/config »), au lieu d'utiliser next-intl/plugin : ce plugin
+// charge aussi un outil d'extraction de textes (compilateur SWC natif) que
+// le serveur de build de Scalingo refuse d'exécuter (2026-11-08), et dont
+// on ne se sert pas.
+const I18N_REQUEST_CONFIG = "./i18n/request.ts";
 
 // Heure de Paris pour tout le serveur (audit du 2026-10-08) : les dates du
 // programme (jour, semaine, « aujourd'hui », heure d'une séance) sont
@@ -39,6 +44,14 @@ const nextConfig: NextConfig = {
       headers: [{ key: "Cache-Control", value: ILLUSTRATION_CACHE }],
     }));
   },
+  // next-intl : emplacement de la configuration des langues (voir en haut).
+  turbopack: {
+    resolveAlias: { "next-intl/config": I18N_REQUEST_CONFIG },
+  },
+  webpack(config) {
+    config.resolve.alias["next-intl/config"] = path.resolve(I18N_REQUEST_CONFIG);
+    return config;
+  },
 };
 
-export default withNextIntl(nextConfig);
+export default nextConfig;
