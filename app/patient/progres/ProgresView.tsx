@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Activity, ArrowDown, ArrowRight, ArrowUp, LineChart, MapPin, TrendingUp } from "lucide-react";
 import { adherenceLabel, adherenceTone } from "@/lib/exercise/adherence";
 import type { buildPainSeries } from "@/lib/dashboard/painHistory";
 import FillPainChart from "@/components/FillPainChart";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 
 // Affichage seul de « Mes progrès » (les données viennent de page.tsx) —
 // séparé pour pouvoir le prévisualiser avec des données fictives sans
@@ -61,6 +63,8 @@ export default function ProgresView({
 }) {
   const t = useTranslations("patient.progress");
   const tAdh = useTranslations("exercise.adherence");
+  // Douleur avec la virgule décimale en français (« 3,4 »), le point en anglais.
+  const oneDecimal = new Intl.NumberFormat(intlTag(useLocale() as Locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   return (
     // Téléphone (Philippe, 2026-10-04 : « no scrolling at all ») : les 3
     // chiffres côte à côte, phrases longues masquées, « Zone concernée »
@@ -130,7 +134,7 @@ export default function ProgresView({
             </p>
             <p className="mt-1 text-xl font-semibold tabular-nums text-ink sm:text-2xl">{painAvgNow !== null ? (
                 <>
-                  {painAvgNow.toFixed(1)}
+                  {oneDecimal.format(painAvgNow)}
                   <span className="max-sm:text-sm max-sm:font-medium max-sm:text-muted">/10</span>
                 </>
               ) : (
@@ -144,7 +148,7 @@ export default function ProgresView({
                   <ArrowUp className="h-3 w-3 sm:hidden" strokeWidth={2.5} />
                 )}
                 {painDelta <= 0 ? "" : "+"}
-                {painDelta.toFixed(1)}
+                {oneDecimal.format(painDelta)}
                 <span className="hidden sm:inline"> {t("vsPrevious")}</span>
               </p>
             )}
@@ -184,7 +188,12 @@ export default function ProgresView({
                 <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
               </Link>
             </div>
-            <div className="mt-3 max-sm:flex max-sm:flex-1 max-sm:flex-col">
+            {/* Une phrase pour lire la courbe sans connaître les graphiques
+                (Philippe, 2026-11-08 : appli plus simple pour un patient de 60 ans). */}
+            {pain.points.length > 0 && (
+              <p className="mt-2 rounded-lg bg-brand-soft px-3 py-1 text-xs text-ink/80">{t("painCaption")}</p>
+            )}
+            <div className="mt-2 max-sm:flex max-sm:flex-1 max-sm:flex-col">
               <FillPainChart series={pain} />
             </div>
           </section>

@@ -135,7 +135,10 @@
       "invalidHeight": "the height (between 50 and 250 cm)",
       "invalidWeight": "the weight (between 20 and 350 kg)",
       "check": "Please check {list}."
-    }
+    },
+    "bodyPartsQuestionKine": "Your physio has chosen the area to work on. You can add another one.",
+    "chosenBy": "Chosen by {name}",
+    "chosenByKine": "Chosen by your physio"
   },
   "situation": {
     "_review": "Draft translation — needs review by the partner physio before launch",
@@ -276,24 +279,28 @@
     "fullHistory": "Full history",
     "emptyTitle": "No results yet",
     "emptyText": "Your progress will appear here after your first sessions.",
-    "adherence": "Adherence",
+    "adherence": "Sessions done",
     "adherenceShort": "{done}/{expected} sessions",
     "adherenceLong": "You did {done} of {expected} expected {expected, plural, one {session} other {sessions}}",
     "pain": "Pain",
     "painAvg": "Average pain",
-    "vsPrevious": "vs the previous period",
-    "trend": "Trend",
-    "trendLong": "Adherence — trend",
-    "vs28Short": "vs prior 28 d",
-    "vs28": "vs the previous 28 days",
+    "vsPrevious": "compared with last month",
+    "trend": "Compared with last month",
+    "trendLong": "Compared with last month",
+    "vs28Short": "sessions done",
+    "vs28": "Sessions done, compared with the 4 weeks before",
     "painEvolution": "Pain over time",
     "zone": "Area concerned",
-    "zoneNote": "Programme set by your physio."
+    "zoneNote": "Programme set by your physio.",
+    "painCaption": "The lower the line, the less pain you have."
   },
   "painChart": {
     "empty": "No feedback sent yet.",
     "aria": "Pain history over 30 days",
-    "point": "{date} — pain {score}/10"
+    "point": "{date} — pain {score}/10",
+    "noPain": "No pain",
+    "maxPain": "Worst pain",
+    "last": "{score} / 10"
   },
   "messages": {
     "title": "Messages",

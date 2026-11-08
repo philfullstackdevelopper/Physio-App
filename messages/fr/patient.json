@@ -134,7 +134,10 @@
       "invalidHeight": "la taille (entre 50 et 250 cm)",
       "invalidWeight": "le poids (entre 20 et 350 kg)",
       "check": "Vérifiez {list}."
-    }
+    },
+    "bodyPartsQuestionKine": "Votre kiné a choisi la zone à travailler. Vous pouvez en ajouter une.",
+    "chosenBy": "Choisi par {name}",
+    "chosenByKine": "Choisi par votre kiné"
   },
   "situation": {
     "activity": {
@@ -271,24 +274,28 @@
     "fullHistory": "Historique complet",
     "emptyTitle": "Pas encore de résultats",
     "emptyText": "Vos progrès apparaîtront ici après vos premières séances.",
-    "adherence": "Adhérence",
+    "adherence": "Séances faites",
     "adherenceShort": "{done}/{expected} séances",
     "adherenceLong": "Vous avez suivi {done} {done, plural, one {séance} other {séances}} sur {expected} {expected, plural, one {attendue} other {attendues}}",
     "pain": "Douleur",
     "painAvg": "Douleur moyenne",
-    "vsPrevious": "vs la période précédente",
-    "trend": "Tendance",
-    "trendLong": "Adhérence — tendance",
-    "vs28Short": "vs 28 j avant",
-    "vs28": "vs les 28 jours précédents",
+    "vsPrevious": "par rapport au mois dernier",
+    "trend": "Par rapport au mois dernier",
+    "trendLong": "Par rapport au mois dernier",
+    "vs28Short": "séances faites",
+    "vs28": "Séances faites, comparé aux 4 semaines d’avant",
     "painEvolution": "Évolution de la douleur",
     "zone": "Zone concernée",
-    "zoneNote": "Programme défini par votre praticien."
+    "zoneNote": "Programme défini par votre praticien.",
+    "painCaption": "Plus la courbe descend, moins vous avez mal."
   },
   "painChart": {
     "empty": "Pas encore de ressenti transmis.",
     "aria": "Historique de douleur sur 30 jours",
-    "point": "{date} — douleur {score}/10"
+    "point": "{date} — douleur {score}/10",
+    "noPain": "Pas de douleur",
+    "maxPain": "Douleur maximale",
+    "last": "{score} / 10"
   },
   "messages": {
     "title": "Messages",

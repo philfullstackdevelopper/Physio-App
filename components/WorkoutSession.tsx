@@ -115,10 +115,12 @@ function VideoDemo({ url, name, startSeconds = 0 }: { url: string; name: string;
         className="absolute inset-0 h-full w-full cursor-pointer bg-black object-contain"
         src={`${url}#t=${Math.max(startSeconds, 0.001)}`}
       />
-      {/* Petit repère discret quand la vidéo est à l'arrêt, sans gêner l'image. */}
+      {/* Repère « lecture » au centre quand la vidéo est à l'arrêt (Philippe,
+          2026-11-08 : plus visible, sans texte). Ne capte pas le toucher : un
+          toucher n'importe où sur la vidéo la lance, comme avant. */}
       {!playing && (
-        <span className="pointer-events-none absolute bottom-2 left-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white">
-          <Play className="ml-0.5 h-4 w-4" strokeWidth={2} fill="currentColor" />
+        <span className="pointer-events-none absolute top-1/2 left-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white">
+          <Play className="ml-1 h-7 w-7" strokeWidth={2} fill="currentColor" />
         </span>
       )}
       <button
@@ -209,30 +211,34 @@ function GoalBadges({ goal, label }: { goal: GoalParts; label: string }) {
   );
 }
 
-/** Une pastille par série, à cocher au fil de l'exercice : facultatif, juste
- *  pour savoir où l'on en est. */
+/** Une case par série, à toucher au fil de l'exercice : facultatif, juste
+ *  pour savoir où l'on en est. Grandes cases « Série 1 / 2 / 3 » qui passent
+ *  au vert (Philippe, 2026-11-08 : plus simple que les petits ronds numérotés). */
 function SetTracker({ sets, done, onToggle }: { sets: number; done: number; onToggle: (n: number) => void }) {
   const t = useTranslations("exercise.session");
   return (
-    <div className="mt-3 flex items-center gap-2 max-sm:mt-2 short:mt-2">
-      <span className="text-xs font-medium text-slate-500">{t("setsDone")}</span>
-      {Array.from({ length: sets }, (_, i) => {
-        const on = i < done;
-        return (
-          <button
-            key={i}
-            type="button"
-            aria-pressed={on}
-            aria-label={on ? t("setDoneAria", { n: i + 1 }) : t("setAria", { n: i + 1 })}
-            onClick={() => onToggle(on && i === done - 1 ? i : i + 1)}
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors motion-reduce:transition-none max-sm:h-7 max-sm:w-7 ${
-              on ? "bg-blue-600 text-white" : "border border-slate-300 bg-white text-slate-500 hover:border-blue-400"
-            }`}
-          >
-            {on ? <Check className="h-4 w-4" strokeWidth={2.5} /> : i + 1}
-          </button>
-        );
-      })}
+    <div className="mt-3 max-sm:mt-2 short:mt-2">
+      <p className="text-xs text-slate-500">{t("setsHint")}</p>
+      <div className="mt-1 flex gap-2 max-sm:gap-1.5">
+        {Array.from({ length: sets }, (_, i) => {
+          const on = i < done;
+          return (
+            <button
+              key={i}
+              type="button"
+              aria-pressed={on}
+              aria-label={on ? t("setDoneAria", { n: i + 1 }) : t("setAria", { n: i + 1 })}
+              onClick={() => onToggle(on && i === done - 1 ? i : i + 1)}
+              className={`flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-xl border text-sm font-semibold transition-colors motion-reduce:transition-none ${
+                on ? "border-ok bg-ok-soft text-ok" : "border-slate-300 bg-white text-slate-600 hover:border-blue-400"
+              }`}
+            >
+              {on && <Check className="h-4 w-4 shrink-0" strokeWidth={2.5} />}
+              <span className="truncate">{t("setAria", { n: i + 1 })}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

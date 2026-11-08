@@ -124,6 +124,9 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
         wizard={{
           saveAction: noop,
           bodyParts: demoBodyParts(t),
+          // Démo : le kiné fictif a attribué une prothèse de genou.
+          kineBodyPartId: "bp-genou",
+          kineName: "Julien Roux",
           stages: (Object.keys(STAGE_LABELS) as InjuryStage[]).map((k) => [k, stageLabel(k, tStage)] as [InjuryStage, string]),
           profile: null,
           equipmentOptions: EQUIPMENT_OPTIONS,

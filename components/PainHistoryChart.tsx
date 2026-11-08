@@ -23,6 +23,15 @@ export default function PainHistoryChart({
     return <p className="flex h-32 items-center justify-center text-sm text-muted">{tr("empty")}</p>;
   }
   const path = series.points.map((p, i) => `${i === 0 ? "M" : "L"}${px(p.x).toFixed(1)},${py(p.y).toFixed(1)}`).join(" ");
+  // Dernière douleur notée, écrite à côté du dernier point (Philippe,
+  // 2026-11-08 : courbe lisible sans savoir lire un graphique).
+  const last = series.points[series.points.length - 1];
+  const lastX = px(last.x);
+  const lastY = py(last.y);
+  const lastAnchor = last.x > 0.85 ? "end" : last.x < 0.15 ? "start" : "middle";
+  const lastLabelY = lastY - PAD_T - 11 < 0 ? lastY + 14 : lastY - 6;
+  // Contour blanc autour des mots : restent lisibles si la courbe passe dessous.
+  const halo = { stroke: "currentColor", strokeWidth: 3, paintOrder: "stroke" as const, strokeLinejoin: "round" as const };
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className={className} role="img" aria-label={tr("aria")}>
       {(H > 200 ? [0, 2, 4, 6, 8, 10] : [0, 5, 10]).map((v) => (
@@ -41,6 +50,17 @@ export default function PainHistoryChart({
           <title>{tr("point", { date: p.dateLabel, score: p.score })}</title>
         </circle>
       ))}
+      {/* Les deux bouts de l'échelle en mots, en plus des chiffres. */}
+      <g className="text-surface" fontSize={8}>
+        <text x={PAD_L + 3} y={py(10) + 8} className="fill-muted" {...halo}>{tr("maxPain")}</text>
+        <text x={PAD_L + 3} y={py(0) - 3} className="fill-muted" {...halo}>{tr("noPain")}</text>
+      </g>
+      <circle cx={lastX} cy={lastY} r={4} fill="currentColor" stroke="white" strokeWidth={1.5} className="text-danger" />
+      <g className="text-surface">
+        <text x={lastX} y={lastLabelY} textAnchor={lastAnchor} fontSize={10} fontWeight={600} className="fill-danger" {...halo}>
+          {tr("last", { score: last.score })}
+        </text>
+      </g>
     </svg>
   );
 }
