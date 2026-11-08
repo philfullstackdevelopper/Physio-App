@@ -8,6 +8,8 @@ import { joinLinkKine } from "@/lib/db/admin";
 import { instructorIdFromJoinCode } from "@/lib/patient/joinLink";
 import { canInvitePatients } from "@/lib/launch";
 import { joinViaLink } from "./actions";
+import { JOIN_EMAIL_COOKIE, JOIN_HONEYPOT_FIELD } from "./shared";
+import { cookies } from "next/headers";
 
 // Page ouverte en scannant le QR code d'un kiné, ou par son lien (Philippe,
 // 2026-11-04 : « hella clean », et le patient doit voir clairement QUI va le
@@ -48,10 +50,14 @@ export default async function JoinPage({
   searchParams,
 }: {
   params: Promise<{ code: string }>;
-  searchParams: Promise<{ error?: string; ok?: string; email?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
   const { code } = await params;
   const sp = await searchParams;
+  // L'e-mail vient d'un cookie de quelques minutes posé par l'action, jamais
+  // de l'adresse de la page (audit du 2026-11-08 : pas de donnée personnelle
+  // dans une URL).
+  const sentTo = sp.ok ? ((await cookies()).get(JOIN_EMAIL_COOKIE)?.value ?? null) : null;
   const instructorId = instructorIdFromJoinCode(code);
   const kine = instructorId ? await joinLinkKine(instructorId).catch(() => null) : null;
   const available = !!kine && kine.status === "approved";
@@ -94,7 +100,7 @@ export default async function JoinPage({
                 <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-slate-900">{t("checkEmailTitle")}</h1>
                 <p className="mt-2 text-sm leading-relaxed text-slate-500">
                   {t.rich("checkEmailBody", {
-                    email: sp.email ?? t("yourAddress"),
+                    email: sentTo ?? t("yourAddress"),
                     kine: kineName ?? t("yourPhysio"),
                     b: (c) => <span className="font-medium text-slate-700">{c}</span>,
                   })}
@@ -138,6 +144,14 @@ export default async function JoinPage({
                 )}
 
                 <form action={joinViaLink.bind(null, code)} className="mt-5">
+                  {/* Champ piège : hors écran et ignoré par les lecteurs d'écran ;
+                      seuls les robots le remplissent (actions.ts). */}
+                  <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+                    <label>
+                      {t("honeypot")}
+                      <input name={JOIN_HONEYPOT_FIELD} type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
+                    </label>
+                  </div>
                   <fieldset disabled={!open} className="space-y-3.5 disabled:opacity-50">
                     <label className="block text-sm font-medium text-slate-700">
                       {t("fullName")}

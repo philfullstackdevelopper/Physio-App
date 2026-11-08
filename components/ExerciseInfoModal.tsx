@@ -47,7 +47,9 @@ export default function ExerciseInfoModal({
         if (cancelled) return;
         // Vidéo chez Cloudflare R2 (« r2:… ») : le serveur fournit un lien signé.
         const raw = (data?.media_url as string | null) ?? null;
-        let mediaUrl = raw?.startsWith("r2:") ? await signExerciseVideo(raw).catch(() => null) : raw;
+        // Le serveur relit la fiche lui-même (par l'id) : il ne signe jamais un
+        // chemin envoyé par le navigateur.
+        let mediaUrl = raw?.startsWith("r2:") ? await signExerciseVideo(exercise.id).catch(() => null) : raw;
         // Fiche illisible (démo, non connecté) ou lien non obtenu : la vidéo de
         // Jules retrouvée par le nom de l'exercice (Philippe, 2026-11-02 : le (i)
         // doit montrer la VRAIE vidéo, pas le dessin).

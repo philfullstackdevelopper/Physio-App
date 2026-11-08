@@ -24,11 +24,16 @@ export default async function NewPatientPage({
 
   // « Première séance (facultatif) » : les séances de la plateforme et du
   // kiné (jamais les copies d'un patient), par pathologie puis par phase.
-  const { data: rows } = await supabase
-    .from("workouts")
-    .select("id, name, stage, created_by, conditions(name), workout_exercises(exercises(name))")
-    .is("patient_id", null)
-    .or(`created_by.is.null,created_by.eq.${user.id}`);
+  // En même temps : ses paiements Stripe sont-ils actifs ? (rappel non
+  // bloquant dans la page, audit du 2026-11-08).
+  const [{ data: rows }, { data: connect }] = await Promise.all([
+    supabase
+      .from("workouts")
+      .select("id, name, stage, created_by, conditions(name), workout_exercises(exercises(name))")
+      .is("patient_id", null)
+      .or(`created_by.is.null,created_by.eq.${user.id}`),
+    supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", user.id).maybeSingle(),
+  ]);
   const rank = (s: string | null) => (isStage(s) ? STAGE_ORDER.indexOf(s) : 99);
   const groups = new Map<string, { id: string; label: string; rank: number }[]>();
   for (const w of rows ?? []) {
@@ -45,8 +50,11 @@ export default async function NewPatientPage({
       seances: list.sort((a, b) => a.rank - b.rank || a.label.localeCompare(b.label, "fr")).map(({ id, label }) => ({ id, label })),
     }));
 
+  const connectMissing = connect?.status !== "active";
+
   return (
     <NewPatientView
+      connectMissing={connectMissing}
       open={open}
       error={error}
       addPatientAction={addPatient}

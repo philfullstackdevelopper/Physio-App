@@ -449,7 +449,9 @@ export async function joinLinkKine(instructorId: string): Promise<{ full_name: s
   return rows[0] ?? null;
 }
 
-/** Crée la fiche du patient chez ce kiné : 'OK', 'KINE_UNAVAILABLE', 'IS_KINE' ou 'EMAIL_TAKEN'. */
+/** Crée la fiche du patient chez ce kiné : 'OK', 'KINE_UNAVAILABLE', 'IS_KINE',
+ *  'EMAIL_TAKEN', et depuis 0087 'PENDING_SAME_KINE' (déjà patient de ce kiné,
+ *  CGU jamais acceptées : rien n'est créé) ou 'RATE_LIMITED' (20 par 24 h). */
 export async function joinPatientByLink(params: { instructorId: string; appId: string; email: string; fullName: string }): Promise<string> {
   const { rows } = await getPool().query<{ r: string }>("select internal.join_patient_by_link($1, $2, $3, $4) as r", [
     params.instructorId,
@@ -458,6 +460,20 @@ export async function joinPatientByLink(params: { instructorId: string; appId: s
     params.fullName,
   ]);
   return rows[0]?.r ?? "ERROR";
+}
+
+/** Nom enregistré d'un patient de CE kiné qui n'a pas encore accepté les CGU, sinon null (0087). */
+export async function joinLinkPendingPatientName(instructorId: string, email: string): Promise<string | null> {
+  const { rows } = await getPool().query<{ n: string | null }>("select internal.join_link_pending_patient_name($1, $2) as n", [
+    instructorId,
+    email,
+  ]);
+  return rows[0]?.n ?? null;
+}
+
+/** Efface la fiche tout juste créée par le QR code si l'invitation n'a pas pu partir (0087). */
+export async function undoJoinByLink(instructorId: string, appId: string): Promise<void> {
+  await getPool().query("select internal.join_link_undo($1, $2)", [instructorId, appId]);
 }
 
 // ---------------------------------------------------------------------------

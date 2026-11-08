@@ -135,7 +135,9 @@
     "invitationsClosed": "Patient invitations will open when EasyPhysio launches. Until then, you can explore everything else in your space.",
     "firstSession": "First session",
     "optional": "(optional)",
-    "later": "Later, from their record"
+    "later": "Later, from their record",
+    "connectNotice": "Your Stripe payments aren’t activated yet: until then, you won’t receive your patients’ €{amount} for their programme (in months when you update it).",
+    "connectLink": "Activate my payments"
   },
   "patientActions": {
     "fillAll": "Please fill in all the fields.",
@@ -157,7 +159,8 @@
     "copyFailed": "Couldn’t create the patient’s session.",
     "notRecommended": "This session isn’t recommended to this patient.",
     "keepOne": "A session must keep at least one exercise.",
-    "cancelSubFailed": "The patient's plan couldn't be cancelled. Please try again in a few minutes."
+    "cancelSubFailed": "The patient's plan couldn't be cancelled. Please try again in a few minutes.",
+    "isKine": "This address belongs to an EasyPhysio physio account: it can't be invited as a patient. Ask the person for another address."
   },
   "patientDetail": {
     "thisPatient": "this patient",

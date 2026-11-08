@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Info } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { CreditCard, Info } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { KINE_FOLLOW_UP_CENTS, eurosFR } from "@/lib/billing/patientPlans";
+import type { Locale } from "@/i18n/locales";
 
 // « Ajouter un patient » : invitation par e-mail, ou QR code à faire scanner
 // au cabinet. Partagé par la vraie page (app/dashboard/patients/new) et la
@@ -12,7 +14,10 @@ export default function NewPatientView({
   addPatientAction,
   qr,
   seanceGroups = [],
+  connectMissing = false,
 }: {
+  /** Paiements Stripe du kiné pas encore actifs : petit rappel, non bloquant. */
+  connectMissing?: boolean;
   /** Séances proposées pour démarrer, groupées par pathologie (facultatif). */
   seanceGroups?: { condition: string; seances: { id: string; label: string }[] }[];
   open: boolean;
@@ -22,6 +27,7 @@ export default function NewPatientView({
   qr: ReactNode;
 }) {
   const t = useTranslations("dashboard.newPatient");
+  const locale = useLocale() as Locale;
   return (
     <main className="min-h-screen p-8 max-sm:min-h-0 max-sm:px-4 max-sm:pb-4 max-sm:pt-2">
       <div className="mx-auto max-w-sm">
@@ -44,6 +50,19 @@ export default function NewPatientView({
             <p className="mb-4 flex items-start gap-2 rounded-lg bg-brand-soft p-3 text-sm text-ink">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} />
               <span>{t("invitationsClosed")}</span>
+            </p>
+          )}
+          {/* Rappel sobre (audit du 2026-11-08) : vaut pour l'invitation par
+              e-mail comme pour le QR code plus bas. N'empêche rien. */}
+          {open && connectMissing && (
+            <p className="mb-4 flex items-start gap-2 rounded-lg bg-warn-soft p-3 text-sm text-ink">
+              <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-warn" strokeWidth={1.75} />
+              <span>
+                {t("connectNotice", { amount: eurosFR(KINE_FOLLOW_UP_CENTS, locale) })}{" "}
+                <Link href="/dashboard/facturation" className="font-medium text-brand hover:underline">
+                  {t("connectLink")}
+                </Link>
+              </span>
             </p>
           )}
           {open && error && (
