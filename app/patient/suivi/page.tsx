@@ -1,20 +1,30 @@
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { isLegacySubscription, isPlatformSubscription, patientMustSubscribe, subscriptionNeedsRefresh, type SubscriptionRow } from "@/lib/billing/patientPlans";
+import {
+  commitmentEndOfSubscription,
+  isLegacySubscription,
+  isPlatformSubscription,
+  patientMustSubscribe,
+  subscriptionNeedsRefresh,
+  type SubscriptionRow,
+} from "@/lib/billing/patientPlans";
 import { getStripe } from "@/lib/billing/stripe";
 import { refreshPatientSubscription } from "@/lib/billing/patientSubscription";
+import { loadUnpaidReviews } from "@/lib/billing/feeNotes";
 import SuiviView from "./SuiviView";
 import AppAccessNotice from "./AppAccessNotice";
+import ReviewPaymentNotice from "./ReviewPaymentNotice";
 import { nativeAppPlatform } from "@/lib/app/nativeAppServer";
 
 // « Mon suivi » côté patient : choisir, voir ou résilier sa formule
-// (modèle définitif du 2026-11-04 : 3,99 € d'accès + 6 € du kiné). C'est aussi l'écran où
+// (modèle définitif du 2026-11-04 : accès 6,99 / 3,99 / 2,99 € selon l'engagement
+// + 6 € du kiné, montants dans lib/billing/patientPlans.ts). C'est aussi l'écran où
 // app/patient/layout.tsx envoie un patient qui n'a pas encore accès.
 export default async function SuiviPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string; attente?: string; arret?: string; reprise?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; attente?: string; arret?: string; reprise?: string; carte?: string; paye?: string }>;
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
@@ -52,7 +62,13 @@ export default async function SuiviPage({
   if (row && isPlatformSubscription(row) && (row.status === "active" || row.status === "trialing") && sub?.stripe_subscription_id) {
     try {
       const live = await getStripe().subscriptions.retrieve(sub.stripe_subscription_id as string);
-      commitUntil = live.metadata?.commit_until ?? null;
+      // Calculée sur l'abonnement réel (fin de l'essai ou début), metadata en secours.
+      commitUntil = commitmentEndOfSubscription({
+        plan: live.metadata?.plan,
+        trial_end: live.trial_end,
+        start_date: live.start_date,
+        commit_until: live.metadata?.commit_until,
+      });
       endsAt = live.cancel_at ? new Date(live.cancel_at * 1000).toISOString() : null;
     } catch (e) {
       console.error("[patient/suivi] lecture de l'abonnement chez Stripe impossible :", e);
@@ -78,13 +94,19 @@ export default async function SuiviPage({
     );
   }
 
+  // Honoraires du kiné refusés ou à valider par la banque : bouton « Payer ».
+  const unpaid = await loadUnpaidReviews(supabase, user.id);
+  const kineName = (kine?.full_name as string | null) ?? t("kineFallback");
+
   return (
     <SuiviView
       sp={sp}
-      kineName={(kine?.full_name as string | null) ?? t("kineFallback")}
+      kineName={kineName}
       kineReady={kineReady}
       required={required}
       programmeReady={(assignedCount ?? 0) > 0}
+      paymentNotice={unpaid.length > 0 ? <ReviewPaymentNotice reviews={unpaid} kineName={kineName} /> : null}
+      canManageCard={!!row && isPlatformSubscription(row) && !!sub?.stripe_subscription_id}
       subscription={
         sub
           ? {

@@ -26,6 +26,15 @@ export async function GET(req: Request) {
   const t = await getTranslations("billing.csv");
   const notes = await loadMonthFeeNotes(supabase, user.id, period, locale);
 
+  const statusText = (s: (typeof notes)[number]["paymentStatus"]) =>
+    ({
+      paid: t("statusPaid"),
+      pending: t("statusPending"),
+      failed: t("statusFailed"),
+      action_required: t("statusActionRequired"),
+      refunded: t("statusRefunded"),
+      disputed: t("statusDisputed"),
+    })[s] ?? t("statusFailed");
   const header = [t("date"), t("number"), t("patient"), t("designation"), t("amount"), t("payment"), t("collectedOn"), t("stripeFees")];
   const lines = notes.map((n) =>
     [
@@ -34,9 +43,11 @@ export async function GET(req: Request) {
       n.patientName,
       t("line"),
       amount(n.amountCents),
-      n.paymentStatus === "paid" ? t("statusPaid") : n.paymentStatus === "pending" ? t("statusPending") : t("statusFailed"),
-      n.paidAt ? new Date(n.paidAt).toLocaleDateString(intlTag(locale)) : "",
-      n.paymentStatus === "paid" ? amount(estimateStripeFeeCents(n.amountCents)) : "",
+      statusText(n.paymentStatus),
+      // Date d'encaissement : seulement pour un paiement resté encaissé.
+      n.paidAt && n.paymentStatus === "paid" ? new Date(n.paidAt).toLocaleDateString(intlTag(locale)) : "",
+      // Stripe garde ses frais même sur un paiement remboursé ou contesté.
+      ["paid", "refunded", "disputed"].includes(n.paymentStatus) ? amount(estimateStripeFeeCents(n.amountCents)) : "",
     ]
       .map(csvCell)
       .join(";"),

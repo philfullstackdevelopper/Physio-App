@@ -2,7 +2,8 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { intlTag } from "@/lib/i18n/translator";
 import type { Locale } from "@/i18n/locales";
-import { ArrowLeft, CalendarClock, CheckCircle2, RefreshCw } from "lucide-react";
+import type { ReactNode } from "react";
+import { ArrowLeft, CalendarClock, CheckCircle2, CreditCard, FileText, RefreshCw } from "lucide-react";
 import PaywallVideo from "./PaywallVideo";
 import SubmitButton from "@/components/SubmitButton";
 import {
@@ -15,7 +16,7 @@ import {
   platformOffer,
   type PlatformOffer,
 } from "@/lib/billing/patientPlans";
-import { cancelPlan, resumePlan } from "./actions";
+import { cancelPlan, changeCard, openInvoices, resumePlan } from "./actions";
 
 // « Mon suivi » (patient) — modèle définitif (Philippe, 2026-11-04 ;
 // lib/billing/patientPlans.ts). Trois offres côte à côte (empilées sur
@@ -40,7 +41,7 @@ export type SuiviSubscription = {
 };
 
 export type SuiviViewProps = {
-  sp: { error?: string; ok?: string; attente?: string; arret?: string; reprise?: string };
+  sp: { error?: string; ok?: string; attente?: string; arret?: string; reprise?: string; carte?: string; paye?: string };
   kineName: string;
   /** Le kiné a activé ses paiements en ligne (Stripe). */
   kineReady: boolean;
@@ -51,6 +52,10 @@ export type SuiviViewProps = {
   programmeReady?: boolean;
   /** Démo : les boutons ne mènent nulle part. */
   demo?: boolean;
+  /** Honoraires du kiné à régler par le patient (ReviewPaymentNotice), s'il y en a. */
+  paymentNotice?: ReactNode;
+  /** Abonnement d'accès EasyPhysio : « Changer de carte » et « Mes factures ». */
+  canManageCard?: boolean;
 };
 
 const card = "rounded-2xl border border-line bg-surface p-5 shadow-sm max-sm:border-0 max-sm:p-4 max-sm:shadow-soft short:p-4";
@@ -86,7 +91,17 @@ function commitmentText(offer: PlatformOffer, t: (key: string, values?: Record<s
 const daysFromNow = (n: number) => new Date(Date.now() + n * 86_400_000);
 const shortDay = (d: Date, locale: Locale) => d.toLocaleDateString(intlTag(locale), { day: "numeric", month: "short" });
 
-export default function SuiviView({ sp, kineName, kineReady, required = false, subscription, programmeReady = false, demo = false }: SuiviViewProps) {
+export default function SuiviView({
+  sp,
+  kineName,
+  kineReady,
+  required = false,
+  subscription,
+  programmeReady = false,
+  demo = false,
+  paymentNotice = null,
+  canManageCard = false,
+}: SuiviViewProps) {
   const t = useTranslations("billing.suivi");
   const tf = useTranslations("billing.format");
   const tOffer = useTranslations("billing.offers");
@@ -152,6 +167,9 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
         )}
         {sp.arret === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">{t("cancelled")}</p>}
         {sp.reprise === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">{t("resumed")}</p>}
+        {sp.carte === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">{t("cardChanged")}</p>}
+        {sp.paye === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">{t("reviewPaid")}</p>}
+        {paymentNotice && <div className="mt-3">{paymentNotice}</div>}
 
         <section className={`mt-4 ${card}`}>
           {live ? (
@@ -187,6 +205,22 @@ export default function SuiviView({ sp, kineName, kineReady, required = false, s
                           ? commitmentText({ ...offer, commitmentMonths: 0 }, t)
                           : t("cancelAnytime")}
               </p>
+              {!legacy && canManageCard && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <form action={demo ? undefined : changeCard}>
+                    <SubmitButton pendingText={t("opening")} className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-sm font-medium text-ink hover:bg-app-bg">
+                      <CreditCard className="h-4 w-4" strokeWidth={1.75} />
+                      {t("changeCard")}
+                    </SubmitButton>
+                  </form>
+                  <form action={demo ? undefined : openInvoices}>
+                    <SubmitButton pendingText={t("opening")} className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-sm font-medium text-ink hover:bg-app-bg">
+                      <FileText className="h-4 w-4" strokeWidth={1.75} />
+                      {t("invoices")}
+                    </SubmitButton>
+                  </form>
+                </div>
+              )}
               {!legacy && (
                 <div className="mt-4 border-t border-line pt-4">
                   {ending ? (

@@ -127,6 +127,25 @@ export function commitmentEnd(offer: PlatformOffer, paidStart: Date): string | n
   return d.toISOString();
 }
 
+/**
+ * Fin d'engagement calculée sur l'abonnement RÉEL chez Stripe (audit du
+ * 2026-11-08) : l'engagement court à partir du premier mois payé, c'est-à-dire
+ * la fin de l'essai s'il y en a eu un, sinon le début de l'abonnement. Plus
+ * juste que la date estimée à l'ouverture du paiement (metadata commit_until),
+ * qui reste la solution de secours.
+ */
+export function commitmentEndOfSubscription(sub: {
+  plan: string | null | undefined;
+  trial_end?: number | null;
+  start_date?: number | null;
+  commit_until?: string | null;
+}): string | null {
+  if (!isPlatformOfferKey(sub.plan)) return null;
+  const startUnix = sub.trial_end ?? sub.start_date ?? null;
+  if (startUnix) return commitmentEnd(platformOffer(sub.plan), new Date(startUnix * 1000));
+  return sub.commit_until ?? null;
+}
+
 /** « 12,99 » (en : « 12.99 ») ; le nom reste « eurosFR », le montant reste en euros. */
 export function eurosFR(cents: number, locale: Locale = "fr"): string {
   return (cents / 100).toLocaleString(INTL_TAGS[locale], { minimumFractionDigits: 2, maximumFractionDigits: 2 });

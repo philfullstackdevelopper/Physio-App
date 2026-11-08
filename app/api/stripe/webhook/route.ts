@@ -2,10 +2,15 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/billing/stripe";
 import { connectStatusFromAccount, verifiedInstructorId } from "@/lib/billing/connectStatus";
-import { upsertConnectAccount } from "@/lib/db/admin";
-import { handleFollowUpSetupEvent, syncReviewPaymentFromIntent } from "@/lib/billing/followUp";
+import { connectAccountDeauthorized, upsertConnectAccount } from "@/lib/db/admin";
+import { handleFollowUpSetupEvent, syncReviewDispute, syncReviewPaymentFromIntent, syncReviewRefund } from "@/lib/billing/followUp";
 import { finalizePlatformBillingSetup, syncPlatformInvoice } from "@/lib/billing/platformInvoice";
-import { refreshPatientSubscription, syncPatientSubscription } from "@/lib/billing/patientSubscription";
+import {
+  finalizePatientCardChange,
+  isPatientCardSession,
+  refreshPatientSubscription,
+  syncPatientSubscriptionFromEvent,
+} from "@/lib/billing/patientSubscription";
 
 // Stripe needs the Node runtime (not Edge) and the raw request body to verify
 // the signature, so this route reads req.text() and never parses JSON first.
@@ -16,6 +21,15 @@ export const runtime = "nodejs";
 // (audit du 2026-10-08). Les deux peuvent viser cette même adresse :
 // STRIPE_WEBHOOK_SECRET (plateforme) et STRIPE_CONNECT_WEBHOOK_SECRET
 // (Connect) — on accepte une signature valide pour l'un ou l'autre.
+//
+// Événements attendus (scripts/configurer-stripe.mjs les règle en mode test) :
+//   plateforme : checkout.session.completed, customer.subscription.created /
+//                updated / deleted, invoice.paid / payment_failed /
+//                marked_uncollectible ;
+//   Connect    : checkout.session.completed, account.updated,
+//                account.application.deauthorized, payment_intent.succeeded /
+//                processing / payment_failed, charge.refunded,
+//                charge.dispute.created / closed.
 const webhookSecrets = [process.env.STRIPE_WEBHOOK_SECRET, process.env.STRIPE_CONNECT_WEBHOOK_SECRET].filter(
   (s): s is string => !!s,
 );
@@ -45,11 +59,12 @@ export async function POST(req: Request) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
-      // Nouveau modèle (2026-10-24) : enregistrement d'une carte, sans
-      // prélèvement. Sur un compte Connect = suivi mensuel d'un patient ;
-      // sur la plateforme = moyen de paiement du kiné pour sa facture EasyPhysio.
+      // Enregistrement d'une carte, sans prélèvement. Sur un compte Connect =
+      // suivi mensuel d'un patient (ancien parcours) ; sur la plateforme =
+      // changement de carte d'un patient, ou ancien moyen de paiement d'un kiné.
       if (session.mode === "setup") {
         if (event.account) await handleFollowUpSetupEvent(session, event.account);
+        else if (isPatientCardSession(session)) await finalizePatientCardChange(session.id);
         else await finalizePlatformBillingSetup(session.id);
         break;
       }
@@ -59,15 +74,20 @@ export async function POST(req: Request) {
         const subId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
         if (subId) await refreshPatientSubscription(subId, event.account ?? null);
       }
+      // Mode « payment » (patient qui règle lui-même un mois refusé) : c'est
+      // payment_intent.succeeded, plus bas, qui marque le mois payé.
       break;
     }
     // Abonnement d'accès créé, renouvelé, résilié, paiement refusé… (compte
     // EasyPhysio) ; ou formule de l'ancien modèle (compte Connect du kiné),
-    // arrêtée à la fin de sa période. Ignoré s'il n'a pas été créé par EasyPhysio.
+    // arrêtée à la fin de sa période. Ignoré s'il n'a pas été créé par
+    // EasyPhysio. On relit l'état actuel chez Stripe (événements dans le
+    // désordre) et la base ignore un ancien abonnement quand un plus récent
+    // est en cours (migration 0086).
     case "customer.subscription.created":
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
-      await syncPatientSubscription(event.data.object as Stripe.Subscription, event.account ?? null);
+      await syncPatientSubscriptionFromEvent(event.data.object as Stripe.Subscription, event.account ?? null);
       break;
     }
     case "account.updated": {
@@ -91,14 +111,35 @@ export async function POST(req: Request) {
       }
       break;
     }
-    // Prélèvement d'un bilan mensuel (compte Connect du kiné) : résultat final,
-    // utile surtout quand la banque répond après coup.
+    // Le kiné a déconnecté son compte Stripe d'EasyPhysio : plus aucun
+    // prélèvement possible. Sa fiche repasse à « pas encore activé » et
+    // « Suivi & facturation » lui propose de reconnecter un compte.
+    // L'identité du compte vient de Stripe (event.account), pas du kiné.
+    case "account.application.deauthorized": {
+      if (event.account) {
+        const instructorId = await connectAccountDeauthorized(event.account);
+        console.warn(`[stripe/webhook] compte ${event.account} déconnecté (kiné ${instructorId ?? "inconnu"}).`);
+      }
+      break;
+    }
+    // Paiement des honoraires d'un mois (compte Connect du kiné) : résultat
+    // final, utile surtout quand la banque répond après coup.
     case "payment_intent.succeeded":
     case "payment_intent.processing":
     case "payment_intent.payment_failed": {
       if (event.account) {
         await syncReviewPaymentFromIntent(event.data.object as Stripe.PaymentIntent, event.account);
       }
+      break;
+    }
+    // Remboursement par le kiné, ou litige ouvert / clos par la banque du patient.
+    case "charge.refunded": {
+      if (event.account) await syncReviewRefund(event.data.object as Stripe.Charge, event.account);
+      break;
+    }
+    case "charge.dispute.created":
+    case "charge.dispute.closed": {
+      if (event.account) await syncReviewDispute(event.data.object as Stripe.Dispute, event.account);
       break;
     }
     // Facture EasyPhysio du kiné (compte plateforme).

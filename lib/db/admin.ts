@@ -1,4 +1,5 @@
 import { getPool } from "./pool";
+import type { ReviewPaymentStatus } from "@/lib/billing/reviewPayment";
 
 // Server-only wrappers around the `internal.*` SQL functions (see
 // supabase/migrations/0057_scalingo_admin_bypass_functions.sql). These
@@ -228,12 +229,23 @@ export async function recordMonthlyReview(params: {
   return rows[0];
 }
 
+/**
+ * Résultat d'un paiement d'honoraires. La base refuse les retours en arrière
+ * (un « payé » ne redevient jamais « refusé » sur un message Stripe en retard).
+ */
 export async function setReviewPayment(
   reviewId: string,
-  status: "pending" | "paid" | "failed",
+  status: ReviewPaymentStatus,
   paymentIntentId: string | null,
+  failureReason: string | null = null,
 ): Promise<void> {
-  await getPool().query("select internal.set_review_payment($1, $2, $3)", [reviewId, status, paymentIntentId]);
+  await getPool().query("select internal.set_review_payment($1, $2, $3, $4)", [reviewId, status, paymentIntentId, failureReason]);
+}
+
+/** Le kiné a déconnecté son compte Stripe d'EasyPhysio (migration 0086) ; renvoie son id. */
+export async function connectAccountDeauthorized(stripeConnectAccountId: string): Promise<string | null> {
+  const { rows } = await getPool().query<{ id: string | null }>("select internal.connect_account_deauthorized($1) as id", [stripeConnectAccountId]);
+  return rows[0]?.id ?? null;
 }
 
 export async function reviewForPayment(
@@ -366,17 +378,26 @@ export async function upsertSubscription(params: {
   /** Compte Stripe du kiné (ancien modèle) ; null = compte d'EasyPhysio (abonnement d'accès). */
   stripeAccountId: string | null;
   cancelAtPeriodEnd: boolean;
-}): Promise<void> {
-  await getPool().query("select internal.admin_upsert_subscription($1, $2, $3, $4, $5, $6, $7, $8)", [
-    params.userId,
-    params.plan,
-    params.stripeCustomerId,
-    params.stripeSubscriptionId,
-    params.status,
-    params.currentPeriodEnd,
-    params.stripeAccountId,
-    params.cancelAtPeriodEnd,
-  ]);
+  /** Date de création de l'abonnement chez Stripe (ISO) : départage un ancien et un nouvel abonnement. */
+  stripeCreated: string | null;
+}): Promise<boolean> {
+  // Migration 0086 : la base ignore un message en retard sur un ancien
+  // abonnement quand un plus récent est encore vivant (renvoie false).
+  const { rows } = await getPool().query<{ applied: boolean }>(
+    "select internal.admin_upsert_subscription($1, $2, $3, $4, $5, $6, $7, $8, $9) as applied",
+    [
+      params.userId,
+      params.plan,
+      params.stripeCustomerId,
+      params.stripeSubscriptionId,
+      params.status,
+      params.currentPeriodEnd,
+      params.stripeAccountId,
+      params.cancelAtPeriodEnd,
+      params.stripeCreated,
+    ],
+  );
+  return rows[0]?.applied !== false;
 }
 
 /** Abonnements des patients d'un kiné (suspension : on les arrête). */

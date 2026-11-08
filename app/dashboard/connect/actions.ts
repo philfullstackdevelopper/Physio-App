@@ -9,11 +9,13 @@ import { isMissingStripeObject } from "@/lib/billing/connectStatus";
 import { requestOrigin } from "@/lib/requestOrigin";
 
 // Starts (or resumes) Stripe Connect onboarding for the kiné — this is the
-// account that will receive his patients' payments directly (Flow A).
-// EasyPhysio's own Stripe account never touches that money.
+// account that receives his 6 € monthly fees from his patients directly
+// (lib/billing/patientPlans.ts). EasyPhysio's own Stripe account never
+// touches that money. Live since the switch to Stripe live mode (2026-11-02).
 //
-// NOT YET TESTABLE end-to-end: needs Stripe Connect turned on in the Stripe
-// dashboard first (see the project's plan doc). The code itself is ready.
+// Reconnecting: if the stored account is unknown in this mode, or the kiné
+// disconnected it from EasyPhysio (account.application.deauthorized), Stripe
+// refuses to read it and a fresh Standard account is created below.
 export async function startConnectOnboarding() {
   const supabase = await createClient();
   // Kiné validé uniquement (audit du 2026-10-08) : un compte en attente,

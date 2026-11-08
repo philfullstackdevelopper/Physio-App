@@ -115,11 +115,26 @@ async function Recap({
   invoice: { amount_cents: number; status: string; patient_count: number } | null;
 }) {
   const sum = (f: (n: FeeNote) => boolean) => notes.filter(f).reduce((s, n) => s + n.amountCents, 0);
-  const paid = notes.filter((n) => n.paymentStatus === "paid");
   const paidCents = sum((n) => n.paymentStatus === "paid");
   const pendingCents = sum((n) => n.paymentStatus === "pending");
-  const failedCents = sum((n) => n.paymentStatus === "failed");
-  const stripeCents = paid.reduce((s, n) => s + estimateStripeFeeCents(n.amountCents), 0);
+  const failedCents = sum((n) => n.paymentStatus === "failed" || n.paymentStatus === "action_required");
+  const refundedCents = sum((n) => n.paymentStatus === "refunded" || n.paymentStatus === "disputed");
+  // Frais Stripe : aussi sur un paiement remboursé ou contesté (Stripe ne rend pas ses frais).
+  const stripeCents = notes
+    .filter((n) => n.paymentStatus === "paid" || n.paymentStatus === "refunded" || n.paymentStatus === "disputed")
+    .reduce((s, n) => s + estimateStripeFeeCents(n.amountCents), 0);
+  const statusText = (s: FeeNote["paymentStatus"]) =>
+    s === "paid"
+      ? t("statusPaid")
+      : s === "pending"
+        ? t("statusPending")
+        : s === "action_required"
+          ? t("statusActionRequired")
+          : s === "refunded"
+            ? t("statusRefunded")
+            : s === "disputed"
+              ? t("statusDisputed")
+              : t("statusFailed");
   const kine = notes[0]?.kine;
   const locale = (await getLocale()) as Locale;
   const t = await getTranslations("billing.documents");
@@ -160,7 +175,7 @@ async function Recap({
                 <td className="py-2">{new Date(n.validatedAt).toLocaleDateString(intlTag(locale))}</td>
                 <td className="py-2 tabular-nums">{n.number}</td>
                 <td className="py-2">{n.patientName}</td>
-                <td className="py-2">{n.paymentStatus === "paid" ? t("statusPaid") : n.paymentStatus === "pending" ? t("statusPending") : t("statusFailed")}</td>
+                <td className="py-2">{statusText(n.paymentStatus)}</td>
                 <td className="py-2 text-right tabular-nums">{eur(n.amountCents)}</td>
               </tr>
             ))}
@@ -172,6 +187,7 @@ async function Recap({
         <Line label={t("collected")} value={eur(paidCents)} strong />
         {pendingCents > 0 && <Line label={t("pending")} value={eur(pendingCents)} />}
         {failedCents > 0 && <Line label={t("failed")} value={eur(failedCents)} />}
+        {refundedCents > 0 && <Line label={t("refunded")} value={eur(refundedCents)} />}
         <Line label={t("stripeFees")} value={eur(stripeCents)} />
         {invoice && <Line label={t("invoice", { count: invoice.patient_count })} value={eur(invoice.amount_cents)} />}
       </dl>

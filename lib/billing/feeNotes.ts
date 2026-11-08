@@ -5,6 +5,7 @@
 // remboursable, exonération de TVA des soins (art. 261-4-1° CGI).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { feeNoteNumber, nextPeriod } from "./reviewModel";
+import type { ReviewPaymentStatus } from "./reviewPayment";
 import type { Locale } from "@/i18n/locales";
 import { intlTag, libTranslator } from "@/lib/i18n/translator";
 import fr from "@/messages/fr/billing.json";
@@ -16,7 +17,7 @@ export type FeeNote = {
   period: string;
   validatedAt: string;
   amountCents: number;
-  paymentStatus: "pending" | "paid" | "failed";
+  paymentStatus: ReviewPaymentStatus;
   paidAt: string | null;
   patientName: string;
   kine: { name: string; cabinet: string | null; address: string | null; rpps: string | null };
@@ -94,5 +95,27 @@ export function paymentLabel(n: Pick<FeeNote, "paymentStatus" | "paidAt">, local
     return n.paidAt ? t("paidOn", { date: new Date(n.paidAt).toLocaleDateString(intlTag(locale)) }) : t("paid");
   }
   if (n.paymentStatus === "pending") return t("pending");
+  if (n.paymentStatus === "action_required") return t("actionRequired");
+  if (n.paymentStatus === "refunded") return t("refunded");
+  if (n.paymentStatus === "disputed") return t("disputed");
   return t("failed");
+}
+
+/** Mois d'honoraires que le patient peut régler lui-même (refusés, ou validation demandée par sa banque). */
+export async function loadUnpaidReviews(
+  supabase: SupabaseClient,
+  patientId: string,
+): Promise<{ id: string; period: string; amountCents: number; status: "failed" | "action_required" }[]> {
+  const { data } = await supabase
+    .from("monthly_reviews")
+    .select("id, period, amount_cents, payment_status")
+    .eq("patient_id", patientId)
+    .in("payment_status", ["failed", "action_required"])
+    .order("period", { ascending: true });
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    period: r.period as string,
+    amountCents: r.amount_cents as number,
+    status: r.payment_status as "failed" | "action_required",
+  }));
 }
