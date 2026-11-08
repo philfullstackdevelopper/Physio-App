@@ -67,8 +67,10 @@ export async function joinViaLink(code: string, formData: FormData) {
     const origin = await requestOrigin();
     await client.invitations.createInvitation({
       emailAddress: email,
-      redirectUrl: `${origin}/invitation${kine!.full_name ? `?kine=${encodeURIComponent(kine!.full_name)}` : ""}`,
-      publicMetadata: { full_name: fullName, role: "patient", instructor_name: kine!.full_name ?? null },
+      // Rien qui révèle le suivi chez un kiné : Clerk est hors HDS (voir
+      // addPatient dans app/dashboard/patients/actions.ts).
+      redirectUrl: `${origin}/invitation`,
+      publicMetadata: { full_name: fullName },
     });
   } catch (e) {
     // La fiche est créée : le kiné pourra renvoyer l'invitation. On le dit

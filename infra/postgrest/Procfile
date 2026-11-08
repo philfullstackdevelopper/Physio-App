@@ -1,0 +1,1 @@
+web: PGRST_SERVER_PORT=3001 ./postgrest & exec ./caddy run --config Caddyfile --adapter caddyfile

@@ -1,0 +1,12 @@
+{
+	admin off
+	auto_https off
+}
+
+http://:{$PORT} {
+	handle_path /rest/v1/* {
+		reverse_proxy localhost:3001
+	}
+	respond /rest/v1 404
+	respond "" 404
+}
