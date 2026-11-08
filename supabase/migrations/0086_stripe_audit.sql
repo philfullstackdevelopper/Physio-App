@@ -49,7 +49,7 @@
 -- 0086_stripe_audit.sql (le journal schema_migrations est incomplet).
 -- =============================================================================
 
-begin;
+-- (pas de begin/commit ici : scripts/migrate.mjs ouvre déjà une transaction par fichier)
 
 -- ---------------------------------------------------------------------------
 -- 1. Abonnements : ordre des messages de Stripe
@@ -266,4 +266,4 @@ begin
 end;
 $$;
 
-commit;
+
