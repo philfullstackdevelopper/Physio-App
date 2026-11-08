@@ -318,6 +318,7 @@ export default async function KineTelephonePrototype({
             patientId={p.id}
             patientName={p.firstName}
             deletePatient={noopVoid}
+            shortcuts
             messages={{ patient: { id: p.id, name: p.name, initials: p.initials }, unreadCount: p.unread ? 1 : 0, getThread: noopResult, sendMessage: noopResult }}
           />
         }

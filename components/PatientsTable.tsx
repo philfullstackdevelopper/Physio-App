@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ChevronRight, Info, MessageCircle, RotateCcw, Search, SlidersHorizontal, UserPlus } from "lucide-react";
 import type { PatientRow } from "@/lib/dashboard/patientRows";
 import { STAGE_LABELS, stageLabel, stageShort, type InjuryStage } from "@/lib/exercise/prescription";
+import { PHASE_NUMBER } from "@/lib/exercise/phasePlan";
 import { useTranslations } from "next-intl";
 import PatientMessagesModal from "@/components/PatientMessagesModal";
 import PatientActionsMenu from "@/components/PatientActionsMenu";
@@ -14,8 +15,6 @@ import type { ThreadMessage } from "@/components/MessageThread";
 
 export type Segment = "tous" | "surveiller" | "jour";
 
-const TONE_TEXT = { ok: "text-ok", warn: "text-warn", danger: "text-danger", muted: "text-muted" } as const;
-const TONE_BAR = { ok: "bg-ok", warn: "bg-warn", danger: "bg-danger", muted: "bg-line" } as const;
 const SIGNAL_TEXT = { pain: "text-danger", inactive: "text-warn", ok: "text-ok" } as const;
 
 // Libellés : dashboard.patientsTable.onboarding.<stade>.
@@ -49,15 +48,21 @@ function SignalCell({ row, compact = false }: { row: PatientRow; compact?: boole
   );
 }
 
-function AdherenceCell({ row }: { row: PatientRow }) {
-  if (row.adherence.pct === null) return <span className="text-base text-muted">—</span>;
+// « Séances » (Philippe, 2026-11-08, option 2) : les séances faites cette
+// semaine en clair — « 1 / 3 cette sem. » — plutôt qu'un pourcentage rouge
+// avec une barre, qui alarmait pour presque tout le monde.
+function SessionsCell({ row, compact = false }: { row: PatientRow; compact?: boolean }) {
+  const t = useTranslations("dashboard.patientsTable");
+  const { done, target } = row.thisWeek;
+  if (target === null && done === 0) return <span className={`${compact ? "text-xs" : "text-base"} text-muted`}>—</span>;
   return (
-    <div className="min-w-[5rem]">
-      <span className={`text-lg font-semibold leading-none tabular-nums ${TONE_TEXT[row.adherenceTone]}`}>{row.adherence.pct} %</span>
-      <div className="mt-1.5 h-1.5 w-full rounded-full bg-line">
-        <div className={`h-1.5 rounded-full ${TONE_BAR[row.adherenceTone]}`} style={{ width: `${row.adherence.pct}%` }} />
-      </div>
-    </div>
+    <span
+      title={target !== null ? t("weekDoneTitle", { done, target }) : undefined}
+      className={`inline-flex items-baseline gap-1 whitespace-nowrap tabular-nums ${compact ? "text-xs" : ""}`}
+    >
+      <span className={`font-semibold text-ink ${compact ? "" : "text-lg leading-none"}`}>{done}</span>
+      <span className={`text-muted ${compact ? "" : "text-xs"}`}>{target !== null ? t("weekDoneOf", { target }) : t("weekDoneNoTarget")}</span>
+    </span>
   );
 }
 
@@ -77,11 +82,21 @@ function NewSessionsBadge({ row }: { row: PatientRow }) {
   );
 }
 
-function PhaseBadge({ row }: { row: PatientRow }) {
-  if (!row.stageShort) return <span className="text-sm text-muted">—</span>;
+// Phase : de petits segments (un par phase, remplis jusqu'à la phase en
+// cours) + « Phase 1 » en petit, sur une seule ligne — la pastille passait
+// sur deux lignes (Philippe, 2026-11-08 : on garde le mot « Phase »).
+const PHASE_COUNT = Object.keys(PHASE_NUMBER).length;
+function PhaseSegments({ row, compact = false }: { row: PatientRow; compact?: boolean }) {
+  if (!row.stage || !row.stageShort) return compact ? null : <span className="text-sm text-muted">—</span>;
+  const n = PHASE_NUMBER[row.stage];
   return (
-    <span title={row.stageLabel ?? undefined} className="inline-flex rounded-full bg-brand-soft px-3 py-1 text-sm font-semibold text-brand">
-      {row.stageShort}
+    <span title={row.stageLabel ?? undefined} className="inline-flex items-center gap-2 whitespace-nowrap">
+      <span aria-hidden className="flex items-center gap-0.5">
+        {Array.from({ length: PHASE_COUNT }, (_, i) => (
+          <span key={i} className={`h-1.5 rounded-full ${compact ? "w-3" : "w-4"} ${i < n ? "bg-brand" : "bg-line"}`} />
+        ))}
+      </span>
+      <span className={`${compact ? "sr-only" : "text-xs font-medium text-ink"}`}>{row.stageShort}</span>
     </span>
   );
 }
@@ -257,7 +272,7 @@ export default function PatientsTable({
                   <th scope="col" className="px-4 py-3 font-medium">{t("colPatient")}</th>
                   <th scope="col" className="px-4 py-3 font-medium">{t("colPhase")}</th>
                   <th scope="col" className="px-4 py-3 font-medium">{t("colLastSession")}</th>
-                  <th scope="col" className="px-4 py-3 font-medium">{t("colAdherence")}</th>
+                  <th scope="col" className="px-4 py-3 font-medium">{t("colSessions")}</th>
                   <th scope="col" className="px-4 py-3 font-medium">{t("colSignal")}</th>
                   <th scope="col" className="px-2 py-3">
                     <span className="sr-only">{t("colActions")}</span>
@@ -291,9 +306,9 @@ export default function PatientsTable({
                         </span>
                       </span>
                     </td>
-                    <td className="px-4 py-3"><PhaseBadge row={r} /></td>
+                    <td className="px-4 py-3"><PhaseSegments row={r} /></td>
                     <td className={`px-4 py-3 text-base tabular-nums ${r.lastSessionAt ? "font-semibold text-ink" : "text-muted"}`}>{r.lastSessionLabel}</td>
-                    <td className="px-4 py-3"><AdherenceCell row={r} /></td>
+                    <td className="px-4 py-3"><SessionsCell row={r} /></td>
                     <td className="px-4 py-3"><SignalCell row={r} /></td>
                     <td className="px-2 py-3">
                       <div className="flex items-center justify-end gap-1">
@@ -390,9 +405,9 @@ export default function PatientsTable({
                       </span>
                       <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
                         <SignalCell row={r} compact />
-                        {r.adherence.pct !== null && (
-                          <span className={`text-xs font-semibold tabular-nums ${TONE_TEXT[r.adherenceTone]}`}>{r.adherence.pct} %</span>
-                        )}
+                        {/* Même idée que les colonnes Phase / Séances du tableau : segments + « 1 / 3 cette sem. » (2026-11-08). */}
+                        {!r.onboardingStage && <PhaseSegments row={r} compact />}
+                        {!r.onboardingStage && (r.thisWeek.target !== null || r.thisWeek.done > 0) && <SessionsCell row={r} compact />}
                       </span>
                     </span>
                   </Link>

@@ -7,7 +7,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { stageLabel, stageShort, type InjuryStage } from "../exercise/prescription.ts";
 import { assessSignals, type ProgressSignals } from "../exercise/stageProgress.ts";
-import { computeAdherence, adherenceLabel, adherenceTone, type Adherence } from "../exercise/adherence.ts";
+import { computeAdherence, adherenceLabel, adherenceTone, thisWeekSessions, type Adherence } from "../exercise/adherence.ts";
 import { computeSignal, type Signal } from "./patientSignal.ts";
 import { relativeDay, type LibI18n } from "../format/relativeDay.ts";
 import { initials } from "../format/initials.ts";
@@ -47,6 +47,8 @@ export interface PatientRow {
   /** « Bonne » / « Moyenne » / « Faible » (ou leur traduction). */
   adherenceLabel: string | null;
   adherenceTone: "ok" | "warn" | "danger" | "muted";
+  /** Séances faites depuis lundi et rythme prévu cette semaine (target null = rien d'attribué). */
+  thisWeek: { done: number; target: number | null };
   signal: Signal;
   /**
    * `null` = onboarding terminé. `"invite"` = n'a jamais accepté les CGU (a
@@ -130,6 +132,7 @@ export function buildPatientRows(
       adherence,
       adherenceLabel: tAdh ? adherenceLabel(adherence.pct, tAdh) : adherenceLabel(adherence.pct),
       adherenceTone: adherenceTone(adherence.pct),
+      thisWeek: thisWeekSessions({ completedAt: completed, assignments: recsBy.get(p.id) ?? [], now }),
       signal: computeSignal({
         concerning: assessment.concerning,
         severe: assessment.severe,

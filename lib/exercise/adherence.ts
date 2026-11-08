@@ -101,6 +101,24 @@ export function computeAdherence({ completedAt, assignments, now = new Date() }:
   return { pct, done, expected };
 }
 
+/**
+ * Séances de la semaine en cours (lundi 00:00 → maintenant) et rythme prévu
+ * cette semaine — la colonne « Séances » de « Mes patients » (Philippe,
+ * 2026-11-08 : « 1 / 3 cette sem. » plutôt qu'un pourcentage rouge).
+ * `target` = null quand aucune séance n'est attribuée cette semaine.
+ * `done` n'est pas plafonné : 4 séances pour 3 prévues affiche 4 / 3.
+ */
+export function thisWeekSessions({ completedAt, assignments, now = new Date() }: AdherenceInput): { done: number; target: number | null } {
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - weekdayIndex(now)).getTime();
+  let done = 0;
+  for (const iso of completedAt) {
+    const t = new Date(iso).getTime();
+    if (!Number.isNaN(t) && t >= weekStart && t <= now.getTime()) done++;
+  }
+  const effective = resolveAssignmentForWeek(assignments, mondayKey(now));
+  return { done, target: effective ? (effective.timesPerWeek ?? 1) : null };
+}
+
 /** `t` = traducteur « exercise.adherence » (next-intl) ; absent = français. */
 export function adherenceLabel(pct: number | null): "Bonne" | "Moyenne" | "Faible" | null;
 export function adherenceLabel(pct: number | null, t: (key: string) => string): string | null;

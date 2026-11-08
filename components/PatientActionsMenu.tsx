@@ -2,7 +2,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, MessageCircle, MoreVertical, Printer, Settings2, Trash2, UserRound, X } from "lucide-react";
+import { AlertTriangle, MessageCircle, MoreVertical, PencilLine, Printer, Settings2, Trash2, UserRound, X } from "lucide-react";
+import { ADJUST_CURRENT_WEEK_EVENT } from "@/lib/dashboard/adjustEvent";
 import PatientMessagesModal, { type MessagesModalPatient } from "@/components/PatientMessagesModal";
 import type { ThreadMessage } from "@/components/MessageThread";
 import { isPhoneFormat } from "@/lib/phoneFormat";
@@ -39,7 +40,12 @@ export default function PatientActionsMenu({
   conditionSlot,
   conditionMissing = false,
   profileSlot,
+  shortcuts = false,
 }: {
+  /** Fiche patient, ordinateur seulement (Philippe, 2026-11-08) : « Ajuster la
+   *  séance » et « Écrire à … » sur la ligne du nom, à gauche de « Gérer ».
+   *  Masqués sur téléphone (max-sm:hidden) : la ligne du téléphone ne change pas. */
+  shortcuts?: boolean;
   patientId: string;
   patientName: string;
   deletePatient: (formData: FormData) => Promise<void>;
@@ -245,8 +251,7 @@ export default function PatientActionsMenu({
     </div>
   );
 
-  return (
-    <>
+  const gererButton = (
       <button
         ref={triggerRef}
         type="button"
@@ -281,6 +286,39 @@ export default function PatientActionsMenu({
           </>
         )}
       </button>
+  );
+
+  return (
+    <>
+      {shortcuts ? (
+        <div className="flex items-center gap-2">
+          {/* Même fenêtre que « Ajuster » dans la frise, pour la semaine en cours
+              (KineWeekProgramme écoute cet événement). */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event(ADJUST_CURRENT_WEEK_EVENT))}
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark max-sm:hidden"
+          >
+            <PencilLine className="h-4 w-4" strokeWidth={1.75} />
+            {t("adjustSession")}
+          </button>
+          {messages && (
+          <button
+            type="button"
+            onClick={() => setMessagesOpen(true)}
+            aria-label={t("writeTo", { name: patientName })}
+            className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-app-bg max-sm:hidden"
+          >
+            <MessageCircle className="h-4 w-4 text-brand" strokeWidth={1.75} />
+            <span className="xl:hidden">{t("write")}</span>
+            <span className="hidden xl:inline">{t("writeTo", { name: patientName })}</span>
+          </button>
+          )}
+          {gererButton}
+        </div>
+      ) : (
+        gererButton
+      )}
 
       {typeof document !== "undefined" &&
         open &&

@@ -36,6 +36,7 @@ import AdjustWorkoutModal, { type AddableExercise, type AddableWorkout, type Mod
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { nextSeance, PHASE_NUMBER, phasePass, isStage } from "@/lib/exercise/phasePlan";
 import { useIsPhone, type SessionDetail } from "@/components/WeekProgramme";
+import { ADJUST_CURRENT_WEEK_EVENT } from "@/lib/dashboard/adjustEvent";
 
 export interface KineAssignment {
   /** patient_recommended_workouts.id */
@@ -138,6 +139,37 @@ export default function KineWeekProgramme({
       }),
     [weeks, assignments, workoutsById, loggedDateKeys, dayDetails, locale],
   );
+
+  // « Ajuster la séance » de l'en-tête de la fiche (2026-11-08) : la même
+  // fenêtre que « Ajuster » dans la vue semaine, pour la semaine en cours,
+  // sans bouton à elle — ouverte par ADJUST_CURRENT_WEEK_EVENT. Rendue dans
+  // les deux vues (frise et semaine) : rien ne bouge à l'écran.
+  const currentMeta = weekMeta.find((m) => m.week.weekNumber === currentWeekNumber) ?? weekMeta[weekMeta.length - 1];
+  const currentWeekModal = currentMeta ? (
+    <AdjustWorkoutModal
+      key={`header-${currentMeta.week.startDateKey}`}
+      hideTrigger
+      openOnEvent={ADJUST_CURRENT_WEEK_EVENT}
+      patientId={patientId}
+      patientFirstName={patientFirstName}
+      patientEquipment={patientEquipment}
+      workout={currentMeta.workout}
+      recId={currentMeta.assignment?.id ?? null}
+      addableExercises={addableExercises}
+      bodyParts={bodyParts}
+      addableWorkouts={addableWorkouts.filter((w) => w.id !== currentMeta.workout?.id)}
+      adjustAction={adjustAction}
+      assignAction={assignAction}
+      removeAction={removeAction}
+      recommendations={recommendations}
+      weekStartDate={currentMeta.week.startDateKey}
+      weekLabel={`${currentMeta.week.label} · ${currentMeta.week.rangeLabel}`}
+      patientConditionId={patientConditionId}
+      patientStage={patientStage}
+      recentIds={recentIds}
+      saveAsMineAction={saveAsMineAction}
+    />
+  ) : null;
 
   // ---- Navigation frise → semaine → jour (même mécanique que côté patient) --
   const [view, setView] = useState<"strip" | "week">("strip");
@@ -362,6 +394,7 @@ export default function KineWeekProgramme({
             horizontalOnly
           />
         </div>
+        {currentWeekModal}
       </div>
     );
   }
@@ -685,6 +718,7 @@ export default function KineWeekProgramme({
           </div>
         </div>
       )}
+      {currentWeekModal}
     </div>
   );
 }
