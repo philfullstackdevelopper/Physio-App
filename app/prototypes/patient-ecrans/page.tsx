@@ -6,7 +6,8 @@
 // depuis l'appli.
 //   ?ecran=programme | seance | historique | informations | historique-detail | onboarding | progres | compte | suivi | cabinet (formulaire kiné de secours)
 
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import type { Locale } from "@/i18n/locales";
 import SuiviView from "@/app/patient/suivi/SuiviView";
 import PatientNav from "@/components/PatientNav";
 import ProgrammeView, { type ProgrammeWorkout } from "@/app/patient/programme/ProgrammeView";
@@ -54,7 +55,7 @@ const daysAgoIso = (n: number) => new Date(Date.now() - n * 86_400_000).toISOStr
 
 // Historique fictif : 4 semaines, séance prévue 3 fois par semaine — cette
 // semaine 1 faite, puis 3/3, 2/3 et 1/3 (bleu = fait, rouge = manqué).
-function demoHistoryWeeks(t: DemoT) {
+function demoHistoryWeeks(t: DemoT, locale: Locale, labels: { weekOf: (date: string) => string; session: string }) {
   const now = new Date();
   const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7), 18, 15);
   const at = (weeksAgo: number, day: number) => new Date(monday.getTime() + (day - weeksAgo * 7) * 86_400_000).toISOString();
@@ -62,6 +63,8 @@ function demoHistoryWeeks(t: DemoT) {
   const done: [number, number][] = [[0, 0], [1, 0], [1, 2], [1, 4], [2, 1], [2, 3], [3, 2]];
   return buildHistoryWeeks({
     now,
+    locale,
+    labels,
     assignments: [{ workoutId: "demo-seance", weekStartDate: thisWeekStartDateKey(new Date(at(3, 0))), workout }],
     logs: done.map(([w, d], i) => ({ id: `log${i}`, completedAt: at(w, d), workout })),
   });
@@ -87,6 +90,11 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
   const t = await getTranslations("demo.samples");
   const tStage = await getTranslations("exercise.stage");
   const tEquip = await getTranslations("exercise.equipment");
+  // Historique : « Semaine du … » et « Séance » dans la langue de l'interface.
+  const locale = (await getLocale()) as Locale;
+  const tHistory = await getTranslations("patient.history");
+  const tCommon = await getTranslations("patient.common");
+  const historyLabels = { weekOf: (date: string) => tHistory("weekOf", { date }), session: tCommon("session") };
   const EXERCISES = exercisesFor(t);
 
   const workouts: ProgrammeWorkout[] = [
@@ -178,7 +186,7 @@ export default async function PatientEcransPrototype({ searchParams }: { searchP
             back={depuis === "accueil" ? { href: "/patient", label: t("backHome") } : undefined}
           />
         ) : ecran === "historique" ? (
-          <HistoriqueView weeks={demoHistoryWeeks(t)} />
+          <HistoriqueView weeks={demoHistoryWeeks(t, locale, historyLabels)} />
         ) : ecran === "seance" ? (
           // Même enveloppe que app/patient/[workoutId]/seance/page.tsx.
           <main className="p-6 max-sm:min-h-[calc(100dvh-var(--phone-chrome))] max-sm:p-4 max-sm:short:py-2 sm:min-h-dvh sm:p-8 short:sm:py-3">

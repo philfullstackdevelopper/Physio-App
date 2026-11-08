@@ -214,7 +214,8 @@
     "finishedAt": "Terminée à {time}",
     "pain": "Douleur {score}/10",
     "difficulty": "Difficulté {score}/10",
-    "seeDetail": "Voir le détail"
+    "seeDetail": "Voir le détail",
+    "quote": "« {text} »"
   },
   "programme": {
     "title": "Mon programme",

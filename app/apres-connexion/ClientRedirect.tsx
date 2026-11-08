@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { LOCALE_COOKIE, type Locale } from "@/i18n/locales";
+import { LOCALE_COOKIE, LOCALE_GUESSED_COOKIE, type Locale } from "@/i18n/locales";
 
 // Page de passage juste après la connexion : envoie le kiné vers /dashboard et
 // le patient vers /patient.
@@ -23,7 +23,10 @@ export default function ClientRedirect({ to, locale }: { to: string; locale?: Lo
   useEffect(() => {
     // Langue enregistrée sur le compte → appliquée à cet appareil avant
     // d'ouvrir l'app (voir page.tsx).
-    if (locale) document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=31536000; samesite=lax`;
+    if (locale) {
+      document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=31536000; samesite=lax`;
+      document.cookie = `${LOCALE_GUESSED_COOKIE}=; path=/; max-age=0`;
+    }
     const go = setTimeout(() => window.location.replace(to), 50);
     const fallback = setTimeout(() => setSlow(true), 4000);
     return () => {

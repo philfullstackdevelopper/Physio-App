@@ -67,7 +67,7 @@ Legal (CGU, privacy policy, legal notice, cookie banner, health-data consent, te
 ## Database content (platform exercises, conditions, séances)
 
 - Exercise **names** are English in the database and shown as-is in both languages.
-- Exercise **instructions**, condition names/descriptions, séance names/descriptions and body-area labels: `i18n/content/en.json` maps the **exact French text** to English. `lib/i18n/dbContent.ts` applies it to every GET through the Supabase clients (fields `name`, `description`, `instructions`, `label`). In French the reverse map turns platform text saved in English back into French.
+- Exercise **instructions**, condition names/descriptions, séance names/descriptions and body-area labels: `i18n/content/en.json` maps the **exact French text** to English. `lib/i18n/dbContent.ts` translates GET responses for non-French users (fields `name`, `description`, `instructions`, `label`) and turns English platform text back into French in writes (POST/PATCH bodies), so the database only stores French. French users: no transformation at all. For text stored outside the Supabase client (e.g. fee-note notes), use `localizeDbText(text, "fr")`.
 - A migration that adds or edits platform text must add the matching English entry (copy the French key exactly), otherwise the French shows.
 - `lib/exercise/prescription.ts` reads the target (minutes / seconds) from either language, so the prescribed dose never depends on the language.
 - All of it is a Claude draft: partner-physio review required (`_review` key at the top of the file).

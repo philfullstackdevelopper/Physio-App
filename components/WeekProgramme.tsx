@@ -479,7 +479,7 @@ export default function WeekProgramme({
                     {s.durationMinutes != null && <li>{s.durationMinutes} min</li>}
                     {s.painScore != null && <li>{t("pain", { score: s.painScore })}</li>}
                     {s.difficulty != null && <li>{t("difficulty", { score: s.difficulty })}</li>}
-                    {s.notes && <li>« {s.notes} »</li>}
+                    {s.notes && <li>{t("quote", { text: s.notes })}</li>}
                   </ul>
                   <Link
                     href={`/patient/historique/${s.logId}?depuis=accueil`}

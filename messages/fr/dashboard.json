@@ -179,7 +179,8 @@
     "lastSession": "Dernière séance",
     "lastShort": "Dernière",
     "watchItem": "{name} : {reason}",
-    "watchCount": "{count} exercices à surveiller"
+    "watchCount": "{count} exercices à surveiller",
+    "pct": "{n} %"
   },
   "actionsMenu": {
     "manage": "Gérer",

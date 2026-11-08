@@ -78,7 +78,7 @@
         },
         "messages": {
           "title": "Messages",
-          "hint": "Writing to your physio."
+          "hint": "Write to your physio."
         },
         "suivi": {
           "title": "The subscription",
@@ -282,14 +282,14 @@
       "epaule": "Shoulder",
       "hanche": "Hip & glutes",
       "cheville": "Ankle & foot",
-      "cervicales": "Neck & cervical spine",
+      "cervicales": "Neck",
       "poignet": "Wrist, hand & elbow",
-      "tronc": "Trunk, core & abs",
+      "tronc": "Core & abs",
       "equilibre": "Balance & general"
     },
     "exerciseInstructions": {
       "quadSet": "Lie on your back, legs straight and resting on the floor. Without moving the leg, tighten your thigh muscle hard, pressing the back of the knee into the floor, hold for a few seconds, then relax.",
-      "heelSlide": "Lie on your back, legs straight. Slowly slide your heel towards your buttocks, bending the knee as far as you can without sharp pain, then straighten the leg again.",
+      "heelSlide": "Lie on your back, legs straight. Slowly slide your heel towards your buttocks, bending the knee as far as you can without severe pain, then straighten the leg again.",
       "straightLegRaise": "Lie on your back, propped up on your forearms. Lock the knee by tightening the thigh, raise the straight leg to about 45°, then lower it slowly.",
       "terminalKneeExt": "Standing, band behind the front knee, anchored in front of you. Start with the knee slightly bent, then fully straighten it, pushing against the band.",
       "bodyweightSquat": "Standing, feet hip-width apart. Lower yourself by pushing your hips back, knees in line with your feet, then come back up by pushing through your heels.",
@@ -326,7 +326,7 @@
     "daysAgo": "{n} days ago",
     "workoutDescription": "Progressive, pain-free strengthening.",
     "adherenceGood": "Good",
-    "adherenceAverage": "Average",
+    "adherenceAverage": "Fair",
     "adherenceLow": "Low",
     "lastSessionDetail": "20 min · 4 exercises",
     "exerciseCount": "{n} exercises",
@@ -374,7 +374,7 @@
       "plan_6m": "6-month commitment"
     },
     "freeTrial": "Free trial",
-    "contributorTitle": "EasyPhysio contributor",
+    "contributorTitle": "EasyPhysio Contributor",
     "followUpLine": "3 months · renews on 4 February",
     "backHome": "Home"
   }

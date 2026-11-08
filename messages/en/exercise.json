@@ -189,8 +189,8 @@
     "statusPending": "EasyPhysio is reviewing this exercise. You can already use it with your patients.",
     "statusPublished": "Published: every EasyPhysio physio can use it. It can no longer be edited.",
     "statusChangesRequested": "EasyPhysio is asking you for a change before publishing it.",
-    "statusDeclined": "EasyPhysio kept it private: it stays in your bank.",
-    "statusPrivate": "In your bank, for all your patients.",
+    "statusDeclined": "EasyPhysio kept it private: it stays in your library.",
+    "statusPrivate": "In your library, for all your patients.",
     "reviewNote": "Message from EasyPhysio:",
     "sending": "Sending…",
     "resubmit": "Resubmit for review",
@@ -390,11 +390,11 @@
   "contributor": {
     "title": "EasyPhysio Contributor",
     "titleTimes": "EasyPhysio Contributor ×{n}",
-    "nextStep": "{count, plural, one {# more published exercise for “{title}”.} other {# more published exercises for “{title}”.}}",
+    "nextStep": "{count, plural, one {# more published exercise to become “{title}”.} other {# more published exercises to become “{title}”.}}",
     "unknownAuthor": "A physio"
   },
   "publicationStatus": {
-    "private": "My bank",
+    "private": "My library",
     "pending": "Under review",
     "published": "Public · approved",
     "changes_requested": "Needs changes",
@@ -405,7 +405,7 @@
     "acute": "Pain at rest ≤ 3/10, stable swelling, muscle contraction possible",
     "subacute": "Near-full range of motion, walking (or everyday movement) without a limp",
     "recovery": "Strength ≥ 80% of the healthy side, no pain the day after sessions",
-    "return_to_sport": "Jump and running tests passed with the physio"
+    "return_to_sport": "Jump and running tests cleared by your physio"
   },
   "showcase": {
     "_review": "Draft translation — exercise names need review by the partner physio before launch",
@@ -550,7 +550,7 @@
     "consentPublic": "<b>The filmed person has given their consent</b> for this video to be shown to patients, and to EasyPhysio physios if the exercise becomes public. (Required.)",
     "noVideo": "No video? You can carry on: the patient will see the name and the instructions, and you can film later.",
     "noVideoSource": "No video? You can carry on: the video of the exercise you started from will be used.",
-    "bankTitle": "My bank",
+    "bankTitle": "My library",
     "bankText": "Usable in the sessions of all my patients.",
     "patientTitle": "Only for one patient",
     "patientText": "A tailor-made exercise: you'll find it in this patient's “Adjust the session”.",
@@ -563,7 +563,7 @@
     "publishedSoFar": "{count, plural, one {# published exercise.} other {# published exercises.}} {next}",
     "demoDonePatient": "That's it: in the app, the exercise would be created for this patient. In the demo, nothing is saved.",
     "demoDonePublic": "That's it: in the app, the exercise would be created and sent to EasyPhysio for review. In the demo, nothing is saved.",
-    "demoDoneBank": "That's it: in the app, the exercise would be created in your bank. In the demo, nothing is saved.",
+    "demoDoneBank": "That's it: in the app, the exercise would be created in your library. In the demo, nothing is saved.",
     "back": "← Back",
     "cancel": "Cancel",
     "next": "Next: {step} →",

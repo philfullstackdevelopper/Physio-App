@@ -18,12 +18,13 @@ import { getLocaleByAppId } from "@/lib/db/locale";
 import { localizeDbText } from "@/lib/i18n/dbContent";
 import { getLibI18n } from "@/lib/dashboard/libI18n";
 
+import { doseColumnsFromForm, doseColumnsFromRow, type DoseColumns } from "@/lib/exercise/doseForm";
+import { notifyNewMessage } from "@/lib/push/notify";
+
 // Traducteur « dashboard.lib » pour friendlyDbError (langue du kiné).
 const tLib = async () => (await getLibI18n()).t;
 // Messages d'erreur de ce fichier (langue du kiné).
 const tActions = () => getTranslations("dashboard.patientActions");
-import { doseColumnsFromForm, doseColumnsFromRow, type DoseColumns } from "@/lib/exercise/doseForm";
-import { notifyNewMessage } from "@/lib/push/notify";
 
 // PatientActionsMenu is used both on the patient detail page and inline in
 // the "Mes patients" table, so its forms carry where to land afterwards.
@@ -240,7 +241,7 @@ export async function addRecommendedWorkout(formData: FormData) {
   if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error, undefined, await tLib()))}`);
 
   // Patient en suivi mensuel : attribuer une séance valide le bilan du mois.
-  await recordMonthlyReviewIfDue({ supabase, instructorId: user.id, patientId, note: `Séance attribuée : ${workout!.name as string}` });
+  await recordMonthlyReviewIfDue({ supabase, instructorId: user.id, patientId, note: `Séance attribuée : ${await localizeDbText(workout!.name as string, "fr")}` });
 
   let adjusted = false;
   if (rec && hasSeanceChanges(formData)) {
@@ -429,7 +430,8 @@ async function applySeanceChanges({
 
   // Message automatique écrit dans la langue du PATIENT (pas celle du kiné).
   // La note du bilan mensuel (document de facturation du kiné) reste en français.
-  const message = adjustmentMessage(workout.name, removedCount, addedCount, dosesChanged);
+  // Note du bilan mensuel : toujours en français (nom de séance compris).
+  const message = adjustmentMessage(await localizeDbText(workout.name, "fr"), removedCount, addedCount, dosesChanged);
   const patientLocale = await getLocaleByAppId(patientId);
   await supabase.from("patient_messages").insert({
     patient_id: patientId,

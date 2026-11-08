@@ -126,7 +126,7 @@ export default function PatientDetailView({
           </div>
           <div className={STAT_CELL}>
             <p className="text-xs font-medium text-muted">{t("adherence")}</p>
-            <p className={`text-lg font-semibold tabular-nums ${TONE_TEXT[s.adherenceTone]}`}>{s.adherencePct !== null ? `${s.adherencePct} %` : "—"}</p>
+            <p className={`text-lg font-semibold tabular-nums ${TONE_TEXT[s.adherenceTone]}`}>{s.adherencePct !== null ? t("pct", { n: s.adherencePct }) : "—"}</p>
             {s.adherenceLabel && <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium max-sm:hidden ${TONE_BG[s.adherenceTone]}`}>{s.adherenceLabel}</span>}
           </div>
           <div className={STAT_CELL}>

@@ -130,7 +130,7 @@
     "invitationsClosed": "Patient invitations will open when EasyPhysio launches. Until then, you can explore everything else in your space.",
     "firstSession": "First session",
     "optional": "(optional)",
-    "later": "Later, from their file"
+    "later": "Later, from their record"
   },
   "patientActions": {
     "fillAll": "Please fill in all the fields.",
@@ -179,7 +179,8 @@
     "lastSession": "Last session",
     "lastShort": "Last",
     "watchItem": "{name}: {reason}",
-    "watchCount": "{count, plural, one {# exercise to watch} other {# exercises to watch}}"
+    "watchCount": "{count, plural, one {# exercise to watch} other {# exercises to watch}}",
+    "pct": "{n}%"
   },
   "actionsMenu": {
     "manage": "Manage",
@@ -232,7 +233,7 @@
     "profilePending": "{name}: health profile to complete",
     "messagesWith": "Messages with {name}",
     "messages": "Messages",
-    "openFile": "Open {name}’s file",
+    "openFile": "Open {name}’s record",
     "notStarted": "Not started yet · {count}",
     "newSessionsTitle": "{count, plural, one {# session done since your last visit} other {# sessions done since your last visit}}",
     "newSessions": "{count, plural, one {# new} other {# new}}"
@@ -289,8 +290,8 @@
     "noPatient": "No patients yet.",
     "backToConversations": "Back to conversations",
     "noCondition": "No condition assigned",
-    "openFile": "Open file",
-    "file": "File",
+    "openFile": "Open record",
+    "file": "Record",
     "you": "You: {body}",
     "toReply": "To reply · {count}",
     "newMessage": "New message",
@@ -311,9 +312,9 @@
   },
   "joinQr": {
     "title": "Or have them scan your QR code",
-    "intro": "At the practice, the patient scans it with their phone, enters their name and e-mail, and receives their invitation.",
+    "intro": "At the practice, the patient scans it with their phone, enters their name and email, and receives their invitation.",
     "aria": "QR code to join your follow-up",
     "download": "Download to print",
-    "atLaunch": "Active at launch, like e-mail invitations."
+    "atLaunch": "Active at launch, like email invitations."
   }
 }

@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { LOCALE_COOKIE, isLocale } from "@/i18n/locales";
+import { LOCALE_COOKIE, LOCALE_GUESSED_COOKIE, isLocale } from "@/i18n/locales";
 import { setUserLocale } from "@/lib/db/locale";
 
 // Changer de langue : met à jour le cookie (effet immédiat sur cet
@@ -11,6 +11,8 @@ import { setUserLocale } from "@/lib/db/locale";
 // ses autres appareils). Appelée par components/LanguageSwitcher.tsx.
 export async function changeLocale(locale: string): Promise<void> {
   if (!isLocale(locale)) return;
+  // Choix explicite : ce n'est plus une langue devinée.
+  (await cookies()).delete(LOCALE_GUESSED_COOKIE);
   (await cookies()).set(LOCALE_COOKIE, locale, {
     path: "/",
     maxAge: 60 * 60 * 24 * 365,

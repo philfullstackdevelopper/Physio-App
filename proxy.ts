@@ -1,7 +1,7 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { isAppPath, nativePlatformFromUserAgent } from "@/lib/app/nativeApp";
-import { LOCALE_COOKIE, localeFromAcceptLanguage } from "@/i18n/locales";
+import { LOCALE_COOKIE, LOCALE_GUESSED_COOKIE, localeFromAcceptLanguage } from "@/i18n/locales";
 
 // Next.js 16 renamed Middleware → Proxy (same job: runs before each request).
 // clerkMiddleware() makes the Clerk session available to Server Components and
@@ -67,6 +67,7 @@ export default clerkMiddleware(async (auth, req) => {
     requestHeaders.set("cookie", `${existing ? `${existing}; ` : ""}${LOCALE_COOKIE}=${guessed}`);
     const res = NextResponse.next({ request: { headers: requestHeaders } });
     res.cookies.set(LOCALE_COOKIE, guessed, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+    res.cookies.set(LOCALE_GUESSED_COOKIE, "1", { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
     return res;
   }
   return NextResponse.next({ request: { headers: requestHeaders } });

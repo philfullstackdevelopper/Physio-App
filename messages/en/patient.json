@@ -97,7 +97,7 @@
     "continueBrowser": "Continue in the browser"
   },
   "layout": {
-    "kineSuspended": "{name} no longer practises on EasyPhysio. No more payments will be taken: you keep free access to your programme and your data."
+    "kineSuspended": "{name} is no longer on EasyPhysio. No more payments will be taken: you keep free access to your programme and your data."
   },
   "onboarding": {
     "cancel": "Cancel",
@@ -108,7 +108,7 @@
     },
     "bodyPartsQuestion": "Which part(s) of your body would you like to work on?",
     "bodyPartsError": "Choose at least one area.",
-    "stageQuestion": "Where are you at? (recovery stage)",
+    "stageQuestion": "What stage are you at? (recovery stage)",
     "choose": "Choose…",
     "dob": "Date of birth",
     "height": "Height (cm)",
@@ -171,7 +171,7 @@
     "acceptFailed": "Your acceptance couldn't be saved. Check your connection and try again.",
     "emptyMessage": "Write a message.",
     "kineNotFound": "Physio not found.",
-    "messagingClosed": "Your physio no longer practises on EasyPhysio: messaging is closed."
+    "messagingClosed": "Your physio is no longer on EasyPhysio: messaging is closed."
   },
   "home": {
     "weekDoneTitle": "This week's programme is done",
@@ -188,7 +188,7 @@
   "homeBrake": {
     "_review": "Draft translation — needs review by the partner physio before launch",
     "betterTitle": "You're getting better",
-    "betterText": "Your feedback is improving. Your physio can see it and will adjust your programme at your pace.",
+    "betterText": "Your recent feedback shows improvement. Your physio can see it and will adjust your programme at your pace.",
     "concernTitle": "Your latest feedback has been passed on",
     "concernText": "Your physio can see how you're feeling and may adapt your programme. In the meantime, take it easy, don't force it — and talk to them if the pain persists."
   },
@@ -218,7 +218,8 @@
     "finishedAt": "Finished at {time}",
     "pain": "Pain {score}/10",
     "difficulty": "Difficulty {score}/10",
-    "seeDetail": "See details"
+    "seeDetail": "See details",
+    "quote": "“{text}”"
   },
   "programme": {
     "title": "My programme",
@@ -237,13 +238,13 @@
     "_review": "Draft translation — needs review by the partner physio before launch",
     "t0": "Warm up for 2 to 3 minutes before you start, even for a short session.",
     "t1": "Breathe normally while you exercise — never hold your breath.",
-    "t2": "Sharp pain means stop the exercise; mild, bearable discomfort is normal.",
+    "t2": "Stop if you feel sharp pain; mild, bearable discomfort is normal.",
     "t3": "Do your sessions at a set time: they quickly become a habit rather than an effort of will.",
     "t4": "Drink a glass of water before you start, especially when it's hot.",
     "t5": "The quality of the movement matters more than speed — slow down if you need to.",
     "t6": "A stable floor and some clear space are enough, no special equipment needed.",
     "t7": "Note how you feel after the session: your physio takes it into account.",
-    "t8": "Consistency beats intensity — three short sessions are better than one long, rare one.",
+    "t8": "Consistency beats intensity — three short sessions are better than one long one now and then.",
     "t9": "Stretch gently at the end of the session to finish on a pleasant note."
   },
   "history": {
@@ -299,7 +300,7 @@
     "subtitle": "Chat with {name}.",
     "yourPhysio": "Your physiotherapist",
     "empty": "You haven't exchanged any messages with {name} yet. Write to them to ask a question about your programme.",
-    "closed": "Your physio no longer practises on EasyPhysio: messaging is closed.",
+    "closed": "Your physio is no longer on EasyPhysio: messaging is closed.",
     "placeholder": "Write to {name}…"
   },
   "messagesModal": {

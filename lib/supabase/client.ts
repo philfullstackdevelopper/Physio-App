@@ -34,7 +34,7 @@ export function createClient() {
         return getToken ? getToken() : Promise.resolve(null);
       },
       // Textes de la plateforme dans la langue de l'interface (lib/i18n/dbContent.ts).
-      global: { fetch: localizingFetch(browserLocale, { reverseInFrench: false }) },
+      global: { fetch: localizingFetch(browserLocale) },
     },
   );
 }

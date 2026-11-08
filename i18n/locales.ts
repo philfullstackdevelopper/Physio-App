@@ -11,6 +11,11 @@ export const DEFAULT_LOCALE: Locale = "fr";
 // Copie rapide du choix, lue à chaque page sans interroger la base.
 export const LOCALE_COOKIE = "NEXT_LOCALE";
 
+// Présent quand la langue a seulement été DEVINÉE (langue du navigateur, voir
+// proxy.ts) : une langue devinée n'est jamais enregistrée sur le compte, seul
+// un choix fait avec le sélecteur l'est (app/apres-connexion).
+export const LOCALE_GUESSED_COOKIE = "NEXT_LOCALE_GUESSED";
+
 // Nom de chaque langue écrit dans cette langue (pour le sélecteur).
 export const LOCALE_LABELS: Record<Locale, string> = {
   fr: "Français",

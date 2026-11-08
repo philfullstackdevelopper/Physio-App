@@ -9,6 +9,7 @@ import { friendlyDbError } from "@/lib/format/dbError";
 import { recordMonthlyReviewIfDue } from "@/lib/billing/autoReview";
 import { doseColumnsFromForm, doseColumnsFromRow } from "@/lib/exercise/doseForm";
 import { getTranslations } from "next-intl/server";
+import { localizeDbText } from "@/lib/i18n/dbContent";
 
 // Messages d'erreur dans la langue du kiné (cookie NEXT_LOCALE).
 async function tx(key: string, values?: Record<string, string | number>): Promise<string> {
@@ -138,7 +139,7 @@ export async function saveSeance(formData: FormData) {
   // Séance personnelle d'un patient en suivi mensuel : l'enregistrer valide
   // son bilan du mois. Une séance partagée par plusieurs patients ne facture personne.
   if (wk?.patient_id) {
-    await recordMonthlyReviewIfDue({ supabase, instructorId: userId, patientId: wk.patient_id as string, note: `Séance enregistrée : ${name}` });
+    await recordMonthlyReviewIfDue({ supabase, instructorId: userId, patientId: wk.patient_id as string, note: `Séance enregistrée : ${await localizeDbText(name, "fr")}` });
     revalidatePath("/dashboard/facturation");
   }
 

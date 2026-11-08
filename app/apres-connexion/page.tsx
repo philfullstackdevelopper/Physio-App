@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { getInstructor } from "@/lib/dashboard/instructor";
 import { cookies } from "next/headers";
 import { auth } from "@clerk/nextjs/server";
-import { LOCALE_COOKIE, isLocale, type Locale } from "@/i18n/locales";
+import { LOCALE_COOKIE, LOCALE_GUESSED_COOKIE, isLocale, type Locale } from "@/i18n/locales";
 import { getUserLocale, setUserLocale } from "@/lib/db/locale";
 import ClientRedirect from "./ClientRedirect";
 
@@ -19,7 +19,12 @@ async function syncLocale(): Promise<Locale | null> {
     if (!userId) return null;
     const stored = await getUserLocale(userId);
     if (stored) return stored;
-    const fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;
+    const jar = await cookies();
+    // Langue seulement devinée d'après le navigateur : elle reste valable sur
+    // cet appareil, mais n'est pas enregistrée ; seul un choix fait avec le
+    // sélecteur devient la langue du compte (sur tous ses appareils).
+    if (jar.get(LOCALE_GUESSED_COOKIE)) return null;
+    const fromCookie = jar.get(LOCALE_COOKIE)?.value;
     await setUserLocale(userId, isLocale(fromCookie) ? fromCookie : "fr");
     return null;
   } catch (e) {
