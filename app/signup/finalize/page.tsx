@@ -35,6 +35,8 @@ async function applyCabinetChoice(appId: string, c: PendingCabinet): Promise<voi
     console.error("finalize : cabinet non enregistré", e);
   }
 }
+// Page technique : rien à référencer dans les moteurs de recherche.
+export const metadata = { robots: { index: false, follow: false } };
 
 // Landing page right after a new instructor finishes Clerk's sign-up flow.
 // Clerk created the identity; this page records the instructor profile row the

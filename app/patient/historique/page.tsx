@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { Locale } from "@/i18n/locales";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { requirePatientAccess } from "@/lib/patient/requirePatientAccess";
 import { buildHistoryWeeks, type HistoryWorkout } from "@/lib/patient/historyWeeks";
 
 type WorkoutRow = {
@@ -28,6 +29,9 @@ function toWorkout(w: WorkoutRow): HistoryWorkout | null {
 export default async function HistoriquePage() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  // Barrières du patient (CGU, accès payé, consentement) refaites ici : le
+  // layout ne se rejoue pas à chaque navigation (audit du 2026-11-10, B4).
+  if (!(await requirePatientAccess())) return null;
 
   const [{ data: logRows }, { data: recRows }] = await Promise.all([
     supabase

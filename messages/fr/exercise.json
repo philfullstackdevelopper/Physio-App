@@ -121,6 +121,7 @@
     "feelingTitle": "Comment vous sentez-vous ?",
     "notePlaceholder": "Un mot sur votre ressenti…",
     "sendFailed": "L'envoi a échoué. Vérifiez votre connexion et réessayez.",
+    "detailsNotSaved": "Votre séance est enregistrée, mais votre ressenti (douleur) n'a pas pu être envoyé à votre kiné.",
     "sending": "Envoi…",
     "sendToPhysio": "Envoyer à mon kiné",
     "feelingSent": "Ressenti transmis à votre kiné",

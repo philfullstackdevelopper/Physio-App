@@ -8,6 +8,8 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import InvitationSignedInGate from "@/components/InvitationSignedInGate";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 import { getTranslations } from "next-intl/server";
+// Page technique : rien à référencer dans les moteurs de recherche.
+export const metadata = { robots: { index: false, follow: false } };
 
 // Same split layout as /login and /signup (left: Clerk widget, right: sticky
 // exercise showcase) — Philippe, 2026-09-09: a lone centered card here read as

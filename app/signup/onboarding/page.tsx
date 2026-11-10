@@ -3,6 +3,8 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { createClient } from "@/lib/supabase/server";
 import SignupOnboardingView from "./SignupOnboardingView";
 import { saveInstructorOnboarding } from "./actions";
+// Page technique : rien à référencer dans les moteurs de recherche.
+export const metadata = { robots: { index: false, follow: false } };
 
 // Cabinet/practice details, asked once right after Clerk signup (see
 // app/signup/finalize/page.tsx) and before the "en attente" screen — gives

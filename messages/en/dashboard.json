@@ -162,6 +162,10 @@
     "notRecommended": "This session isn’t recommended to this patient.",
     "keepOne": "A session must keep at least one exercise.",
     "cancelSubFailed": "The patient's plan couldn't be cancelled. Please try again in a few minutes.",
+    "sessionLeftEmpty": "Saving failed and this patient's session may have been left empty. Reopen “Adjust the session” and add the exercises back.",
+    "cannotInvite": "This address can't be invited. Check it, or ask the person for another e-mail address.",
+    "tooManyInvites": "Too many invitations sent in a short time. Try again in an hour.",
+    "connectCheckFailed": "We couldn't check your payment account right now. Please try again in a moment.",
     "isKine": "This address belongs to an EasyPhysio physio account: it can't be invited as a patient. Ask the person for another address."
   },
   "patientDetail": {

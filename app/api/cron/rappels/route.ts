@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { reminderTargets } from "@/lib/push/db";
@@ -9,9 +10,17 @@ import type { Locale } from "@/i18n/locales";
 // « votre séance du jour vous attend » aux patients qui ont un programme, pas
 // de séance faite depuis hier, et l'appli installée. Protégé par CRON_SECRET
 // (Authorization: Bearer …). Chaque rappel est écrit dans la langue du patient.
+/** Comparaison à durée constante : le temps de réponse ne révèle rien du secret. */
+function sameSecret(given: string | null, expected: string): boolean {
+  const a = Buffer.from(given ?? "");
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export async function POST(req: Request) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
+  // Secret absent = route fermée.
+  if (!secret || !sameSecret(req.headers.get("authorization"), `Bearer ${secret}`)) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
   const targets = await reminderTargets();

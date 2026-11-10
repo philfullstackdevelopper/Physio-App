@@ -31,6 +31,43 @@ export function reviewFailureReason(err: { code?: string | null; decline_code?: 
   return (err.decline_code && err.code === "card_declined" ? err.decline_code : err.code) ?? null;
 }
 
+/**
+ * Erreur pendant le prélèvement automatique : sait-on si la carte a été
+ * débitée ? (audit du 2026-11-10, M3)
+ * - Stripe a répondu avec un paiement (refus de carte, 3-D Secure…) ou une
+ *   erreur de requête : on SAIT que rien n'a été encaissé → false.
+ * - Coupure réseau, Stripe indisponible, trop de requêtes, même requête déjà
+ *   en cours : on NE SAIT PAS → true. Le mois reste « en cours » et sera relu
+ *   chez Stripe, au lieu d'être marqué « refusé » (ce qui afficherait un bouton
+ *   « Payer » au patient pour un mois peut-être déjà payé).
+ */
+export function chargeOutcomeUnknown(err: { type?: string | null; code?: string | null; payment_intent?: unknown } | null | undefined): boolean {
+  if (!err) return true;
+  if (err.payment_intent) return false;
+  if (err.type) return ["StripeConnectionError", "StripeAPIError", "StripeRateLimitError", "StripeIdempotencyError"].includes(err.type);
+  // Erreur qui ne vient pas de Stripe (réseau, délai dépassé…) : inconnue, sauf si elle porte un code de refus.
+  return !err.code;
+}
+
+/**
+ * Parmi les paiements Stripe trouvés pour UN mois d'honoraires, celui qui fait
+ * foi : un paiement réussi d'abord, sinon un paiement en cours de traitement,
+ * sinon aucun (les refus ne comptent pas : le patient peut encore payer).
+ */
+export function settledIntent<T extends { status: string }>(intents: readonly T[]): T | null {
+  return intents.find((i) => i.status === "succeeded") ?? intents.find((i) => i.status === "processing") ?? null;
+}
+
+/**
+ * Un mois enregistré (note numérotée) mais resté « en cours » sans AUCUN
+ * paiement connu : le prélèvement n'a jamais abouti (plantage ou coupure
+ * réseau juste après l'enregistrement). Le prochain enregistrement du
+ * programme, le même mois, doit retenter le prélèvement.
+ */
+export function reviewNeedsChargeRetry(review: { payment_status: string; stripe_payment_intent_id: string | null }): boolean {
+  return review.payment_status === "pending" && !review.stripe_payment_intent_id;
+}
+
 /** Le patient peut-il régler lui-même ce mois (bouton « Payer ») ? */
 export function reviewPayableByPatient(status: string): boolean {
   return status === "action_required" || status === "failed";

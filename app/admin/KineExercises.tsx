@@ -11,6 +11,7 @@
 // est la raison pour laquelle wger a supprimé la sienne.
 
 import { useState } from "react";
+import SubmitButton from "@/components/SubmitButton";
 import { markExerciseSeenAction, reviewExerciseAction } from "./exerciseActions";
 import { EXERCISE_EQUIPMENT_LABELS, isExerciseEquipmentId } from "@/lib/exercise/equipment";
 
@@ -167,15 +168,15 @@ export default function KineExercises({ rows }: { rows: AdminKineExercise[] }) {
                     className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none"
                   />
                   <div className="flex flex-wrap gap-2">
-                    <button name="decision" value="publish" className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+                    <SubmitButton name="decision" value="publish" pendingText="Publier" className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
                       Publier
-                    </button>
-                    <button name="decision" value="changes" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">
+                    </SubmitButton>
+                    <SubmitButton name="decision" value="changes" pendingText="Demander une modification" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">
                       Demander une modification
-                    </button>
-                    <button name="decision" value="decline" className="rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-800">
+                    </SubmitButton>
+                    <SubmitButton name="decision" value="decline" pendingText="Garder privé" className="rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-800">
                       Garder privé
-                    </button>
+                    </SubmitButton>
                   </div>
                 </form>
               )}
@@ -188,7 +189,7 @@ export default function KineExercises({ rows }: { rows: AdminKineExercise[] }) {
                     Dessin à ajouter dans le code (public/exercise-illustrations, lib/exercise/illustrationMap.ts) sous le nom exact
                     « {open.name} ».
                   </p>
-                  <button className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Dessin fait</button>
+                  <SubmitButton pendingText="Dessin fait" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Dessin fait</SubmitButton>
                 </form>
               )}
             </div>

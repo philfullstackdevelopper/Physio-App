@@ -162,6 +162,10 @@
     "notRecommended": "Cette séance n'est pas recommandée à ce patient.",
     "keepOne": "Une séance doit garder au moins un exercice.",
     "cancelSubFailed": "La formule du patient n'a pas pu être résiliée. Réessayez dans quelques minutes.",
+    "sessionLeftEmpty": "L'enregistrement a échoué et la séance de ce patient est peut-être restée vide. Rouvrez « Ajuster la séance » et remettez ses exercices.",
+    "cannotInvite": "Impossible d'inviter cette adresse. Vérifiez-la, ou demandez à la personne une autre adresse e-mail.",
+    "tooManyInvites": "Trop d'invitations envoyées en peu de temps. Réessayez dans une heure.",
+    "connectCheckFailed": "Impossible de vérifier votre compte de paiement pour le moment. Réessayez dans un instant.",
     "isKine": "Cette adresse est celle d'un compte kiné EasyPhysio : elle ne peut pas être invitée comme patient. Demandez à la personne une autre adresse."
   },
   "patientDetail": {

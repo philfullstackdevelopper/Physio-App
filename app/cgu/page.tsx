@@ -6,6 +6,12 @@ import DotCanvas from "@/components/DotCanvas";
 import { HIGHEST_MONTHLY_TOTAL_CENTS, HIGHEST_PLATFORM_CENTS, LOWEST_MONTHLY_TOTAL_CENTS, LOWEST_PLATFORM_CENTS, KINE_FOLLOW_UP_CENTS, PLATFORM_OFFERS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
 import { intlTag } from "@/lib/i18n/translator";
 import type { Locale } from "@/i18n/locales";
+// Titre et description propres à la page (audit du 2026-11-10 : toutes les
+// pages publiques portaient le titre de l'accueil).
+export async function generateMetadata() {
+  const t = await getTranslations("legal.meta");
+  return { title: t("cguTitle"), description: t("cguDescription") };
+}
 
 // Renders legal/cgu.md for the app. Keep the two in sync by hand — this is
 // still a DRAFT pending legal review (see the banner below).

@@ -11,15 +11,9 @@
 
 import { INTL_TAGS, type Locale } from "../../i18n/locales.ts";
 
-/** Tarif conseillé pour le programme mensuel — le kiné fixe librement le sien. */
-export const RECOMMENDED_REVIEW_PRICE_CENTS = 2000;
-
-/** 0 € = suivi gratuit : le patient entre dans l'appli sans payer (Philippe, 2026-11-01). */
-export const FREE_REVIEW_PRICE_CENTS = 0;
-
-/** Bornes d'un tarif payant (évite les fautes de frappe) ; 0 € reste permis. */
-export const REVIEW_PRICE_MIN_CENTS = 100;
-export const REVIEW_PRICE_MAX_CENTS = 50000;
+// (Le tarif libre du kiné — modèle du 2026-11-01 — a été retiré de ce fichier
+// le 2026-11-10 : plus rien ne le lisait. Le montant du kiné est fixe,
+// KINE_FOLLOW_UP_CENTS dans lib/billing/patientPlans.ts.)
 
 // Frais Stripe estimés pour une carte européenne (1,5 % + 0,25 € par paiement),
 // présentés comme une estimation partout où ils sont affichés.
@@ -41,34 +35,13 @@ export const eurosFR = (cents: number, decimals = 2, locale: Locale = "fr") =>
 // Règles de calcul (pures, testées dans reviewModel.test.ts)
 // -----------------------------------------------------------------------------
 
-/** Le tarif choisi par le kiné, ou le tarif conseillé s'il n'a rien fixé. */
-export function effectiveReviewPrice(kinePriceCents: number | null | undefined): number {
-  return isValidReviewPrice(kinePriceCents) ? (kinePriceCents as number) : RECOMMENDED_REVIEW_PRICE_CENTS;
-}
-
-export function isValidReviewPrice(cents: unknown): boolean {
-  return (
-    typeof cents === "number" &&
-    Number.isInteger(cents) &&
-    (cents === FREE_REVIEW_PRICE_CENTS || (cents >= REVIEW_PRICE_MIN_CENTS && cents <= REVIEW_PRICE_MAX_CENTS))
-  );
-}
-
 /**
- * Accès patient selon le tarif du kiné (Philippe, 2026-11-01) : à 0 €, le
- * patient entre directement dans l'appli ; au-dessus, il accepte le suivi
- * (tarif par écrit + carte enregistrée) avant d'y accéder. Pas d'écran de
- * paiement tant que le kiné n'a pas activé ses paiements Stripe : le patient
- * ne pourrait pas payer et resterait bloqué.
+ * Nom du patient à afficher sur une note d'honoraires (audit du 2026-11-10) :
+ * son nom actuel tant que sa fiche existe ; s'il a été supprimé, le nom
+ * recopié sur la note au moment où elle a été émise ; sinon un libellé neutre.
  */
-export function patientMustAcceptFollowUp(input: {
-  kinePriceCents: number | null | undefined;
-  kineCanCharge: boolean;
-  followUpStatus: string | null | undefined;
-}): boolean {
-  if (!input.kineCanCharge) return false;
-  if (effectiveReviewPrice(input.kinePriceCents) === FREE_REVIEW_PRICE_CENTS) return false;
-  return input.followUpStatus !== "active";
+export function feeNotePatientName(p: { currentName: string | null | undefined; nameOnNote: string | null | undefined; fallback: string }): string {
+  return p.currentName?.trim() || p.nameOnNote?.trim() || p.fallback;
 }
 
 /** Le mois (heure de Paris) sous forme « AAAA-MM-01 » — la clé d'un bilan. */

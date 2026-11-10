@@ -63,7 +63,9 @@ export async function verifyRpps(rppsNumber: string, declaredName: string): Prom
   try {
     const res = await fetch(
       `https://gateway.api.esante.gouv.fr/fhir/v2/Practitioner?identifier=${encodeURIComponent(rppsNumber)}`,
-      { headers: { "ESANTE-API-KEY": apiKey } },
+      // 5 secondes au plus : annuaire muet = « non vérifié » (catch ci-dessous),
+      // l'inscription continue.
+      { headers: { "ESANTE-API-KEY": apiKey }, signal: AbortSignal.timeout(5000) },
     );
     if (!res.ok) return { status: "unverified" };
 

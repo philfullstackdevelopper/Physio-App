@@ -113,16 +113,38 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
   const [toast, setToast] = useState<string | null>(() => t("toastIntro"));
   // Guide ouvert d'office sur ordinateur (≥ 640 px), une fois par espace et
   // par visite ; replié sur téléphone, où il cacherait l'écran.
-  const [menuOpen, setMenuOpen] = useState(false);
+  // « Ouvert d'office ? » est lu une seule fois par espace, dans le navigateur
+  // (jamais côté serveur : false), puis retenu — sans ça, le fait de noter
+  // « guide vu » juste en dessous le refermerait aussitôt. Ensuite, c'est le
+  // choix du visiteur (menuChoice) qui l'emporte.
+  const autoOpenRead = useRef<{ side: Side; open: boolean } | null>(null);
+  const autoOpen = useSyncExternalStore(
+    noSubscribe,
+    () => {
+      if (autoOpenRead.current?.side !== side) {
+        let open = false;
+        try {
+          open = window.matchMedia("(min-width: 640px)").matches && !sessionStorage.getItem(`demo-guide-vu-${side}`);
+        } catch {
+          /* stockage indisponible : guide replié */
+        }
+        autoOpenRead.current = { side, open };
+      }
+      return autoOpenRead.current.open;
+    },
+    () => false,
+  );
+  // Après la lecture ci-dessus (les effets s'exécutent dans l'ordre d'écriture).
   useEffect(() => {
-    const key = `demo-guide-vu-${side}`;
     try {
-      if (window.matchMedia("(min-width: 640px)").matches && !sessionStorage.getItem(key)) setMenuOpen(true);
-      sessionStorage.setItem(key, "1");
+      sessionStorage.setItem(`demo-guide-vu-${side}`, "1");
     } catch {
-      /* stockage indisponible : guide replié */
+      /* stockage indisponible */
     }
   }, [side]);
+  const [menuChoice, setMenuChoice] = useState<boolean | null>(null);
+  const menuOpen = menuChoice ?? autoOpen;
+  const setMenuOpen = (open: boolean) => setMenuChoice(open);
   // Démo affichée DANS le téléphone de l'accueil (iframe, components/
   // KinePhonePreview.tsx, Philippe 2026-10-26 : « que la démo se fasse DANS
   // l'appli ») : pas de pastille Guide (trop petit), et aucun lien ne sort
@@ -269,7 +291,7 @@ export default function DemoShell({ side, children }: { side: Side; children: Re
         )}
         <button
           type="button"
-          onClick={() => setMenuOpen((o) => !o)}
+          onClick={() => setMenuOpen(!menuOpen)}
           aria-expanded={menuOpen}
           className="ml-auto flex items-center gap-1.5 rounded-full bg-ink px-3.5 py-2 text-xs font-semibold text-white shadow-lg"
         >

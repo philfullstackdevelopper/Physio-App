@@ -5,6 +5,11 @@ export const alt = `${siteConfig.name}, ${siteConfig.tagline}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+// Image d'aperçu des liens partagés (WhatsApp, LinkedIn…). Volontairement en
+// français seulement (audit du 2026-11-10) : une seule adresse d'image pour
+// tout le monde, fabriquée une fois ; les robots des réseaux sociaux qui la
+// lisent n'ont pas de cookie de langue, et la langue de référence du site est
+// le français. À revoir le jour où les langues auront chacune leur adresse.
 export default function OpengraphImage() {
   return new ImageResponse(
     (

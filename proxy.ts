@@ -21,6 +21,16 @@ import { LOCALE_COOKIE, LOCALE_GUESSED_COOKIE, localeFromAcceptLanguage } from "
 const MAIN_HOST = "easyphysio.fr";
 const ALIAS_HOSTS = new Set(["www.easyphysio.fr", "easy-physio.fr", "www.easy-physio.fr"]);
 
+// L'adresse technique de Scalingo (easyphysio.osc-fr1.scalingo.io) doit
+// continuer à répondre sans redirection (Stripe y envoie ses notifications),
+// mais elle montre le même site que easyphysio.fr : on demande aux moteurs de
+// recherche de ne pas la référencer, pour qu'ils ne voient pas deux sites
+// identiques (audit du 2026-11-10).
+function withHostRules(res: NextResponse, host: string): NextResponse {
+  if (host.endsWith(".scalingo.io")) res.headers.set("X-Robots-Tag", "noindex");
+  return res;
+}
+
 export default clerkMiddleware(async (auth, req) => {
   const host = (req.headers.get("host") ?? "").split(":")[0].toLowerCase();
   if (ALIAS_HOSTS.has(host)) {
@@ -32,7 +42,7 @@ export default clerkMiddleware(async (auth, req) => {
   // Seulement les pages (pas les vidéos, images ou appels de données).
   const isPage = (req.headers.get("accept") ?? "").includes("text/html");
   if (isPage && nativePlatformFromUserAgent(req.headers.get("user-agent")) && !isAppPath(req.nextUrl.pathname)) {
-    return NextResponse.redirect(new URL("/apres-connexion", req.url));
+    return withHostRules(NextResponse.redirect(new URL("/apres-connexion", req.url)), host);
   }
 
   // Already signed in and asking for the login page (any « Se connecter »
@@ -43,7 +53,7 @@ export default clerkMiddleware(async (auth, req) => {
   // must keep working mid-sign-in.
   if (req.nextUrl.pathname === "/login") {
     const { userId } = await auth();
-    if (userId) return NextResponse.redirect(new URL("/dashboard", req.url));
+    if (userId) return withHostRules(NextResponse.redirect(new URL("/dashboard", req.url)), host);
   }
 
 
@@ -68,9 +78,9 @@ export default clerkMiddleware(async (auth, req) => {
     const res = NextResponse.next({ request: { headers: requestHeaders } });
     res.cookies.set(LOCALE_COOKIE, guessed, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
     res.cookies.set(LOCALE_GUESSED_COOKIE, "1", { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
-    return res;
+    return withHostRules(res, host);
   }
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  return withHostRules(NextResponse.next({ request: { headers: requestHeaders } }), host);
 });
 
 export const config = {

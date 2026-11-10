@@ -56,7 +56,7 @@ Le patient souscrit deux services distincts, vendus par deux vendeurs
 distincts, payés en deux paiements et facturés sur deux documents :
 
 - **Accès à la plateforme EasyPhysio** : vendu et facturé par EasyPhysio
-  (TVA 20 % incluse), prélevé chaque mois d'abonnement, que le
+  (TVA non applicable, art. 293 B du CGI — micro-entreprise), prélevé chaque mois d'abonnement, que le
   kinésithérapeute intervienne ou non. Application, vidéos, messagerie,
   hébergement des données de santé. Trois offres : sans engagement
   6,99 € / mois ; engagement 3 mois 3,99 € / mois ; engagement 6 mois

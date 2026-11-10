@@ -1,5 +1,6 @@
 import DotCanvas from "@/components/DotCanvas";
 import { useTranslations } from "next-intl";
+import SubmitButton from "@/components/SubmitButton";
 
 const fieldClass =
   "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 shadow-sm short:mt-1 short:py-2 transition-colors placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
@@ -112,12 +113,13 @@ export default function SignupOnboardingView({
             </label>
             </div>
 
-            <button
-              type="submit"
+            {/* Désactivé pendant l'envoi : pas de double clic (audit du 2026-11-10). */}
+            <SubmitButton
+              pendingText={tShared("continue")}
               className="mt-2 rounded-xl bg-blue-600 py-2.5 font-medium text-white transition hover:bg-blue-700 short:mt-1"
             >
               {tShared("continue")}
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </div>

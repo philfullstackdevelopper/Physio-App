@@ -54,7 +54,8 @@
       "plan_6m": "Engagement 6 mois"
     },
     "confirmWord": "SUPPRIMER",
-    "cancelFailed": "Votre abonnement n'a pas pu être résilié pour le moment. Votre compte est intact — réessayez dans quelques minutes."
+    "cancelFailed": "Votre abonnement n'a pas pu être résilié pour le moment. Votre compte est intact — réessayez dans quelques minutes.",
+    "deleteKineAccount": "Ce compte est aussi un compte kinésithérapeute : il ne peut pas être supprimé d'ici. Demandez la suppression depuis votre espace kiné (Mes informations)."
   },
   "informations": {
     "back": "Retour aux paramètres",

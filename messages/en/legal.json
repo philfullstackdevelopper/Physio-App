@@ -1,4 +1,12 @@
 {
+  "meta": {
+    "cguTitle": "Terms of use",
+    "cguDescription": "The EasyPhysio terms of use, for physiotherapists and their patients.",
+    "privacyTitle": "Privacy policy",
+    "privacyDescription": "How EasyPhysio processes and protects your personal data and your health data.",
+    "legalNoticeTitle": "Legal notice",
+    "legalNoticeDescription": "Publisher, hosting provider and contact details of the EasyPhysio website."
+  },
   "cgu": {
     "_review": "Draft translation — needs review by a lawyer before launch",
     "draft": "<b>Draft.</b> This document is still being written and has not yet been approved by a lawyer.",

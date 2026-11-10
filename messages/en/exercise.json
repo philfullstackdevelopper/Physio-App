@@ -124,6 +124,7 @@
     "feelingTitle": "How are you feeling?",
     "notePlaceholder": "A word about how you feel…",
     "sendFailed": "Sending failed. Check your connection and try again.",
+    "detailsNotSaved": "Your session is saved, but your feedback (pain) couldn't be sent to your physio.",
     "sending": "Sending…",
     "sendToPhysio": "Send to my physio",
     "feelingSent": "Feedback sent to your physio",

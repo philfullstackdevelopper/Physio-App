@@ -22,8 +22,24 @@ export async function deleteMyAccount(formData: FormData) {
   // action supprimerait son compte praticien — et, par cascade, toutes les
   // données de ses patients. La RLS ne renvoie la ligne patients qu'à son
   // propre titulaire.
-  const { data: ownPatientRow } = await supabase.from("patients").select("id").eq("id", user.id).maybeSingle();
-  if (!ownPatientRow) redirect("/dashboard");
+  //
+  // Audit du 2026-11-10 (A1, C5) : une lecture en échec n'est PAS « pas de
+  // fiche » — on s'arrête sans rien supprimer. Et une personne qui a AUSSI une
+  // fiche kiné (double rôle) est refusée : supprimer son identité emporterait,
+  // par cascade, son compte praticien et tous ses patients.
+  const [ownPatientRes, ownKineRes] = await Promise.all([
+    supabase.from("patients").select("id").eq("id", user.id).maybeSingle(),
+    supabase.from("instructors").select("id").eq("id", user.id).maybeSingle(),
+  ]);
+  if (ownPatientRes.error || ownKineRes.error) {
+    console.error("deleteMyAccount: lecture du compte impossible", ownPatientRes.error ?? ownKineRes.error);
+    redirect(`/patient/compte?error=${encodeURIComponent(t("deleteFailed"))}`);
+  }
+  if (ownKineRes.data) {
+    if (!ownPatientRes.data) redirect("/dashboard");
+    redirect(`/patient/compte?error=${encodeURIComponent(t("deleteKineAccount"))}`);
+  }
+  if (!ownPatientRes.data) redirect("/dashboard");
 
   const confirmation = String(formData.get("confirmation") ?? "").trim().toUpperCase();
   // Le mot à taper dépend de la langue (« SUPPRIMER » / « DELETE ») : les deux sont acceptés.
@@ -36,11 +52,17 @@ export async function deleteMyAccount(formData: FormData) {
 
   // 0) Formule en cours (2026-11-02) : arrêtée tout de suite chez Stripe,
   // sinon le patient continuerait d'être prélevé après la suppression.
-  const { data: sub } = await supabase
+  // Lecture en échec : on ABANDONNE (audit du 2026-11-10, A2) — sinon l'arrêt
+  // chez Stripe serait sauté, les données effacées, et le prélèvement continuerait.
+  const { data: sub, error: subError } = await supabase
     .from("subscriptions")
     .select("stripe_subscription_id, stripe_account_id, status")
     .eq("user_id", user.id)
     .maybeSingle();
+  if (subError) {
+    console.error("deleteMyAccount: lecture de l'abonnement impossible", subError);
+    redirect(`/patient/compte?error=${encodeURIComponent(t("cancelFailed"))}`);
+  }
   // Abonnement d'accès : compte EasyPhysio (stripe_account_id vide) ; ancienne formule : compte du kiné.
   if (sub?.stripe_subscription_id && sub.status !== "canceled") {
     try {
@@ -59,7 +81,7 @@ export async function deleteMyAccount(formData: FormData) {
   }
   if (failure) redirect(`/patient/compte?error=${encodeURIComponent(failure)}`);
 
-  // 1) Les données : la ligne d'identité interne  // 2) Les données : la ligne d'identité interne (cascade sur toutes les
+  // 1) Les données : la ligne d'identité interne (cascade sur toutes les
   // tables du patient). Connexion directe, pas le client supabase-js. Si ça
   // échoue, l'identité Clerk existe encore : le patient peut se reconnecter
   // et réessayer.
@@ -93,14 +115,21 @@ export async function deleteOrphanIdentity() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
-  const [{ data: patientRow }, { data: kineRow }] = await Promise.all([
+  const t = await getTranslations("patient.compte");
+  const [{ data: patientRow, error: patientError }, { data: kineRow, error: kineError }] = await Promise.all([
     supabase.from("patients").select("id").eq("id", user.id).maybeSingle(),
     supabase.from("instructors").select("id").eq("id", user.id).maybeSingle(),
   ]);
+  // Lecture en échec (PostgREST indisponible…) : on ne sait PAS si une fiche
+  // existe — on ne supprime RIEN (audit du 2026-11-10, A1 : sinon une simple
+  // panne de lecture pouvait finir en dossier patient effacé par cascade).
+  if (patientError || kineError) {
+    console.error("deleteOrphanIdentity: lecture du compte impossible", patientError ?? kineError);
+    redirect(`/patient?error=${encodeURIComponent(t("orphanDeleteFailed"))}`);
+  }
   if (patientRow) redirect("/patient");
   if (kineRow) redirect("/dashboard");
 
-  const t = await getTranslations("patient.compte");
   let failure: string | null = null;
   try {
     await deleteAppUserById(user.id);

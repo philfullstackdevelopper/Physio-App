@@ -7,6 +7,7 @@ import { ADJUST_CURRENT_WEEK_EVENT } from "@/lib/dashboard/adjustEvent";
 import PatientMessagesModal, { type MessagesModalPatient } from "@/components/PatientMessagesModal";
 import type { ThreadMessage } from "@/components/MessageThread";
 import { isPhoneFormat } from "@/lib/phoneFormat";
+import SubmitButton from "@/components/SubmitButton";
 import { useTranslations } from "next-intl";
 
 const MENU_WIDTH = 320;
@@ -390,9 +391,10 @@ export default function PatientActionsMenu({
                 </button>
                 <form action={deletePatient}>
                   <input type="hidden" name="patient_id" value={patientId} />
-                  <button type="submit" className="rounded-full bg-danger px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+                  {/* Désactivé pendant l'envoi : pas de double clic (audit du 2026-11-10). */}
+                  <SubmitButton pendingText={t("deleteForever")} className="rounded-full bg-danger px-4 py-2 text-sm font-medium text-white hover:opacity-90">
                     {t("deleteForever")}
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             </div>

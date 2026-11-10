@@ -26,7 +26,7 @@ export default async function MessagesPage({
   const { error } = await searchParams;
   const supabase = await createClient();
   const user = await requireUser(supabase);
-  await requirePatientAccess(supabase, user.id);
+  if (!(await requirePatientAccess())) return null;
 
   const { data: patient } = await supabase.from("patients").select("instructors ( full_name, status )").eq("id", user.id).maybeSingle();
   // Jointure plusieurs-vers-un (patients → instructors) : PostgREST renvoie un

@@ -47,7 +47,9 @@ function addressText(a: FhirAddress | undefined): string | null {
 }
 
 async function getBundle(url: string, apiKey: string): Promise<FhirBundle | null> {
-  const res = await fetch(url, { headers: { "ESANTE-API-KEY": apiKey }, cache: "no-store" });
+  // 5 secondes au plus : si l'Annuaire Santé ne répond pas, l'inscription ne
+  // reste pas bloquée (l'erreur est rattrapée par lookupRpps → « introuvable »).
+  const res = await fetch(url, { headers: { "ESANTE-API-KEY": apiKey }, cache: "no-store", signal: AbortSignal.timeout(5000) });
   if (!res.ok) return null;
   return (await res.json()) as FhirBundle;
 }

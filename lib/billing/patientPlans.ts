@@ -200,9 +200,97 @@ export function subscriptionNeedsRefresh(sub: SubscriptionRow | null, now: Date 
   return (sub.status === "active" || sub.status === "trialing") && new Date(sub.current_period_end) <= now;
 }
 
-/** Le kiné peut-il prélever ses 6 € ce mois-ci ? Seulement hors essai, abonnement d'accès actif. */
+/**
+ * Le kiné peut-il prélever ses 6 € ce mois-ci ? Seulement hors essai, avec un
+ * abonnement d'accès actif ET non résilié : « résilier arrête les deux
+ * paiements » (audit du 2026-11-10, M6). Un abonnement résilié qui court
+ * jusqu'à la fin du mois ou de l'engagement (cancel_at_period_end, qui couvre
+ * aussi cancel_at) donne encore accès à l'appli, mais plus aucun prélèvement
+ * du kiné.
+ */
 export function kineFollowUpChargeable(sub: SubscriptionRow | null, now: Date = new Date()): boolean {
-  return isPlatformSubscription(sub) && sub!.status === "active" && subscriptionGivesAccess(sub, now);
+  return isPlatformSubscription(sub) && sub!.status === "active" && !sub!.cancel_at_period_end && subscriptionGivesAccess(sub, now);
+}
+
+// ---------------------------------------------------------------------------
+// Règles de l'audit du 2026-11-10 (pures, testées dans patientPlans.test.ts)
+// ---------------------------------------------------------------------------
+
+/**
+ * Version du texte que le patient accepte en cochant la case du paywall (CGU +
+ * les deux montants). Enregistrée avec son accord (migration 0089). À changer
+ * à chaque modification des CGU ou du texte de la case.
+ */
+export const BILLING_TERMS_VERSION = "2026-11-08";
+
+/**
+ * Essai gratuit : seulement à la toute première souscription — pas de ligne
+ * d'abonnement, et l'e-mail n'a jamais eu d'essai (même après suppression puis
+ * recréation du compte : empreinte gardée côté serveur, migration 0089).
+ */
+export function trialGranted(p: { hasSubscriptionRow: boolean; trialAlreadyUsed: boolean }): boolean {
+  return !p.hasSubscriptionRow && !p.trialAlreadyUsed;
+}
+
+/**
+ * Comment résilier chez Stripe.
+ * - Pendant l'essai gratuit : fin à la fin de l'essai, AUCUN prélèvement, même
+ *   pour une offre avec engagement (l'engagement ne court qu'à partir du
+ *   premier mois payé).
+ * - Pendant un engagement (après l'essai) : fin à la fin de l'engagement.
+ * - Sinon : fin de la période en cours.
+ * NB : le droit de rétractation de 14 jours annoncé dans les CGU n'est PAS
+ * codé ici (ni la sortie d'engagement par suppression du compte) : règle à
+ * décider avec un juriste avant d'y toucher.
+ */
+export function cancellationMode(p: { status: string; commitUntil: string | null; now?: Date }): { kind: "period_end" } | { kind: "at"; at: string } {
+  const now = p.now ?? new Date();
+  if (p.status === "trialing") return { kind: "period_end" };
+  if (p.commitUntil && new Date(p.commitUntil) > now) return { kind: "at", at: p.commitUntil };
+  return { kind: "period_end" };
+}
+
+/**
+ * Dernier instant où une formule de l'ancien modèle (sur le compte du kiné) a
+ * pu être vendue : fin du 4 novembre 2026, heure de Paris. Une formule créée
+ * après ne vient pas d'EasyPhysio (ou rejoue une ancienne signature) : refusée.
+ */
+export const LEGACY_MODEL_LAST_SALE = "2026-11-04T23:00:00Z";
+
+export function legacySubscriptionAccepted(createdUnix: number | null | undefined): boolean {
+  if (!createdUnix) return false;
+  return createdUnix * 1000 <= new Date(LEGACY_MODEL_LAST_SALE).getTime();
+}
+
+/** États d'un abonnement Stripe encore « ouvert » (il prélève ou peut encore prélever). */
+export const OPEN_SUBSCRIPTION_STATUSES: readonly string[] = ["active", "trialing", "past_due", "unpaid", "incomplete"];
+
+/**
+ * Abonnements d'accès en double (audit M5) : parmi les abonnements du même
+ * patient chez Stripe, on GARDE le plus récent de ceux qui donnent accès
+ * (actif ou en essai) et on renvoie les autres, à arrêter — sinon l'ancien
+ * continuerait d'être prélevé sans que le site le voie. La règle ne dépend
+ * que de Stripe : deux messages traités en même temps choisissent le même
+ * abonnement à garder. Sans aucun abonnement actif ou en essai, rien n'est
+ * arrêté ici (un paiement refusé est traité à la nouvelle souscription) ; un
+ * abonnement « incomplete » (premier paiement en cours) n'est jamais arrêté ici.
+ */
+export function duplicateSubscriptionIds(subs: readonly { id: string; status: string; created: number }[]): string[] {
+  const keep = subs
+    .filter((s) => s.status === "active" || s.status === "trialing")
+    .sort((a, b) => b.created - a.created || (a.id < b.id ? 1 : -1))[0];
+  if (!keep) return [];
+  return subs.filter((s) => s.id !== keep.id && ["active", "trialing", "past_due", "unpaid"].includes(s.status)).map((s) => s.id);
+}
+
+/**
+ * Accord du patient pour les honoraires de son kiné (migration 0089,
+ * internal.kine_fees_acceptance) : 'other' = son accord nomme un AUTRE kiné →
+ * ni copie de carte ni prélèvement tant qu'il n'a pas redonné son accord.
+ * 'none' = abonné avant l'enregistrement des accords : toléré, comme avant.
+ */
+export function kineFeesAccepted(state: "yes" | "other" | "none"): boolean {
+  return state !== "other";
 }
 
 /**

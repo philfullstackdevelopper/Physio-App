@@ -1,14 +1,20 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  BILLING_TERMS_VERSION,
   EARLY_ACCESS_PLAN_KEY,
   KINE_FOLLOW_UP_CENTS,
   KINE_NET_CENTS,
   PLATFORM_OFFERS,
   TRIAL_DAYS,
+  cancellationMode,
   commitmentEnd,
   commitmentEndOfSubscription,
+  duplicateSubscriptionIds,
+  kineFeesAccepted,
   kineFollowUpChargeable,
+  legacySubscriptionAccepted,
+  trialGranted,
   monthlyTotalCents,
   offersSummaryFR,
   patientMustSubscribe,
@@ -76,6 +82,62 @@ test("les 6 € du kiné : jamais pendant l'essai, jamais sans abonnement d'acc�
   assert.equal(kineFollowUpChargeable(platform("plan_3m", "past_due"), now), false);
   assert.equal(kineFollowUpChargeable({ ...platform("plan_1m", "active"), stripe_account_id: "acct_kine" }, now), false);
   assert.equal(kineFollowUpChargeable(null, now), false);
+});
+
+// ---- Audit du 2026-11-10 ---------------------------------------------------
+
+test("M6 — résilier arrête les deux paiements : plus de 6 € dès que l'accès est résilié, même s'il court encore", () => {
+  // Résilié pour la fin du mois ou de l'engagement : l'accès continue, le kiné ne prélève plus.
+  const cancelled = platform("plan_6m", "active", later, true);
+  assert.equal(subscriptionGivesAccess(cancelled, now), true);
+  assert.equal(kineFollowUpChargeable(cancelled, now), false);
+  // Résiliation annulée : le kiné peut de nouveau prélever.
+  assert.equal(kineFollowUpChargeable(platform("plan_6m", "active", later, false), now), true);
+});
+
+test("M1 — essai gratuit : seulement sans abonnement connu ET si l'e-mail n'a jamais eu d'essai", () => {
+  assert.equal(trialGranted({ hasSubscriptionRow: false, trialAlreadyUsed: false }), true);
+  // Compte supprimé puis recréé avec le même e-mail : pas de nouvel essai.
+  assert.equal(trialGranted({ hasSubscriptionRow: false, trialAlreadyUsed: true }), false);
+  assert.equal(trialGranted({ hasSubscriptionRow: true, trialAlreadyUsed: false }), false);
+});
+
+test("M2 — résilier pendant l'essai : fin à la fin de l'essai, jamais « essai + engagement »", () => {
+  const commitUntil = "2027-06-20T12:00:00Z";
+  assert.deepEqual(cancellationMode({ status: "trialing", commitUntil, now }), { kind: "period_end" });
+  // Après l'essai, pendant l'engagement : fin à la fin de l'engagement.
+  assert.deepEqual(cancellationMode({ status: "active", commitUntil, now }), { kind: "at", at: commitUntil });
+  // Engagement terminé, ou offre sans engagement : fin de la période en cours.
+  assert.deepEqual(cancellationMode({ status: "active", commitUntil: past, now }), { kind: "period_end" });
+  assert.deepEqual(cancellationMode({ status: "active", commitUntil: null, now }), { kind: "period_end" });
+});
+
+test("ancien modèle : une formule sur le compte d'un kiné créée après le 4 novembre 2026 est refusée", () => {
+  assert.equal(legacySubscriptionAccepted(Date.UTC(2026, 10, 3, 10) / 1000), true);
+  assert.equal(legacySubscriptionAccepted(Date.UTC(2026, 10, 4, 22, 59) / 1000), true); // 4 nov. 23 h 59 à Paris
+  assert.equal(legacySubscriptionAccepted(Date.UTC(2026, 10, 5, 8) / 1000), false);
+  assert.equal(legacySubscriptionAccepted(null), false);
+});
+
+test("M5 — abonnements en double : on garde le plus récent qui donne accès, on arrête les autres", () => {
+  const a = { id: "sub_a", status: "trialing", created: 100 };
+  const b = { id: "sub_b", status: "trialing", created: 200 };
+  assert.deepEqual(duplicateSubscriptionIds([a, b]), ["sub_a"]);
+  assert.deepEqual(duplicateSubscriptionIds([b, a]), ["sub_a"]); // même choix quel que soit l'ordre
+  // Un ancien abonnement en échec de paiement à côté d'un actif : arrêté.
+  assert.deepEqual(duplicateSubscriptionIds([{ id: "sub_old", status: "past_due", created: 50 }, b]), ["sub_old"]);
+  // Un seul abonnement, ou aucun qui donne accès : rien à arrêter ici.
+  assert.deepEqual(duplicateSubscriptionIds([b]), []);
+  assert.deepEqual(duplicateSubscriptionIds([{ id: "sub_old", status: "past_due", created: 50 }]), []);
+  // Terminé ou premier paiement en cours : jamais arrêté ici.
+  assert.deepEqual(duplicateSubscriptionIds([b, { id: "sub_x", status: "canceled", created: 10 }, { id: "sub_y", status: "incomplete", created: 300 }]), []);
+});
+
+test("M4 — accord du patient : pas de prélèvement si l'accord nomme un autre kiné", () => {
+  assert.equal(kineFeesAccepted("yes"), true);
+  assert.equal(kineFeesAccepted("other"), false);
+  assert.equal(kineFeesAccepted("none"), true); // abonné avant l'enregistrement des accords
+  assert.match(BILLING_TERMS_VERSION, /^\d{4}-\d{2}-\d{2}$/);
 });
 
 test("paywall : obligatoire sauf kiné suspendu, accès offert (test) ou abonnement valide", () => {

@@ -18,9 +18,17 @@
 import "server-only";
 import type Stripe from "stripe";
 import { getStripe } from "./stripe";
-import { followUpForCharge, upsertFollowUp, upsertSubscription } from "@/lib/db/admin";
+import { followUpForCharge, kineFeesAcceptance, markTrialUsed, upsertFollowUp, upsertSubscription } from "@/lib/db/admin";
 import { hasValidSubscriptionSignature } from "./subscriptionSignature";
-import { EARLY_ACCESS_PLAN_KEY, KINE_FOLLOW_UP_CENTS, isPlatformOfferKey } from "./patientPlans";
+import {
+  EARLY_ACCESS_PLAN_KEY,
+  KINE_FOLLOW_UP_CENTS,
+  OPEN_SUBSCRIPTION_STATUSES,
+  duplicateSubscriptionIds,
+  isPlatformOfferKey,
+  kineFeesAccepted,
+  legacySubscriptionAccepted,
+} from "./patientPlans";
 import { sign, verify } from "./signing";
 
 /** Clé de signature des abonnements qui vivent sur le compte d'EasyPhysio. */
@@ -50,6 +58,12 @@ export async function syncPatientSubscription(sub: Stripe.Subscription, accountI
   // Compte EasyPhysio : une des trois offres d'accès (ou l'accès à 3,99 € du
   // 2026-11-04). Compte du kiné : formule de l'ancien modèle.
   if (accountId === null ? !isPlatformOfferKey(plan) && plan !== EARLY_ACCESS_PLAN_KEY : !isPlatformOfferKey(plan)) return null;
+  // Ancien modèle (compte du kiné) : plus vendu depuis le 2026-11-04. Une
+  // formule créée après cette date ne donne aucun accès (audit du 2026-11-10).
+  if (accountId !== null && !legacySubscriptionAccepted(sub.created)) {
+    console.warn(`[abonnement] ${sub.id} ignoré : formule de l'ancien modèle créée après son arrêt.`);
+    return null;
+  }
 
   // Résiliation en fin de mois (cancel_at_period_end) ou à la fin d'un engagement (cancel_at).
   let cancelAtPeriodEnd = !!sub.cancel_at_period_end || !!sub.cancel_at;
@@ -79,7 +93,58 @@ export async function syncPatientSubscription(sub: Stripe.Subscription, accountI
     stripeCreated: sub.created ? new Date(sub.created * 1000).toISOString() : null,
   });
   if (!applied) console.warn(`[abonnement] ${sub.id} (${sub.status}) ignoré : un abonnement plus récent est en cours.`);
+
+  if (accountId === null) {
+    // L'essai gratuit de cet e-mail est consommé (migration 0089) : il ne
+    // sera pas redonné après une suppression puis recréation du compte.
+    await markTrialUsed(userId);
+    // Abonnements en double (audit M5) : un seul abonnement d'accès par
+    // patient. Les erreurs remontent (le webhook sera renvoyé par Stripe).
+    if (sub.status === "active" || sub.status === "trialing") {
+      await cancelDuplicatePlatformSubscriptions(typeof sub.customer === "string" ? sub.customer : sub.customer.id, userId);
+      // Doublon chez un AUTRE client Stripe (deux fiches client pour le même
+      // patient) : la liste ci-dessus ne le voit pas. On le signale fort.
+      if (!applied) console.error(`[abonnement] DOUBLON À VÉRIFIER dans Stripe : ${sub.id} (${sub.status}) pour le patient ${userId}, non retenu par le site.`);
+    }
+  }
   return userId;
+}
+
+/** La fiche client Stripe (compte EasyPhysio) déjà créée pour ce patient, retrouvée par son e-mail. */
+export async function findPlatformCustomerId(userId: string, email: string | null): Promise<string | null> {
+  if (!email) return null;
+  const list = await getStripe().customers.list({ email, limit: 100 });
+  return list.data.find((c) => c.metadata?.patient_id === userId)?.id ?? null;
+}
+
+/** Les abonnements d'accès encore ouverts de ce patient chez Stripe (créés par EasyPhysio pour lui). */
+export async function openPlatformSubscriptions(customerId: string, userId: string): Promise<Stripe.Subscription[]> {
+  const list = await getStripe().subscriptions.list({ customer: customerId, status: "all", limit: 100 });
+  return list.data.filter(
+    (s) =>
+      OPEN_SUBSCRIPTION_STATUSES.includes(s.status) &&
+      s.metadata?.user_id === userId &&
+      hasValidSubscriptionSignature(s.metadata, PLATFORM_SIGNATURE_ACCOUNT),
+  );
+}
+
+/**
+ * Arrête chez Stripe les abonnements d'accès en double de ce patient (règle :
+ * duplicateSubscriptionIds — on garde le plus récent qui donne accès). Lève
+ * une erreur si un arrêt échoue : un doublon ne doit pas rester prélevé en
+ * silence.
+ */
+export async function cancelDuplicatePlatformSubscriptions(customerId: string, userId: string): Promise<void> {
+  const open = await openPlatformSubscriptions(customerId, userId);
+  for (const id of duplicateSubscriptionIds(open)) {
+    console.warn(`[abonnement] doublon ${id} arrêté (patient ${userId}).`);
+    try {
+      await getStripe().subscriptions.cancel(id);
+    } catch (e) {
+      // Déjà arrêté entre-temps : rien à faire.
+      if ((e as { code?: string })?.code !== "resource_missing") throw e;
+    }
+  }
 }
 
 /** Relit un abonnement chez Stripe et le recopie (période dépassée, retour de paiement…). */
@@ -134,6 +199,14 @@ export async function ensureKineCard(p: {
 }): Promise<boolean> {
   const stripe = getStripe();
   try {
+    // Accord du patient (audit du 2026-11-10, M4) : s'il a donné son accord
+    // écrit pour un AUTRE kiné (il a changé de kiné depuis), sa carte n'est
+    // pas copiée chez le nouveau et rien n'est prélevé tant qu'il n'a pas
+    // redonné son accord. Si la vérification échoue, on ne copie pas non plus.
+    if (!kineFeesAccepted(await kineFeesAcceptance(p.patientId, p.instructorId))) {
+      console.warn(`[abonnement] patient ${p.patientId} : accord donné pour un autre kiné que ${p.instructorId} — carte non copiée, aucun prélèvement.`);
+      return false;
+    }
     // La carte ACTUELLE (audit du 2026-11-08) : celle de l'abonnement, sinon
     // celle par défaut du client — après un changement de carte, c'est la
     // nouvelle qui est copiée, jamais une ancienne.

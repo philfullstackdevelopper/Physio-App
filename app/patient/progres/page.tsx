@@ -10,7 +10,7 @@ import { requirePatientAccess } from "@/lib/patient/requirePatientAccess";
 export default async function ProgresPage() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
-  await requirePatientAccess(supabase, user.id);
+  if (!(await requirePatientAccess())) return null;
 
   const now = new Date();
   const since30 = new Date(now.getTime() - 30 * 86_400_000).toISOString();

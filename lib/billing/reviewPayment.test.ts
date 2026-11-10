@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { reviewFailureReason, reviewPayableByPatient, reviewStatusFromDispute, reviewStatusFromIntent } from "./reviewPayment.ts";
+import {
+  chargeOutcomeUnknown,
+  reviewFailureReason,
+  reviewNeedsChargeRetry,
+  reviewPayableByPatient,
+  reviewStatusFromDispute,
+  reviewStatusFromIntent,
+  settledIntent,
+} from "./reviewPayment.ts";
 
 // Paiement des honoraires du kiné (audit Stripe du 2026-11-08).
 
@@ -27,6 +35,40 @@ test("bouton « Payer » : seulement pour un mois refusé ou à confirmer", () =
   assert.equal(reviewPayableByPatient("action_required"), true);
   assert.equal(reviewPayableByPatient("failed"), true);
   for (const s of ["paid", "pending", "refunded", "disputed"]) assert.equal(reviewPayableByPatient(s), false);
+});
+
+// ---- Audit du 2026-11-10 (M3) ------------------------------------------------
+
+test("prélèvement interrompu : une coupure réseau n'est pas un refus de carte", () => {
+  // Stripe a répondu (refus, 3-D Secure, requête invalide) : on sait que rien n'est encaissé.
+  assert.equal(chargeOutcomeUnknown({ type: "StripeCardError", code: "card_declined", payment_intent: { id: "pi_1" } }), false);
+  assert.equal(chargeOutcomeUnknown({ type: "StripeCardError", code: "card_declined" }), false);
+  assert.equal(chargeOutcomeUnknown({ type: "StripeInvalidRequestError", code: "resource_missing" }), false);
+  // Réseau coupé, Stripe en panne, même requête déjà en cours : on ne sait pas.
+  assert.equal(chargeOutcomeUnknown({ type: "StripeConnectionError" }), true);
+  assert.equal(chargeOutcomeUnknown({ type: "StripeAPIError" }), true);
+  assert.equal(chargeOutcomeUnknown({ type: "StripeIdempotencyError" }), true);
+  assert.equal(chargeOutcomeUnknown({}), true);
+  assert.equal(chargeOutcomeUnknown(null), true);
+});
+
+test("paiement qui fait foi pour un mois : réussi d'abord, sinon en cours, jamais un refus", () => {
+  const failed = { id: "pi_a", status: "requires_payment_method" };
+  const processing = { id: "pi_b", status: "processing" };
+  const ok = { id: "pi_c", status: "succeeded" };
+  assert.equal(settledIntent([failed, processing, ok])?.id, "pi_c");
+  assert.equal(settledIntent([failed, processing])?.id, "pi_b");
+  assert.equal(settledIntent([failed]), null);
+  assert.equal(settledIntent([]), null);
+});
+
+test("note restée « en cours » sans paiement connu : le prochain enregistrement du programme retente", () => {
+  assert.equal(reviewNeedsChargeRetry({ payment_status: "pending", stripe_payment_intent_id: null }), true);
+  // Paiement en cours de traitement chez Stripe : on attend, pas de nouvel essai.
+  assert.equal(reviewNeedsChargeRetry({ payment_status: "pending", stripe_payment_intent_id: "pi_1" }), false);
+  for (const s of ["paid", "failed", "action_required", "refunded", "disputed"]) {
+    assert.equal(reviewNeedsChargeRetry({ payment_status: s, stripe_payment_intent_id: null }), false);
+  }
 });
 
 test("litige : gagné = de nouveau payé ; ouvert ou perdu = contesté", () => {

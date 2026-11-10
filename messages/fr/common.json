@@ -9,5 +9,11 @@
     "hint": "Langue de l'application. Vous pouvez la changer à tout moment.",
     "saved": "Langue enregistrée"
   },
-  "reviewBanner": "Traduction en cours de relecture : la version française fait foi."
+  "error": {
+    "title": "Une erreur est survenue",
+    "body": "Rien n'est perdu de ce que vous avez déjà enregistré. Réessayez dans un instant ; si le problème continue, rechargez la page.",
+    "retry": "Réessayer",
+    "home": "Revenir à l'accueil"
+  },
+  "reviewBanner":"Traduction en cours de relecture : la version française fait foi."
 }

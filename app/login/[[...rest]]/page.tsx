@@ -5,6 +5,12 @@ import { brandedHeaderTitle } from "@/lib/clerk/brandedTitle";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getTranslations } from "next-intl/server";
+// Titre et description propres à la page (audit du 2026-11-10 : toutes les
+// pages publiques portaient le titre de l'accueil).
+export async function generateMetadata() {
+  const t = await getTranslations("auth.meta");
+  return { title: t("loginTitle"), description: t("loginDescription") };
+}
 
 export default async function LoginPage() {
   const tShared = await getTranslations("auth.shared");

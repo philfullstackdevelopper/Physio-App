@@ -20,7 +20,7 @@
 // passé en props : changer de semaine ici ne refait aucune requête.
 // =============================================================================
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Circle, X } from "lucide-react";
 import { daysOfWeek, localDateKey, type WeekInfo } from "@/lib/patient/weeks";
@@ -35,8 +35,18 @@ import type { Recommendation } from "@/lib/exercise/variants";
 import AdjustWorkoutModal, { type AddableExercise, type AddableWorkout, type ModalExercise } from "@/components/AdjustWorkoutModal";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
 import { nextSeance, PHASE_NUMBER, phasePass, isStage } from "@/lib/exercise/phasePlan";
-import { useIsPhone, type SessionDetail } from "@/components/WeekProgramme";
+import { type SessionDetail } from "@/components/WeekProgramme";
 import { ADJUST_CURRENT_WEEK_EVENT } from "@/lib/dashboard/adjustEvent";
+import { PHONE_FORMAT_QUERY, isPhoneFormat } from "@/lib/phoneFormat";
+
+// Format téléphone ou ordinateur (lib/phoneFormat.ts), suivi en direct.
+function subscribePhoneFormat(onChange: () => void) {
+  const mq = window.matchMedia(PHONE_FORMAT_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+// « Rendu par le navigateur ? » ne change jamais : rien à écouter.
+const noSubscribe = () => () => {};
 
 export interface KineAssignment {
   /** patient_recommended_workouts.id */
@@ -180,7 +190,9 @@ export default function KineWeekProgramme({
   // Téléphone (même principe que WeekProgramme côté patient) : une semaine
   // par écran, carte aussi haute que la place restante jusqu'à la barre
   // d'onglets — la boîte autour est en flex-1, on la mesure.
-  const isPhone = useIsPhone();
+  // Lu directement dans le navigateur (et non après un premier affichage,
+  // comme useIsPhone) : la frise a la bonne forme dès le premier rendu.
+  const isPhone = useSyncExternalStore(subscribePhoneFormat, isPhoneFormat, () => false);
   const stripBoxRef = useRef<HTMLDivElement>(null);
   const [phoneCardHeight, setPhoneCardHeight] = useState(248);
   // (Philippe, 2026-10-12 : « la frise ne doit bouger QUE à gauche ou à
@@ -188,8 +200,9 @@ export default function KineWeekProgramme({
   // mauvaise hauteur puis grandissait et se recentrait sous les yeux. Mesure
   // et centrage se font maintenant AVANT l'affichage (useLayoutEffect), et la
   // frise reste invisible le temps d'un rendu, jusqu'à ce que tout soit en place.
-  const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
+  // « ready » : faux dans la page envoyée par le serveur (qui ne connaît pas
+  // l'écran), vrai dès que le navigateur a repris la main.
+  const ready = useSyncExternalStore(noSubscribe, () => true, () => false);
   useLayoutEffect(() => {
     const box = stripBoxRef.current;
     if (!box || !isPhone) return;

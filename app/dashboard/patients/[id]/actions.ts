@@ -85,11 +85,17 @@ export async function deletePatient(formData: FormData) {
   //      (lib/db/admin.ts) et non plus via PostgREST, qui n'y a plus accès.
   // 0. Formule en cours (2026-11-02) : arrêtée tout de suite chez Stripe,
   // sinon le patient supprimé continuerait d'être prélevé.
-  const { data: sub } = await supabase
+  // Lecture en échec : on ABANDONNE (audit du 2026-11-10, A2) — sinon l'arrêt
+  // chez Stripe serait sauté, la fiche supprimée, et le patient encore prélevé.
+  const { data: sub, error: subError } = await supabase
     .from("subscriptions")
     .select("stripe_subscription_id, stripe_account_id, status")
     .eq("user_id", patientId)
     .maybeSingle();
+  if (subError) {
+    console.error("deletePatient: lecture de l'abonnement impossible", subError);
+    redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent((await tActions())("cancelSubFailed"))}`);
+  }
   // Abonnement d'accès : compte EasyPhysio (stripe_account_id vide) ; ancienne formule : compte du kiné.
   if (sub?.stripe_subscription_id && sub.status !== "canceled") {
     try {
@@ -178,7 +184,16 @@ export async function assignCondition(formData: FormData) {
   // the « Condition à renseigner » nudge now asks for — used to silently
   // wipe them (Philippe, 2026-10-01, patient Padraig).
   if (previousConditionId && previousConditionId !== conditionId) {
-    await supabase.from("patient_recommended_workouts").delete().eq("patient_id", patientId);
+    // Vérifié (audit du 2026-11-10, A6) : sans ça, un échec laissait la
+    // nouvelle pathologie avec les séances de l'ancienne, sans rien dire.
+    const { error: clearError } = await supabase.from("patient_recommended_workouts").delete().eq("patient_id", patientId);
+    if (clearError) {
+      console.error("assignCondition: séances de l'ancienne pathologie non retirées", clearError);
+      // On remet l'ancienne pathologie pour ne pas rester à moitié appliqué.
+      const { error: revertError } = await supabase.from("patients").update({ condition_id: previousConditionId }).eq("id", patientId);
+      if (revertError) console.error("assignCondition: retour à l'ancienne pathologie impossible", revertError);
+      redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(clearError, undefined, await tLib()))}`);
+    }
   }
 
   revalidatePath(`/dashboard/patients/${patientId}`);
@@ -386,7 +401,8 @@ async function applySeanceChanges({
       })
       .select("id")
       .single();
-    if (copyError || !copy) return { error: copyError?.message ?? t("copyFailed") };
+    // Jamais le message brut de la base dans le navigateur (audit du 2026-11-10).
+    if (copyError || !copy) return { error: friendlyDbError(copyError, t("copyFailed"), await tLib()) };
     targetId = copy.id as string;
     copied = true;
 
@@ -401,31 +417,50 @@ async function applySeanceChanges({
       .eq("workout_id", workout.id)
       .select("id");
     if (recError || !repointed || repointed.length === 0) {
-      await supabase.from("workouts").delete().eq("id", targetId);
-      return { error: recError?.message ?? t("notRecommended") };
+      const { error: undoError } = await supabase.from("workouts").delete().eq("id", targetId);
+      if (undoError) console.error("applySeanceChanges: copie orpheline non supprimée", targetId, undoError);
+      return { error: recError ? friendlyDbError(recError, undefined, await tLib()) : t("notRecommended") };
     }
   }
 
   // Copie neuve = vide : on y écrit directement la nouvelle liste. Sinon on
   // remplace la liste de la séance personnelle existante.
-  if (!copied) await supabase.from("workout_exercises").delete().eq("workout_id", targetId);
+  if (!copied) {
+    // Vérifié (audit du 2026-11-10, A6) : si le vidage échoue, on s'arrête
+    // AVANT d'insérer — sinon la séance garderait l'ancienne liste en plus de
+    // la nouvelle (ou l'insertion buterait sur les doublons).
+    const { error: clearError } = await supabase.from("workout_exercises").delete().eq("workout_id", targetId);
+    if (clearError) return { error: friendlyDbError(clearError, undefined, await tLib()) };
+  }
   const { error: insertError } = await supabase
     .from("workout_exercises")
     .insert(next.map((s) => ({ workout_id: targetId, exercise_id: s.exerciseId, position: s.position, ...doseFor(s.exerciseId) })));
   if (insertError) {
     if (copied) {
       // La recommandation revient sur la séance d'origine, la copie part.
-      await supabase.from("patient_recommended_workouts").update({ workout_id: workout.id }).eq("id", recId);
-      await supabase.from("workouts").delete().eq("id", targetId);
+      // Écritures de retour vérifiées (audit du 2026-11-10, A6) : la copie
+      // n'est supprimée QUE si la recommandation est bien revenue sur la
+      // séance d'origine — sinon le patient perdrait sa séance attribuée.
+      const { error: backError } = await supabase.from("patient_recommended_workouts").update({ workout_id: workout.id }).eq("id", recId);
+      if (backError) {
+        console.error("applySeanceChanges: retour à la séance d'origine impossible (copie vide laissée)", { recId, targetId }, backError);
+      } else {
+        const { error: undoError } = await supabase.from("workouts").delete().eq("id", targetId);
+        if (undoError) console.error("applySeanceChanges: copie orpheline non supprimée", targetId, undoError);
+      }
     } else {
       // Pas de transaction ici : on vient de vider la table, donc on
       // réinsère les lignes précédentes en meilleur effort (compensating
       // write) pour ne pas laisser la séance vide si l'insertion échoue.
-      await supabase
+      const { error: restoreError } = await supabase
         .from("workout_exercises")
         .insert(current.map((s) => ({ workout_id: targetId, exercise_id: s.exerciseId, position: s.position, ...(oldDose.get(s.exerciseId) ?? {}) })));
+      if (restoreError) {
+        console.error("applySeanceChanges: SÉANCE LAISSÉE VIDE, anciennes lignes non réinsérées", targetId, restoreError);
+        return { error: t("sessionLeftEmpty") };
+      }
     }
-    return { error: insertError.message };
+    return { error: friendlyDbError(insertError, undefined, await tLib()) };
   }
 
   // Message automatique écrit dans la langue du PATIENT (pas celle du kiné).
@@ -433,7 +468,7 @@ async function applySeanceChanges({
   // Note du bilan mensuel : toujours en français (nom de séance compris).
   const message = adjustmentMessage(await localizeDbText(workout.name, "fr"), removedCount, addedCount, dosesChanged);
   const patientLocale = await getLocaleByAppId(patientId);
-  await supabase.from("patient_messages").insert({
+  const { error: messageError } = await supabase.from("patient_messages").insert({
     patient_id: patientId,
     instructor_id: userId,
     sender: "instructor",
@@ -446,7 +481,11 @@ async function applySeanceChanges({
       await getTranslations({ locale: patientLocale, namespace: "exercise.adjustMessage" }),
     ),
   });
-  await notifyNewMessage({ patientId, instructorId: userId, sender: "instructor" });
+  // La séance EST ajustée : un message non parti n'annule rien, mais il est
+  // tracé et aucune notification « nouveau message » n'est envoyée pour rien
+  // (audit du 2026-11-10, A6).
+  if (messageError) console.error("applySeanceChanges: message automatique au patient non enregistré", patientId, messageError);
+  else await notifyNewMessage({ patientId, instructorId: userId, sender: "instructor" });
   // Patient en suivi mensuel : ajuster la séance valide le bilan du mois.
   await recordMonthlyReviewIfDue({ supabase, instructorId: userId, patientId, note: message });
   revalidatePath("/dashboard/facturation");

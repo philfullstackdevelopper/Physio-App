@@ -185,7 +185,19 @@ export async function saveKineExerciseVideo(
     p_start_seconds: 0,
   });
   if (rpcErr) return { error: friendlyDbError(rpcErr, undefined, await getTranslations("dashboard.lib")) };
-  await supabase.from("exercises").update({ filming_consent_at: new Date().toISOString() }).eq("id", exerciseId);
+  // Date de l'accord de la personne filmée = la preuve légale : son écriture
+  // est vérifiée (audit du 2026-11-10, A6). `.select` : une ligne non modifiée
+  // (règle d'accès) compte aussi comme un échec. La vidéo est déjà rattachée ;
+  // le kiné voit l'erreur et renvoie la vidéo, ce qui réécrit la date.
+  const { data: consentRows, error: consentErr } = await supabase
+    .from("exercises")
+    .update({ filming_consent_at: new Date().toISOString() })
+    .eq("id", exerciseId)
+    .select("id");
+  if (consentErr || !consentRows || consentRows.length === 0) {
+    console.error("saveKineExerciseVideo: date d'accord de la personne filmée non enregistrée", exerciseId, consentErr);
+    return { error: friendlyDbError(consentErr, undefined, await getTranslations("dashboard.lib")) };
+  }
   revalidatePath("/dashboard/exercises");
   return { ok: true };
 }
