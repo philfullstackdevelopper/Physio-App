@@ -5,6 +5,12 @@ import SignupClosed from "@/components/SignupClosed";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 import { getTranslations } from "next-intl/server";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+// Titre et description propres à la page (audit du 2026-11-10 : toutes les
+// pages publiques portaient le titre de l'accueil).
+export async function generateMetadata() {
+  const t = await getTranslations("auth.meta");
+  return { title: t("signupTitle"), description: t("signupDescription") };
+}
 
 // Entry point for "Créer un compte" everywhere on the marketing site — a
 // full-bleed, two-way split rather than a small in-page toggle: the whole

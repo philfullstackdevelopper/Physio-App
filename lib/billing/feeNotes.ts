@@ -3,8 +3,11 @@
 // de SES patients, le patient ne voit que les siennes (RLS, migration 0071).
 // Mentions de la note : identité et RPPS du kiné, patient, date, acte non
 // remboursable, exonération de TVA des soins (art. 261-4-1° CGI).
+// Une note survit à la suppression du patient (audit du 2026-11-10, migration
+// 0089) : le kiné la garde dans son récapitulatif et son CSV, avec le nom du
+// patient recopié sur la note à son émission.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { feeNoteNumber, nextPeriod } from "./reviewModel";
+import { feeNoteNumber, feeNotePatientName, nextPeriod } from "./reviewModel";
 import type { ReviewPaymentStatus } from "./reviewPayment";
 import type { Locale } from "@/i18n/locales";
 import { intlTag, libTranslator } from "@/lib/i18n/translator";
@@ -25,7 +28,10 @@ export type FeeNote = {
 
 type Row = {
   id: string;
-  patient_id: string;
+  /** Vide quand le patient a été supprimé : la note reste (migration 0089). */
+  patient_id: string | null;
+  /** Nom du patient recopié sur la note à son émission (migration 0089). */
+  patient_name: string | null;
   instructor_id: string;
   period: string;
   validated_at: string;
@@ -36,18 +42,18 @@ type Row = {
   fee_note_seq: number;
 };
 
-const FIELDS = "id, patient_id, instructor_id, period, validated_at, amount_cents, payment_status, paid_at, fee_note_year, fee_note_seq";
+const FIELDS = "id, patient_id, patient_name, instructor_id, period, validated_at, amount_cents, payment_status, paid_at, fee_note_year, fee_note_seq";
 
 async function toNotes(supabase: SupabaseClient, rows: Row[], locale: Locale = "fr"): Promise<FeeNote[]> {
   if (rows.length === 0) return [];
   const t = libTranslator(locale, { fr, en }, "feeNote");
-  const patientIds = [...new Set(rows.map((r) => r.patient_id))];
+  const patientIds = [...new Set(rows.map((r) => r.patient_id).filter((id): id is string => !!id))];
   const kineIds = [...new Set(rows.map((r) => r.instructor_id))];
   const [{ data: patients }, { data: kines }] = await Promise.all([
-    supabase.from("patients").select("id, full_name").in("id", patientIds),
+    patientIds.length ? supabase.from("patients").select("id, full_name").in("id", patientIds) : Promise.resolve({ data: [] as { id: string; full_name: string | null }[] }),
     supabase.from("instructors").select("id, full_name, cabinet_name, cabinet_address, rpps_number").in("id", kineIds),
   ]);
-  const patientName = new Map((patients ?? []).map((p) => [p.id as string, (p.full_name as string | null) ?? t("fallbackPatient")]));
+  const patientName = new Map((patients ?? []).filter((p) => !!p.full_name).map((p) => [p.id as string, p.full_name as string]));
   const kine = new Map((kines ?? []).map((k) => [k.id as string, k]));
   return rows.map((r) => {
     const k = kine.get(r.instructor_id);
@@ -59,7 +65,11 @@ async function toNotes(supabase: SupabaseClient, rows: Row[], locale: Locale = "
       amountCents: r.amount_cents,
       paymentStatus: r.payment_status,
       paidAt: r.paid_at,
-      patientName: patientName.get(r.patient_id) ?? t("fallbackPatient"),
+      patientName: feeNotePatientName({
+        currentName: r.patient_id ? (patientName.get(r.patient_id) ?? null) : null,
+        nameOnNote: r.patient_name,
+        fallback: t("fallbackPatient"),
+      }),
       kine: {
         name: (k?.full_name as string | null) ?? t("profession"),
         cabinet: (k?.cabinet_name as string | null) ?? null,

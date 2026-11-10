@@ -460,6 +460,8 @@ export default function WorkoutSession({
   // timestamp), so the patient's history can show what they felt for it.
   const [logId, setLogId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState(false);
+  // Séance enregistrée, mais pas le détail par exercice ou la douleur de séance.
+  const [detailsError, setDetailsError] = useState(false);
   // Garde contre le double appui sur « Terminer la séance » / « Réessayer » :
   // sans elle, deux taps rapides inséraient deux workout_logs (Philippe,
   // 2026-10-07). Le ref bloque la ré-entrée immédiate, le state désactive les
@@ -510,6 +512,7 @@ export default function WorkoutSession({
       setPhase("finished");
       return;
     }
+    let detailsFailed = false;
     try {
       const supabase = createClient();
       // Déjà enregistrée lors d'un essai précédent (réseau coupé juste après) :
@@ -541,6 +544,7 @@ export default function WorkoutSession({
         if (rows.length > 0) {
           const { error: resErr } = await supabase.from("exercise_results").insert(rows);
           if (!resErr) resultsSavedRef.current = true;
+          else detailsFailed = true;
         } else {
           resultsSavedRef.current = true;
         }
@@ -551,7 +555,7 @@ export default function WorkoutSession({
       // Comme le suivi par exercice, son échec ne bloque pas la fin de séance.
       const finalPain = sessionPainScore(Object.values(allResults).map((r) => r.pain));
       if (!feedbackIdRef.current && savedLogIdRef.current && finalPain != null) {
-        const { data: fb } = await supabase
+        const { data: fb, error: fbErr } = await supabase
           .from("patient_feedback")
           .insert({
             patient_id: patientId,
@@ -562,10 +566,17 @@ export default function WorkoutSession({
           })
           .select("id")
           .single();
-        if (fb) feedbackIdRef.current = fb.id as string;
+        if (fb && !fbErr) feedbackIdRef.current = fb.id as string;
+        else detailsFailed = true;
       }
+      // La séance compte, mais le kiné n'a pas reçu la douleur : on le dit au
+      // patient, avec « Réessayer » (audit du 2026-11-10, A4 — avant, la perte
+      // était muette : alerte douleur et frein de progression sans données).
+      setDetailsError(detailsFailed);
     } catch {
-      setSaveError(true);
+      // Séance déjà enregistrée : seul le détail manque, pas « séance non enregistrée ».
+      if (savedLogIdRef.current) setDetailsError(true);
+      else setSaveError(true);
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -719,6 +730,17 @@ export default function WorkoutSession({
         </p>
         {/* (Philippe, 2026-11-06 : audit, on allège) Badge « N jours
             d'affilée » et question « douleur du moment » (1–10) retirés. */}
+
+        {/* Douleur / détail par exercice non enregistrés : le dire, et
+            permettre de réessayer (ne recrée pas la séance : savedLogIdRef). */}
+        {detailsError && (
+          <p className="mt-4 text-sm text-red-700" role="alert">
+            {t("detailsNotSaved")}{" "}
+            <button type="button" onClick={() => finish()} disabled={saving} className="font-medium underline disabled:opacity-50">
+              {saving ? t("saving") : t("retry")}
+            </button>
+          </p>
+        )}
 
         {/* Post-session feeling → helps the physio recalibrate. Affiché
             seulement si une douleur a été notée pendant la séance : sans

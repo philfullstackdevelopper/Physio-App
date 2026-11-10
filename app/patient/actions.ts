@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { notifyNewMessage } from "@/lib/push/notify";
+import { currentPatientAccess } from "@/lib/patient/patientGate";
 import { getTranslations } from "next-intl/server";
 
 // First step of patient onboarding, gated in app/patient/layout.tsx.
@@ -47,6 +48,8 @@ export async function markMessagesSeenOnOpen(_patientId: string) {
   void _patientId;
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  // Mêmes barrières que la page Messages (audit du 2026-11-10, B4).
+  if ((await currentPatientAccess()) !== "ok") return;
   await supabase
     .from("patient_messages")
     .update({ read_at: new Date().toISOString() })
@@ -61,6 +64,16 @@ export async function markMessagesSeenOnOpen(_patientId: string) {
 export async function sendPatientMessage(formData: FormData) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
+
+  // Une action serveur s'appelle sans passer par le layout : CGU, accès payé et
+  // consentement santé sont revérifiés ici (audit du 2026-11-10, B4), avec le
+  // même calcul que le layout (lib/patient/patientGate.ts). Pas en règle →
+  // accueil patient, qui affiche l'étape manquante.
+  const access = await currentPatientAccess();
+  if (access === "error") {
+    redirect(`/patient/messages?error=${encodeURIComponent(friendlyDbError(null, undefined, await getTranslations("dashboard.lib")))}`);
+  }
+  if (access !== "ok") redirect("/patient");
 
   const t = await getTranslations("patient.actions");
   const body = String(formData.get("body") ?? "").trim();

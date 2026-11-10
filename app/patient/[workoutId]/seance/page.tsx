@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { requirePatientAccess } from "@/lib/patient/requirePatientAccess";
 import { doseFromRow, recommendPrescription } from "@/lib/exercise/prescription";
 import { isProfileComplete, profileToContext } from "@/lib/exercise/patientProfile";
 import WorkoutSession, { type SessionExercise } from "@/components/WorkoutSession";
@@ -30,6 +31,9 @@ export default async function SeancePage({
 
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  // Barrières du patient (CGU, accès payé, consentement) refaites ici : le
+  // layout ne se rejoue pas à chaque navigation (audit du 2026-11-10, B4).
+  if (!(await requirePatientAccess())) return null;
 
   const { data: profile } = await supabase
     .from("patient_profiles")

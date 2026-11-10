@@ -9,5 +9,11 @@
     "hint": "App language. You can change it at any time.",
     "saved": "Language saved"
   },
-  "reviewBanner": "Translation under review: the French version is the authoritative one."
+  "error": {
+    "title": "Something went wrong",
+    "body": "Nothing you've already saved is lost. Try again in a moment; if the problem continues, reload the page.",
+    "retry": "Try again",
+    "home": "Back to home"
+  },
+  "reviewBanner":"Translation under review: the French version is the authoritative one."
 }

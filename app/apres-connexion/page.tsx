@@ -32,6 +32,8 @@ async function syncLocale(): Promise<Locale | null> {
     return null;
   }
 }
+// Page technique : rien à référencer dans les moteurs de recherche.
+export const metadata = { robots: { index: false, follow: false } };
 
 // Single landing spot for the SignIn component's fallbackRedirectUrl — Clerk
 // doesn't know the role before sign-in completes, so every login lands here

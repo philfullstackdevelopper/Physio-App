@@ -7,6 +7,7 @@ import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstru
 import { getStripe } from "@/lib/billing/stripe";
 import { isMissingStripeObject } from "@/lib/billing/connectStatus";
 import { requestOrigin } from "@/lib/requestOrigin";
+import { getTranslations } from "next-intl/server";
 
 // Starts (or resumes) Stripe Connect onboarding for the kiné — this is the
 // account that receives his 6 € monthly fees from his patients directly
@@ -23,11 +24,18 @@ export async function startConnectOnboarding() {
   const { user } = await requireApprovedInstructor(supabase);
   const stripe = getStripe();
 
-  const { data: existing } = await supabase
+  // Lecture vérifiée (audit du 2026-11-10, A6) : en cas d'échec on s'arrête,
+  // au lieu de conclure « pas encore de compte » et d'en créer un second.
+  const { data: existing, error: existingError } = await supabase
     .from("instructor_connect_accounts")
     .select("stripe_connect_account_id")
     .eq("instructor_id", user.id)
     .maybeSingle();
+  if (existingError) {
+    console.error("startConnectOnboarding: lecture du compte Stripe Connect impossible", existingError);
+    const t = await getTranslations("dashboard.patientActions");
+    redirect(`/dashboard/facturation?error=${encodeURIComponent(t("connectCheckFailed"))}`);
+  }
 
   let accountId = existing?.stripe_connect_account_id as string | null;
   // Compte créé en mode test, inconnu en mode réel : on en crée un neuf.

@@ -1,4 +1,12 @@
 {
+  "meta": {
+    "cguTitle": "Conditions générales d'utilisation",
+    "cguDescription": "Les conditions générales d'utilisation d'EasyPhysio, pour les kinésithérapeutes et leurs patients.",
+    "privacyTitle": "Politique de confidentialité",
+    "privacyDescription": "Comment EasyPhysio traite et protège vos données personnelles et vos données de santé.",
+    "legalNoticeTitle": "Mentions légales",
+    "legalNoticeDescription": "Éditeur, hébergeur et contact du site EasyPhysio."
+  },
   "cgu": {
     "draft": "<b>Brouillon.</b> Ce document est en cours de rédaction et n'a pas encore été validé par un avocat.",
     "title": "Conditions générales d'utilisation",

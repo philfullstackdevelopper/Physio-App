@@ -5,16 +5,16 @@
 // structured `ProtocolResponse` (predefined exercises + dosages) to review.
 //
 // MAQUETTE (CLAUDE.md §7) : contenu clinique INVENTÉ, branché sur aucun
-// écran. Réservé à un kiné connecté et validé (audit du 2026-10-08 — la route
-// était ouverte à tous) ; tout autre appel reçoit une 404, comme si elle
-// n'existait pas.
+// écran. Réservé à l'administrateur (audit du 2026-11-10 — tout kiné validé
+// pouvait encore l'appeler et recevoir ce contenu inventé) ; tout autre appel
+// reçoit une 404, comme si elle n'existait pas.
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { auth } from "@clerk/nextjs/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { getInstructor } from "@/lib/dashboard/instructor";
+import { isAdminEmail } from "@/lib/admin";
 import {
   generateProtocol,
   type ProtocolRequest,
@@ -42,8 +42,7 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Introuvable." }, { status: 404 });
   const supabase = await createClient();
   const user = await requireUser(supabase);
-  const instructor = await getInstructor(supabase, user.id);
-  if (!instructor || ((instructor.status as string | null) ?? "approved") !== "approved") {
+  if (!isAdminEmail(user.email)) {
     return NextResponse.json({ error: "Introuvable." }, { status: 404 });
   }
 

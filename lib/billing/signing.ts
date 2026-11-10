@@ -13,9 +13,18 @@
 // les nouvelles signatures.
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+let warnedMissingDedicatedKey = false;
+
 function keys(): string[] {
   const list = [process.env.STRIPE_SIGNING_SECRET, process.env.STRIPE_SECRET_KEY].filter((k): k is string => !!k);
   if (list.length === 0) throw new Error("STRIPE_SIGNING_SECRET / STRIPE_SECRET_KEY is not set.");
+  // Audit du 2026-11-10 : le secours (clé Stripe) reste, mais en production on
+  // le signale une fois par démarrage — poser STRIPE_SIGNING_SECRET sur
+  // Scalingo pour que changer la clé Stripe ne casse pas les signatures.
+  if (!process.env.STRIPE_SIGNING_SECRET && process.env.NODE_ENV === "production" && !warnedMissingDedicatedKey) {
+    warnedMissingDedicatedKey = true;
+    console.warn("[signing] STRIPE_SIGNING_SECRET n'est pas défini : les signatures utilisent STRIPE_SECRET_KEY. Définissez une clé dédiée.");
+  }
   return list;
 }
 

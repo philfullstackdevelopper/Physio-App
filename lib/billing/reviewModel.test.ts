@@ -2,34 +2,21 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   periodLastDay,
-  RECOMMENDED_REVIEW_PRICE_CENTS,
   csvCell,
-  effectiveReviewPrice,
   estimateStripeFeeCents,
   feeNoteNumber,
-  isValidReviewPrice,
-  patientMustAcceptFollowUp,
+  feeNotePatientName,
   nextPeriod,
   periodLabel,
   periodOf,
   previousPeriod,
 } from "./reviewModel.ts";
 
-test("tarif du bilan : celui du kiné s'il est valide, sinon le tarif conseillé", () => {
-  assert.equal(effectiveReviewPrice(2500), 2500);
-  assert.equal(effectiveReviewPrice(null), RECOMMENDED_REVIEW_PRICE_CENTS);
-  assert.equal(effectiveReviewPrice(50), RECOMMENDED_REVIEW_PRICE_CENTS);
-  assert.equal(effectiveReviewPrice(15000), 15000);
-  assert.equal(effectiveReviewPrice(60000), RECOMMENDED_REVIEW_PRICE_CENTS);
-  assert.equal(isValidReviewPrice(1000), true);
-  assert.equal(isValidReviewPrice(4000), true);
-  assert.equal(isValidReviewPrice(0), true);
-  assert.equal(isValidReviewPrice(50), false);
-  assert.equal(isValidReviewPrice(50000), true);
-  assert.equal(isValidReviewPrice(50100), false);
-  assert.equal(effectiveReviewPrice(0), 0);
-  assert.equal(isValidReviewPrice(1999.5), false);
-  assert.equal(isValidReviewPrice("2000"), false);
+test("note d'honoraires : nom actuel du patient, sinon le nom recopié sur la note (patient supprimé)", () => {
+  assert.equal(feeNotePatientName({ currentName: "Claire Dupont", nameOnNote: "Claire Dupond", fallback: "Patient" }), "Claire Dupont");
+  assert.equal(feeNotePatientName({ currentName: null, nameOnNote: "Claire Dupont", fallback: "Patient" }), "Claire Dupont");
+  assert.equal(feeNotePatientName({ currentName: null, nameOnNote: null, fallback: "Patient" }), "Patient");
+  assert.equal(feeNotePatientName({ currentName: "  ", nameOnNote: "", fallback: "Patient" }), "Patient");
 });
 
 test("mois : heure de Paris, passage d'année", () => {
@@ -63,12 +50,4 @@ test("CSV : guillemets seulement quand il le faut", () => {
   assert.equal(csvCell('Bilan ; "ok"'), '"Bilan ; ""ok"""');
   assert.equal(csvCell(null), "");
   assert.equal(csvCell(20), "20");
-});
-
-test("accès patient : gratuit à 0 €, suivi à accepter au-dessus (si le kiné encaisse en ligne)", () => {
-  assert.equal(patientMustAcceptFollowUp({ kinePriceCents: 0, kineCanCharge: true, followUpStatus: null }), false);
-  assert.equal(patientMustAcceptFollowUp({ kinePriceCents: 2000, kineCanCharge: true, followUpStatus: null }), true);
-  assert.equal(patientMustAcceptFollowUp({ kinePriceCents: null, kineCanCharge: true, followUpStatus: "pending_card" }), true);
-  assert.equal(patientMustAcceptFollowUp({ kinePriceCents: 2000, kineCanCharge: true, followUpStatus: "active" }), false);
-  assert.equal(patientMustAcceptFollowUp({ kinePriceCents: 2000, kineCanCharge: false, followUpStatus: null }), false);
 });

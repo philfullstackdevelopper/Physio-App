@@ -15,6 +15,25 @@ const LIVE = new Set(["active", "trialing", "past_due", "unpaid", "incomplete"])
 const missing = (e: unknown) => (e as { code?: string })?.code === "resource_missing";
 
 export async function suspendInstructor(instructorId: string): Promise<void> {
+  await cancelPatientSubscriptionsOf(instructorId);
+  await setInstructorStatus(instructorId, "suspended");
+}
+
+/**
+ * Refus d'un kiné par l'administrateur (audit du 2026-11-10) : comme pour une
+ * suspension, ses patients gardent leur programme gratuitement
+ * (lib/patient/patientGate.ts traite « refusé » comme « suspendu ») — leurs
+ * abonnements sont donc arrêtés chez Stripe AVANT de changer son statut,
+ * sinon ils continueraient d'être prélevés. Si Stripe échoue, le statut ne
+ * change pas : on peut recommencer.
+ */
+export async function rejectInstructorAndStopBilling(instructorId: string): Promise<void> {
+  await cancelPatientSubscriptionsOf(instructorId);
+  await setInstructorStatus(instructorId, "rejected");
+}
+
+/** Arrête tout de suite, chez Stripe, les abonnements encore ouverts des patients de ce kiné. Rejouable. */
+async function cancelPatientSubscriptionsOf(instructorId: string): Promise<void> {
   const subs = await instructorSubscriptions(instructorId);
   const stripe = getStripe();
   for (const s of subs) {
@@ -36,5 +55,4 @@ export async function suspendInstructor(instructorId: string): Promise<void> {
     }
     await refreshPatientSubscription(s.stripe_subscription_id, account);
   }
-  await setInstructorStatus(instructorId, "suspended");
 }

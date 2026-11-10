@@ -2,6 +2,8 @@ import Link from "next/link";
 import { MailCheck } from "lucide-react";
 import DotCanvas from "@/components/DotCanvas";
 import { getTranslations } from "next-intl/server";
+// Page technique : rien à référencer dans les moteurs de recherche.
+export const metadata = { robots: { index: false, follow: false } };
 
 export default async function SignupPendingPage() {
   const t = await getTranslations("auth.pending");

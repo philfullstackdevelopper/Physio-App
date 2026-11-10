@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { FlaskConical, Trash2 } from "lucide-react";
 import type { TestAccountRow } from "@/lib/db/admin";
+import SubmitButton from "@/components/SubmitButton";
 import {
   createTestKine,
   createTestPatientAction,
@@ -137,12 +138,12 @@ export default function TestAccounts({ accounts }: { accounts: TestAccountRow[] 
                   </p>
                   <form action={deleteTestAccountAction} className="mt-2">
                     <input type="hidden" name="id" value={a.app_id} />
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingText="Confirmer la suppression"
                       className="w-full rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
                     >
                       Confirmer la suppression
-                    </button>
+                    </SubmitButton>
                   </form>
                 </div>
               </details>

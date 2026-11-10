@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { EQUIPMENT_OPTIONS, type EquipmentId } from "@/lib/exercise/equipment";
 import { friendlyDbError } from "@/lib/format/dbError";
+import { currentPatientAccess } from "@/lib/patient/patientGate";
 import { getTranslations } from "next-intl/server";
 
 // Saves the patient's onboarding profile into `patient_profiles`.
@@ -21,12 +22,22 @@ export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> 
   // patients.id (0004_stage_pii_and_feedback.sql) and would otherwise surface
   // a raw Postgres error in the redirect URL instead of an explanation
   // (Philippe, 2026-09-13).
-  const { data: patient } = await supabase.from("patients").select("id").eq("id", user.id).maybeSingle();
-  if (!patient) {
+  //
+  // Audit du 2026-11-10 (B4) : l'action vérifie aussi elle-même les CGU et
+  // l'accès payé (même calcul que le layout, lib/patient/patientGate.ts) — une
+  // action serveur s'appelle sans passer par le layout. Pas le consentement
+  // santé : il se donne ici.
+  const access = await currentPatientAccess();
+  if (access === "error") {
+    redirect(`/patient/onboarding?error=${encodeURIComponent(friendlyDbError(null, undefined, await getTranslations("dashboard.lib")))}`);
+  }
+  if (access === "no-patient") {
     redirect(
       `/patient/onboarding?error=${encodeURIComponent(t("noPatient"))}`,
     );
   }
+  // CGU ou accès manquant : retour à l'accueil patient, qui affiche la bonne étape.
+  if (access === "terms" || access === "subscribe") redirect("/patient");
 
   const declaredBodyPartIds = formData.getAll("declared_body_part_ids").map(String).filter(Boolean);
   const injuryStage = String(formData.get("injury_stage") ?? "");

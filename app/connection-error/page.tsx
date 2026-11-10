@@ -2,6 +2,8 @@ import { getTranslations } from "next-intl/server";
 import { safeInternalPath } from "@/lib/format/safePath";
 import ConnectionRetry from "@/components/ConnectionRetry";
 import DotCanvas from "@/components/DotCanvas";
+// Page technique : rien à référencer dans les moteurs de recherche.
+export const metadata = { robots: { index: false, follow: false } };
 
 // Landed on when we couldn't reach Supabase to verify the session (a network
 // blip, not necessarily an expired login) — see lib/supabase/require-user.ts.

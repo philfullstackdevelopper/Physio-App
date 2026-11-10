@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Copy, MailPlus } from "lucide-react";
 import type { WaitlistRow } from "@/lib/db/admin";
+import SubmitButton from "@/components/SubmitButton";
 import { removeFromWaitlist } from "./waitlistAdminActions";
 
 // Liste d'attente du lancement (Philippe, 2026-10-12) : les e-mails laissés sur
@@ -67,9 +68,9 @@ export default function Waitlist({ rows }: { rows: WaitlistRow[] }) {
                 </div>
                 <form action={removeFromWaitlist} className="shrink-0">
                   <input type="hidden" name="email" value={r.email} />
-                  <button type="submit" className="text-xs font-medium text-slate-400 underline-offset-2 hover:text-red-600 hover:underline">
+                  <SubmitButton pendingText="Retirer" className="text-xs font-medium text-slate-400 underline-offset-2 hover:text-red-600 hover:underline">
                     Retirer
-                  </button>
+                  </SubmitButton>
                 </form>
               </li>
             ))}

@@ -2,6 +2,12 @@ import { getLocale, getTranslations } from "next-intl/server";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import DotCanvas from "@/components/DotCanvas";
+// Titre et description propres à la page (audit du 2026-11-10 : toutes les
+// pages publiques portaient le titre de l'accueil).
+export async function generateMetadata() {
+  const t = await getTranslations("legal.meta");
+  return { title: t("legalNoticeTitle"), description: t("legalNoticeDescription") };
+}
 
 // Renders legal/mentions-legales.md for the app. Keep the two in sync by
 // hand — this is still a DRAFT pending legal review (see the banner below).

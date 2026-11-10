@@ -522,3 +522,48 @@ export async function listAccountDeletions(): Promise<AccountDeletionRow[]> {
   const { rows } = await getPool().query<AccountDeletionRow>("select * from internal.admin_list_account_deletions()");
   return rows;
 }
+
+// ---------------------------------------------------------------------------
+// Audit du 2026-11-10 (migration 0089) : essai gratuit déjà utilisé, accord
+// écrit du patient sur les deux montants. Tables du schéma `internal`,
+// réservées au serveur.
+// ---------------------------------------------------------------------------
+
+/** L'essai gratuit a-t-il déjà été consommé par cet e-mail (fiche du patient ou e-mail de connexion) ? */
+export async function trialAlreadyUsed(userId: string, email: string | null): Promise<boolean> {
+  const { rows } = await getPool().query<{ used: boolean }>("select internal.trial_already_used($1, $2) as used", [userId, email]);
+  return !!rows[0]?.used;
+}
+
+/** Retient (empreinte de l'e-mail seulement) que ce patient a consommé son essai. Rejouable. */
+export async function markTrialUsed(userId: string): Promise<void> {
+  await getPool().query("select internal.mark_trial_used($1)", [userId]);
+}
+
+/** Enregistre l'accord du patient (case cochée + offre) ; le kiné nommé est lu sur sa fiche par la base. */
+export async function recordBillingAcceptance(params: {
+  patientId: string;
+  offerKey: string;
+  platformCents: number;
+  kineCents: number;
+  trialDays: number;
+  locale: string;
+  termsVersion: string;
+}): Promise<void> {
+  await getPool().query("select internal.record_billing_acceptance($1, $2, $3, $4, $5, $6, $7)", [
+    params.patientId,
+    params.offerKey,
+    params.platformCents,
+    params.kineCents,
+    params.trialDays,
+    params.locale,
+    params.termsVersion,
+  ]);
+}
+
+/** Accord du patient pour les honoraires de CE kiné : 'yes', 'other' (autre kiné) ou 'none' (aucun accord enregistré). */
+export async function kineFeesAcceptance(patientId: string, instructorId: string): Promise<"yes" | "other" | "none"> {
+  const { rows } = await getPool().query<{ r: string }>("select internal.kine_fees_acceptance($1, $2) as r", [patientId, instructorId]);
+  const r = rows[0]?.r;
+  return r === "yes" || r === "other" ? r : "none";
+}

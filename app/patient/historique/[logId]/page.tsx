@@ -5,6 +5,7 @@ import type { Locale } from "@/i18n/locales";
 import HistoriqueDetailView from "./HistoriqueDetailView";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { requirePatientAccess } from "@/lib/patient/requirePatientAccess";
 
 type LogDetail = {
   id: string;
@@ -30,6 +31,9 @@ export default async function HistoriqueDetailPage({
   const back = depuis === "accueil" ? { href: "/patient", label: tNav("home") } : undefined;
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  // Barrières du patient (CGU, accès payé, consentement) refaites ici : le
+  // layout ne se rejoue pas à chaque navigation (audit du 2026-11-10, B4).
+  if (!(await requirePatientAccess())) return null;
 
   // Explicit patient_id filter, not just RLS, so a wrong/foreign id 404s
   // cleanly instead of relying only on the database to say no.

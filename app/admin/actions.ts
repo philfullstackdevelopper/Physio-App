@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { setInstructorStatus } from "@/lib/db/admin";
 import { isAdminEmail } from "@/lib/admin";
-import { suspendInstructor } from "@/lib/billing/suspendInstructor";
+import { rejectInstructorAndStopBilling, suspendInstructor } from "@/lib/billing/suspendInstructor";
 
 // Approving/rejecting ANOTHER instructor's row needs a privileged write: the
 // instructors RLS policy only lets a user read/write their OWN row
@@ -30,8 +30,19 @@ export async function rejectInstructor(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
-  await setInstructorStatus(id, "rejected");
+  // Comme la suspension (audit du 2026-11-10) : les patients d'un kiné refusé
+  // entrent gratuitement dans l'appli, leurs abonnements sont donc arrêtés
+  // chez Stripe d'abord. Un kiné jamais approuvé n'a en général aucun patient
+  // abonné : dans ce cas rien n'est appelé chez Stripe.
+  let query = "";
+  try {
+    await rejectInstructorAndStopBilling(id);
+  } catch (e) {
+    console.error("[admin] refus :", e);
+    query = `?error=${encodeURIComponent("Le refus a échoué (arrêt des abonnements des patients chez Stripe). Réessayez : les étapes déjà faites ne seront pas refaites.")}`;
+  }
   revalidatePath("/admin");
+  if (query) redirect(`/admin${query}`);
 }
 
 // Suspension d'un kiné (Philippe, 2026-10-07) : accès coupé — détail dans

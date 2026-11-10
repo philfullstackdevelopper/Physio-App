@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { isAdminEmail } from "@/lib/admin";
 import { getPool } from "@/lib/db/pool";
 import { listAllInstructors, listTestAccounts, listWaitlist, type TestAccountRow, type WaitlistRow } from "@/lib/db/admin";
+import SubmitButton from "@/components/SubmitButton";
 import Waitlist from "./Waitlist";
 import TestAccounts from "./TestAccounts";
 import KineExercises, { type AdminKineExercise } from "./KineExercises";
@@ -255,13 +256,15 @@ export default async function AdminPage({
               <div className="flex gap-2">
                 <form action={approveInstructor}>
                   <input type="hidden" name="id" value={p.id as string} />
-                  <button
-                    type="submit"
+                  {/* SubmitButton : désactivé pendant l'envoi, pas de double clic
+                      (audit du 2026-11-10) — idem pour les boutons ci-dessous. */}
+                  <SubmitButton
+                    pendingText="Approbation…"
                     className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
                   >
                     <UserCheck className="h-4 w-4" strokeWidth={1.75} />
                     Approuver
-                  </button>
+                  </SubmitButton>
                 </form>
                 {/* Confirmation en deux temps (audit du 2026-10-08) : un clic de
                     travers refusait le compte sans retour possible. */}
@@ -273,9 +276,9 @@ export default async function AdminPage({
                     <p>Le praticien ne pourra pas utiliser EasyPhysio. Vous pourrez revenir sur ce refus depuis la liste ci-dessous.</p>
                     <form action={rejectInstructor} className="mt-2">
                       <input type="hidden" name="id" value={p.id as string} />
-                      <button type="submit" className="w-full rounded-lg bg-slate-700 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                      <SubmitButton pendingText="Confirmer le refus" className="w-full rounded-lg bg-slate-700 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">
                         Confirmer le refus
-                      </button>
+                      </SubmitButton>
                     </form>
                   </div>
                 </details>
@@ -327,9 +330,9 @@ export default async function AdminPage({
                       </p>
                       <form action={suspendInstructorAction} className="mt-2">
                         <input type="hidden" name="id" value={k.id} />
-                        <button type="submit" className="w-full rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700">
+                        <SubmitButton pendingText="Confirmer la suspension" className="w-full rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700">
                           Confirmer la suspension
-                        </button>
+                        </SubmitButton>
                       </form>
                     </div>
                   </details>
@@ -339,17 +342,17 @@ export default async function AdminPage({
                 {k.status === "rejected" && (
                   <form action={approveInstructor} className="shrink-0">
                     <input type="hidden" name="id" value={k.id} />
-                    <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                    <SubmitButton pendingText="Approuver finalement" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
                       Approuver finalement
-                    </button>
+                    </SubmitButton>
                   </form>
                 )}
                 {k.status === "suspended" && (
                   <form action={reactivateInstructor} className="shrink-0">
                     <input type="hidden" name="id" value={k.id} />
-                    <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                    <SubmitButton pendingText="Réactiver" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
                       Réactiver
-                    </button>
+                    </SubmitButton>
                   </form>
                 )}
               </div>

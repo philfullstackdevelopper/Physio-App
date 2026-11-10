@@ -55,7 +55,8 @@
       "plan_6m": "6-month commitment"
     },
     "confirmWord": "DELETE",
-    "cancelFailed": "Your subscription couldn't be cancelled right now. Your account is intact — try again in a few minutes."
+    "cancelFailed": "Your subscription couldn't be cancelled right now. Your account is intact — try again in a few minutes.",
+    "deleteKineAccount": "This account is also a physiotherapist account: it can't be deleted from here. Request deletion from your physio space (My information)."
   },
   "informations": {
     "back": "Back to settings",

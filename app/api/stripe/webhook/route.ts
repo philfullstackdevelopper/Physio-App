@@ -3,7 +3,13 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/billing/stripe";
 import { connectStatusFromAccount, verifiedInstructorId } from "@/lib/billing/connectStatus";
 import { connectAccountDeauthorized, upsertConnectAccount } from "@/lib/db/admin";
-import { handleFollowUpSetupEvent, syncReviewDispute, syncReviewPaymentFromIntent, syncReviewRefund } from "@/lib/billing/followUp";
+import {
+  finalizeReviewPaymentCheckout,
+  handleFollowUpSetupEvent,
+  syncReviewDispute,
+  syncReviewPaymentFromIntent,
+  syncReviewRefund,
+} from "@/lib/billing/followUp";
 import { finalizePlatformBillingSetup, syncPlatformInvoice } from "@/lib/billing/platformInvoice";
 import {
   finalizePatientCardChange,
@@ -74,8 +80,13 @@ export async function POST(req: Request) {
         const subId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
         if (subId) await refreshPatientSubscription(subId, event.account ?? null);
       }
-      // Mode « payment » (patient qui règle lui-même un mois refusé) : c'est
-      // payment_intent.succeeded, plus bas, qui marque le mois payé.
+      // Mode « payment » sur un compte Connect (patient qui règle lui-même un
+      // mois refusé) : on relit le paiement de la page et on marque le mois
+      // payé (audit du 2026-11-10) — payment_intent.succeeded, plus bas, le
+      // fait aussi ; les deux sont rejouables.
+      if (session.mode === "payment" && event.account) {
+        await finalizeReviewPaymentCheckout(session.id, event.account, null);
+      }
       break;
     }
     // Abonnement d'accès créé, renouvelé, résilié, paiement refusé… (compte

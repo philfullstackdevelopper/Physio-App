@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { intlTag } from "@/lib/i18n/translator";
 import type { Locale } from "@/i18n/locales";
 import { requireUser } from "@/lib/supabase/require-user";
+import { requirePatientAccess } from "@/lib/patient/requirePatientAccess";
 import { loadPatientHome } from "@/lib/patient/home-data";
 import { buildWeeks, currentWeekNumber, localDateKey } from "@/lib/patient/weeks";
 import type { SessionDetail } from "@/components/WeekProgramme";
@@ -22,6 +23,9 @@ import ReviewPaymentNotice from "./suivi/ReviewPaymentNotice";
 export default async function PatientDashboard() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  // Barrières du patient (CGU, accès payé, consentement) refaites ici : le
+  // layout ne se rejoue pas à chaque navigation (audit du 2026-11-10, B4).
+  if (!(await requirePatientAccess())) return null;
   const locale = (await getLocale()) as Locale;
   const t = await getTranslations("patient.home");
 

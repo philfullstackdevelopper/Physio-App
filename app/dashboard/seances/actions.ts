@@ -15,6 +15,8 @@ import { localizeDbText } from "@/lib/i18n/dbContent";
 async function tx(key: string, values?: Record<string, string | number>): Promise<string> {
   return (await getTranslations("exercise.actions"))(key, values);
 }
+// Jamais le message brut de la base à l'écran (anglais technique, noms de
+// tables) : une phrase lisible, le détail reste dans les journaux du serveur.
 async function dbErr(error: Parameters<typeof friendlyDbError>[0]): Promise<string> {
   return friendlyDbError(error, undefined, await getTranslations("dashboard.lib"));
 }
@@ -61,7 +63,7 @@ export async function createSeance(formData: FormData) {
     const { error: exError } = await supabase
       .from("workout_exercises")
       .insert(exerciseIds.map((exId, i) => ({ workout_id: data.id, exercise_id: exId, position: i, ...doseColumnsFromForm(formData, exId) })));
-    if (exError) redirect(`/dashboard/seances/${data.id}?error=${encodeURIComponent(exError.message)}`);
+    if (exError) redirect(`/dashboard/seances/${data.id}?error=${encodeURIComponent(await dbErr(exError))}`);
   }
 
   // Venu d'une fiche patient (« Créer une séance ») : on y retourne pour
@@ -108,7 +110,7 @@ export async function saveSeance(formData: FormData) {
     .from("workouts")
     .update({ name, condition_id: conditionId, stage, duration_minutes: duration, times_per_week: tpw })
     .eq("id", id);
-  if (updateError) fail(await tx("saveFailed", { detail: updateError.message }));
+  if (updateError) fail(await tx("saveFailed", { detail: await dbErr(updateError) }));
 
   // Pas de transaction possible ici : pour ne jamais laisser la séance vide
   // (elle est partagée par tous les patients à qui elle est attribuée), on
@@ -120,19 +122,19 @@ export async function saveSeance(formData: FormData) {
     .from("workout_exercises")
     .select("id")
     .eq("workout_id", id);
-  if (readError) fail(await tx("readFailed", { detail: readError.message }));
+  if (readError) fail(await tx("readFailed", { detail: await dbErr(readError) }));
   const oldIds = (oldRows ?? []).map((r) => r.id as string);
 
   const rows = exerciseIds.map((exId, i) => ({ workout_id: id, exercise_id: exId, position: i, ...doseColumnsFromForm(formData, exId) }));
   const { data: inserted, error: insertError } = await supabase.from("workout_exercises").insert(rows).select("id");
-  if (insertError) fail(await tx("saveExercisesFailed", { detail: insertError.message }));
+  if (insertError) fail(await tx("saveExercisesFailed", { detail: await dbErr(insertError) }));
 
   if (oldIds.length) {
     const { error: deleteError } = await supabase.from("workout_exercises").delete().in("id", oldIds);
     if (deleteError) {
       const newIds = (inserted ?? []).map((r) => r.id as string);
       if (newIds.length) await supabase.from("workout_exercises").delete().in("id", newIds);
-      fail(await tx("updateExercisesFailed", { detail: deleteError.message }));
+      fail(await tx("updateExercisesFailed", { detail: await dbErr(deleteError) }));
     }
   }
 
@@ -191,7 +193,7 @@ export async function duplicateSeance(formData: FormData) {
       exs.map((e) => ({ workout_id: created.id, exercise_id: e.exercise_id, position: e.position, ...doseColumnsFromRow(e) })),
     );
     if (exError) {
-      redirect(`/dashboard/seances/${created.id}?error=${encodeURIComponent(await tx("copyFailed", { detail: exError.message }))}`);
+      redirect(`/dashboard/seances/${created.id}?error=${encodeURIComponent(await tx("copyFailed", { detail: await dbErr(exError) }))}`);
     }
   }
 

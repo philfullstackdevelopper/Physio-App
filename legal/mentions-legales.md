@@ -9,7 +9,9 @@
 
 [Raison sociale], [forme juridique — SASU/SAS/EI...], au capital de
 [montant] €, immatriculée au RCS de [ville] sous le numéro [SIREN/SIRET].
-Siège social : [adresse]. Numéro de TVA intracommunautaire : [TVA].
+Siège social : [adresse]. TVA non applicable, art. 293 B du CGI
+(micro-entreprise en franchise en base de TVA : pas de numéro de TVA
+intracommunautaire).
 
 Directeur de la publication : [nom].
 Contact : [email], [téléphone].

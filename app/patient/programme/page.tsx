@@ -2,6 +2,7 @@ import { getLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/locales";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { requirePatientAccess } from "@/lib/patient/requirePatientAccess";
 import { startOfWeekISO } from "@/lib/week";
 import { loadPatientHome } from "@/lib/patient/home-data";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
@@ -39,6 +40,9 @@ type Workout = {
 export default async function ProgrammePage() {
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  // Barrières du patient (CGU, accès payé, consentement) refaites ici : le
+  // layout ne se rejoue pas à chaque navigation (audit du 2026-11-10, B4).
+  if (!(await requirePatientAccess())) return null;
   const home = await loadPatientHome(supabase, user.id);
 
   // Les doses (séries, répétitions, maintien) viennent de la migration 0080 ;

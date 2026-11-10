@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { requirePatientOnboardingAccess } from "@/lib/patient/requirePatientAccess";
 import { getTranslations } from "next-intl/server";
 import { STAGE_LABELS, stageLabel, type InjuryStage } from "@/lib/exercise/prescription";
 import { EQUIPMENT_OPTIONS, equipmentLabels, type EquipmentId } from "@/lib/exercise/equipment";
@@ -28,6 +29,9 @@ export default async function OnboardingPage({
 
   const supabase = await createClient();
   const user = await requireUser(supabase);
+  // CGU + accès payé refaits ici (audit du 2026-11-10, B4) ; pas le
+  // consentement santé, qui se donne justement dans ce questionnaire.
+  if (!(await requirePatientOnboardingAccess())) return null;
 
   const [{ data: bodyParts }, { data: patient }] = await Promise.all([
     supabase.from("body_parts").select("id, slug, label, position").order("position"),

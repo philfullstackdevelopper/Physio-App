@@ -15,6 +15,12 @@ import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { notifyNewMessage } from "@/lib/push/notify";
 import { getTranslations } from "next-intl/server";
 import { getLibI18n } from "@/lib/dashboard/libI18n";
+import { createRateLimiter } from "@/lib/rateLimit";
+
+// Frein par kiné (audit du 2026-11-10, C4) : 30 invitations par heure. En
+// mémoire du serveur (voir les limites assumées dans lib/rateLimit.ts) ; la
+// vraie limite par 24 h est en base (migration 0087).
+const inviteLimiter = createRateLimiter({ limit: 30, windowMs: 60 * 60_000 });
 
 // Instructor invites a new patient by email. Creates the patient's Clerk
 // account invitation (they choose their own password from the e-mail), and
@@ -40,6 +46,9 @@ export async function addPatient(formData: FormData) {
   if (!fullName || !email) {
     redirect(`/dashboard/patients/new?error=${encodeURIComponent(t("fillAll"))}`);
   }
+  if (!inviteLimiter.allow(user.id)) {
+    redirect(`/dashboard/patients/new?error=${encodeURIComponent(t("tooManyInvites"))}`);
+  }
 
   // Reserve the internal uuid BEFORE the invite goes out, so patients.id and
   // app_users.app_id agree from day one (resolveAppUserId will find this row
@@ -63,12 +72,16 @@ export async function addPatient(formData: FormData) {
     }
   };
 
-  // Adresse déjà utilisée par un compte kiné (audit du 2026-11-08) : un
-  // message clair plutôt que le générique « un compte existe déjà ». Seulement
-  // si l'identifiant existait déjà (un neuf ne peut pas être celui d'un kiné).
+  // Adresse déjà utilisée par un compte kiné : refusée. Seulement si
+  // l'identifiant existait déjà (un neuf ne peut pas être celui d'un kiné).
+  //
+  // UNE SEULE réponse neutre (audit du 2026-11-10, C4) pour « c'est un kiné »,
+  // « un compte existe déjà » et « déjà patient » : des messages différents
+  // permettaient à un kiné d'apprendre qu'une adresse est suivie par un
+  // confrère (donnée de santé indirecte). Le détail reste dans les journaux.
   if (!appIdIsNew) {
     const asKine = await joinLinkKine(appId).catch(() => null);
-    if (asKine) redirect(`/dashboard/patients/new?error=${encodeURIComponent(t("isKine"))}`);
+    if (asKine) redirect(`/dashboard/patients/new?error=${encodeURIComponent(t("cannotInvite"))}`);
   }
 
   // Invitation Clerk (lib/patient/invitation.ts : rien qui révèle le suivi
@@ -77,7 +90,7 @@ export async function addPatient(formData: FormData) {
   // journaux du serveur : l'adresse de la page ne porte qu'un message choisi.
   const outcome = await invitePatient(email, fullName, "addPatient");
   if (outcome !== "sent") {
-    const message = outcome === "duplicate" ? t("duplicate") : outcome === "pending" ? t("pendingInvite") : t("inviteFailed");
+    const message = outcome === "duplicate" ? t("cannotInvite") : outcome === "pending" ? t("pendingInvite") : t("inviteFailed");
     await discardReservedId();
     redirect(`/dashboard/patients/new?error=${encodeURIComponent(message)}`);
   }
@@ -108,7 +121,7 @@ export async function addPatient(formData: FormData) {
     await discardReservedId();
     const message =
       patientError.code === "23505"
-        ? t("emailTaken")
+        ? t("cannotInvite")
         : t("saveFailed", { reason: friendlyDbError(patientError, undefined, tLib) });
     redirect(`/dashboard/patients/new?error=${encodeURIComponent(message)}`);
   }

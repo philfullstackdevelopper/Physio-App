@@ -46,6 +46,11 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s · ${siteConfig.name}`,
     },
     description,
+    // Adresse de référence de chaque page (« ./ » = la page en cours, sur
+    // l'adresse principale du site) : le site répond aussi sur l'adresse
+    // technique de Scalingo, et les moteurs de recherche ne doivent retenir
+    // que easyphysio.fr (audit du 2026-11-10).
+    alternates: { canonical: "./" },
     openGraph: {
       type: "website",
       locale: locale === "en" ? "en_GB" : "fr_FR",
