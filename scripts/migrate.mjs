@@ -59,20 +59,33 @@ async function main() {
   await client.connect();
 
   try {
+    // Le journal vit dans le schéma `internal`, que PostgREST n'expose pas
+    // (audit du 2026-11-13, U2 : dans `public`, n'importe qui sur Internet
+    // pouvait le lire, le vider ou le falsifier). Un ancien journal resté dans
+    // `public` est déplacé tel quel.
     await client.query(`
-      create table if not exists public.schema_migrations (
+      create schema if not exists internal;
+      do $$
+      begin
+        if to_regclass('public.schema_migrations') is not null
+           and to_regclass('internal.schema_migrations') is null then
+          alter table public.schema_migrations set schema internal;
+        end if;
+      end;
+      $$;
+      create table if not exists internal.schema_migrations (
         filename    text primary key,
         applied_at  timestamptz not null default now()
       );
     `);
-    const { rows } = await client.query("select filename from public.schema_migrations");
+    const { rows } = await client.query("select filename from internal.schema_migrations");
     const done = new Set(rows.map((r) => r.filename));
     const pending = files.filter((f) => !done.has(f));
 
     if (baseline) {
       const upTo = files.slice(0, files.indexOf(baseline) + 1).filter((f) => !done.has(f));
       for (const f of upTo) {
-        await client.query("insert into public.schema_migrations (filename) values ($1) on conflict do nothing", [f]);
+        await client.query("insert into internal.schema_migrations (filename) values ($1) on conflict do nothing", [f]);
         console.log(`noté  ${f} (déjà présent en base, non exécuté)`);
       }
       console.log(`Terminé : ${upTo.length} fichier(s) noté(s).`);
@@ -98,7 +111,7 @@ async function main() {
       try {
         await client.query("begin");
         await client.query(sql);
-        await client.query("insert into public.schema_migrations (filename) values ($1)", [file]);
+        await client.query("insert into internal.schema_migrations (filename) values ($1)", [file]);
         await client.query("commit");
       } catch (err) {
         await client.query("rollback");

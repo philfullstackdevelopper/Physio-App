@@ -9,7 +9,7 @@ import { precreateAppUserId } from "@/lib/auth/user-map";
 import { canInvitePatients } from "@/lib/launch";
 import type { ThreadMessage } from "@/components/MessageThread";
 import { friendlyDbError } from "@/lib/format/dbError";
-import { deleteAppUserById, joinLinkKine } from "@/lib/db/admin";
+import { discardReservedAppUser, joinLinkKine } from "@/lib/db/admin";
 import { invitePatient } from "@/lib/patient/invitation";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { notifyNewMessage } from "@/lib/push/notify";
@@ -66,7 +66,7 @@ export async function addPatient(formData: FormData) {
   const discardReservedId = async () => {
     if (!appIdIsNew) return;
     try {
-      await deleteAppUserById(appId);
+      await discardReservedAppUser(appId);
     } catch (err) {
       console.error("addPatient: identifiant réservé non supprimé", err);
     }

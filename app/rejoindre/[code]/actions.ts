@@ -5,7 +5,7 @@ import { cookies, headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { precreateAppUserId } from "@/lib/auth/user-map";
 import { canInvitePatients } from "@/lib/launch";
-import { deleteAppUserById, joinLinkKine, joinLinkPendingPatientName, joinPatientByLink, undoJoinByLink } from "@/lib/db/admin";
+import { discardReservedAppUser, joinLinkKine, joinLinkPendingPatientName, joinPatientByLink, undoJoinByLink } from "@/lib/db/admin";
 import { instructorIdFromJoinCode } from "@/lib/patient/joinLink";
 import { invitePatient } from "@/lib/patient/invitation";
 import { clientIp, createRateLimiter } from "@/lib/rateLimit";
@@ -75,7 +75,7 @@ export async function joinViaLink(code: string, formData: FormData) {
   const discard = async () => {
     if (!isNew) return;
     try {
-      await deleteAppUserById(appId!);
+      await discardReservedAppUser(appId!);
     } catch (err) {
       console.error("joinViaLink: identifiant réservé non supprimé", err);
     }

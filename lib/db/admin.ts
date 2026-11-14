@@ -44,6 +44,23 @@ export async function deleteAppUserByEmail(email: string): Promise<void> {
   await getPool().query("select internal.delete_app_user_by_email($1)", [email.trim().toLowerCase()]);
 }
 
+// Retire un identifiant RÉSERVÉ pour une invitation, seulement s'il n'a servi à
+// rien : personne ne s'est connecté avec, aucune fiche patient ni kiné (0090,
+// audit du 2026-11-13, U4). Deux inscriptions simultanées pour la même adresse
+// ne peuvent donc plus effacer le patient créé par l'autre.
+export async function discardReservedAppUser(appId: string): Promise<boolean> {
+  const { rows } = await getPool().query<{ r: boolean }>("select internal.discard_reserved_app_user($1) as r", [appId]);
+  return !!rows[0]?.r;
+}
+
+// Supprime la fiche d'un patient DE CE kiné (0090, U3). Les kinés n'ont plus le
+// droit de supprimer une fiche en parlant directement à la base : l'appelant
+// doit avoir arrêté l'abonnement Stripe avant. Vrai si une fiche a été supprimée.
+export async function deletePatientRecord(instructorId: string, patientId: string): Promise<boolean> {
+  const { rows } = await getPool().query<{ r: boolean }>("select internal.delete_patient($1, $2) as r", [instructorId, patientId]);
+  return !!rows[0]?.r;
+}
+
 // Vidéo d'un exercice de la PLATEFORME (created_by null) — réservé à
 // l'administrateur : l'appelant doit avoir vérifié isAdminEmail() côté serveur
 // avant (app/dashboard/exercises/actions.ts). Les kinés, eux, ne peuvent plus

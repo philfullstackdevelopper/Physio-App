@@ -9,7 +9,7 @@ import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstru
 import { applyAdjustment, adjustmentMessage } from "@/lib/exercise/adjustPlan";
 import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { deleteClerkUserWithRetry } from "@/lib/auth/deleteClerkUser";
-import { deleteAppUserById } from "@/lib/db/admin";
+import { deleteAppUserById, deletePatientRecord, discardReservedAppUser } from "@/lib/db/admin";
 import { getStripe } from "@/lib/billing/stripe";
 import { resolveAppUserId, precreateAppUserId } from "@/lib/auth/user-map";
 import { friendlyDbError } from "@/lib/format/dbError";
@@ -112,8 +112,16 @@ export async function deletePatient(formData: FormData) {
     }
   }
 
-  const { error } = await supabase.from("patients").delete().eq("id", patientId).eq("instructor_id", user.id);
-  if (error) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent(friendlyDbError(error, undefined, await tLib()))}`);
+  // Par le serveur (0090, audit du 2026-11-13, U3) : un kiné n'a plus le droit
+  // de supprimer une fiche en parlant directement à la base, ce qui sautait
+  // l'arrêt de l'abonnement ci-dessus. La fonction ne touche que SON patient.
+  let deleted = false;
+  try {
+    deleted = await deletePatientRecord(user.id, patientId);
+  } catch (e) {
+    console.error("deletePatient: suppression de la fiche impossible", e);
+  }
+  if (!deleted) redirect(`/dashboard/patients/${patientId}?error=${encodeURIComponent((await tActions())("notFound"))}`);
 
   // Sécurité (audit du 2026-10-08) : l'e-mail de la fiche patient est une
   // donnée modifiable — on ne supprime JAMAIS un compte de connexion sur la
@@ -136,7 +144,7 @@ export async function deletePatient(formData: FormData) {
       // réservé à CE patient (identifiant réservé à l'invitation, addPatient).
       const { appId, isNew } = await precreateAppUserId(patient!.email);
       if (isNew) {
-        await deleteAppUserById(appId); // l'e-mail n'appartenait à personne : on n'a rien créé
+        await discardReservedAppUser(appId); // l'e-mail n'appartenait à personne : on n'a rien créé
       } else if (appId === patientId) {
         const pending = await client.invitations.getInvitationList({ query: patient!.email, status: "pending" });
         await Promise.all(pending.data.map((inv) => client.invitations.revokeInvitation(inv.id)));
