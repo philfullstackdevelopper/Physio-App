@@ -1,4 +1,5 @@
 import "server-only";
+import { kineSignupText, whoLine } from "./discordText";
 
 // Alerte instantanée pour Philippe sur Discord (2026-11-16 : « une alerte
 // tout de suite quand un kiné s'inscrit, pas par e-mail »). Le serveur poste
@@ -6,9 +7,10 @@ import "server-only";
 // créée par Philippe dans Discord et rangée dans la variable Scalingo
 // DISCORD_ALERTS_WEBHOOK_URL). Sans cette variable : rien n'est envoyé.
 //
-// Aucun nom, e-mail ni cabinet dans le message (Discord est un service
-// américain) : seulement ce qui s'est passé et le lien vers /admin, où
-// Philippe voit qui. Ne lève jamais d'erreur, n'attend pas plus de 3 s.
+// Contenu : nom du kiné et ville du cabinet (Philippe, 2026-11-16) — des
+// données professionnelles, jamais de donnée de patient ni de santé. Pas
+// d'e-mail, de téléphone, de RPPS ni d'adresse complète : le détail est dans
+// /admin. Ne lève jamais d'erreur, n'attend pas plus de 3 s.
 
 const ADMIN_URL = `${process.env.NEXT_PUBLIC_SITE_URL || "https://easyphysio.fr"}/admin#activite`;
 
@@ -32,13 +34,10 @@ export async function alertDiscord(text: string): Promise<boolean> {
   }
 }
 
-/** Les deux moments d'une inscription kiné. */
-export function alertKineSignup(step: "compte_cree" | "terminee" | "directe"): Promise<boolean> {
-  const text =
-    step === "compte_cree"
-      ? "🆕 Un kiné vient de créer son compte (cabinet pas encore renseigné)."
-      : step === "directe"
-        ? "✅ Un kiné vient de s'inscrire — il est dans l'appli."
-        : "✅ Un kiné vient de terminer son inscription — il est dans l'appli.";
-  return alertDiscord(text);
+/** Les deux moments d'une inscription kiné (texte : discordText.ts). */
+export function alertKineSignup(
+  step: "compte_cree" | "terminee" | "directe",
+  who: { name?: string | null; cabinetAddress?: string | null } = {},
+): Promise<boolean> {
+  return alertDiscord(kineSignupText(step, whoLine(who.name, who.cabinetAddress)));
 }

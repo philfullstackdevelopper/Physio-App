@@ -95,7 +95,7 @@ export async function saveInstructorOnboarding(formData: FormData) {
   // Validé d'office dès que le cabinet est renseigné.
   await setInstructorStatus(user.id, "approved");
   await trackServer("kine_inscription_terminee", { etape: "formulaire_cabinet" });
-  await alertKineSignup("terminee");
+  await alertKineSignup("terminee", { name: fullName, cabinetAddress });
   // Page de passage (chargement complet) plutôt qu'une navigation interne
   // vers /dashboard, qui pouvait laisser un écran blanc (2026-11-04).
   redirect("/apres-connexion");
