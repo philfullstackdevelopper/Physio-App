@@ -108,6 +108,10 @@ export const FILMED_EXERCISE_NAMES: ReadonlySet<string> = new Set<string>([
   "Glute Bridge March",
   "Skater Hop",
   "Single-Leg Forward Hop",
+  // Clips Higgsfield du 10/11, contrôlés image par image le 17/11 (migration 0095).
+  "Calf Raise",
+  "Step-Up",
+  "Assisted Partial Squat",
 ]);
 
 /** Activités du quotidien (Philippe, 2026-11-17) : marche, vélo, course,
