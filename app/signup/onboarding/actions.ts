@@ -8,6 +8,7 @@ import { verifyRpps } from "@/lib/instructor/rppsVerification";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { getTranslations } from "next-intl/server";
 import { trackServer } from "@/lib/analytics/serverTrack";
+import { alertKineSignup } from "@/lib/alerts/discord";
 
 // Saves the cabinet/practice details collected right after Clerk signup (see
 // app/signup/onboarding/page.tsx).
@@ -94,6 +95,7 @@ export async function saveInstructorOnboarding(formData: FormData) {
   // Validé d'office dès que le cabinet est renseigné.
   await setInstructorStatus(user.id, "approved");
   await trackServer("kine_inscription_terminee", { etape: "formulaire_cabinet" });
+  await alertKineSignup("terminee");
   // Page de passage (chargement complet) plutôt qu'une navigation interne
   // vers /dashboard, qui pouvait laisser un écran blanc (2026-11-04).
   redirect("/apres-connexion");

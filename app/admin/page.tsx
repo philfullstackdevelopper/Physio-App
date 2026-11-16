@@ -130,7 +130,13 @@ export default async function AdminPage({
     sp.relance !== undefined
       ? `Relance envoyée à ${sp.relance} personne${Number(sp.relance) > 1 ? "s" : ""} : ${sentCount} notification${sentCount > 1 ? "s" : ""} partie${sentCount > 1 ? "s" : ""}` +
         (failCount > 0 ? `, ${failCount} échec${failCount > 1 ? "s" : ""} (appli retirée ou notifications coupées).` : ".")
-      : null;
+      : sp.discord === "ok"
+        ? "Alerte de test envoyée : regardez votre salon Discord."
+        : sp.discord === "absent"
+          ? "Alerte Discord pas encore réglée : ajoutez DISCORD_ALERTS_WEBHOOK_URL dans les variables Scalingo de l'appli easyphysio."
+          : sp.discord === "echec"
+            ? "Discord a refusé l'alerte : vérifiez l'adresse du webhook (copiée en entier, salon pas supprimé)."
+            : null;
 
   // « À traiter » (Philippe, 2026-11-04) : ce qui attend une action.
   const exToReview = (kineExercises ?? []).filter((r) => r.status === "pending");
