@@ -3,6 +3,7 @@
 // fictives pour juger l'affichage téléphone sans se connecter.
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ArrowDown, ArrowUp, CheckCircle2, ChevronRight, Minus } from "lucide-react";
 import type { DashboardHome, Tile } from "@/lib/dashboard/homeData";
 import type { UnreadMessageRow } from "@/lib/dashboard/unreadMessages";
@@ -96,7 +97,16 @@ function CalmState({ phone = false }: { phone?: boolean }) {
   );
 }
 
-export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome; unreadRows: UnreadMessageRow[] }) {
+export default function DashboardHomeView({
+  h,
+  unreadRows,
+  firstSteps,
+}: {
+  h: DashboardHome;
+  unreadRows: UnreadMessageRow[];
+  /** « Premiers pas » d'un nouveau kiné (components/FirstSteps.tsx), absent sinon. */
+  firstSteps?: ReactNode;
+}) {
   const t = useTranslations("dashboard.home");
   const i18n = useLibI18n();
   const nothingToFollow = unreadRows.length === 0 && h.toTreat.length === 0;
@@ -108,6 +118,8 @@ export default function DashboardHomeView({ h, unreadRows }: { h: DashboardHome;
           <h1 className="text-2xl font-semibold text-ink">{t("hello", { name: h.firstName })}</h1>
           <p className="text-sm text-muted first-letter:uppercase sm:first-letter:normal-case">{h.todayLabel}</p>
         </div>
+
+        {firstSteps}
 
         {/* Téléphone : 4 cases carrées en 2 × 2, sans scroller (Philippe,
             2026-10-02). La 4e case résume les patients à suivre et ouvre la

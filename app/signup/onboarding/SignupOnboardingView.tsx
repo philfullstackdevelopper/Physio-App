@@ -14,7 +14,15 @@ export default function SignupOnboardingView({
   action,
 }: {
   error?: string;
-  defaults: { cabinet_name: string | null; cabinet_address: string | null; phone: string | null; rpps_number: string | null; siret: string | null };
+  defaults: {
+    first_name?: string | null;
+    last_name?: string | null;
+    cabinet_name: string | null;
+    cabinet_address: string | null;
+    phone: string | null;
+    rpps_number: string | null;
+    siret: string | null;
+  };
   action: (formData: FormData) => void | Promise<void>;
 }) {
   const t = useTranslations("auth.cabinet");
@@ -37,6 +45,17 @@ export default function SignupOnboardingView({
           )}
 
           <form action={action} className="mt-6 flex flex-col gap-4 short:mt-3 short:gap-2.5">
+            {/* Prénom et nom du kiné (2026-11-16) : pas demandés par Clerk. */}
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <span className="text-sm font-medium text-slate-700">{t("firstNameLabel")}</span>
+                <input type="text" name="first_name" required autoComplete="given-name" defaultValue={defaults.first_name ?? ""} className={fieldClass} />
+              </label>
+              <label>
+                <span className="text-sm font-medium text-slate-700">{t("lastNameLabel")}</span>
+                <input type="text" name="last_name" required autoComplete="family-name" defaultValue={defaults.last_name ?? ""} className={fieldClass} />
+              </label>
+            </div>
             <label>
               <span className="text-sm font-medium text-slate-700">{t("nameLabel")}</span>
               <input

@@ -6,6 +6,11 @@ import { loadDashboardHome } from "@/lib/dashboard/homeData";
 import { loadUnreadMessages } from "@/lib/dashboard/unreadMessages";
 import DashboardHomeView from "@/components/DashboardHomeView";
 import { getLibI18n } from "@/lib/dashboard/libI18n";
+import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
+import FirstSteps, { FIRST_STEPS_COOKIE, type FirstStep } from "@/components/FirstSteps";
+import { cabinetView } from "@/lib/db/cabinets";
+import { canInvitePatients } from "@/lib/launch";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -28,5 +33,42 @@ export default async function DashboardPage() {
   }
   const unreadRows = [...unreadByPatient.values()].sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
 
-  return <DashboardHomeView h={h} unreadRows={unreadRows} />;
+  return <DashboardHomeView h={h} unreadRows={unreadRows} firstSteps={await firstStepsFor(supabase, user.id, user.email)} />;
+}
+
+// « Premiers pas » (Philippe, 2026-11-16) : un patient, les paiements, le
+// cabinet. Rien n'est affiché si le kiné a fermé la carte ou si tout est fait.
+async function firstStepsFor(supabase: Awaited<ReturnType<typeof createClient>>, userId: string, email: string | null) {
+  if ((await cookies()).get(FIRST_STEPS_COOKIE)?.value === "1") return null;
+  const t = await getTranslations("dashboard.home.firstSteps");
+  const [{ count: patients }, { data: connect }, cabinet] = await Promise.all([
+    supabase.from("patients").select("id", { count: "exact", head: true }).eq("instructor_id", userId),
+    supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", userId).maybeSingle(),
+    cabinetView(userId).catch(() => null),
+  ]);
+  const activeMembers = cabinet?.members.filter((m) => m.status === "active").length ?? 0;
+  const invitationsOpen = canInvitePatients(email);
+  const steps: FirstStep[] = [
+    {
+      key: "patient",
+      done: (patients ?? 0) > 0,
+      href: "/dashboard/patients/new",
+      label: t("patient"),
+      hint: invitationsOpen ? t("patientHint") : t("patientClosed"),
+    },
+    {
+      key: "payments",
+      done: connect?.status === "active",
+      href: "/dashboard/facturation",
+      label: t("payments"),
+      hint: t("paymentsHint"),
+    },
+    !cabinet
+      ? { key: "cabinet", done: false, href: "/dashboard/cabinet", label: t("cabinetNone"), hint: t("cabinetNoneHint") }
+      : cabinet.me.status === "pending"
+        ? { key: "cabinet", done: false, href: "/dashboard/cabinet", label: t("cabinetPending"), hint: cabinet.cabinet.name }
+        : { key: "cabinet", done: activeMembers >= 2, href: "/dashboard/cabinet", label: t("cabinetInvite"), hint: t("cabinetInviteHint") },
+  ];
+  if (steps.every((s) => s.done)) return null;
+  return <FirstSteps steps={steps} />;
 }

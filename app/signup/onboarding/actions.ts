@@ -43,8 +43,12 @@ export async function saveInstructorOnboarding(formData: FormData) {
   const phone = String(formData.get("phone") ?? "").trim();
   const rppsNumber = String(formData.get("rpps_number") ?? "").replace(/\s+/g, "");
   const siret = String(formData.get("siret") ?? "").replace(/\s+/g, "") || null;
+  const firstName = String(formData.get("first_name") ?? "").trim().slice(0, 60);
+  const lastName = String(formData.get("last_name") ?? "").trim().slice(0, 60);
 
   const t = await getTranslations("auth.cabinet");
+  if (!firstName || !lastName) redirect(`/signup/onboarding?error=${encodeURIComponent(t("errorName"))}`);
+  const fullName = `${firstName} ${lastName}`;
   const missing: string[] = [];
   if (!cabinetName) missing.push(t("missingName"));
   if (!cabinetAddress) missing.push(t("missingAddress"));
@@ -65,12 +69,13 @@ export async function saveInstructorOnboarding(formData: FormData) {
   // unverified RPPS, or one whose name doesn't match, still needs a human.
   // Inscription libre (Philippe, 2026-11-02) : le RPPS, facultatif, ne sert
   // plus qu'à la pastille « RPPS vérifié », jamais à bloquer l'accès.
-  const verification = rppsNumber ? await verifyRpps(rppsNumber, instructor?.full_name ?? "") : null;
+  const verification = rppsNumber ? await verifyRpps(rppsNumber, fullName) : null;
   const rppsVerified = !!rppsNumber && verification?.status === "verified" && !(await rppsInUse(rppsNumber, user.id));
 
   const { error } = await supabase
     .from("instructors")
     .update({
+      full_name: fullName,
       cabinet_name: cabinetName,
       cabinet_address: cabinetAddress,
       phone,

@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
-import { Building2, Check, Clock, LogOut, Search, Share2, UserMinus, X } from "lucide-react";
+import { Building2, Check, Clock, Copy, LogOut, Mail, RefreshCw, Search, Share2, UserMinus, UserPlus, X } from "lucide-react";
 import { initials } from "@/lib/format/initials";
 import type { CabinetSearchResult, CabinetView as CabinetViewData } from "@/lib/db/cabinets";
 import {
@@ -12,6 +12,7 @@ import {
   decideRequestAction,
   leaveCabinetAction,
   removeMemberAction,
+  renewInviteAction,
   requestJoinAction,
   searchCabinetsAction,
   type CabinetActionResult,
@@ -24,11 +25,14 @@ const card = "rounded-2xl border border-line bg-surface p-5 max-sm:p-4";
 export default function CabinetView({
   meId,
   view,
+  inviteUrl = null,
   suggestedName,
   suggestedAddress,
 }: {
   meId: string;
   view: CabinetViewData | null;
+  /** Lien d'invitation du cabinet (membre actif, migration 0091). */
+  inviteUrl?: string | null;
   suggestedName: string;
   suggestedAddress: string;
 }) {
@@ -60,7 +64,7 @@ export default function CabinetView({
           ) : view.me.status === "pending" ? (
             <PendingRequest name={view.cabinet.name} pending={pending} run={run} />
           ) : (
-            <MyCabinet meId={meId} view={view} pending={pending} run={run} />
+            <MyCabinet meId={meId} view={view} inviteUrl={inviteUrl} pending={pending} run={run} />
           )}
         </div>
       </div>
@@ -186,7 +190,75 @@ function PendingRequest({ name, pending, run }: { name: string; pending: boolean
   );
 }
 
-function MyCabinet({ meId, view, pending, run }: { meId: string; view: CabinetViewData; pending: boolean; run: Run }) {
+// « Inviter un collègue » (Philippe, 2026-11-16, migration 0091) : le lien du
+// cabinet, à copier ou envoyer par e-mail. Le collègue qui l'ouvre entre
+// directement, sans demande à valider. Le fondateur peut le changer.
+function InviteColleagues({ url, canRenew, cabinetName, pending, run }: { url: string; canRenew: boolean; cabinetName: string; pending: boolean; run: Run }) {
+  const t = useTranslations("dashboard.cabinet");
+  const [copied, setCopied] = useState(false);
+  const [confirmRenew, setConfirmRenew] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* copie refusée par le navigateur : l'adresse reste sélectionnable */
+    }
+  };
+  const mail = `mailto:?subject=${encodeURIComponent(t("inviteMailSubject", { name: cabinetName }))}&body=${encodeURIComponent(t("inviteMailBody", { name: cabinetName, url }))}`;
+  return (
+    <section className={card} aria-labelledby="cab-invite">
+      <h2 id="cab-invite" className="flex items-center gap-2 font-semibold text-ink">
+        <UserPlus className="h-4 w-4 text-brand" strokeWidth={1.75} />
+        {t("inviteTitle")}
+      </h2>
+      <p className="mt-1 text-sm text-muted">{t("inviteHelp")}</p>
+      <p className="mt-3 break-all rounded-lg bg-app-bg px-3 py-2 text-xs text-ink select-all">{url}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={copy}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white transition hover:bg-brand-dark"
+        >
+          {copied ? <Check className="h-4 w-4" strokeWidth={2} /> : <Copy className="h-4 w-4" strokeWidth={1.75} />}
+          {copied ? t("inviteCopied") : t("inviteCopy")}
+        </button>
+        <a href={mail} className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-app-bg">
+          <Mail className="h-4 w-4" strokeWidth={1.75} />
+          {t("inviteEmail")}
+        </a>
+        {canRenew &&
+          (!confirmRenew ? (
+            <button type="button" onClick={() => setConfirmRenew(true)} className="ml-auto inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">
+              <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
+              {t("inviteRenew")}
+            </button>
+          ) : (
+            <span className="ml-auto flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted">{t("inviteRenewConfirm")}</span>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  setConfirmRenew(false);
+                  run(() => renewInviteAction());
+                }}
+                className="rounded-lg bg-ink px-2.5 py-1 font-medium text-white disabled:opacity-50"
+              >
+                {t("inviteRenewYes")}
+              </button>
+              <button type="button" onClick={() => setConfirmRenew(false)} className="rounded-lg px-2 py-1 font-medium text-ink">
+                {t("leaveNo")}
+              </button>
+            </span>
+          ))}
+      </div>
+    </section>
+  );
+}
+
+function MyCabinet({ meId, view, inviteUrl, pending, run }: { meId: string; view: CabinetViewData; inviteUrl: string | null; pending: boolean; run: Run }) {
   const t = useTranslations("dashboard.cabinet");
   const format = useFormatter();
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -218,6 +290,8 @@ function MyCabinet({ meId, view, pending, run }: { meId: string; view: CabinetVi
           </p>
         </div>
       </section>
+
+      {inviteUrl && <InviteColleagues url={inviteUrl} canRenew={iAmOwner} cabinetName={view.cabinet.name} pending={pending} run={run} />}
 
       {requests.length > 0 && (
         <section className={card} aria-labelledby="cab-requests">

@@ -1,7 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
-import { cabinetView } from "@/lib/db/cabinets";
+import { cabinetInviteToken, cabinetView } from "@/lib/db/cabinets";
+import { requestOrigin } from "@/lib/requestOrigin";
 import CabinetView from "./CabinetView";
 
 export async function generateMetadata() {
@@ -18,10 +19,14 @@ export default async function CabinetPage() {
     cabinetView(user.id),
     supabase.from("instructors").select("cabinet_name, cabinet_address").eq("id", user.id).maybeSingle(),
   ]);
+  // Lien d'invitation (0091) : seulement pour un membre actif ; créé au besoin.
+  const token = view?.me.status === "active" ? await cabinetInviteToken(user.id).catch(() => null) : null;
+  const inviteUrl = token ? `${await requestOrigin()}/cabinet/${token}` : null;
   return (
     <CabinetView
       meId={user.id}
       view={view}
+      inviteUrl={inviteUrl}
       suggestedName={(profile?.cabinet_name as string | null) ?? ""}
       suggestedAddress={(profile?.cabinet_address as string | null) ?? ""}
     />

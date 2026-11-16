@@ -105,7 +105,71 @@ export async function cabinetView(instructorId: string): Promise<CabinetView | n
   }
 }
 
-export type AdminCabinetRow = { id: string; name: string; city: string | null; members: number; pending: number; created_at: string };
+// ---------------------------------------------------------------------------
+// Lien d'invitation d'un cabinet (migration 0091, Philippe 2026-11-16)
+// ---------------------------------------------------------------------------
+
+export const INVITE_TOKEN = /^[0-9a-f]{32}$/;
+
+export type CabinetInviteInfo = { id: string; name: string; city: string | null; members: number };
+
+/** Code d'invitation du cabinet du kiné (membre actif), créé au besoin. `renew` : nouveau code (fondateur). */
+export async function cabinetInviteToken(instructorId: string, renew = false): Promise<string | null> {
+  try {
+    const { rows } = await getPool().query("select internal.cabinet_invite_token($1, $2) as t", [instructorId, renew]);
+    return (rows[0]?.t as string | null) ?? null;
+  } catch (e) {
+    if (/cabinet_invite_token.*does not exist/.test(String(e))) return null;
+    throw e;
+  }
+}
+
+/** Nom, ville et nombre de kinés du cabinet de ce lien (page publique), ou null. */
+export async function cabinetByInvite(token: string): Promise<CabinetInviteInfo | null> {
+  if (!INVITE_TOKEN.test(token)) return null;
+  try {
+    const { rows } = await getPool().query("select * from internal.cabinet_by_invite($1)", [token]);
+    return (rows[0] as CabinetInviteInfo | undefined) ?? null;
+  } catch (e) {
+    if (/cabinet_by_invite.*does not exist/.test(String(e))) return null;
+    throw e;
+  }
+}
+
+/** Entre directement (membre actif) dans le cabinet de ce lien. */
+export async function joinCabinetByInvite(instructorId: string, token: string): Promise<string> {
+  const { rows } = await getPool().query("select internal.cabinet_join_by_invite($1, $2) as id", [instructorId, token]);
+  return rows[0].id as string;
+}
+
+/** Cabinets du même code postal (alerte « doublon » à l'inscription). */
+export async function cabinetsInPostalCode(postalCode: string): Promise<CabinetSearchResult[]> {
+  if (!/^\d{5}$/.test(postalCode)) return [];
+  try {
+    const { rows } = await getPool().query("select * from internal.cabinet_find_similar($1)", [postalCode]);
+    return rows as CabinetSearchResult[];
+  } catch (e) {
+    if (/cabinet_find_similar.*does not exist/.test(String(e))) return [];
+    throw e;
+  }
+}
+
+/** Fusion de deux cabinets — /admin uniquement, après vérification de l'administrateur. */
+export async function adminMergeCabinets(sourceId: string, targetId: string): Promise<number> {
+  const { rows } = await getPool().query("select internal.admin_merge_cabinets($1, $2) as n", [sourceId, targetId]);
+  return Number(rows[0]?.n ?? 0);
+}
+
+export type AdminCabinetRow = {
+  id: string;
+  name: string;
+  city: string | null;
+  postal_code?: string | null;
+  address?: string | null;
+  members: number;
+  pending: number;
+  created_at: string;
+};
 
 export async function adminListCabinets(): Promise<AdminCabinetRow[]> {
   try {

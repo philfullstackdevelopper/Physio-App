@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import KineInfosView from "@/components/KineInfosView";
 import AccountDeletionCard from "@/components/AccountDeletionCard";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
-import { cancelAccountDeletionAction, requestAccountDeletionAction } from "./actions";
+import KineNameForm from "@/components/KineNameForm";
+import { cancelAccountDeletionAction, requestAccountDeletionAction, updateInstructorNameAction } from "./actions";
 
 // Onglet « Mes informations » (téléphone) — voir components/KineInfosView.tsx.
 // En bas, « Supprimer mon compte » (Apple, règle 5.1.1(v), migration 0083).
@@ -18,6 +19,7 @@ export default async function InformationsPage() {
   return (
     <KineInfosView
       instructorName={(instructor?.full_name as string | null) ?? null}
+      nameEditor={<KineNameForm fullName={(instructor?.full_name as string | null) ?? null} action={updateInstructorNameAction} />}
       footer={
         <AccountDeletionCard
           requestedAt={(request?.requested_at as string | null) ?? null}

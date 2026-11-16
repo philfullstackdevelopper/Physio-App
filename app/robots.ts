@@ -16,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
         // Pages techniques ou personnelles (audit du 2026-11-10).
         "/documents",
         "/rejoindre",
+        "/cabinet",
         "/invitation",
         "/apres-connexion",
         "/connection-error",

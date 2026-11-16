@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { setInstructorStatus } from "@/lib/db/admin";
 import { isAdminEmail } from "@/lib/admin";
 import { rejectInstructorAndStopBilling, suspendInstructor } from "@/lib/billing/suspendInstructor";
+import { adminMergeCabinets } from "@/lib/db/cabinets";
 
 // Approving/rejecting ANOTHER instructor's row needs a privileged write: the
 // instructors RLS policy only lets a user read/write their OWN row
@@ -70,5 +71,22 @@ export async function reactivateInstructor(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await setInstructorStatus(id, "approved");
+  revalidatePath("/admin");
+}
+
+// Fusion de deux cabinets en double (Philippe, 2026-11-16, migration 0091) :
+// les kinés du doublon passent dans le cabinet gardé, puis le doublon est
+// supprimé. Les exercices partagés suivent leur auteur.
+export async function mergeCabinets(formData: FormData) {
+  await requireAdmin();
+  const source = String(formData.get("source") ?? "");
+  const target = String(formData.get("target") ?? "");
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID.test(source) || !UUID.test(target) || source === target) return;
+  try {
+    await adminMergeCabinets(source, target);
+  } catch (e) {
+    console.error("[admin] fusion de cabinets impossible", e);
+  }
   revalidatePath("/admin");
 }

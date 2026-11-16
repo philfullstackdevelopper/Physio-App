@@ -1,7 +1,9 @@
 "use server";
 
 import { lookupRpps, type RppsMatch } from "@/lib/instructor/rppsLookup";
-import { searchCabinets, type CabinetSearchResult } from "@/lib/db/cabinets";
+import { cabinetsInPostalCode, searchCabinets, type CabinetSearchResult } from "@/lib/db/cabinets";
+import { splitPostalCity } from "@/lib/cabinet/address";
+import { looksLikeSameCabinet } from "@/lib/cabinet/similar";
 import { headers } from "next/headers";
 import { clientIp, createRateLimiter } from "@/lib/rateLimit";
 
@@ -35,6 +37,27 @@ export async function searchCabinetsForSignup(query: string): Promise<CabinetSea
     return await searchCabinets(q);
   } catch (e) {
     console.error("searchCabinetsForSignup", e);
+    return [];
+  }
+}
+
+// « Ce cabinet existe peut-être déjà » (Philippe, 2026-11-16) : avant d'inscrire
+// un nouveau cabinet, on regarde les cabinets du même code postal et on garde
+// ceux dont le nom ou l'adresse ressemble (lib/cabinet/similar.ts). Même frein
+// et mêmes informations que la recherche : nom, ville, nombre de kinés.
+const similarLimiter = createRateLimiter({ limit: 20, windowMs: 10 * 60 * 1000 });
+
+export async function findSimilarCabinetsForSignup(name: string, address: string): Promise<CabinetSearchResult[]> {
+  const n = String(name ?? "").trim().slice(0, 120);
+  const a = String(address ?? "").trim().slice(0, 300);
+  const { postalCode } = splitPostalCity(a);
+  if (!n || !postalCode) return [];
+  if (!similarLimiter.allow(clientIp(await headers()))) return [];
+  try {
+    const candidates = await cabinetsInPostalCode(postalCode);
+    return candidates.filter((c) => looksLikeSameCabinet({ name: n, address: a }, { name: c.name, address: c.address })).slice(0, 3);
+  } catch (e) {
+    console.error("findSimilarCabinetsForSignup", e);
     return [];
   }
 }

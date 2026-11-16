@@ -81,6 +81,16 @@ function AccountMenu({ instructorName }: { instructorName: string | null }) {
             <p className="truncate text-sm font-semibold text-ink">{instructorName ?? t("practitioner")}</p>
             <p className="text-xs text-muted">{t("physio")}</p>
           </div>
+          <Link
+            href="/dashboard/informations"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-3 border-b border-line px-4 py-3 text-left text-sm font-medium text-ink"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-soft text-brand">
+              <CircleUserRound className="h-4 w-4" strokeWidth={1.75} />
+            </span>
+            {t("myInfoTitle")}
+          </Link>
           <SignOutOrExitDemo
             className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-danger"
             before={
@@ -211,7 +221,10 @@ export default function DashboardSidebar({
             {initials(instructorName)}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{instructorName ?? t("practitioner")}</p>
+            {/* Le nom mène à « Mes informations » (le corriger, la langue…). */}
+            <Link href="/dashboard/informations" title={t("myInfoTitle")} className="block truncate text-sm font-medium hover:underline">
+              {instructorName ?? t("practitioner")}
+            </Link>
             <p className="text-xs text-white/60">{t("physio")}</p>
             {contributorTitle && (
               <Link href="/dashboard/exercises/contributeurs" className="mt-0.5 flex items-center gap-1 text-[11px] text-white/80 hover:text-white">

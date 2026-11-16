@@ -6,8 +6,8 @@ import { SignUp } from "@clerk/nextjs";
 import { ArrowLeft, Building2, Search, Users } from "lucide-react";
 import { brandedHeaderTitle } from "@/lib/clerk/brandedTitle";
 import { compactClerkElements } from "@/lib/clerk/compact";
-import { findCabinetByRpps, searchCabinetsForSignup } from "@/app/signup/kine/actions";
-import type { CabinetSearchResult } from "@/lib/db/cabinets";
+import { findCabinetByRpps, findSimilarCabinetsForSignup, searchCabinetsForSignup } from "@/app/signup/kine/actions";
+import type { CabinetInviteInfo, CabinetSearchResult } from "@/lib/db/cabinets";
 import { useTranslations } from "next-intl";
 
 // Cabinet details FIRST, account creation LAST — the order a professional
@@ -41,14 +41,30 @@ type Found = { fullName: string; cabinetName: string | null; cabinetAddress: str
 // collègue validera, migration 0085), sinon il l'INSCRIT avec le formulaire
 // habituel et en devient le fondateur. Le choix part dans le même cookie,
 // lu par app/signup/finalize.
-export default function KineSignupFlow() {
+// Depuis le 2026-11-16 (Philippe) :
+//  - le PRÉNOM et le NOM du kiné sont demandés ici : la carte Clerk ne
+//    demandait que l'e-mail, et le nom devenait le début de l'adresse
+//    (« contact »), sur les notes d'honoraires et la page du QR code ;
+//  - arrivé par le lien d'invitation d'un collègue (/cabinet/<code>, prop
+//    `invite`), il rejoint directement CE cabinet, sans demande à valider ;
+//  - avant d'inscrire un nouveau cabinet, on vérifie qu'il n'existe pas déjà
+//    (même code postal, nom ou adresse ressemblants) et on propose de le rejoindre.
+type InviteProp = { token: string } & CabinetInviteInfo;
+
+export default function KineSignupFlow({ invite = null }: { invite?: InviteProp | null }) {
   const [step, setStep] = useState<"cabinet" | "account">("cabinet");
-  const [mode, setMode] = useState<"search" | "join" | "create">("search");
+  const [mode, setMode] = useState<"search" | "join" | "create">(invite ? "join" : "search");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CabinetSearchResult[] | null>(null);
-  const [joining, setJoining] = useState<CabinetSearchResult | null>(null);
+  const [joining, setJoining] = useState<CabinetSearchResult | null>(
+    invite ? { id: invite.id, name: invite.name, city: invite.city, postal_code: null, address: null, members: invite.members } : null,
+  );
   const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState({ cabinetName: "", cabinetAddress: "", phone: "", rppsNumber: "", siret: "" });
+  const [fields, setFields] = useState({ firstName: "", lastName: "", cabinetName: "", cabinetAddress: "", phone: "", rppsNumber: "", siret: "" });
+  const [similar, setSimilar] = useState<CabinetSearchResult[] | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [confirmedNew, setConfirmedNew] = useState(false);
+  const invitedHere = !!invite && joining?.id === invite.id;
   const [lookup, setLookup] = useState<"idle" | "searching" | "notFound">("idle");
   const [found, setFound] = useState<Found | null>(null);
   const t = useTranslations("auth.cabinet");
@@ -79,6 +95,18 @@ export default function KineSignupFlow() {
     setJoining(c);
     setMode("join");
     setError(null);
+    setSimilar(null);
+  };
+
+  // Prénom et nom : obligatoires sur les deux formulaires.
+  const names = () => {
+    const firstName = fields.firstName.trim();
+    const lastName = fields.lastName.trim();
+    if (!firstName || !lastName) {
+      setError(t("errorName"));
+      return null;
+    }
+    return { firstName, lastName };
   };
 
   const saveAndContinue = (payload: Record<string, unknown>) => {
@@ -90,6 +118,8 @@ export default function KineSignupFlow() {
   const handleJoin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!joining) return;
+    const who = names();
+    if (!who) return;
     const phone = fields.phone.trim();
     const rppsNumber = fields.rppsNumber.replace(/\s+/g, "");
     if (!phone) {
@@ -108,6 +138,8 @@ export default function KineSignupFlow() {
       phone,
       rppsNumber: rppsNumber || null,
       siret: null,
+      ...who,
+      inviteToken: invitedHere ? invite!.token : null,
     });
   };
 
@@ -135,8 +167,10 @@ export default function KineSignupFlow() {
     setFound(null);
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const who = names();
+    if (!who) return;
     const cabinetName = fields.cabinetName.trim();
     const cabinetAddress = fields.cabinetAddress.trim();
     const phone = fields.phone.trim();
@@ -156,8 +190,53 @@ export default function KineSignupFlow() {
       return;
     }
 
-    saveAndContinue({ mode: "create", cabinetName, cabinetAddress, phone, rppsNumber: rppsNumber || null, siret: siret || null });
+    // Doublon probable ? On le montre une fois ; « C'est un autre cabinet »
+    // laisse continuer.
+    if (!confirmedNew) {
+      setChecking(true);
+      const found = await findSimilarCabinetsForSignup(cabinetName, cabinetAddress).catch(() => []);
+      setChecking(false);
+      if (found.length > 0) {
+        setSimilar(found);
+        setError(null);
+        return;
+      }
+    }
+
+    saveAndContinue(createPayload());
   };
+
+  const createPayload = () => ({
+    mode: "create",
+    cabinetName: fields.cabinetName.trim(),
+    cabinetAddress: fields.cabinetAddress.trim(),
+    phone: fields.phone.trim(),
+    rppsNumber: fields.rppsNumber.replace(/\s+/g, "") || null,
+    siret: fields.siret.replace(/\s+/g, "") || null,
+    firstName: fields.firstName.trim(),
+    lastName: fields.lastName.trim(),
+  });
+
+  // « Non, c'est un autre cabinet » : on inscrit quand même.
+  const continueAnyway = () => {
+    setConfirmedNew(true);
+    setSimilar(null);
+    saveAndContinue(createPayload());
+  };
+
+  // Prénom + nom, en tête des deux formulaires (rejoindre / inscrire).
+  const nameFields = (
+    <div className="grid grid-cols-2 gap-3">
+      <label>
+        <span className="text-sm font-medium text-slate-700">{t("firstNameLabel")}</span>
+        <input type="text" name="given-name" autoComplete="given-name" required value={fields.firstName} onChange={set("firstName")} className={fieldClass} />
+      </label>
+      <label>
+        <span className="text-sm font-medium text-slate-700">{t("lastNameLabel")}</span>
+        <input type="text" name="family-name" autoComplete="family-name" required value={fields.lastName} onChange={set("lastName")} className={fieldClass} />
+      </label>
+    </div>
+  );
 
   if (step === "account") {
     return (
@@ -182,14 +261,19 @@ export default function KineSignupFlow() {
   const title = (
     <h1 className="font-display text-2xl font-semibold text-slate-900">{t.rich("title", { brand: (c) => <span className="text-blue-700">{c}</span> })}</h1>
   );
-  const haveAccount = (
-    <p className="mt-6 text-center text-sm text-slate-500 short:mt-3">
+  // `onForm` : sur les deux formulaires (prénom et nom en plus depuis le
+  // 2026-11-16), la ligne est masquée sur écran peu haut pour tenir sans
+  // défiler — elle reste sur le 1er écran et sur la carte de compte.
+  const haveAccountLine = (onForm: boolean) => (
+    <p className={`mt-6 text-center text-sm text-slate-500 short:mt-3 ${onForm ? "short:hidden" : ""}`}>
       {tShared("haveAccount")}{" "}
       <Link href="/login" className="font-medium text-blue-700 hover:underline">
         {tShared("signIn")}
       </Link>
     </p>
   );
+  const haveAccount = haveAccountLine(false);
+  const haveAccountOnForm = haveAccountLine(true);
 
   if (mode === "search") {
     return (
@@ -270,10 +354,11 @@ export default function KineSignupFlow() {
             <Users className="h-4 w-4 text-blue-600" strokeWidth={1.75} />
             {t("joinTitle", { name: joining.name })}
           </p>
-          <p className="mt-1 text-sm text-slate-600">{t("joinHelp")}</p>
+          <p className="mt-1 text-sm text-slate-600">{invitedHere ? t("joinInvitedHelp") : t("joinHelp")}</p>
         </div>
         {error && <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
         <form onSubmit={handleJoin} className="mt-4 flex flex-col gap-4 short:mt-3 short:gap-2.5">
+          {nameFields}
           <label>
             <span className="text-sm font-medium text-slate-700">{t("phoneShortLabel")}</span>
             <input type="tel" name="phone" required value={fields.phone} onChange={set("phone")} placeholder={t("phonePlaceholder")} className={fieldClass} />
@@ -296,7 +381,7 @@ export default function KineSignupFlow() {
             {tShared("continue")}
           </button>
         </form>
-        {haveAccount}
+        {haveAccountOnForm}
       </div>
     );
   }
@@ -321,7 +406,40 @@ export default function KineSignupFlow() {
 
       {error && <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
+      {similar && similar.length > 0 && (
+        <div role="alert" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="font-medium text-slate-900">{t("similarTitle")}</p>
+          <p className="mt-1 text-sm text-slate-600">{t("similarHelp")}</p>
+          <ul className="mt-3 flex flex-col gap-2">
+            {similar.map((c) => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => startJoin(c)}
+                  className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+                >
+                  <Building2 className="h-5 w-5 shrink-0 text-blue-600" strokeWidth={1.75} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium text-slate-900">{c.name}</span>
+                    <span className="block truncate text-xs text-slate-500">
+                      {[c.postal_code, c.city].filter(Boolean).join(" ") || c.address}
+                      {" · "}
+                      {t("kineCount", { count: c.members })}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-sm font-medium text-blue-700">{t("join")}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={continueAnyway} className="mt-3 text-sm font-medium text-slate-700 underline underline-offset-2 hover:text-slate-900">
+            {t("similarOther")}
+          </button>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4 short:mt-3 short:gap-2.5">
+        {nameFields}
         <div>
           <span className="text-sm font-medium text-slate-700">
             {t("rppsLabel")} <span className="font-normal text-slate-400">{t("optional")}</span>
@@ -409,7 +527,7 @@ export default function KineSignupFlow() {
           />
         </label>
 
-        <div className="flex flex-col gap-4 short:grid short:grid-cols-2 short:gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <label>
             <span className="text-sm font-medium text-slate-700">{t("phoneShortLabel")}</span>
             <input
@@ -441,13 +559,14 @@ export default function KineSignupFlow() {
 
         <button
           type="submit"
-          className="mt-2 rounded-xl bg-blue-600 py-2.5 font-medium text-white transition hover:bg-blue-700 short:mt-1"
+          disabled={checking}
+          className="mt-2 rounded-xl bg-blue-600 py-2.5 font-medium text-white transition hover:bg-blue-700 disabled:opacity-60 short:mt-1"
         >
-          {tShared("continue")}
+          {checking ? t("searching") : tShared("continue")}
         </button>
       </form>
 
-      {haveAccount}
+      {haveAccountOnForm}
     </div>
   );
 }

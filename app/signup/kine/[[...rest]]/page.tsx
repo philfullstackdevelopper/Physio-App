@@ -6,6 +6,7 @@ import KineSignupFlow from "@/components/KineSignupFlow";
 import LoginExerciseShowcase from "@/components/LoginExerciseShowcase";
 import SignupClosed from "@/components/SignupClosed";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
+import { cabinetByInvite, INVITE_TOKEN } from "@/lib/db/cabinets";
 import { getTranslations } from "next-intl/server";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 // Titre et description propres à la page (audit du 2026-11-10 : toutes les
@@ -15,9 +16,14 @@ export async function generateMetadata() {
   return { title: t("signupKineTitle"), description: t("signupKineDescription") };
 }
 
-export default async function SignupPage() {
+export default async function SignupPage({ searchParams }: { searchParams: Promise<{ invitation?: string }> }) {
   // Avant le lancement : pas de création de compte (lib/launchFlags.ts).
   if (!SIGNUPS_OPEN) return <SignupClosed />;
+  // Arrivé par le lien d'invitation d'un collègue (/cabinet/<code>, migration
+  // 0091) : le cabinet est déjà choisi, il le rejoindra directement.
+  const token = String((await searchParams).invitation ?? "");
+  const cabinet = INVITE_TOKEN.test(token) ? await cabinetByInvite(token).catch(() => null) : null;
+  const invite = cabinet ? { token, ...cabinet } : null;
   const t = await getTranslations("auth.signupKine");
   const tShared = await getTranslations("auth.shared");
   const encouragements = [t("encouragement1"), t("encouragement2"), t("encouragement3"), t("encouragement4")];
@@ -53,7 +59,7 @@ export default async function SignupPage() {
             {/* « Déjà un compte ? » est dans KineSignupFlow (1re étape) : à la
                 2e, la carte Clerk a déjà son propre lien — deux fois le même
                 faisait défiler la page (audit 2026-10-10). */}
-            <KineSignupFlow />
+            <KineSignupFlow invite={invite} />
           </div>
         </div>
 

@@ -20,7 +20,16 @@ const TILES = [
   { href: "/dashboard/cabinet", key: "cabinet", icon: Building2, tone: "bg-warn-soft text-warn" },
 ];
 
-export default function KineInfosView({ instructorName, footer }: { instructorName: string | null; footer?: ReactNode }) {
+export default function KineInfosView({
+  instructorName,
+  nameEditor,
+  footer,
+}: {
+  instructorName: string | null;
+  /** « Votre nom », modifiable (2026-11-16) — absent dans la démo. */
+  nameEditor?: ReactNode;
+  footer?: ReactNode;
+}) {
   const tr = useTranslations("dashboard.infos");
   return (
     <main className="min-h-screen max-sm:min-h-0">
@@ -53,6 +62,7 @@ export default function KineInfosView({ instructorName, footer }: { instructorNa
             </Link>
           ))}
         </nav>
+        {nameEditor}
         {/* Langue de l'interface (Philippe, 2026-11-06) : une ligne compacte,
             la page tient toujours sur un écran. */}
         <div className="mt-3 rounded-2xl bg-surface px-5 py-3 shadow-soft">

@@ -6,9 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import { rppsInUse, setInstructorStatus, setInstructorRppsVerified } from "@/lib/db/admin";
 import { verifyRpps } from "@/lib/instructor/rppsVerification";
 import { SIGNUPS_OPEN } from "@/lib/launchFlags";
-import { createCabinet, requestJoinCabinet } from "@/lib/db/cabinets";
+import { createCabinet, joinCabinetByInvite, requestJoinCabinet } from "@/lib/db/cabinets";
 import { splitPostalCity } from "@/lib/cabinet/address";
-import { parsePendingCabinet, type PendingCabinet } from "@/lib/cabinet/pendingCabinet";
+import { parsePendingCabinet, pendingFullName, type PendingCabinet } from "@/lib/cabinet/pendingCabinet";
 
 const PENDING_CABINET_COOKIE = "pending_cabinet";
 
@@ -26,7 +26,16 @@ function readPendingCabinet(raw: string | undefined): PendingCabinet | null {
 // Jamais bloquant : en cas d'échec, le kiné le refait depuis « Mon cabinet ».
 async function applyCabinetChoice(appId: string, c: PendingCabinet): Promise<void> {
   try {
-    if (c.mode === "join" && c.cabinetId) {
+    if (c.mode === "join" && c.inviteToken) {
+      // Lien d'invitation d'un collègue (0091) : membre actif tout de suite.
+      // Code changé entre-temps : simple demande, validée par un collègue.
+      try {
+        await joinCabinetByInvite(appId, c.inviteToken);
+      } catch (e) {
+        console.error("finalize : lien d'invitation refusé, demande normale", e);
+        if (c.cabinetId) await requestJoinCabinet(appId, c.cabinetId);
+      }
+    } else if (c.mode === "join" && c.cabinetId) {
       await requestJoinCabinet(appId, c.cabinetId);
     } else {
       await createCabinet(appId, { name: c.cabinetName, address: c.cabinetAddress, ...splitPostalCity(c.cabinetAddress) });
@@ -113,7 +122,10 @@ async function destination(): Promise<string> {
   if (!existing && !SIGNUPS_OPEN) return ("/signup");
 
   if (!existing) {
+    // Nom saisi au premier écran (2026-11-16), sinon celui de Google, sinon
+    // le début de l'e-mail (corrigeable dans « Mes informations »).
     const fullName =
+      pendingFullName(pendingCabinet) ||
       [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
       email.split("@")[0];
 

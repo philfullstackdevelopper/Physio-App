@@ -61,7 +61,23 @@
     "calmTitle": "Nothing to report",
     "calmBody": "No severe pain, no patient falling behind.",
     "calmBodyShort": "Your patients are on track.",
-    "severe": "Severe situation"
+    "severe": "Severe situation",
+    "firstSteps": {
+      "title": "Getting started",
+      "close": "Hide getting started",
+      "done": "done",
+      "todo": "to do",
+      "patient": "Add your first patient",
+      "patientHint": "By email or with your QR code",
+      "patientClosed": "Invitations open at launch",
+      "payments": "Turn on your payments",
+      "paymentsHint": "To receive the follow-up your patients pay for",
+      "cabinetNone": "Join or create your practice",
+      "cabinetNoneHint": "To share your exercises",
+      "cabinetPending": "Request sent to your practice",
+      "cabinetInvite": "Invite your colleagues",
+      "cabinetInviteHint": "With your practice's link"
+    }
   },
   "layout": {
     "pendingTitle": "Account awaiting approval",
@@ -93,7 +109,8 @@
     "exitDemo": "Leave the demo",
     "signOut": "Sign out",
     "print": "Print or save as PDF",
-    "myCabinet": "My practice"
+    "myCabinet": "My practice",
+    "myInfoTitle": "My information"
   },
   "infos": {
     "title": "My details",
@@ -118,6 +135,20 @@
     "cabinet": {
       "label": "My practice",
       "hint": "Your colleagues and shared exercises"
+    },
+    "name": {
+      "label": "Your name",
+      "empty": "Not set",
+      "edit": "Edit",
+      "help": "Your patients see it, and it appears on your fee notes.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "saved": "Name saved",
+      "errorRequired": "Enter your first and last name.",
+      "errorSave": "Your name couldn't be saved. Please try again in a moment."
     }
   },
   "patients": {
@@ -371,6 +402,16 @@
       "notAllowed": "This action isn't possible.",
       "nameRequired": "Enter the practice name.",
       "unknown": "Something went wrong. Please try again."
-    }
+    },
+    "inviteTitle": "Invite a colleague",
+    "inviteHelp": "Send this link to the physios in your practice: when they open it, they create their account (or sign in) and join the practice directly, no approval needed.",
+    "inviteCopy": "Copy link",
+    "inviteCopied": "Link copied",
+    "inviteEmail": "Send by email",
+    "inviteMailSubject": "Join {name} on EasyPhysio",
+    "inviteMailBody": "Hi,\n\nI'm inviting you to join {name} on EasyPhysio, so we can share our exercises and follow our patients between sessions.\n\nThis link creates your account and adds you to the practice directly:\n{url}\n\nSee you soon",
+    "inviteRenew": "Change link",
+    "inviteRenewConfirm": "The old link will stop working.",
+    "inviteRenewYes": "Change"
   }
 }

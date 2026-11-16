@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import {
   cabinetErrorCode,
+  cabinetInviteToken,
   createCabinet,
   decideCabinetRequest,
   leaveCabinet,
@@ -105,6 +106,17 @@ export async function leaveCabinetAction(): Promise<CabinetActionResult> {
   const id = await me();
   try {
     await leaveCabinet(id);
+    return done();
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Nouveau lien d'invitation (fondateur) : l'ancien lien ne marche plus (0091). */
+export async function renewInviteAction(): Promise<CabinetActionResult> {
+  const id = await me();
+  try {
+    await cabinetInviteToken(id, true);
     return done();
   } catch (e) {
     return fail(e);

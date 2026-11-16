@@ -61,7 +61,23 @@
     "calmTitle": "Rien à signaler",
     "calmBody": "Aucune douleur forte, aucun patient en retard.",
     "calmBodyShort": "Vos patients avancent.",
-    "severe": "Situation sévère"
+    "severe": "Situation sévère",
+    "firstSteps": {
+      "title": "Premiers pas",
+      "close": "Masquer les premiers pas",
+      "done": "fait",
+      "todo": "à faire",
+      "patient": "Ajouter votre premier patient",
+      "patientHint": "Par e-mail ou avec votre QR code",
+      "patientClosed": "Les invitations ouvriront au lancement",
+      "payments": "Activer vos paiements",
+      "paymentsHint": "Pour recevoir le suivi réglé par vos patients",
+      "cabinetNone": "Rejoindre ou créer votre cabinet",
+      "cabinetNoneHint": "Pour partager vos exercices",
+      "cabinetPending": "Demande envoyée à votre cabinet",
+      "cabinetInvite": "Inviter vos collègues",
+      "cabinetInviteHint": "Avec le lien de votre cabinet"
+    }
   },
   "layout": {
     "pendingTitle": "Compte en cours de validation",
@@ -93,7 +109,8 @@
     "exitDemo": "Quitter la démo",
     "signOut": "Se déconnecter",
     "print": "Imprimer ou enregistrer en PDF",
-    "myCabinet": "Mon cabinet"
+    "myCabinet": "Mon cabinet",
+    "myInfoTitle": "Mes informations"
   },
   "infos": {
     "title": "Mes informations",
@@ -118,6 +135,20 @@
     "cabinet": {
       "label": "Mon cabinet",
       "hint": "Vos collègues et les exercices partagés"
+    },
+    "name": {
+      "label": "Votre nom",
+      "empty": "Non renseigné",
+      "edit": "Modifier",
+      "help": "Vos patients le voient, et il figure sur vos notes d'honoraires.",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "cancel": "Annuler",
+      "saved": "Nom enregistré",
+      "errorRequired": "Indiquez votre prénom et votre nom.",
+      "errorSave": "Le nom n'a pas pu être enregistré. Réessayez dans un instant."
     }
   },
   "patients": {
@@ -371,6 +402,16 @@
       "notAllowed": "Cette action n'est pas possible.",
       "nameRequired": "Indiquez le nom du cabinet.",
       "unknown": "Une erreur est survenue. Réessayez."
-    }
+    },
+    "inviteTitle": "Inviter un collègue",
+    "inviteHelp": "Envoyez ce lien aux kinés de votre cabinet : en l'ouvrant, ils créent leur compte (ou se connectent) et entrent directement dans le cabinet, sans validation.",
+    "inviteCopy": "Copier le lien",
+    "inviteCopied": "Lien copié",
+    "inviteEmail": "Envoyer par e-mail",
+    "inviteMailSubject": "Rejoins {name} sur EasyPhysio",
+    "inviteMailBody": "Bonjour,\n\nJe t'invite à rejoindre {name} sur EasyPhysio, pour partager nos exercices et suivre nos patients entre deux séances.\n\nCe lien crée ton compte et t'ajoute directement au cabinet :\n{url}\n\nÀ bientôt",
+    "inviteRenew": "Changer le lien",
+    "inviteRenewConfirm": "L'ancien lien ne marchera plus.",
+    "inviteRenewYes": "Changer"
   }
 }

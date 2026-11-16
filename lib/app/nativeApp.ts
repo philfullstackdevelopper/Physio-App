@@ -24,6 +24,7 @@ const APP_PATH_PREFIXES = [
   "/forgot-password",
   "/invitation",
   "/rejoindre",
+  "/cabinet",
   "/apres-connexion",
   "/connection-error",
   "/dashboard",

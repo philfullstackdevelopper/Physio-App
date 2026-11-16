@@ -7,7 +7,8 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
-import { cancelAccountDeletion, requestAccountDeletion } from "@/lib/db/admin";
+import { cancelAccountDeletion, requestAccountDeletion, rppsInUse, setInstructorRppsVerified } from "@/lib/db/admin";
+import { verifyRpps } from "@/lib/instructor/rppsVerification";
 
 export async function requestAccountDeletionAction(formData: FormData): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
@@ -34,5 +35,38 @@ export async function cancelAccountDeletionAction(): Promise<{ ok: true } | { er
     return { error: (await getTranslations("dashboard.infos.deletion"))("cancelFailed") };
   }
   revalidatePath("/dashboard/informations");
+  return { ok: true };
+}
+
+// Nom du kiné (Philippe, 2026-11-16) : celui que voient ses patients (page du
+// QR code, messages) et qui figure sur ses notes d'honoraires. Écrit avec SA
+// session (règle instructors_update_own). Le badge « RPPS vérifié » compare ce
+// nom à l'Annuaire Santé : il est donc revérifié à chaque changement de nom.
+export async function updateInstructorNameAction(formData: FormData): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const { user } = await requireApprovedInstructor(supabase);
+  const t = await getTranslations("dashboard.infos.name");
+  const firstName = String(formData.get("first_name") ?? "").trim().slice(0, 60);
+  const lastName = String(formData.get("last_name") ?? "").trim().slice(0, 60);
+  if (!firstName || !lastName) return { error: t("errorRequired") };
+  const fullName = `${firstName} ${lastName}`;
+
+  const { data: row, error: readError } = await supabase.from("instructors").select("full_name, rpps_number").eq("id", user.id).maybeSingle();
+  if (readError || !row) return { error: t("errorSave") };
+  if (row.full_name === fullName) return { ok: true };
+
+  const { error } = await supabase.from("instructors").update({ full_name: fullName }).eq("id", user.id);
+  if (error) {
+    console.error("updateInstructorNameAction", error);
+    return { error: t("errorSave") };
+  }
+
+  const rpps = (row.rpps_number as string | null) ?? null;
+  if (rpps) {
+    const verification = await verifyRpps(rpps, fullName).catch(() => null);
+    const verified = verification?.status === "verified" && !(await rppsInUse(rpps, user.id).catch(() => true));
+    await setInstructorRppsVerified(user.id, verified && verification?.status === "verified" ? verification.verifiedAt : null);
+  }
+  revalidatePath("/dashboard", "layout");
   return { ok: true };
 }

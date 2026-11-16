@@ -26,7 +26,7 @@ export default async function SignupOnboardingPage({
 
   const { data: instructor } = await supabase
     .from("instructors")
-    .select("status, cabinet_name, cabinet_address, phone, rpps_number, siret")
+    .select("status, full_name, cabinet_name, cabinet_address, phone, rpps_number, siret")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -37,10 +37,18 @@ export default async function SignupOnboardingPage({
     redirect("/dashboard");
   }
 
+  // Nom pré-rempli, sauf s'il ne vaut que le début de l'e-mail (nom par défaut
+  // quand Clerk ne l'a pas demandé) : le kiné le tape alors lui-même.
+  const fullName = ((instructor.full_name as string | null) ?? "").trim();
+  const isEmailPrefix = !!user.email && fullName === user.email.split("@")[0];
+  const [first, ...rest] = isEmailPrefix ? [] : fullName.split(/\s+/);
+
   return (
     <SignupOnboardingView
       error={error}
       defaults={{
+        first_name: first ?? null,
+        last_name: rest.join(" ") || null,
         cabinet_name: (instructor.cabinet_name as string | null) ?? null,
         cabinet_address: (instructor.cabinet_address as string | null) ?? null,
         phone: (instructor.phone as string | null) ?? null,
