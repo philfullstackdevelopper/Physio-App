@@ -43,11 +43,38 @@ function PrimaryCta({
   );
 }
 
+// Carte d'identité pour Google (2026-11-16, Philippe : « quelqu'un qui tape
+// EasyPhysio doit arriver sur le site en premier ») : nom du site et de la
+// marque, adresse, logo. Google s'en sert pour afficher « EasyPhysio » comme
+// nom du site et relier les recherches « easyphysio » / « easy physio ».
+const BRAND_JSON_LD = JSON.stringify([
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "EasyPhysio",
+    alternateName: ["Easy Physio", "easyphysio.fr"],
+    url: "https://easyphysio.fr/",
+    inLanguage: ["fr", "en"],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "EasyPhysio",
+    alternateName: "Easy Physio",
+    url: "https://easyphysio.fr/",
+    logo: "https://easyphysio.fr/app-icons/icon-512.png",
+    email: "contact@easyphysio.fr",
+    description:
+      "Application de suivi d'exercices pour les kinésithérapeutes et leurs patients : programmes d'exercices, séances guidées en vidéo et suivi entre deux rendez-vous.",
+  },
+]);
+
 export default async function Home() {
   // Textes : messages/<langue>/home.json (home.landing).
   const t = await getTranslations("home.landing");
   return (
     <div className="relative min-h-screen bg-[#f6f8fd] text-slate-800">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: BRAND_JSON_LD }} />
       {/* Ouverture façon Aurascan (2026-10-07) : à chaque chargement de la page. */}
       <IntroSplash />
       {/* Ambient background: a soft blue glow behind the hero (echoes the
