@@ -21,7 +21,9 @@ export function organizationLd() {
     name: siteConfig.name,
     alternateName: ["Easy Physio", "Easyphysio", "EasyPhysio.fr"],
     url: siteConfig.url,
-    logo: `${siteConfig.url}/brand/easyphysio-icon.png`,
+    logo: `${siteConfig.url}/app-icons/icon-512.png`,
+    description:
+      "Application de suivi d'exercices pour les kinésithérapeutes et leurs patients : programmes d'exercices, séances guidées en vidéo et suivi entre deux rendez-vous.",
     email: "contact@easyphysio.fr",
     founder: { "@type": "Person", name: "Philippe Maupain" },
     foundingDate: "2026",
@@ -35,8 +37,8 @@ export function websiteLd(locale: "fr" | "en") {
     "@type": "WebSite",
     "@id": SITE_ID,
     name: siteConfig.name,
-    alternateName: "Easy Physio",
-    url: siteConfig.url,
+    alternateName: ["Easy Physio", "easyphysio.fr"],
+    url: `${siteConfig.url}/`,
     inLanguage: locale === "en" ? "en" : "fr-FR",
     publisher: { "@id": ORG_ID },
   };
