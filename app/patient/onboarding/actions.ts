@@ -46,8 +46,13 @@ export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> 
   const rehabProgress = String(formData.get("rehab_progress") ?? "").trim() || null;
   const history = String(formData.get("history") ?? "").trim() || null;
   const dateOfBirth = String(formData.get("date_of_birth") ?? "");
-  const heightCm = Number(formData.get("height_cm"));
-  const weightKg = Number(formData.get("weight_kg"));
+  // Taille et poids facultatifs depuis le 2026-11-16 : vide → null.
+  const optionalNumber = (v: FormDataEntryValue | null) => {
+    const s = String(v ?? "").trim();
+    return s === "" ? null : Number(s);
+  };
+  const heightCm = optionalNumber(formData.get("height_cm"));
+  const weightKg = optionalNumber(formData.get("weight_kg"));
   const activityLevel = String(formData.get("activity_level") ?? "");
   const equipment = formData
     .getAll("equipment")
@@ -66,8 +71,6 @@ export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> 
   if (declaredBodyPartIds.length === 0) missing.push(t("fieldBodyPart"));
   if (!validStage) missing.push(t("fieldStage"));
   if (!dateOfBirth) missing.push(t("fieldDob"));
-  if (!heightCm) missing.push(t("fieldHeight"));
-  if (!weightKg) missing.push(t("fieldWeight"));
   if (!validActivity) missing.push(t("fieldActivity"));
   if (missing.length > 0) {
     redirect(`/patient/onboarding?error=${encodeURIComponent(t("missing", { list: missing.join(", ") }))}`);
@@ -79,8 +82,8 @@ export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> 
   const dob = new Date(dateOfBirth);
   const age = (Date.now() - dob.getTime()) / (365.25 * 86_400_000);
   if (Number.isNaN(dob.getTime()) || age < 0 || age > 120) invalid.push(t("fieldDob"));
-  if (!Number.isFinite(heightCm) || heightCm < 50 || heightCm > 250) invalid.push(t("invalidHeight"));
-  if (!Number.isFinite(weightKg) || weightKg < 20 || weightKg > 350) invalid.push(t("invalidWeight"));
+  if (heightCm != null && (!Number.isFinite(heightCm) || heightCm < 50 || heightCm > 250)) invalid.push(t("invalidHeight"));
+  if (weightKg != null && (!Number.isFinite(weightKg) || weightKg < 20 || weightKg > 350)) invalid.push(t("invalidWeight"));
   if (invalid.length > 0) {
     redirect(`/patient/onboarding?error=${encodeURIComponent(t("check", { list: invalid.join(", ") }))}`);
   }

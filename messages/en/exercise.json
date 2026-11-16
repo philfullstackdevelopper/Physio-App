@@ -137,7 +137,11 @@
     "doneExercise": "I’ve finished this exercise",
     "fullscreenAria": "View the video full screen",
     "fullscreenTitle": "Full screen",
-    "setsHint": "Tap a set once you have done it"
+    "setsHint": "Tap a set once you have done it",
+    "painQuestion": "Did anything hurt during the session?",
+    "painNo": "No, it was fine",
+    "painYes": "Yes, it hurt",
+    "painWhich": "On which exercise(s)? (tap to choose)"
   },
   "illustration": {
     "aria": "Demonstration: {name}",

@@ -63,6 +63,8 @@ export default async function AccueilPatientPrototype() {
             title: t("lowBackL2"),
             subtitle: t("homeSubtitle"),
             cta: t("homeCta"),
+            // Comme l'accueil réel (2026-11-16) : le bouton lance la séance.
+            href: "/patient/demo-seance/seance",
             done: false,
           }}
           weekCount={1}

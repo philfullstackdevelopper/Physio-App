@@ -33,7 +33,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
 
       <div className="absolute left-4 top-4 z-10 flex items-center gap-4 lg:left-6 lg:top-6">
         <Link
-          href="/signup"
+          href="/"
           className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm backdrop-blur transition-colors hover:text-slate-900"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />

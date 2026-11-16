@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
 import { Check } from "lucide-react";
-import { stageLabel, type InjuryStage } from "@/lib/exercise/prescription";
+import type { InjuryStage } from "@/lib/exercise/prescription";
 import { equipmentLabels as equipmentLabelsFor, type EquipmentId } from "@/lib/exercise/equipment";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
 
@@ -15,7 +15,8 @@ import BodyPartIllustration from "@/components/BodyPartIllustration";
 // bouton final enregistre. Elle reste distincte des CGU, même texte, même
 // champ envoyé (health_data_consent), toujours obligatoire.
 // Clés de patient.onboarding.steps.
-const STEP_LABELS = ["situation", "profile", "equipment"] as const;
+// 2 étapes depuis le 2026-11-16 (avant : situation, profil, équipement).
+const STEP_LABELS = ["situation", "equipment"] as const;
 
 const fieldClass =
   "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 shadow-sm transition-colors focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
@@ -64,13 +65,10 @@ export default function OnboardingWizard({
   const t = useTranslations("patient.onboarding");
   const tSit = useTranslations("patient.situation");
   const tConsent = useTranslations("patient.consent");
-  const tStage = useTranslations("exercise.stage");
   const tEquipment = useTranslations("exercise.equipment");
   const tCommon = useTranslations("common");
   const locale = useLocale();
-  // Libellés dans la langue de l'interface (en français : ceux reçus de la page,
-  // identiques à STAGE_LABELS / EQUIPMENT_LABELS).
-  const stageText = (value: InjuryStage, label: string) => (locale === "fr" ? label : stageLabel(value, tStage));
+  // Libellés du matériel dans la langue de l'interface (en français : ceux reçus de la page).
   const equipmentText = locale === "fr" ? equipmentLabels : equipmentLabelsFor(tEquipment);
   // A failed save (server-side validation) reloads the page and resets this
   // component from scratch — landing back on step 0 made the error message
@@ -207,91 +205,43 @@ export default function OnboardingWizard({
             {bodyPartError && <p className="mt-1.5 text-xs text-red-600">{t("bodyPartsError")}</p>}
           </div>
 
+          {/* Étape de récupération, en mots simples côté patient (2026-11-16 :
+              « phase aiguë / subaiguë » était du jargon). Mêmes 4 valeurs
+              enregistrées ; le kiné garde ses libellés. À faire relire par le
+              kiné partenaire. */}
           <label>
             <span className={labelClass}>{t("stageQuestion")}</span>
             <select name="injury_stage" required defaultValue={profile?.injury_stage ?? ""} className={fieldClass}>
               <option value="" disabled>
                 {t("choose")}
               </option>
-              {stages.map(([value, label]) => (
+              {stages.map(([value]) => (
                 <option key={value} value={value}>
-                  {stageText(value, label)}
+                  {t(`stageOptions.${value}`)}
                 </option>
               ))}
             </select>
           </label>
 
-        </div>
-
-        {/* Étape 2 : Votre profil */}
-        <div ref={(el) => { stepRefs.current[1] = el; }} hidden={step !== 1} className="flex flex-col gap-4 short:gap-2.5">
-          <label>
-            <span className={labelClass}>{t("dob")}</span>
-            <input
-              type="date"
-              name="date_of_birth"
-              required
-              defaultValue={profile?.date_of_birth ?? ""}
-              className={fieldClass}
-            />
-          </label>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <label>
-              <span className={labelClass}>{t("height")}</span>
-              <input
-                type="number" name="height_cm" min={100} max={230} required
-                defaultValue={profile?.height_cm ?? ""}
-                className={fieldClass}
-              />
+              <span className={labelClass}>{t("dob")}</span>
+              <input type="date" name="date_of_birth" required defaultValue={profile?.date_of_birth ?? ""} className={fieldClass} />
             </label>
             <label>
-              <span className={labelClass}>{t("weight")}</span>
-              <input
-                type="number" name="weight_kg" min={20} max={250} required
-                defaultValue={profile?.weight_kg ?? ""}
-                className={fieldClass}
-              />
+              <span className={labelClass}>{t("activityQuestion")}</span>
+              <select name="activity_level" required defaultValue={profile?.activity_level ?? "moderate"} className={fieldClass}>
+                <option value="sedentary">{tSit("activity.sedentary")}</option>
+                <option value="moderate">{tSit("activity.moderate")}</option>
+                <option value="active">{tSit("activity.active")}</option>
+              </select>
             </label>
           </div>
-
-          <label>
-            <span className={labelClass}>{t("activityQuestion")}</span>
-            <select name="activity_level" required defaultValue={profile?.activity_level ?? "moderate"} className={fieldClass}>
-              <option value="sedentary">{tSit("activity.sedentary")}</option>
-              <option value="moderate">{tSit("activity.moderate")}</option>
-              <option value="active">{tSit("activity.active")}</option>
-            </select>
-          </label>
-
-          {/* Les deux questions facultatives vivent ici plutôt qu'à l'étape 1 :
-              l'étape 1 (zones du corps + étape de récupération) doit tenir sur
-              un écran sans défiler (Philippe, 2026-10-01). */}
-          <label>
-            <span className={labelClass}>{t("rehabQuestion")}</span>
-            <input
-              type="text"
-              name="rehab_progress"
-              placeholder={t("rehabPlaceholder")}
-              defaultValue={profile?.rehab_progress ?? ""}
-              className={fieldClass}
-            />
-          </label>
-
-          <label>
-            <span className={labelClass}>{t("historyQuestion")}</span>
-            <textarea
-              name="history"
-              rows={2}
-              placeholder={t("historyPlaceholder")}
-              defaultValue={profile?.history ?? ""}
-              className={`${fieldClass} resize-none`}
-            />
-          </label>
         </div>
 
-        {/* Étape 3 : Équipement */}
-        <div ref={(el) => { stepRefs.current[2] = el; }} hidden={step !== 2} className="flex flex-col gap-3">
+        {/* Étape 2 : Équipement + consentement (2026-11-16 : 2 étapes au lieu de 3 ;
+            taille, poids, rééducation et antécédents deviennent facultatifs). */}
+        <div ref={(el) => { stepRefs.current[1] = el; }} hidden={step !== 1} className="flex flex-col gap-3">
           <p className="text-sm text-slate-500">
             {t("equipmentIntro")}
           </p>
@@ -316,7 +266,32 @@ export default function OnboardingWizard({
             ))}
           </div>
 
-          {/* Consentement aux données de santé (ex-étape 4, voir STEP_LABELS). */}
+          {/* Facultatif, replié : utile au kiné, jamais bloquant. */}
+          <details className="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-700" open={!!(profile?.height_cm || profile?.weight_kg || profile?.history || profile?.rehab_progress)}>
+            <summary className="cursor-pointer font-medium">{t("moreDetails")}</summary>
+            <div className="mt-3 flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <label>
+                  <span className={labelClass}>{t("height")}</span>
+                  <input type="number" name="height_cm" min={100} max={230} defaultValue={profile?.height_cm ?? ""} className={fieldClass} />
+                </label>
+                <label>
+                  <span className={labelClass}>{t("weight")}</span>
+                  <input type="number" name="weight_kg" min={20} max={250} defaultValue={profile?.weight_kg ?? ""} className={fieldClass} />
+                </label>
+              </div>
+              <label>
+                <span className={labelClass}>{t("rehabQuestion")}</span>
+                <input type="text" name="rehab_progress" placeholder={t("rehabPlaceholder")} defaultValue={profile?.rehab_progress ?? ""} className={fieldClass} />
+              </label>
+              <label>
+                <span className={labelClass}>{t("historyQuestion")}</span>
+                <textarea name="history" rows={2} placeholder={t("historyPlaceholder")} defaultValue={profile?.history ?? ""} className={`${fieldClass} resize-none`} />
+              </label>
+            </div>
+          </details>
+
+          {/* Consentement aux données de santé. */}
           {needsConsent && (
             <label className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 text-sm text-slate-600">
               <input

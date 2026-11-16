@@ -107,7 +107,10 @@ export default async function PatientDashboard() {
           ]
             .filter(Boolean)
             .join(" · "),
-          cta: t("seeProgramme"),
+          // Un seul bouton qui lance la séance du jour (audit du 2026-11-16 :
+          // avant, « Voir mon programme » puis « Démarrer » — un écran de trop).
+          cta: t("startToday"),
+          href: `/patient/${home.activeWorkout.id}/seance`,
           done: false,
         }
       : {

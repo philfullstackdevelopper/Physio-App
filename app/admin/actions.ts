@@ -8,6 +8,7 @@ import { setInstructorStatus } from "@/lib/db/admin";
 import { isAdminEmail } from "@/lib/admin";
 import { rejectInstructorAndStopBilling, suspendInstructor } from "@/lib/billing/suspendInstructor";
 import { adminMergeCabinets } from "@/lib/db/cabinets";
+import { getTranslations } from "next-intl/server";
 
 // Approving/rejecting ANOTHER instructor's row needs a privileged write: the
 // instructors RLS policy only lets a user read/write their OWN row
@@ -77,16 +78,19 @@ export async function reactivateInstructor(formData: FormData) {
 // Fusion de deux cabinets en double (Philippe, 2026-11-16, migration 0091) :
 // les kinés du doublon passent dans le cabinet gardé, puis le doublon est
 // supprimé. Les exercices partagés suivent leur auteur.
-export async function mergeCabinets(formData: FormData) {
+// Audit du 2026-11-16 (C3) : confirmation côté écran (MergeCabinetForm) et
+// résultat renvoyé, pour qu'un échec s'affiche au lieu d'un simple rechargement.
+export async function mergeCabinets(source: string, target: string): Promise<{ ok: true; moved: number } | { error: string }> {
   await requireAdmin();
-  const source = String(formData.get("source") ?? "");
-  const target = String(formData.get("target") ?? "");
+  const t = await getTranslations("admin.cabinets");
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!UUID.test(source) || !UUID.test(target) || source === target) return;
+  if (!UUID.test(source) || !UUID.test(target) || source === target) return { error: t("mergeInvalid") };
   try {
-    await adminMergeCabinets(source, target);
+    const moved = await adminMergeCabinets(source, target);
+    revalidatePath("/admin");
+    return { ok: true, moved };
   } catch (e) {
     console.error("[admin] fusion de cabinets impossible", e);
+    return { error: t("mergeFailed") };
   }
-  revalidatePath("/admin");
 }

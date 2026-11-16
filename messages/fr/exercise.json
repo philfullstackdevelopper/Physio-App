@@ -134,7 +134,11 @@
     "doneExercise": "J'ai terminé cet exercice",
     "fullscreenAria": "Voir la vidéo en plein écran",
     "fullscreenTitle": "Plein écran",
-    "setsHint": "Touchez une série quand vous l’avez faite"
+    "setsHint": "Touchez une série quand vous l’avez faite",
+    "painQuestion": "Avez-vous eu mal pendant la séance ?",
+    "painNo": "Non, tout allait bien",
+    "painYes": "Oui, j'ai eu mal",
+    "painWhich": "Sur quel(s) exercice(s) ? (touchez pour choisir)"
   },
   "illustration": {
     "aria": "Démonstration : {name}",

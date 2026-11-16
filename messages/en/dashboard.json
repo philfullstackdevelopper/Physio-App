@@ -70,7 +70,7 @@
       "patient": "Add your first patient",
       "patientHint": "By email or with your QR code",
       "patientClosed": "Invitations open at launch",
-      "payments": "Turn on your payments",
+      "payments": "Receive your €6 per patient",
       "paymentsHint": "To receive the follow-up your patients pay for",
       "cabinetNone": "Join or create your practice",
       "cabinetNoneHint": "To share your exercises",
@@ -110,7 +110,9 @@
     "signOut": "Sign out",
     "print": "Print or save as PDF",
     "myCabinet": "My practice",
-    "myInfoTitle": "My information"
+    "myInfoTitle": "My information",
+    "library": "Library",
+    "account": "Account"
   },
   "infos": {
     "title": "My details",

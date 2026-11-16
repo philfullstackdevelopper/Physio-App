@@ -14,6 +14,7 @@ export async function generateMetadata() {
 
 export default async function LoginPage() {
   const tShared = await getTranslations("auth.shared");
+  const tLogin = await getTranslations("auth.login");
   // Doit tenir sur un seul écran, sans scroll, y compris sur le PC de Philippe
   // (zoom 150 % → ~1262×549) : padding vertical réduit, pas de doublon du lien
   // d'inscription (Clerk l'affiche déjà en pied de carte), sous-titre Clerk
@@ -44,7 +45,7 @@ export default async function LoginPage() {
                 messages natively — no custom form code needed anymore. */}
             <SignIn
               fallbackRedirectUrl="/apres-connexion"
-              signUpUrl="/signup"
+              signUpUrl="/signup/kine"
               appearance={{
                 elements: {
                   rootBox: "w-full",
@@ -61,6 +62,14 @@ export default async function LoginPage() {
                 },
               }}
             />
+            {/* Patient sans compte (audit du 2026-11-16) : il ne s'inscrit pas
+                ici, son kiné l'invite. Une ligne, pour ne pas chercher. */}
+            <p className="mt-3 text-center text-xs leading-relaxed text-slate-500">
+              {tLogin("patientHint")}{" "}
+              <Link href="/signup/patient" className="font-medium text-blue-700 hover:underline">
+                {tLogin("patientHintLink")}
+              </Link>
+            </p>
           </div>
         </div>
 

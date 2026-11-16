@@ -167,28 +167,34 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
     setFound(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const who = names();
-    if (!who) return;
-    const cabinetName = fields.cabinetName.trim();
-    const cabinetAddress = fields.cabinetAddress.trim();
-    const phone = fields.phone.trim();
+  // Vérifie tout le formulaire « inscrire mon cabinet » ; affiche l'erreur et
+  // renvoie false si quelque chose manque. Rejoué par « continuer » après
+  // l'alerte de doublon (audit du 2026-11-16, C4 : un champ vidé entre-temps
+  // passait sans contrôle).
+  const createFormValid = (): boolean => {
+    if (!names()) return false;
     const rppsNumber = fields.rppsNumber.replace(/\s+/g, "");
     const siret = fields.siret.replace(/\s+/g, "");
-
-    if (!cabinetName || !cabinetAddress || !phone) {
+    if (!fields.cabinetName.trim() || !fields.cabinetAddress.trim() || !fields.phone.trim()) {
       setError(t("errorRequired"));
-      return;
+      return false;
     }
     if (rppsNumber && !/^\d{9,11}$/.test(rppsNumber)) {
       setError(t("errorRppsDigitsOrEmpty"));
-      return;
+      return false;
     }
     if (siret && !/^\d{14}$/.test(siret)) {
       setError(t("errorSiretDigitsOrEmpty"));
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!createFormValid()) return;
+    const cabinetName = fields.cabinetName.trim();
+    const cabinetAddress = fields.cabinetAddress.trim();
 
     // Doublon probable ? On le montre une fois ; « C'est un autre cabinet »
     // laisse continuer.
@@ -221,6 +227,7 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
   const continueAnyway = () => {
     setConfirmedNew(true);
     setSimilar(null);
+    if (!createFormValid()) return;
     saveAndContinue(createPayload());
   };
 

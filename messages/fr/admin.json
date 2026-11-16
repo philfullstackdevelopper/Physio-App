@@ -1,1 +1,19 @@
-{}
+{
+  "cabinets": {
+    "title": "Cabinets",
+    "intro": "Tous les cabinets créés par les kinés. « Doublon possible » : même code postal et un nom proche — fusionnez-les si c'est le même cabinet.",
+    "duplicate": "Doublon possible",
+    "members": "{count, plural, =0 {aucun membre} one {# membre} other {# membres}}",
+    "pending": "{count, plural, one {# demande en attente} other {# demandes en attente}}",
+    "created": "créé le {date}",
+    "mergeInto": "Fusionner dans…",
+    "chooseKept": "Choisir le cabinet gardé",
+    "merge": "Fusionner",
+    "confirm": "Fusionner « {source} » dans « {target} » ? Ses membres et ses exercices passent dans « {target} », puis « {source} » est supprimé. Impossible à annuler.",
+    "confirmYes": "Oui, fusionner",
+    "merging": "Fusion…",
+    "cancel": "Annuler",
+    "mergeInvalid": "Choisissez deux cabinets différents.",
+    "mergeFailed": "La fusion a échoué. Rien n'a été modifié."
+  }
+}

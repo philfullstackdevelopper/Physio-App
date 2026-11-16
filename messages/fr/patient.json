@@ -115,11 +115,11 @@
     "steps": {
       "situation": "Votre situation",
       "profile": "Votre profil",
-      "equipment": "Équipement"
+      "equipment": "Matériel et accord"
     },
     "bodyPartsQuestion": "Quelle(s) partie(s) du corps souhaitez-vous travailler ?",
     "bodyPartsError": "Choisissez au moins une zone.",
-    "stageQuestion": "Où en êtes-vous ? (étape de récupération)",
+    "stageQuestion": "Où en êtes-vous aujourd'hui ?",
     "choose": "Choisir…",
     "dob": "Date de naissance",
     "height": "Taille (cm)",
@@ -150,7 +150,14 @@
     "bodyPartsQuestionKine": "Votre kiné a choisi la zone à travailler. Vous pouvez en ajouter une.",
     "chosenBy": "Choisi par {name}",
     "chosenByKine": "Choisi par votre kiné",
-    "chosenShort": "Par votre kiné"
+    "chosenShort": "Par votre kiné",
+    "stageOptions": {
+      "acute": "La douleur est récente (quelques jours)",
+      "subacute": "Ça va mieux, mais c'est encore sensible",
+      "recovery": "Je récupère, je veux retrouver ma force",
+      "return_to_sport": "Je prépare mon retour au sport"
+    },
+    "moreDetails": "Ajouter des détails (facultatif)"
   },
   "situation": {
     "activity": {
@@ -198,7 +205,8 @@
     "yourProgramme": "Votre programme",
     "noSessionYet": "Votre kiné n'a pas encore assigné de séance.",
     "hello": "Bonjour {name}",
-    "weekDots": "{done}/{target} {target, plural, one {séance} other {séances}}"
+    "weekDots": "{done}/{target} {target, plural, one {séance} other {séances}}",
+    "startToday": "Commencer la séance du jour"
   },
   "homeBrake": {
     "betterTitle": "Vous allez mieux",
@@ -241,7 +249,7 @@
     "redo": "Refaire cette séance",
     "start": "Démarrer cette séance",
     "completeThisWeek": "Terminée cette semaine",
-    "current": "Séance en cours",
+    "current": "Séance de la semaine",
     "doneOfTarget": "{done} / {target} cette semaine",
     "doneTimes": "{done} fois cette semaine",
     "yourExercises": "Vos exercices",

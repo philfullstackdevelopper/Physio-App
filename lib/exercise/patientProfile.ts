@@ -49,8 +49,8 @@ export function isProfileComplete(p: ProfileRow | null | undefined): boolean {
     p &&
       p.injury_stage &&
       p.date_of_birth &&
-      p.height_cm &&
-      p.weight_kg &&
+      // Taille et poids facultatifs depuis le 2026-11-16 (questionnaire allégé ;
+      // le calcul des doses s'en passe déjà, voir profileToContext).
       p.activity_level,
   );
 }

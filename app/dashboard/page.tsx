@@ -23,8 +23,14 @@ export default async function DashboardPage() {
   // on y est déjà, ce serait une boucle.
   if (((instructor.status as string | null) ?? "approved") !== "approved") return null;
 
-  const h = await loadDashboardHome(supabase, user.id, new Date(), await getLibI18n());
-  const unread = await loadUnreadMessages(supabase, user.id);
+  // Les trois lectures sont indépendantes : en même temps (audit du
+  // 2026-11-16, C7 — « Premiers pas » ajoutait 3 lectures à la suite).
+  const libI18n = await getLibI18n();
+  const [h, unread, firstSteps] = await Promise.all([
+    loadDashboardHome(supabase, user.id, new Date(), libI18n),
+    loadUnreadMessages(supabase, user.id),
+    firstStepsFor(supabase, user.id, user.email),
+  ]);
   // Une ligne par patient : on garde le message le plus récent de chacun.
   const unreadByPatient = new Map<string, (typeof unread)[number]>();
   for (const m of unread) {
@@ -33,7 +39,7 @@ export default async function DashboardPage() {
   }
   const unreadRows = [...unreadByPatient.values()].sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
 
-  return <DashboardHomeView h={h} unreadRows={unreadRows} firstSteps={await firstStepsFor(supabase, user.id, user.email)} />;
+  return <DashboardHomeView h={h} unreadRows={unreadRows} firstSteps={firstSteps} />;
 }
 
 // « Premiers pas » (Philippe, 2026-11-16) : un patient, les paiements, le

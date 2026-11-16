@@ -19,9 +19,11 @@ test("profil complet : le patient accède à l'appli", () => {
 });
 
 test("chaque champ requis manquant renvoie au questionnaire", () => {
-  for (const field of ["date_of_birth", "height_cm", "weight_kg", "activity_level", "injury_stage"] as const) {
+  for (const field of ["date_of_birth", "activity_level", "injury_stage"] as const) {
     assert.equal(isProfileComplete({ ...complete, [field]: null }), false, field);
   }
+  // Taille et poids facultatifs depuis le 2026-11-16.
+  assert.equal(isProfileComplete({ ...complete, height_cm: null, weight_kg: null }), true);
   assert.equal(isProfileComplete(null), false);
   assert.equal(isProfileComplete(undefined), false);
 });
