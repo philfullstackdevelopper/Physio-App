@@ -84,10 +84,10 @@ The only point that differs from Andrew: Andrew keeps its app free for patients,
 
 ## 5. Explicitly out of scope (still not built)
 
-- Email/SMS reminders (the mobile app's push reminder, §8b, is the only reminder)
+- Email/SMS reminders (phone notifications only: the daily 17:00 push reminder, §8b, and the admin's manual « Relancer » in `/admin` → Activité)
 - Rich scheduling (calendars, recurring rules beyond a plain text frequency field)
 - Languages beyond French and English (the structure is ready — add a `messages/<locale>/` folder — but none is started), and per-country legal/billing settings (BE/CH/LU/QC) — see §1
-- Analytics beyond what the instructor UI shows today (adherence %, day-over-day tiles, 30-day pain history). No exports, no cross-patient reports.
+- Analytics beyond what the instructor UI shows today (adherence %, day-over-day tiles, 30-day pain history) and the admin's **Activité** view (Philippe, 2026-11-16: `/admin#activite`, migration `0093_admin_activity.sql` — per kiné / per patient: arrival date and route, journey stage, last séance, sessions 7/30 days, last seen from Clerk, notifications on/off, « Relancer » push; patients shown as a code `P-XXXX` + their kiné, never by name; dates and counts only, no messages, pain or questionnaire). No exports. Public-site audience is PostHog (site + kiné dashboard only, anonymous, never the patient app).
 - Any role beyond Admin / Instructor / Patient
 
 ## 6. Permanently dropped (do not resurrect without being asked)

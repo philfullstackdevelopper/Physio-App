@@ -359,7 +359,9 @@
   "push": {
     "messageFromPhysio": "Nouveau message de votre kiné.",
     "messageFromPatient": "Nouveau message d'un patient.",
-    "dailyReminder": "Votre séance du jour vous attend."
+    "dailyReminder": "Votre séance du jour vous attend.",
+    "nudgePatient": "Vos exercices vous attendent sur EasyPhysio.",
+    "nudgeKine": "Vos patients vous attendent sur EasyPhysio."
   },
   "joinQr": {
     "title": "Ou faites scanner votre QR code",

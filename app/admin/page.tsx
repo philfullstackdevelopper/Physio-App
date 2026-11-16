@@ -16,6 +16,9 @@ import AdminSummary, { sinceLabel, type AdminTodo } from "./AdminSummary";
 import { CONTRIBUTOR_THRESHOLD } from "@/lib/exercise/kineExercises";
 import { approveInstructor, mergeCabinets, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
 import { looksLikeSameCabinet } from "@/lib/cabinet/similar";
+import Activity from "./Activity";
+import { loadActivity } from "@/lib/activity/load";
+import { patientNeedsNudge, type KineActivity, type PatientActivity } from "@/lib/activity/activity";
 
 const STATUS_LABEL: Record<string, { label: string; tone: string }> = {
   approved: { label: "Actif", tone: "bg-emerald-50 text-emerald-700" },
@@ -109,6 +112,23 @@ export default async function AdminPage({
     console.error("[admin] exercices des kinés : liste indisponible", e);
   }
 
+  // Activité (migration 0093) : même prudence — la page s'affiche sans elle
+  // tant que la migration n'est pas appliquée.
+  let activity: { patients: PatientActivity[]; kines: KineActivity[] } | null = null;
+  try {
+    activity = await loadActivity();
+  } catch (e) {
+    console.error("[admin] activité : indisponible", e);
+  }
+  const toNudge = (activity?.patients ?? []).filter((p) => !p.isTest && patientNeedsNudge(p)).length;
+  const sentCount = Number(sp.envoyees ?? 0);
+  const failCount = Number(sp.echecs ?? 0);
+  const nudgeNotice =
+    sp.relance !== undefined
+      ? `Relance envoyée à ${sp.relance} personne${Number(sp.relance) > 1 ? "s" : ""} : ${sentCount} notification${sentCount > 1 ? "s" : ""} partie${sentCount > 1 ? "s" : ""}` +
+        (failCount > 0 ? `, ${failCount} échec${failCount > 1 ? "s" : ""} (appli retirée ou notifications coupées).` : ".")
+      : null;
+
   // « À traiter » (Philippe, 2026-11-04) : ce qui attend une action.
   const exToReview = (kineExercises ?? []).filter((r) => r.status === "pending");
   const oldestReview = exToReview.map((r) => r.submittedAt).filter(Boolean).sort()[0] ?? null;
@@ -155,6 +175,13 @@ export default async function AdminPage({
       href: "#praticiens",
     },
     {
+      key: "nudge",
+      label: "Patients à relancer",
+      count: toNudge,
+      detail: "Programme en main, pas de séance depuis plus de 7 jours, notifications activées.",
+      href: "#activite",
+    },
+    {
       key: "waitlist",
       label: "Liste d'attente",
       count: waitlist?.length ?? 0,
@@ -172,6 +199,13 @@ export default async function AdminPage({
   return (
     <div>
       <AdminSummary todos={todos} stats={stats} />
+      {activity ? (
+        <Activity patients={activity.patients} kines={activity.kines} nowIso={new Date().toISOString()} notice={nudgeNotice} />
+      ) : (
+        <p className="mb-10 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+          Activité : la base n&apos;est pas encore prête (migration 0093 non appliquée).
+        </p>
+      )}
       {/* Bilan de la dernière suspension (app/admin/actions.ts). */}
       {sp.suspended === "1" && (
         <p className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
