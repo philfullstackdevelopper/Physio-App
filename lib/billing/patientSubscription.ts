@@ -81,7 +81,9 @@ export async function syncPatientSubscription(sub: Stripe.Subscription, accountI
   // La base ignore un message en retard sur un ANCIEN abonnement quand un plus
   // récent est vivant (migration 0086) — ex. la fin d'un abonnement refusé,
   // annoncée après la souscription de son remplaçant.
-  const applied = await upsertSubscription({
+  let applied: boolean;
+  try {
+    applied = await upsertSubscription({
     userId,
     plan,
     stripeCustomerId: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
@@ -91,7 +93,18 @@ export async function syncPatientSubscription(sub: Stripe.Subscription, accountI
     stripeAccountId: accountId,
     cancelAtPeriodEnd,
     stripeCreated: sub.created ? new Date(sub.created * 1000).toISOString() : null,
-  });
+    });
+  } catch (e) {
+    // Compte supprimé entre l'ouverture de la page de paiement et le paiement
+    // (audit du 2026-11-13, M-E) : la base refuse la ligne (clé étrangère,
+    // code 23503). On arrête l'abonnement et on rembourse, au lieu de laisser
+    // Stripe prélever un compte qui n'existe plus et le webhook échouer sans fin.
+    if ((e as { code?: string })?.code === "23503" && accountId === null) {
+      await stopOrphanSubscription(sub);
+      return null;
+    }
+    throw e;
+  }
   if (!applied) console.warn(`[abonnement] ${sub.id} (${sub.status}) ignoré : un abonnement plus récent est en cours.`);
 
   if (accountId === null) {
@@ -108,6 +121,81 @@ export async function syncPatientSubscription(sub: Stripe.Subscription, accountI
     }
   }
   return userId;
+}
+
+/** Arrête tout de suite un abonnement d'accès sans compte derrière, et rembourse ce qui a déjà été payé. */
+async function stopOrphanSubscription(sub: Stripe.Subscription): Promise<void> {
+  const stripe = getStripe();
+  console.error(`[abonnement] ${sub.id} : compte patient introuvable (supprimé ?) — arrêt et remboursement.`);
+  try {
+    if (sub.status !== "canceled") await stripe.subscriptions.cancel(sub.id);
+  } catch (e) {
+    if ((e as { code?: string })?.code !== "resource_missing") throw e;
+  }
+  const invoices = await stripe.invoices.list({ subscription: sub.id, status: "paid", limit: 10, expand: ["data.payments"] });
+  for (const inv of invoices.data) {
+    for (const p of (inv as unknown as { payments?: { data?: { payment?: { payment_intent?: string | { id: string } } }[] } }).payments?.data ?? []) {
+      const pi = p.payment?.payment_intent;
+      const piId = typeof pi === "string" ? pi : pi?.id;
+      if (!piId) continue;
+      try {
+        await stripe.refunds.create({ payment_intent: piId, reason: "requested_by_customer" });
+      } catch (e) {
+        // Déjà remboursé : rien à faire.
+        if ((e as { code?: string })?.code !== "charge_already_refunded") console.error(`[abonnement] remboursement ${piId} impossible`, e);
+      }
+    }
+  }
+}
+
+/**
+ * Suppression d'un compte patient (par lui-même ou par son kiné) — audit du
+ * 2026-11-13, M-E : en plus de l'abonnement connu du site, on ferme chez
+ * Stripe toute page de paiement encore ouverte et tout abonnement d'accès de
+ * ce patient, pour qu'un paiement tardif ne crée pas un abonnement sans
+ * compte. Ne lève jamais d'erreur (l'abonnement connu est déjà arrêté avant).
+ */
+export async function stopAllPlatformBillingFor(userId: string): Promise<void> {
+  const stripe = getStripe();
+  try {
+    const customers = await stripe.customers.search({ query: `metadata['patient_id']:'${userId.replace(/'/g, "")}'`, limit: 10 });
+    for (const c of customers.data) {
+      const sessions = await stripe.checkout.sessions.list({ customer: c.id, status: "open", limit: 20 });
+      for (const s of sessions.data) {
+        await stripe.checkout.sessions.expire(s.id).catch((e) => console.warn(`[abonnement] page ${s.id} : expiration impossible`, e));
+      }
+      for (const s of await openPlatformSubscriptions(c.id, userId)) {
+        await stripe.subscriptions.cancel(s.id).catch((e) => {
+          if ((e as { code?: string })?.code !== "resource_missing") console.error(`[abonnement] ${s.id} : arrêt impossible`, e);
+        });
+      }
+    }
+  } catch (e) {
+    console.error(`[abonnement] nettoyage Stripe du patient ${userId} incomplet`, e);
+  }
+}
+
+/**
+ * Litige bancaire (rétrofacturation) sur l'abonnement d'accès — audit du
+ * 2026-11-13, M-F : le patient conteste le paiement auprès de sa banque ;
+ * l'abonnement est arrêté tout de suite, donc l'accès aussi (la fin est
+ * recopiée par le webhook customer.subscription.deleted). Rien n'est fait à la
+ * clôture du litige : le patient peut se réabonner s'il le souhaite.
+ */
+export async function stopAccessOnPlatformDispute(dispute: Stripe.Dispute): Promise<void> {
+  const stripe = getStripe();
+  const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge.id;
+  const charge = await stripe.charges.retrieve(chargeId, { expand: ["customer"] });
+  const customer = charge.customer && typeof charge.customer !== "string" ? charge.customer : null;
+  const userId = customer && !("deleted" in customer && customer.deleted) ? (customer as Stripe.Customer).metadata?.patient_id : null;
+  if (!customer || !userId) {
+    console.warn(`[litige] ${dispute.id} : paiement sans patient EasyPhysio identifié, rien à couper.`);
+    return;
+  }
+  for (const s of await openPlatformSubscriptions(customer.id, userId)) {
+    console.warn(`[litige] ${dispute.id} : abonnement ${s.id} du patient ${userId} arrêté (accès coupé).`);
+    await stripe.subscriptions.cancel(s.id);
+  }
 }
 
 /** La fiche client Stripe (compte EasyPhysio) déjà créée pour ce patient, retrouvée par son e-mail. */

@@ -15,6 +15,7 @@ import {
   finalizePatientCardChange,
   isPatientCardSession,
   refreshPatientSubscription,
+  stopAccessOnPlatformDispute,
   syncPatientSubscriptionFromEvent,
 } from "@/lib/billing/patientSubscription";
 
@@ -151,6 +152,9 @@ export async function POST(req: Request) {
     case "charge.dispute.created":
     case "charge.dispute.closed": {
       if (event.account) await syncReviewDispute(event.data.object as Stripe.Dispute, event.account);
+      // Litige sur l'abonnement d'accès (compte EasyPhysio) : accès coupé
+      // (audit du 2026-11-13, M-F).
+      else if (event.type === "charge.dispute.created") await stopAccessOnPlatformDispute(event.data.object as Stripe.Dispute);
       break;
     }
     // Facture EasyPhysio du kiné (compte plateforme).

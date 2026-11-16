@@ -211,6 +211,10 @@ export async function startPlan(formData: FormData) {
       },
       metadata,
       locale,
+      // Page de paiement valable 30 min (minimum Stripe ; audit du 2026-11-13,
+      // M-E) : une page oubliée ouverte ne peut pas être payée des heures plus
+      // tard, par exemple après la suppression du compte.
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
       success_url: `${base}/patient/suivi/retour?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/patient/suivi?checkout=annule`,
     });

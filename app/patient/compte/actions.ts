@@ -7,6 +7,7 @@ import { requireUser, forgetKnownUser } from "@/lib/supabase/require-user";
 import { revokeCurrentSession } from "@/lib/auth/clerk-session";
 import { deleteClerkUserWithRetry } from "@/lib/auth/deleteClerkUser";
 import { getStripe } from "@/lib/billing/stripe";
+import { stopAllPlatformBillingFor } from "@/lib/billing/patientSubscription";
 import { getTranslations } from "next-intl/server";
 
 // RGPD droit à l'effacement: a patient deletes their own account. Every
@@ -80,6 +81,9 @@ export async function deleteMyAccount(formData: FormData) {
     }
   }
   if (failure) redirect(`/patient/compte?error=${encodeURIComponent(failure)}`);
+  // Pages de paiement encore ouvertes et autres abonnements d'accès de ce
+  // patient chez Stripe (audit du 2026-11-13, M-E). Meilleur effort.
+  await stopAllPlatformBillingFor(user.id);
 
   // 1) Les données : la ligne d'identité interne (cascade sur toutes les
   // tables du patient). Connexion directe, pas le client supabase-js. Si ça

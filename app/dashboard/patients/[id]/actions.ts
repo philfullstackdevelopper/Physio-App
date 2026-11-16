@@ -11,6 +11,7 @@ import { thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { deleteClerkUserWithRetry } from "@/lib/auth/deleteClerkUser";
 import { deleteAppUserById, deletePatientRecord, discardReservedAppUser } from "@/lib/db/admin";
 import { getStripe } from "@/lib/billing/stripe";
+import { stopAllPlatformBillingFor } from "@/lib/billing/patientSubscription";
 import { resolveAppUserId, precreateAppUserId } from "@/lib/auth/user-map";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { getTranslations } from "next-intl/server";
@@ -111,6 +112,10 @@ export async function deletePatient(formData: FormData) {
       }
     }
   }
+
+  // Pages de paiement encore ouvertes et autres abonnements d'accès de ce
+  // patient chez Stripe (audit du 2026-11-13, M-E). Meilleur effort.
+  await stopAllPlatformBillingFor(patientId);
 
   // Par le serveur (0090, audit du 2026-11-13, U3) : un kiné n'a plus le droit
   // de supprimer une fiche en parlant directement à la base, ce qui sautait
