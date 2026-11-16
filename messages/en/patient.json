@@ -103,7 +103,10 @@
     "iosStep3": "Tap “Add” in the top right corner",
     "androidStep1": "In Chrome, tap the menu",
     "androidStep2": "Choose “Install app” or “Add to Home screen”",
-    "installAfter": "Then open EasyPhysio from your home screen and sign in once, with the same email and password."
+    "installAfter": "Then open EasyPhysio from your home screen and sign in once, with the same email and password.",
+    "row": "Install the app",
+    "ok": "Got it",
+    "close": "Close"
   },
   "layout": {
     "kineSuspended": "{name} is no longer on EasyPhysio. No more payments will be taken: you keep free access to your programme and your data."

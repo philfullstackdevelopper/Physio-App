@@ -102,7 +102,10 @@
     "iosStep3": "Touchez « Ajouter » en haut à droite",
     "androidStep1": "Dans Chrome, touchez le menu",
     "androidStep2": "Choisissez « Installer l'application » ou « Ajouter à l'écran d'accueil »",
-    "installAfter": "Ouvrez ensuite EasyPhysio depuis l'écran d'accueil et connectez-vous une fois, avec le même e-mail et le même mot de passe."
+    "installAfter": "Ouvrez ensuite EasyPhysio depuis l'écran d'accueil et connectez-vous une fois, avec le même e-mail et le même mot de passe.",
+    "row": "Installer l'appli",
+    "ok": "J'ai compris",
+    "close": "Fermer"
   },
   "layout": {
     "kineSuspended": "{name} n'exerce plus sur EasyPhysio. Plus aucun prélèvement : vous gardez l'accès gratuit à votre programme et à vos données."

@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight, CreditCard, Down
 import { useLocale, useTranslations } from "next-intl";
 import SignOutOrExitDemo from "@/components/SignOutOrExitDemo";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import InstallAppButton from "@/components/InstallAppButton";
 import type { Locale } from "@/i18n/locales";
 import { deleteMyAccount } from "./actions";
 import { KINE_FOLLOW_UP_CENTS, LOWEST_PLATFORM_CENTS, eurosFR } from "@/lib/billing/patientPlans";
@@ -248,6 +249,9 @@ function PhoneSettings({
       </section>
 
       <div className="divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-soft">
+        {/* Installer l'appli sur l'écran d'accueil (Philippe, 2026-11-16) —
+            ligne absente quand l'appli est déjà ouverte depuis son icône. */}
+        <InstallAppButton className={ROW} iconClassName={ROW_ICON} />
         <LanguageSwitcher variant="row" className="px-4 py-3 short:py-2" />
         <SignOutOrExitDemo
           className={ROW}

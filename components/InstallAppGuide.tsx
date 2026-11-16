@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { EllipsisVertical, Share, SquarePlus, Smartphone } from "lucide-react";
+import { getInstallState, promptInstall, subscribeInstall, type InstallState } from "@/lib/pwa/installPrompt";
 
 // Ajouter EasyPhysio à l'écran d'accueil du téléphone (Philippe, 2026-11-16),
 // en attendant les applis App Store / Google Play : le site (app/manifest.ts)
@@ -15,33 +16,16 @@ import { EllipsisVertical, Share, SquarePlus, Smartphone } from "lucide-react";
 //   le peut (évènement beforeinstallprompt) ; sinon, les gestes via le menu ⋮.
 // - Déjà ouvert depuis l'écran d'accueil : rien à faire, direction le programme.
 
-type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
-
+// L'offre « Installer » d'Android arrive souvent avant cet écran : elle est
+// attrapée dès le chargement du site et partagée (lib/pwa/installPrompt.ts).
 export default function InstallAppGuide({ phone }: { phone: "ios" | "android" }) {
   const t = useTranslations("patient.appli");
   const router = useRouter();
-  const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null);
+  const state = useSyncExternalStore<InstallState | null>(subscribeInstall, getInstallState, () => null);
 
   useEffect(() => {
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as Navigator & { standalone?: boolean }).standalone === true;
-    if (standalone) {
-      router.replace("/patient");
-      return;
-    }
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setInstallEvent(e as InstallPromptEvent);
-    };
-    const onInstalled = () => router.replace("/patient");
-    window.addEventListener("beforeinstallprompt", onPrompt);
-    window.addEventListener("appinstalled", onInstalled);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onPrompt);
-      window.removeEventListener("appinstalled", onInstalled);
-    };
-  }, [router]);
+    if (state === "installed") router.replace("/patient");
+  }, [state, router]);
 
   const steps =
     phone === "ios"
@@ -64,13 +48,10 @@ export default function InstallAppGuide({ phone }: { phone: "ios" | "android" })
         <h1 className="mt-4 text-center text-xl font-semibold text-ink">{t("title")}</h1>
         <p className="mt-2 text-center text-sm text-muted">{t("installText")}</p>
 
-        {installEvent ? (
+        {state === "prompt" ? (
           <button
             type="button"
-            onClick={async () => {
-              await installEvent.prompt();
-              setInstallEvent(null);
-            }}
+            onClick={() => void promptInstall()}
             className="mt-5 w-full rounded-full bg-ink px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
           >
             {t("installButton")}
