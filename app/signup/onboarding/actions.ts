@@ -7,6 +7,7 @@ import { rppsInUse, setInstructorStatus, setInstructorRppsVerified } from "@/lib
 import { verifyRpps } from "@/lib/instructor/rppsVerification";
 import { friendlyDbError } from "@/lib/format/dbError";
 import { getTranslations } from "next-intl/server";
+import { trackServer } from "@/lib/analytics/serverTrack";
 
 // Saves the cabinet/practice details collected right after Clerk signup (see
 // app/signup/onboarding/page.tsx).
@@ -92,6 +93,7 @@ export async function saveInstructorOnboarding(formData: FormData) {
   if (rppsVerified && verification?.status === "verified") await setInstructorRppsVerified(user.id, verification.verifiedAt);
   // Validé d'office dès que le cabinet est renseigné.
   await setInstructorStatus(user.id, "approved");
+  await trackServer("kine_inscription_terminee", { etape: "formulaire_cabinet" });
   // Page de passage (chargement complet) plutôt qu'une navigation interne
   // vers /dashboard, qui pouvait laisser un écran blanc (2026-11-04).
   redirect("/apres-connexion");
