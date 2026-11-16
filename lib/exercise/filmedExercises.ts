@@ -76,21 +76,42 @@ export const FILMED_EXERCISE_NAMES: ReadonlySet<string> = new Set<string>([
   "Band Shoulder External Rotation",
 ]);
 
+/** Activités du quotidien (Philippe, 2026-11-17) : marche, vélo, course,
+ *  escaliers, corde à sauter… Pas besoin d'une vidéo pour les comprendre — le
+ *  dessin animé de l'appli suffit. Elles restent proposables même sans tournage,
+ *  ce qui débloque les séances qui ne manquaient que d'elles (33 séances et
+ *  8 pathologies de plus, d'après la base au 2026-11-17). */
+export const NO_VIDEO_NEEDED_NAMES: ReadonlySet<string> = new Set<string>([
+  "Walking",
+  "Assisted Progressive Walking",
+  "Cycling",
+  "Running",
+  "Progressive Walk-to-Jog (Shin Splints, Soft Terrain)",
+  "Controlled Stair Climbing",
+  "Jump Rope",
+]);
+
+/** Exercice de la plateforme proposable sans réserve : filmé, ou activité du quotidien. */
+function availableOnPlatform(name: string): boolean {
+  const en = platformExerciseName(name);
+  return FILMED_EXERCISE_NAMES.has(en) || NO_VIDEO_NEEDED_NAMES.has(en);
+}
+
 /** Visible dans la bibliothèque et les sélecteurs : un exercice créé par un kiné,
- *  ou un exercice de la plateforme filmé (ou tout, si l'interrupteur est coupé). */
+ *  ou un exercice de la plateforme filmé ou du quotidien (ou tout, si l'interrupteur est coupé). */
 export function isPickableExercise(ex: { name: unknown; created_by?: unknown }): boolean {
   if (!ONLY_FILMED_EXERCISES) return true;
   if (ex.created_by) return true;
-  return FILMED_EXERCISE_NAMES.has(platformExerciseName(String(ex.name)));
+  return availableOnPlatform(String(ex.name));
 }
 
 /** Séance proposable à un kiné : la sienne, ou une séance de la plateforme dont
- *  TOUS les exercices sont filmés (et qui en contient au moins un). */
+ *  TOUS les exercices sont filmés ou du quotidien (et qui en contient au moins un). */
 export function isPickableSeance(w: {
   created_by?: unknown;
   workout_exercises?: { exercises?: { name?: unknown } | null; exercise?: { name?: unknown } | null }[] | null;
 }): boolean {
   if (!ONLY_FILMED_EXERCISES || w.created_by) return true;
   const rows = w.workout_exercises ?? [];
-  return rows.length > 0 && rows.every((r) => FILMED_EXERCISE_NAMES.has(platformExerciseName(String((r.exercises ?? r.exercise)?.name ?? ""))));
+  return rows.length > 0 && rows.every((r) => availableOnPlatform(String((r.exercises ?? r.exercise)?.name ?? "")));
 }
