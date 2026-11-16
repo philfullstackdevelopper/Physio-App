@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import { LogoLockup } from "@/components/Logo";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { SIGNUPS_OPEN, WAITLIST_HREF } from "@/lib/launchFlags";
+import { SAME_AS } from "@/lib/seo/structuredData";
 
 // Libellés : messages/<langue>/home.json (home.footer).
 const COLUMNS = [
@@ -88,6 +89,13 @@ export default function SiteFooter() {
           <LanguageSwitcher className="mx-auto mb-2 sm:hidden" />
           <p className="text-center text-xs text-slate-400 sm:text-left">
             {t("copyright")}
+            {/* Pages officielles d'EasyPhysio (aussi dans SAME_AS, lib/seo/structuredData.ts) :
+                relie la marque à ses profils pour Google. Nom propre, non traduit. */}
+            {SAME_AS.map((url) => (
+              <a key={url} href={url} target="_blank" rel="me noopener noreferrer" className="ml-3 underline hover:text-slate-600">
+                {new URL(url).hostname.replace(/^www\./, "").replace(/\.com$/, "").replace(/^linkedin$/, "LinkedIn")}
+              </a>
+            ))}
           </p>
           <p className="text-center text-[11px] italic text-slate-300 sm:text-right">
             {t("illustrations")}{" "}

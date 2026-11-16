@@ -12,7 +12,9 @@ const SITE_ID = `${siteConfig.url}/#site`;
 const APP_ID = `${siteConfig.url}/#application`;
 
 /** Comptes publics d'EasyPhysio (à compléter quand ils existent : LinkedIn, Instagram…). */
-export const SAME_AS: string[] = [];
+export const SAME_AS: string[] = [
+  "https://www.linkedin.com/company/easyphysio-fr/", // créée le 2026-11-16
+];
 
 export function organizationLd() {
   return {
