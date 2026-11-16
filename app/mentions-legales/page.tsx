@@ -10,9 +10,7 @@ export async function generateMetadata() {
 }
 
 // Mentions légales complétées le 2026-11-16 (EI, SIREN, RCS, adresse,
-// directeur de la publication) : plus de bandeau « Brouillon ». Reste à
-// ajouter le numéro de téléphone (LCEN art. 6-III pour un entrepreneur
-// individuel) dès que Philippe le donne.
+// directeur de la publication, téléphone) : plus de bandeau « Brouillon ».
 // Textes : messages/<langue>/legal.json (« legalNotice ») ; la version anglaise
 // est un brouillon à faire relire par un avocat, d'où le bandeau hors français.
 export default async function MentionsLegalesPage() {
