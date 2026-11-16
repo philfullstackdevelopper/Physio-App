@@ -4,7 +4,7 @@ import { getPool } from "@/lib/db/pool";
 // Téléphones à notifier (migration 0083, table push_tokens) : uniquement par
 // les fonctions internal.* — jamais depuis le navigateur.
 
-export async function registerPushToken(appUserId: string, token: string, platform: "ios" | "android"): Promise<void> {
+export async function registerPushToken(appUserId: string, token: string, platform: "ios" | "android" | "web"): Promise<void> {
   await getPool().query("select internal.register_push_token($1, $2, $3)", [appUserId, token, platform]);
 }
 

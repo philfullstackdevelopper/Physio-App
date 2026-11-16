@@ -15,5 +15,11 @@
     "retry": "Réessayer",
     "home": "Revenir à l'accueil"
   },
-  "reviewBanner":"Traduction en cours de relecture : la version française fait foi."
+  "reviewBanner": "Traduction en cours de relecture : la version française fait foi.",
+  "webPush": {
+    "title": "Activer les notifications",
+    "text": "Recevez les messages de votre kiné et le rappel de votre séance, même appli fermée.",
+    "enable": "Activer",
+    "later": "Plus tard"
+  }
 }

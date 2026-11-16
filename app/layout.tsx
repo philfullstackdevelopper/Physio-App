@@ -8,6 +8,7 @@ import CookieBanner from "@/components/CookieBanner";
 import type { Locale } from "@/i18n/locales";
 import { siteConfig } from "@/lib/site";
 import AppBridge from "@/components/AppBridge";
+import WebPushPrompt from "@/components/WebPushPrompt";
 import { appStoreId } from "@/lib/app/storeLinks";
 import "./globals.css";
 
@@ -103,6 +104,8 @@ export default async function RootLayout({
             {children}
             {/* Appli mobile : notifications (ne fait rien dans un navigateur). */}
             <AppBridge />
+            {/* Site installé sur l'écran d'accueil : notifications (rien ailleurs). */}
+            <WebPushPrompt />
           </ClerkProvider>
           <CookieBanner />
         </NextIntlClientProvider>

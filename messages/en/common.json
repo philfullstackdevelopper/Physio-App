@@ -15,5 +15,11 @@
     "retry": "Try again",
     "home": "Back to home"
   },
-  "reviewBanner":"Translation under review: the French version is the authoritative one."
+  "reviewBanner": "Translation under review: the French version is the authoritative one.",
+  "webPush": {
+    "title": "Turn on notifications",
+    "text": "Get messages from your physio and your session reminder, even with the app closed.",
+    "enable": "Turn on",
+    "later": "Later"
+  }
 }
