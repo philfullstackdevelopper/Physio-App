@@ -5,6 +5,7 @@ import { Smartphone } from "lucide-react";
 import { nativeAppPlatform } from "@/lib/app/nativeAppServer";
 import { getTranslations } from "next-intl/server";
 import { phoneFromUserAgent, storeLinks } from "@/lib/app/storeLinks";
+import InstallAppGuide from "@/components/InstallAppGuide";
 
 export async function generateMetadata() {
   const t = await getTranslations("patient.appli");
@@ -14,14 +15,16 @@ export async function generateMetadata() {
 // Dernier écran de l'inscription sur le site (après le profil) : propose
 // l'appli. Inscription et paiement se font sur le site, jamais dans l'appli
 // (règles d'Apple) ; ensuite le patient s'y connecte avec le même compte.
-// Sans adresse de magasin (lib/app/storeLinks.ts), ou déjà dans l'appli :
-// directement le programme.
+// Sur un téléphone sans appli dans son magasin (lib/app/storeLinks.ts) : les
+// gestes pour ajouter le site à l'écran d'accueil (InstallAppGuide, 2026-11-16).
+// Sur ordinateur sans magasin, ou déjà dans l'appli : directement le programme.
 export default async function PatientAppPage() {
   if (await nativeAppPlatform()) redirect("/patient");
   const links = storeLinks();
+  const phone = phoneFromUserAgent((await headers()).get("user-agent"));
+  if (phone && !links[phone]) return <InstallAppGuide phone={phone} />;
   if (!links.ios && !links.android) redirect("/patient");
 
-  const phone = phoneFromUserAgent((await headers()).get("user-agent"));
   const showIos = links.ios && phone !== "android";
   const showAndroid = links.android && phone !== "ios";
   if (!showIos && !showAndroid) redirect("/patient");

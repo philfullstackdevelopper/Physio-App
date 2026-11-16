@@ -95,7 +95,15 @@
     "text": "Install the EasyPhysio app to receive messages from your physio and your session reminder. Sign in with the same email and password.",
     "appStore": "Download on the App Store",
     "googlePlay": "Get it on Google Play",
-    "continueBrowser": "Continue in the browser"
+    "continueBrowser": "Continue in the browser",
+    "installText": "Add EasyPhysio to your phone's home screen: it will open like an app, full screen.",
+    "installButton": "Install EasyPhysio",
+    "iosStep1": "In Safari, tap the Share button",
+    "iosStep2": "Choose “Add to Home Screen”",
+    "iosStep3": "Tap “Add” in the top right corner",
+    "androidStep1": "In Chrome, tap the menu",
+    "androidStep2": "Choose “Install app” or “Add to Home screen”",
+    "installAfter": "Then open EasyPhysio from your home screen and sign in once, with the same email and password."
   },
   "layout": {
     "kineSuspended": "{name} is no longer on EasyPhysio. No more payments will be taken: you keep free access to your programme and your data."

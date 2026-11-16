@@ -65,6 +65,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
     },
     ...(iosAppId ? { itunes: { appId: iosAppId } } : {}),
+    // Site ajouté à l'écran d'accueil de l'iPhone (app/manifest.ts) : s'ouvre
+    // en plein écran sous le nom « EasyPhysio », barre d'état claire.
+    appleWebApp: { capable: true, title: siteConfig.name, statusBarStyle: "default" },
   };
 }
 
@@ -75,6 +78,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#f5f7fb",
 };
 
 export default async function RootLayout({
