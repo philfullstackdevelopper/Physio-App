@@ -153,7 +153,7 @@ export default function SiteHeader() {
 
             {isLoaded && !isSignedIn && (
               <Link
-                href={SIGNUPS_OPEN ? "/signup" : WAITLIST_HREF}
+                href={SIGNUPS_OPEN ? "/signup/kine" : WAITLIST_HREF}
                 className="hidden shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition active:scale-[0.97] hover:bg-blue-700 sm:inline-flex"
               >
                 {SIGNUPS_OPEN ? t("createAccount") : t("waitlist")}

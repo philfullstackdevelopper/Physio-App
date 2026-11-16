@@ -29,7 +29,8 @@ export interface SessionExercise {
   mediaStartSeconds?: number;
 }
 
-type Phase = "exercise" | "celebrate" | "finished";
+// "rate" : la question de douleur unique, après le dernier exercice (2026-11-16).
+type Phase = "exercise" | "celebrate" | "rate" | "finished";
 
 /** A self-hosted demo clip of the kiné doing the exercise (Philippe,
  *  2026-10-01). The clip's first frame shows straight away; one tap plays it,
@@ -243,67 +244,118 @@ function SetTracker({ sets, done, onToggle }: { sets: number; done: number; onTo
   );
 }
 
-/** Douleur pendant l'exercice, en pastilles de 0 à 10 (Philippe, 2026-11-02,
- *  option B validée) : facultatif, colorées de plus en plus chaud. */
-function PainPills({ value, onChange }: { value: number | null; onChange: (n: number) => void }) {
-  const t = useTranslations("exercise.session");
-  return (
-    <div className="text-left">
-      <p id="ex-pain-label" className="text-sm font-semibold text-slate-800">{t("painDuring")}</p>
-      <div role="group" aria-labelledby="ex-pain-label" className="mt-2 grid grid-cols-11 gap-1">
-        {Array.from({ length: 11 }, (_, n) => {
-          const on = value === n;
-          const tone = n >= 8 ? "border-red-200 bg-red-50 text-red-700" : n >= 6 ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 bg-white text-slate-700";
-          return (
-            <button
-              key={n}
-              type="button"
-              aria-pressed={on}
-              aria-label={t("painAria", { n })}
-              onClick={() => onChange(n)}
-              className={`h-9 rounded-lg border text-sm font-semibold tabular-nums max-sm:h-8 ${on ? "border-blue-600 bg-blue-600 text-white" : tone}`}
-            >
-              {n}
-            </button>
-          );
-        })}
-      </div>
-      <p className="mt-1 flex justify-between text-[11px] text-slate-500">
-        <span>{t("painNone")}</span>
-        <span>{t("painStrong")}</span>
-      </p>
-    </div>
-  );
-}
-
-/** « C'était… » : facile / correct / difficile, enregistré en 2, 5 ou 8 sur 10. */
-const DIFFICULTY_CHOICES = [
-  { label: "diffEasy", value: 2 },
-  { label: "diffCorrect", value: 5 },
-  { label: "diffHard", value: 8 },
+/** Niveaux de douleur proposés en fin de séance (même échelle que « Passer
+ *  cet exercice → douleur ») : légère 3, moyenne 5, forte 8 sur 10. */
+const SESSION_PAIN_LEVELS = [
+  { label: "skipPainLight", value: 3 },
+  { label: "skipPainMedium", value: 5 },
+  { label: "skipPainStrong", value: 8 },
 ] as const;
 
-function DifficultyChoice({ value, onChange }: { value: number | null; onChange: (n: number) => void }) {
+/**
+ * UNE seule question de douleur, à la fin de la séance (Philippe, 2026-11-16 :
+ * « only one pain button at the end of the session where the patient clicks on
+ * the exercise that was the problem »). Avant : 11 pastilles de douleur + 3 de
+ * difficulté après CHAQUE exercice. « Non » → aucune douleur (0) ; « Oui » →
+ * à quel point, et le ou les exercices en cause (touchés dans la liste).
+ */
+function SessionPainQuestion({
+  exercises,
+  preselected,
+  saving,
+  onSubmit,
+}: {
+  exercises: SessionExercise[];
+  /** Exercices déjà signalés douloureux (passés pour douleur). */
+  preselected: number[];
+  saving: boolean;
+  onSubmit: (level: number, painfulIdx: number[]) => void;
+}) {
   const t = useTranslations("exercise.session");
+  const [hadPain, setHadPain] = useState<boolean | null>(preselected.length > 0 ? true : null);
+  const [level, setLevel] = useState<number | null>(null);
+  const [which, setWhich] = useState<Set<number>>(new Set(preselected));
+  const toggle = (i: number) =>
+    setWhich((s) => {
+      const n = new Set(s);
+      if (n.has(i)) n.delete(i);
+      else n.add(i);
+      return n;
+    });
+
   return (
-    <div className="text-left">
-      <p id="ex-diff-label" className="text-sm font-semibold text-slate-800">{t("feltLabel")}</p>
-      <div role="group" aria-labelledby="ex-diff-label" className="mt-2 grid grid-cols-3 gap-1.5">
-        {DIFFICULTY_CHOICES.map((c) => {
-          const on = value === c.value;
-          return (
-            <button
-              key={c.value}
-              type="button"
-              aria-pressed={on}
-              onClick={() => onChange(c.value)}
-              className={`h-11 rounded-xl text-sm font-semibold max-sm:h-10 ${on ? "border-2 border-blue-600 bg-blue-50 text-blue-800" : "border border-slate-200 bg-white text-slate-700"}`}
-            >
-              {t(c.label)}
-            </button>
-          );
-        })}
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm max-sm:p-4 short:sm:p-4">
+      <h2 className="font-display text-xl font-semibold text-slate-900">{t("painQuestion")}</h2>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => onSubmit(0, [])}
+          className="h-14 rounded-xl border border-slate-200 bg-white text-base font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+        >
+          {saving && hadPain !== true ? t("saving") : t("painNo")}
+        </button>
+        <button
+          type="button"
+          aria-pressed={hadPain === true}
+          onClick={() => setHadPain(true)}
+          className={`h-14 rounded-xl text-base font-semibold ${hadPain ? "border-2 border-red-600 bg-red-50 text-red-700" : "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50"}`}
+        >
+          {t("painYes")}
+        </button>
       </div>
+
+      {hadPain && (
+        <>
+          <p id="sp-level" className="mt-5 max-sm:mt-4 short:sm:mt-3 text-sm font-semibold text-slate-800">{t("skipPainQuestion")}</p>
+          <div role="group" aria-labelledby="sp-level" className="mt-2 grid grid-cols-3 gap-2">
+            {SESSION_PAIN_LEVELS.map((c) => {
+              const on = level === c.value;
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setLevel(c.value)}
+                  className={`h-12 rounded-xl text-sm font-semibold ${on ? "border-2 border-red-600 bg-red-50 text-red-700" : "border border-slate-200 bg-white text-slate-700"}`}
+                >
+                  {t(c.label)}
+                </button>
+              );
+            })}
+          </div>
+
+          <p id="sp-which" className="mt-5 max-sm:mt-4 short:sm:mt-3 text-sm font-semibold text-slate-800">{t("painWhich")}</p>
+          <ul aria-labelledby="sp-which" className="mt-2 grid gap-1.5 sm:grid-cols-2">
+            {exercises.map((ex, i) => {
+              const on = which.has(i);
+              return (
+                <li key={ex.id ?? i}>
+                  <button
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => toggle(i)}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm max-sm:py-1.5 ${on ? "border-2 border-red-600 bg-red-50 font-semibold text-red-800" : "border border-slate-200 bg-white text-slate-700"}`}
+                  >
+                    <ExerciseIllustration name={ex.name} className="h-10 w-10 shrink-0 rounded-lg bg-slate-50 text-blue-600 max-sm:h-8 max-sm:w-8 short:sm:h-8 short:sm:w-8" />
+                    <span className="min-w-0 flex-1 truncate">{ex.name}</span>
+                    {on && <Check className="h-4 w-4 shrink-0" strokeWidth={2.5} />}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          <button
+            type="button"
+            disabled={level == null || saving}
+            onClick={() => level != null && onSubmit(level, [...which])}
+            className="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 max-sm:mt-4 short:sm:mt-3 short:sm:py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {saving ? t("saving") : t("finishSession")}
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -485,8 +537,9 @@ export default function WorkoutSession({
   // facultatif. Enregistré avec la séance, à la fin.
   const [results, setResults] = useState<Record<number, ExerciseResult>>({});
   const resultsSavedRef = useRef(false);
-  const setRating = (key: "pain" | "difficulty", n: number) =>
-    setResults((r) => ({ ...r, [idx]: { ...(r[idx] ?? { status: "done", pain: null, difficulty: null }), [key]: n } }));
+  // Réponse à la question de douleur de fin de séance (0 = « non »), ou null
+  // tant qu'elle n'est pas donnée.
+  const [sessionPainChoice, setSessionPainChoice] = useState<number | null>(null);
 
   const total = exercises.length;
   const current = exercises[idx];
@@ -496,8 +549,9 @@ export default function WorkoutSession({
   const doneCount = Object.values(results).filter((r) => r.status === "done").length;
   const skippedCount = Object.values(results).filter((r) => r.status === "skipped").length;
 
-  const finish = async (latest?: Record<number, ExerciseResult>) => {
+  const finish = async (latest?: Record<number, ExerciseResult>, painChoice?: number | null) => {
     const allResults = latest ?? results;
+    const choice = painChoice !== undefined ? painChoice : sessionPainChoice;
     // Log the completed workout (RLS: patient can insert their own logs),
     // then the per-exercise results and the session pain. A failed insert must
     // NOT show the success celebration — the patient needs to know their
@@ -553,7 +607,10 @@ export default function WorkoutSession({
       // phase, alertes) : la plus forte douleur notée exercice par exercice.
       // Aucune douleur notée → pas de ligne (pain_score est NOT NULL).
       // Comme le suivi par exercice, son échec ne bloque pas la fin de séance.
-      const finalPain = sessionPainScore(Object.values(allResults).map((r) => r.pain));
+      // Depuis le 2026-11-16 : la réponse à la question de fin de séance
+      // (« non » = 0 → 1 sur l'échelle de la colonne), ou la plus forte douleur
+      // d'un exercice passé pour douleur.
+      const finalPain = sessionPainScore([...Object.values(allResults).map((r) => r.pain), choice]);
       if (!feedbackIdRef.current && savedLogIdRef.current && finalPain != null) {
         const { data: fb, error: fbErr } = await supabase
           .from("patient_feedback")
@@ -586,8 +643,20 @@ export default function WorkoutSession({
 
   const [fbError, setFbError] = useState(false);
 
-  // Douleur de séance calculée depuis les douleurs notées par exercice.
-  const sessionPain = sessionPainScore(Object.values(results).map((r) => r.pain));
+  // Douleur de séance : réponse de fin de séance et douleurs d'exercices passés.
+  const sessionPain = sessionPainScore([...Object.values(results).map((r) => r.pain), sessionPainChoice]);
+
+  // Réponse à la question unique de fin de séance : la douleur va sur le ou
+  // les exercices touchés (le kiné voit lequel gêne), puis la séance est enregistrée.
+  const submitPain = (level: number, painfulIdx: number[]) => {
+    const updated: Record<number, ExerciseResult> = { ...results };
+    for (const i of painfulIdx) {
+      updated[i] = { ...(updated[i] ?? { status: "done", difficulty: null }), pain: level, difficulty: updated[i]?.difficulty ?? null };
+    }
+    setResults(updated);
+    setSessionPainChoice(level);
+    finish(updated, level);
+  };
 
   // « Envoyer à mon kiné » : ajoute le mot libre à la ligne de ressenti de
   // la séance (créée à la fin de séance, ou ici si cet envoi avait échoué).
@@ -660,7 +729,7 @@ export default function WorkoutSession({
       setSetsDone(0);
       setPhase("exercise");
     } else {
-      finish(updated);
+      setPhase("rate");
     }
   };
 
@@ -673,7 +742,8 @@ export default function WorkoutSession({
       setSetsDone(0);
       setPhase("exercise");
     } else {
-      finish();
+      // Après le dernier exercice : la question de douleur unique.
+      setPhase("rate");
     }
   };
 
@@ -824,8 +894,18 @@ export default function WorkoutSession({
         </div>
       </div>
 
-      {/* ---- Between exercises ---- */}
-      {phase === "celebrate" ? (
+      {/* ---- Après le dernier exercice : la douleur, une seule fois ---- */}
+      {phase === "rate" ? (
+        <SessionPainQuestion
+          exercises={exercises}
+          preselected={Object.entries(results)
+            .filter(([, r]) => r.status === "skipped" && r.skipReason === "pain")
+            .map(([i]) => Number(i))}
+          saving={saving}
+          onSubmit={submitPain}
+        />
+      ) : /* ---- Between exercises ---- */
+      phase === "celebrate" ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border-2 border-blue-600">
             <Check className="h-6 w-6 text-blue-600" strokeWidth={2.5} />
@@ -837,11 +917,6 @@ export default function WorkoutSession({
             {t("exerciseDone", { n: idx + 1, total })}
           </p>
 
-          {/* Ressenti de CET exercice, facultatif : le kiné voit lequel gêne. */}
-          <div className="mt-4 space-y-4 short:mt-3 short:space-y-3">
-            <PainPills value={results[idx]?.pain ?? null} onChange={(n) => setRating("pain", n)} />
-            <DifficultyChoice value={results[idx]?.difficulty ?? null} onChange={(n) => setRating("difficulty", n)} />
-          </div>
 
           {/* À suivre : le prochain exercice et son objectif, pour enchaîner sans surprise. */}
           {upcoming && (

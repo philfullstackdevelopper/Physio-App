@@ -14,7 +14,7 @@ import {
   type KineActivity,
   type PatientActivity,
 } from "@/lib/activity/activity";
-import { nudgeAll, nudgeOne } from "./activityActions";
+import { nudgeAll, nudgeOne, testDiscordAlert } from "./activityActions";
 
 // /admin — « Activité » (Philippe, 2026-11-16). Comment les gens arrivent
 // (parcours), qui utilise vraiment l'appli, et relance par notification de
@@ -106,12 +106,20 @@ export default function Activity({
         <h2 id="activite-titre" className="font-display text-xl font-semibold text-slate-900">
           Activité
         </h2>
-        {testCount > 0 && (
-          <label className="flex items-center gap-2 text-xs text-slate-500">
-            <input type="checkbox" checked={showTests} onChange={(e) => setShowTests(e.target.checked)} />
-            Inclure les {testCount} comptes de test
-          </label>
-        )}
+        <div className="flex flex-wrap items-center gap-4">
+          {testCount > 0 && (
+            <label className="flex items-center gap-2 text-xs text-slate-500">
+              <input type="checkbox" checked={showTests} onChange={(e) => setShowTests(e.target.checked)} />
+              Inclure les {testCount} comptes de test
+            </label>
+          )}
+          {/* Alerte instantanée à chaque inscription kiné (lib/alerts/discord.ts). */}
+          <form action={testDiscordAlert}>
+            <SubmitButton pendingText="Envoi…" className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">
+              Tester l&apos;alerte Discord
+            </SubmitButton>
+          </form>
+        </div>
       </div>
       <p className="mt-1 text-sm text-slate-500">
         Qui utilise vraiment EasyPhysio, jusqu&apos;où chacun est allé, et qui relancer. « Vu » = dernière visite connue

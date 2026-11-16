@@ -1,1 +1,19 @@
-{}
+{
+  "cabinets": {
+    "title": "Practices",
+    "intro": "Every practice created by physios. “Possible duplicate”: same postcode and a similar name — merge them if it's the same practice.",
+    "duplicate": "Possible duplicate",
+    "members": "{count, plural, =0 {no members} one {# member} other {# members}}",
+    "pending": "{count, plural, one {# pending request} other {# pending requests}}",
+    "created": "created on {date}",
+    "mergeInto": "Merge into…",
+    "chooseKept": "Choose the practice to keep",
+    "merge": "Merge",
+    "confirm": "Merge “{source}” into “{target}”? Its members and exercises move to “{target}”, then “{source}” is deleted. This can't be undone.",
+    "confirmYes": "Yes, merge",
+    "merging": "Merging…",
+    "cancel": "Cancel",
+    "mergeInvalid": "Choose two different practices.",
+    "mergeFailed": "The merge failed. Nothing was changed."
+  }
+}

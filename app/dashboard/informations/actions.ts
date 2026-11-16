@@ -63,9 +63,15 @@ export async function updateInstructorNameAction(formData: FormData): Promise<{ 
 
   const rpps = (row.rpps_number as string | null) ?? null;
   if (rpps) {
-    const verification = await verifyRpps(rpps, fullName).catch(() => null);
-    const verified = verification?.status === "verified" && !(await rppsInUse(rpps, user.id).catch(() => true));
-    await setInstructorRppsVerified(user.id, verified && verification?.status === "verified" ? verification.verifiedAt : null);
+    // Annuaire injoignable (C1, audit du 2026-11-16) : on ne touche pas au
+    // badge — seule une réponse « ce nom ne correspond pas » le retire.
+    const verification = await verifyRpps(rpps, fullName).catch(() => ({ status: "unavailable" as const }));
+    if (verification.status === "verified") {
+      const inUse = await rppsInUse(rpps, user.id).catch(() => null);
+      if (inUse === false) await setInstructorRppsVerified(user.id, verification.verifiedAt);
+    } else if (verification.status === "unverified") {
+      await setInstructorRppsVerified(user.id, null);
+    }
   }
   revalidatePath("/dashboard", "layout");
   return { ok: true };

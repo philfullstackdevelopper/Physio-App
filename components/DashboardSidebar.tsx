@@ -5,18 +5,20 @@ import { useEffect, useRef, useState } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { LayoutDashboard, UsersRound, MessageCircle, Dumbbell, ListChecks, Wallet, LogOut, CircleUserRound, ChevronLeft, BadgeCheck, Building2 } from "lucide-react";
+import { LayoutDashboard, UsersRound, MessageCircle, Dumbbell, LogOut, CircleUserRound, ChevronLeft, BadgeCheck } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 import { initials } from "@/lib/format/initials";
 
-const LINKS = [
+// Ordinateur : 5 entrées au lieu de 7 (audit du 2026-11-16). « Bibliothèque »
+// = séances + exercices (les deux pages se renvoient l'une à l'autre) ;
+// « Compte » = Mes informations, facturation et cabinet. `alsoActive` : pages
+// qui gardent l'entrée allumée.
+const LINKS: { href: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; alsoActive?: string[] }[] = [
   { href: "/dashboard", label: "dashboard", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/patients", label: "myPatients", icon: UsersRound },
   { href: "/dashboard/messages", label: "messages", icon: MessageCircle },
-  { href: "/dashboard/seances", label: "mySessions", icon: Dumbbell },
-  { href: "/dashboard/exercises", label: "myExercises", icon: ListChecks },
-  { href: "/dashboard/facturation", label: "billing", icon: Wallet },
-  { href: "/dashboard/cabinet", label: "myCabinet", icon: Building2 },
+  { href: "/dashboard/seances", label: "library", icon: Dumbbell, alsoActive: ["/dashboard/exercises"] },
+  { href: "/dashboard/informations", label: "account", icon: CircleUserRound, alsoActive: ["/dashboard/facturation", "/dashboard/cabinet", "/dashboard/connect"] },
 ];
 
 // Téléphone : 4 onglets en bas, comme l'appli patient (5 = trop, Philippe
@@ -200,7 +202,11 @@ export default function DashboardSidebar({
         </Link>
         <nav className="mt-6 flex flex-1 flex-col gap-1">
           {LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className={linkClass(isActive(link.href, link.exact))}>
+            <Link
+              key={link.href}
+              href={link.href}
+              className={linkClass(isActive(link.href, link.exact) || (link.alsoActive ?? []).some((p) => pathname.startsWith(p)))}
+            >
               <link.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
               {t(link.label)}
               {link.href === "/dashboard/messages" && unreadCount > 0 && (
@@ -208,7 +214,8 @@ export default function DashboardSidebar({
                   {unreadCount}
                 </span>
               )}
-              {link.href === "/dashboard/cabinet" && cabinetRequests > 0 && (
+              {/* Demandes pour rejoindre le cabinet : sur « Compte » (le cabinet y est). */}
+              {link.href === "/dashboard/informations" && cabinetRequests > 0 && (
                 <span className="ml-auto rounded-full bg-warn px-1.5 text-[11px] font-semibold text-white">
                   {cabinetRequests}
                 </span>

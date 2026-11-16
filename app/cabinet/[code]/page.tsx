@@ -37,12 +37,15 @@ export default async function CabinetInvitePage({
 
   // Qui regarde ? (sans session : personne ; avec : kiné ou non)
   const { userId } = await auth();
-  let viewer: "anonymous" | "kine" | "other" = "anonymous";
+  // Audit du 2026-11-16 (C5) : un kiné pas encore validé (inscription à
+  // terminer) ou suspendu n'est pas « un autre compte » — on lui dit quoi faire.
+  let viewer: "anonymous" | "kine" | "kine-pending" | "kine-blocked" | "other" = "anonymous";
   if (userId && cabinet) {
     const supabase = await createClient();
     const me = await requireUser(supabase);
     const { data: kine } = await supabase.from("instructors").select("status").eq("id", me.id).maybeSingle();
-    viewer = kine && kine.status === "approved" ? "kine" : "other";
+    const status = (kine?.status as string | null) ?? null;
+    viewer = !kine ? "other" : status === "approved" ? "kine" : status === "pending" ? "kine-pending" : "kine-blocked";
   }
   const here = `/cabinet/${encodeURIComponent(code)}`;
   const join = joinCabinetFromInvite.bind(null, code);
@@ -102,6 +105,15 @@ export default async function CabinetInvitePage({
                       {t("joinNow")}
                     </SubmitButton>
                   </form>
+                ) : viewer === "kine-pending" ? (
+                  <div className="mt-6 rounded-xl bg-blue-50 px-4 py-3 text-sm text-slate-700">
+                    <p>{t("finishFirst")}</p>
+                    <Link href="/signup/onboarding" className="mt-2 inline-flex rounded-lg bg-blue-600 px-3 py-1.5 font-medium text-white hover:bg-blue-700">
+                      {t("finishButton")}
+                    </Link>
+                  </div>
+                ) : viewer === "kine-blocked" ? (
+                  <p className="mt-6 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">{t("blocked")}</p>
                 ) : viewer === "other" ? (
                   <p className="mt-6 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">{t("kinesOnly")}</p>
                 ) : (

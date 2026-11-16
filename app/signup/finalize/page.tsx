@@ -9,6 +9,8 @@ import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 import { createCabinet, joinCabinetByInvite, requestJoinCabinet } from "@/lib/db/cabinets";
 import { splitPostalCity } from "@/lib/cabinet/address";
 import { parsePendingCabinet, pendingFullName, type PendingCabinet } from "@/lib/cabinet/pendingCabinet";
+import { trackServer } from "@/lib/analytics/serverTrack";
+import { alertKineSignup } from "@/lib/alerts/discord";
 
 const PENDING_CABINET_COOKIE = "pending_cabinet";
 
@@ -157,6 +159,8 @@ async function destination(): Promise<string> {
       return (`/connection-error?next=${encodeURIComponent("/signup/finalize")}`);
     }
 
+    await trackServer("kine_compte_cree", { cabinet_saisi: !!pendingCabinet, mode_cabinet: pendingCabinet?.mode ?? "aucun" });
+    if (!pendingCabinet) await alertKineSignup("compte_cree", { name: fullName });
     // Badge « RPPS vérifié » : écrit par le serveur (migration 0063).
     if (rppsVerified && verification?.status === "verified") await setInstructorRppsVerified(appId, verification.verifiedAt);
     // Validé d'office dès que le cabinet est renseigné → directement dans
@@ -169,6 +173,8 @@ async function destination(): Promise<string> {
         console.error("finalize : validation différée", e);
       }
       await applyCabinetChoice(appId, pendingCabinet);
+      await trackServer("kine_inscription_terminee", { etape: "directe" });
+      await alertKineSignup("directe", { name: fullName, cabinetAddress: pendingCabinet.cabinetAddress });
       return ("/dashboard");
     }
     return ("/signup/onboarding");

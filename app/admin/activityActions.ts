@@ -78,3 +78,11 @@ export async function nudgeAll(formData: FormData) {
   const { sent, failed } = await sendPush(msgs);
   done(sent, failed, targets.length);
 }
+
+/** Bouton « Tester l'alerte Discord » : vérifie que le webhook est bien réglé. */
+export async function testDiscordAlert() {
+  await requireAdmin();
+  const { alertDiscord } = await import("@/lib/alerts/discord");
+  const ok = await alertDiscord("Test : les alertes EasyPhysio arrivent bien dans ce salon.");
+  redirect(`/admin?discord=${ok ? "ok" : process.env.DISCORD_ALERTS_WEBHOOK_URL ? "echec" : "absent"}#activite`);
+}

@@ -275,8 +275,9 @@ export default function PatientActionsMenu({
           <>
             <Settings2 className="h-4 w-4" strokeWidth={1.75} />
             {t("manage")}
-            {/* Messages non lus : visibles sans ouvrir le menu. */}
-            {unread > 0 && <span className="rounded-full bg-brand px-1.5 text-[11px] text-white">{unread}</span>}
+            {/* Messages non lus : visibles sans ouvrir le menu. Sur ordinateur,
+                ils sont sur « Écrire à … » quand ce bouton est affiché. */}
+            {unread > 0 && <span className={`rounded-full bg-brand px-1.5 text-[11px] text-white ${messages ? "sm:hidden" : ""}`}>{unread}</span>}
             {/* Condition manquante : pastille orange, distincte du compteur
                 de messages (bleu). */}
             {conditionMissing && conditionSlot && (
@@ -313,6 +314,9 @@ export default function PatientActionsMenu({
             <MessageCircle className="h-4 w-4 text-brand" strokeWidth={1.75} />
             <span className="xl:hidden">{t("write")}</span>
             <span className="hidden xl:inline">{t("writeTo", { name: patientName })}</span>
+            {/* Messages non lus : sur le bouton des messages (audit du 2026-11-16 ;
+                avant, sur « Gérer », où personne ne les cherchait). */}
+            {unread > 0 && <span className="rounded-full bg-brand px-1.5 text-[11px] text-white">{unread}</span>}
           </button>
           )}
           {gererButton}

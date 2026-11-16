@@ -11,6 +11,7 @@ import { Building2, ChevronRight, Dumbbell, ListChecks, Wallet } from "lucide-re
 import { useTranslations } from "next-intl";
 import { initials } from "@/lib/format/initials";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import InstallAppButton from "@/components/InstallAppButton";
 
 // `key` = clé de dashboard.infos (titre et sous-titre de chaque case).
 const TILES = [
@@ -65,8 +66,18 @@ export default function KineInfosView({
         {nameEditor}
         {/* Langue de l'interface (Philippe, 2026-11-06) : une ligne compacte,
             la page tient toujours sur un écran. */}
-        <div className="mt-3 rounded-2xl bg-surface px-5 py-3 shadow-soft">
-          <LanguageSwitcher variant="row" />
+        <div className="mt-3 divide-y divide-line rounded-2xl bg-surface shadow-soft">
+          {/* Installer l'appli sur l'écran d'accueil (Philippe, 2026-11-16),
+              téléphone seulement ; absente si déjà ouverte depuis son icône. */}
+          <div className="sm:hidden">
+            <InstallAppButton
+              className="flex w-full items-center gap-3 px-5 py-3 text-left"
+              iconClassName="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-bg text-ink"
+            />
+          </div>
+          <div className="px-5 py-3">
+            <LanguageSwitcher variant="row" />
+          </div>
         </div>
         {footer}
       </div>

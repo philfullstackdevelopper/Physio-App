@@ -116,11 +116,11 @@
     "steps": {
       "situation": "Your situation",
       "profile": "Your profile",
-      "equipment": "Equipment"
+      "equipment": "Equipment and consent"
     },
     "bodyPartsQuestion": "Which part(s) of your body would you like to work on?",
     "bodyPartsError": "Choose at least one area.",
-    "stageQuestion": "What stage are you at? (recovery stage)",
+    "stageQuestion": "Where are you at today?",
     "choose": "Choose…",
     "dob": "Date of birth",
     "height": "Height (cm)",
@@ -151,7 +151,14 @@
     "bodyPartsQuestionKine": "Your physio has chosen the area to work on. You can add another one.",
     "chosenBy": "Chosen by {name}",
     "chosenByKine": "Chosen by your physio",
-    "chosenShort": "By your physio"
+    "chosenShort": "By your physio",
+    "stageOptions": {
+      "acute": "The pain is recent (a few days)",
+      "subacute": "It's better, but still sensitive",
+      "recovery": "I'm recovering and want my strength back",
+      "return_to_sport": "I'm getting ready to return to sport"
+    },
+    "moreDetails": "Add more details (optional)"
   },
   "situation": {
     "_review": "Draft translation — needs review by the partner physio before launch",
@@ -201,7 +208,8 @@
     "yourProgramme": "Your programme",
     "noSessionYet": "Your physio hasn't assigned a session yet.",
     "hello": "Hello {name}",
-    "weekDots": "{done}/{target} {target, plural, one {session} other {sessions}}"
+    "weekDots": "{done}/{target} {target, plural, one {session} other {sessions}}",
+    "startToday": "Start today's session"
   },
   "homeBrake": {
     "_review": "Draft translation — needs review by the partner physio before launch",
@@ -245,7 +253,7 @@
     "redo": "Do this session again",
     "start": "Start this session",
     "completeThisWeek": "Done this week",
-    "current": "Current session",
+    "current": "This week's session",
     "doneOfTarget": "{done} / {target} this week",
     "doneTimes": "{done, plural, one {Once} other {# times}} this week",
     "yourExercises": "Your exercises",

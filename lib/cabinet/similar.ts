@@ -10,6 +10,8 @@
 //     « Cabinet de kinésithérapie du Parc » partagent « parc »).
 // Les mots génériques (cabinet, kiné, centre, de, du…) ne comptent pas.
 
+import { splitPostalCity } from "./address.ts";
+
 const STOP = new Set([
   "cabinet", "cabinets", "centre", "center", "maison", "pole", "espace", "institut", "clinique", "groupe", "sante",
   "kine", "kines", "kinesitherapie", "kinesitherapeute", "kinesitherapeutes", "kinesie", "masseur", "masseurs",
@@ -17,6 +19,8 @@ const STOP = new Set([
   "medical", "paramedical", "pluridisciplinaire", "des", "les", "la", "le", "de", "du", "d", "l", "et", "a", "au", "aux",
   "en", "sur", "sous", "rue", "avenue", "av", "bd", "boulevard", "place", "chemin", "route", "allee", "impasse", "quai",
   "scm", "selarl", "sarl", "sas", "sel", "sci",
+  // Audit du 2026-11-16 (C2) : trop courants dans les noms pour signaler un doublon.
+  "saint", "sainte", "st", "ste", "grand", "petit", "nord", "sud", "est", "ouest", "centre-ville", "ville",
 ]);
 
 export function normalizeWords(text: string | null | undefined): string[] {
@@ -38,15 +42,24 @@ function normalizeAddress(address: string | null | undefined): string {
     .trim();
 }
 
+/** Mots de la ville d'un cabinet (champ ville, sinon tirée de l'adresse). */
+function cityWords(c: { address?: string | null; city?: string | null }): string[] {
+  return normalizeWords(c.city ?? splitPostalCity(c.address ?? "").city ?? "");
+}
+
 /** Vrai si les deux cabinets (déjà dans le même code postal) se ressemblent. */
 export function looksLikeSameCabinet(
-  a: { name: string; address?: string | null },
-  b: { name: string; address?: string | null },
+  a: { name: string; address?: string | null; city?: string | null },
+  b: { name: string; address?: string | null; city?: string | null },
 ): boolean {
   const addrA = normalizeAddress(a.address);
   const addrB = normalizeAddress(b.address);
   if (addrA && addrA === addrB) return true;
-  const wordsA = new Set(normalizeWords(a.name).filter((w) => !/^\d+$/.test(w)));
+  // Le nom de la ville ne compte pas : « Kiné Paris Bastille » et « Cabinet
+  // Paris Voltaire » ne sont pas le même cabinet (audit du 2026-11-16, C2).
+  const ignore = new Set([...cityWords(a), ...cityWords(b)]);
+  const significant = (name: string) => normalizeWords(name).filter((w) => !/^\d+$/.test(w) && !ignore.has(w));
+  const wordsA = new Set(significant(a.name));
   if (wordsA.size === 0) return false;
-  return normalizeWords(b.name).some((w) => wordsA.has(w));
+  return significant(b.name).some((w) => wordsA.has(w));
 }

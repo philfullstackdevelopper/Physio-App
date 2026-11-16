@@ -22,7 +22,11 @@
 // décider. Repasser à true pour revenir à la validation automatique.
 export const AUTO_APPROVE_VERIFIED_RPPS = false;
 
-export type RppsVerification = { status: "verified"; verifiedAt: string } | { status: "unverified" };
+// « unavailable » (audit du 2026-11-16, C1) : l'Annuaire Santé n'a pas pu être
+// interrogé (clé absente, panne, délai dépassé). Ce n'est PAS un « non » : un
+// badge déjà obtenu doit alors être gardé. Pour une nouvelle inscription, cela
+// revient à « non vérifié » (pas de badge).
+export type RppsVerification = { status: "verified"; verifiedAt: string } | { status: "unverified" } | { status: "unavailable" };
 
 type FhirPractitionerBundle = {
   total?: number;
@@ -58,7 +62,7 @@ function namesMatch(declaredName: string, directoryName: string): boolean {
 
 export async function verifyRpps(rppsNumber: string, declaredName: string): Promise<RppsVerification> {
   const apiKey = process.env.ESANTE_API_KEY;
-  if (!apiKey) return { status: "unverified" };
+  if (!apiKey) return { status: "unavailable" };
 
   try {
     const res = await fetch(
@@ -67,7 +71,7 @@ export async function verifyRpps(rppsNumber: string, declaredName: string): Prom
       // l'inscription continue.
       { headers: { "ESANTE-API-KEY": apiKey }, signal: AbortSignal.timeout(5000) },
     );
-    if (!res.ok) return { status: "unverified" };
+    if (!res.ok) return { status: "unavailable" };
 
     const bundle: FhirPractitionerBundle = await res.json();
     const practitioner = bundle.entry?.[0]?.resource;
@@ -84,6 +88,6 @@ export async function verifyRpps(rppsNumber: string, declaredName: string): Prom
     }
     return { status: "unverified" };
   } catch {
-    return { status: "unverified" };
+    return { status: "unavailable" };
   }
 }

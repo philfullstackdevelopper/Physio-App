@@ -18,6 +18,8 @@ export interface ProgrammeCard {
   subtitle: string;
   cta: string;
   done: boolean;
+  /** Où mène le bouton (2026-11-16 : directement la séance du jour, sinon le programme). */
+  href?: string;
 }
 
 export interface PatientHomeViewProps {
@@ -135,7 +137,7 @@ export default function PatientHomeView({
                   </div>
                 )}
                 <Link
-                  href="/patient/programme"
+                  href={programmeCard.href ?? "/patient/programme"}
                   className={`flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-sm font-semibold max-sm:justify-center max-sm:whitespace-nowrap max-sm:py-3 max-sm:text-base max-sm:short:py-2.5 shadow-sm transition hover:bg-white/90 motion-safe:animate-[ctaPulse_2.4s_ease-out_infinite] motion-safe:group-hover:animate-none ${
                     programmeCard.done ? "text-ok" : "text-brand"
                   }`}

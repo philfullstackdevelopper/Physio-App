@@ -14,11 +14,13 @@ import { adminListCabinets, type AdminCabinetRow } from "@/lib/db/cabinets";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
 import AdminSummary, { sinceLabel, type AdminTodo } from "./AdminSummary";
 import { CONTRIBUTOR_THRESHOLD } from "@/lib/exercise/kineExercises";
-import { approveInstructor, mergeCabinets, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
+import { approveInstructor, rejectInstructor, reactivateInstructor, suspendInstructorAction } from "./actions";
 import { looksLikeSameCabinet } from "@/lib/cabinet/similar";
 import Activity from "./Activity";
 import { loadActivity } from "@/lib/activity/load";
 import { patientNeedsNudge, type KineActivity, type PatientActivity } from "@/lib/activity/activity";
+import MergeCabinetForm from "./MergeCabinetForm";
+import { getTranslations } from "next-intl/server";
 
 const STATUS_LABEL: Record<string, { label: string; tone: string }> = {
   approved: { label: "Actif", tone: "bg-emerald-50 text-emerald-700" },
@@ -77,6 +79,7 @@ export default async function AdminPage({
   }
 
   // Cabinets (migration 0085) : liste vide tant qu'elle n'est pas appliquée.
+  const tCab = await getTranslations("admin.cabinets");
   let cabinets: AdminCabinetRow[] = [];
   try {
     cabinets = await adminListCabinets();
@@ -127,7 +130,13 @@ export default async function AdminPage({
     sp.relance !== undefined
       ? `Relance envoyée à ${sp.relance} personne${Number(sp.relance) > 1 ? "s" : ""} : ${sentCount} notification${sentCount > 1 ? "s" : ""} partie${sentCount > 1 ? "s" : ""}` +
         (failCount > 0 ? `, ${failCount} échec${failCount > 1 ? "s" : ""} (appli retirée ou notifications coupées).` : ".")
-      : null;
+      : sp.discord === "ok"
+        ? "Alerte de test envoyée : regardez votre salon Discord."
+        : sp.discord === "absent"
+          ? "Alerte Discord pas encore réglée : ajoutez DISCORD_ALERTS_WEBHOOK_URL dans les variables Scalingo de l'appli easyphysio."
+          : sp.discord === "echec"
+            ? "Discord a refusé l'alerte : vérifiez l'adresse du webhook (copiée en entier, salon pas supprimé)."
+            : null;
 
   // « À traiter » (Philippe, 2026-11-04) : ce qui attend une action.
   const exToReview = (kineExercises ?? []).filter((r) => r.status === "pending");
@@ -420,12 +429,8 @@ export default async function AdminPage({
 
       {cabinets.length > 0 && (
         <section id="cabinets" className="mt-12 scroll-mt-6">
-          <h2 className="font-display text-xl font-semibold text-slate-900">Cabinets</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Créés et rejoints par les kinés eux-mêmes ; une demande pour rejoindre est validée par un membre du cabinet,
-            un lien d&apos;invitation fait entrer directement. « Doublon probable » : même code postal et nom ou adresse
-            qui se ressemblent — « Fusionner » fait passer ses kinés dans le cabinet choisi, puis le supprime.
-          </p>
+          <h2 className="font-display text-xl font-semibold text-slate-900">{tCab("title")}</h2>
+          <p className="mt-1 text-sm text-slate-500">{tCab("intro")}</p>
           <ul className="mt-4 space-y-2">
             {cabinets.map((c) => {
               const twins = cabinets.filter(
@@ -440,36 +445,26 @@ export default async function AdminPage({
                         <span className="font-normal text-slate-500">· {[c.postal_code, c.city].filter(Boolean).join(" ")}</span>
                       )}
                       {twins.length > 0 && (
-                        <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">Doublon probable</span>
+                        <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">{tCab("duplicate")}</span>
                       )}
                     </span>
                     <span className="text-slate-500">
-                      {c.members} kiné{c.members > 1 ? "s" : ""}
-                      {c.pending > 0 && <> · {c.pending} demande{c.pending > 1 ? "s" : ""} en attente</>}
-                      {" · "}créé le {dateFmt.format(new Date(c.created_at))}
+                      {tCab("members", { count: c.members })}
+                      {c.pending > 0 && <> · {tCab("pending", { count: c.pending })}</>}
+                      {" · "}
+                      {tCab("created", { date: dateFmt.format(new Date(c.created_at)) })}
                     </span>
                   </div>
                   {cabinets.length > 1 && (
-                    <form action={mergeCabinets} className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                      <input type="hidden" name="source" value={c.id} />
-                      <label className="flex items-center gap-2">
-                        Fusionner dans
-                        <select name="target" required defaultValue={twins[0]?.id ?? ""} className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-800">
-                          <option value="" disabled>
-                            choisir le cabinet à garder…
-                          </option>
-                          {(twins.length > 0 ? twins : cabinets.filter((o) => o.id !== c.id)).map((o) => (
-                            <option key={o.id} value={o.id}>
-                              {o.name}
-                              {o.postal_code ? ` (${o.postal_code})` : ""} · {o.members} kiné{o.members > 1 ? "s" : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <SubmitButton className="rounded-lg border border-slate-300 px-2.5 py-1 font-medium text-slate-700 hover:bg-slate-50">
-                        Fusionner
-                      </SubmitButton>
-                    </form>
+                    <MergeCabinetForm
+                      source={{ id: c.id, name: c.name }}
+                      defaultTarget={twins[0]?.id ?? null}
+                      options={(twins.length > 0 ? twins : cabinets.filter((o) => o.id !== c.id)).map((o) => ({
+                        id: o.id,
+                        name: o.name,
+                        label: `${o.name}${o.postal_code ? ` (${o.postal_code})` : ""} · ${tCab("members", { count: o.members })}`,
+                      }))}
+                    />
                   )}
                 </li>
               );
