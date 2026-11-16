@@ -25,16 +25,16 @@ export async function requirePatientAccess(_supabase?: unknown, _userId?: string
   void _userId;
   const status = await currentPatientAccess();
   if (status === "error") throw new Error("Lecture du dossier patient impossible (barrière d'accès).");
-  if (status === "subscribe") redirect("/patient/suivi");
   if (status === "onboarding") redirect("/patient/onboarding");
+  if (status === "subscribe" || status === "waiting") redirect("/patient/suivi");
   return status === "ok";
 }
 
-// Variante pour le questionnaire (/patient/onboarding), qui vient AVANT le
-// consentement santé : seulement fiche patient + CGU + accès payé.
+// Variante pour le questionnaire (/patient/onboarding). Depuis le 2026-11-16 il
+// vient AVANT la carte bancaire : il suffit d'une fiche patient et des CGU ; un
+// patient déjà passé peut y revenir corriger ses réponses.
 export async function requirePatientOnboardingAccess(): Promise<boolean> {
   const status = await currentPatientAccess();
   if (status === "error") throw new Error("Lecture du dossier patient impossible (barrière d'accès).");
-  if (status === "subscribe") redirect("/patient/suivi");
-  return status === "onboarding" || status === "ok";
+  return status === "onboarding" || status === "waiting" || status === "subscribe" || status === "ok";
 }

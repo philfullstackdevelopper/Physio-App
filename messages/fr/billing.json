@@ -162,7 +162,13 @@
     "reviewPaid": "Merci : votre paiement est en cours d'enregistrement.",
     "opening": "Ouverture…",
     "changeCard": "Changer de carte",
-    "invoices": "Mes factures"
+    "invoices": "Mes factures",
+    "preparingTitle": "{kineName} prépare votre programme",
+    "preparingBody": "Votre inscription est terminée. Votre kiné n'a pas encore choisi vos séances : dès qu'il l'aura fait, vous démarrerez ici votre essai gratuit. Rien ne vous est demandé d'ici là.",
+    "preparingRefresh": "Vérifier à nouveau",
+    "trialCancelTitle": "Pas convaincu ?",
+    "trialCancelBody": "Annulez avant le {date} : rien ne sera prélevé, ni par EasyPhysio ni par votre kiné. Vous gardez l'accès jusqu'à la fin de l'essai.",
+    "trialCancelButton": "Annuler mon essai"
   },
   "paywall": {
     "clips": {
@@ -194,7 +200,7 @@
     "redirecting": "Redirection…",
     "startFree": "Commencer gratuitement",
     "activate": "Activer mon suivi",
-    "noChargeBefore": "Aucun débit avant le {date}",
+    "noChargeBefore": "Aucun débit avant le {date}, annulable d'ici là",
     "myData": "Mes données"
   },
   "appAccess": {

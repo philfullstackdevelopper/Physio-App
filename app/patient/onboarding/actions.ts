@@ -36,8 +36,10 @@ export async function saveOnboarding(formData: FormData): Promise<{ ok: true }> 
       `/patient/onboarding?error=${encodeURIComponent(t("noPatient"))}`,
     );
   }
-  // CGU ou accès manquant : retour à l'accueil patient, qui affiche la bonne étape.
-  if (access === "terms" || access === "subscribe") redirect("/patient");
+  // CGU manquantes : retour à l'accueil patient, qui affiche la bonne étape.
+  // (Depuis le 2026-11-16 le questionnaire vient AVANT la carte bancaire :
+  // « subscribe » / « waiting » ne bloquent plus ici.)
+  if (access === "terms") redirect("/patient");
 
   const declaredBodyPartIds = formData.getAll("declared_body_part_ids").map(String).filter(Boolean);
   const injuryStage = String(formData.get("injury_stage") ?? "");

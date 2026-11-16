@@ -167,7 +167,13 @@
     "reviewPaid": "Thank you: your payment is being recorded.",
     "opening": "Opening…",
     "changeCard": "Change card",
-    "invoices": "My invoices"
+    "invoices": "My invoices",
+    "preparingTitle": "{kineName} is preparing your programme",
+    "preparingBody": "Your sign-up is complete. Your physio hasn't chosen your sessions yet: as soon as they have, you'll start your free trial here. Nothing is asked of you until then.",
+    "preparingRefresh": "Check again",
+    "trialCancelTitle": "Not convinced?",
+    "trialCancelBody": "Cancel before {date}: nothing will be charged, neither by EasyPhysio nor by your physio. You keep access until the end of the trial.",
+    "trialCancelButton": "Cancel my trial"
   },
   "paywall": {
     "_review": "Draft translation — needs review by a lawyer before launch (acceptance text); exercise names by the partner physio",
@@ -200,7 +206,7 @@
     "redirecting": "Redirecting…",
     "startFree": "Start for free",
     "activate": "Activate my follow-up",
-    "noChargeBefore": "No charge before {date}",
+    "noChargeBefore": "No charge before {date}, cancel any time until then",
     "myData": "My data"
   },
   "appAccess": {

@@ -65,24 +65,27 @@ export default async function PatientLayout({ children }: { children: React.Reac
   const onSuiviPath = pathname.startsWith(SUIVI_PATH);
   const fullBleed = onOnboardingPath;
 
-  // Accès (modèle définitif du 2026-11-04, lib/billing/patientPlans.ts) : juste
-  // après les CGU, AVANT le questionnaire — c'est le premier écran du patient
-  // arrivé par le QR code ou le lien de son kiné (Philippe, 2026-11-04 : « tant
-  // que cela n'a pas été débloqué, le patient ne peut pas accéder au reste »).
-  // Pas d'écran de paiement si le kiné est suspendu ou si l'accès est offert au
-  // patient (comptes de test).
-  const mustAcceptFollowUp = gate.mustSubscribe;
   // Le compte reste ouvert (RGPD) : exporter ou supprimer ses données ne
-  // dépend jamais d'un paiement.
+  // dépend jamais d'un paiement ni du questionnaire.
   const onAccountPage = pathname === "/patient/compte";
-  if (mustAcceptFollowUp && !onSuiviPath && !onAccountPage) redirect(SUIVI_PATH);
-  // Écran de suivi à accepter : plein écran, sans la barre d'onglets.
-  if (mustAcceptFollowUp) return <>{children}</>;
 
-  // Puis le questionnaire (profil, matériel, consentement données de santé).
-  if (!onOnboardingPath && !gate.healthConsent) {
+  // D'abord le questionnaire (profil, matériel, consentement données de santé)
+  // — Philippe, 2026-11-16 : le patient fait toute son inscription, PUIS met
+  // sa carte, qui démarre l'essai gratuit (avant, la carte venait juste après
+  // les CGU).
+  if (!gate.healthConsent && !onOnboardingPath && !onAccountPage) {
     redirect(ONBOARDING_PATH);
   }
+
+  // Puis l'accès (lib/billing/patientPlans.ts) : carte bancaire → essai
+  // gratuit, sur /patient/suivi. Tant que le kiné n'a attribué aucune séance,
+  // cette même page affiche une attente, sans demander la carte. Pas d'écran
+  // de paiement si le kiné est suspendu ou si l'accès est offert (comptes de
+  // test). Le questionnaire reste modifiable.
+  const mustAcceptFollowUp = gate.mustSubscribe;
+  if (mustAcceptFollowUp && gate.healthConsent && !onSuiviPath && !onAccountPage && !onOnboardingPath) redirect(SUIVI_PATH);
+  // Écran de suivi ou questionnaire avant l'accès : plein écran, sans la barre d'onglets.
+  if (mustAcceptFollowUp) return <>{children}</>;
 
   // Onboarding renders full-bleed, its own step-wizard layout — the real nav
   // only makes sense once there's a real profile to navigate around

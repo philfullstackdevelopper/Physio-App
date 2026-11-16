@@ -3,7 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { intlTag } from "@/lib/i18n/translator";
 import type { Locale } from "@/i18n/locales";
 import type { ReactNode } from "react";
-import { ArrowLeft, CalendarClock, CheckCircle2, CreditCard, FileText, RefreshCw } from "lucide-react";
+import { ArrowLeft, CalendarClock, CheckCircle2, Clock, CreditCard, FileText, RefreshCw } from "lucide-react";
 import PaywallVideo from "./PaywallVideo";
 import SubmitButton from "@/components/SubmitButton";
 import {
@@ -115,6 +115,33 @@ export default function SuiviView({
   const refused = known && ["past_due", "unpaid", "incomplete"].includes(subscription!.status);
   const committed = !!subscription?.commitUntil && new Date(subscription.commitUntil) > new Date(0) ? subscription.commitUntil : null;
   const ending = !!subscription && (subscription.cancelAtPeriodEnd || !!subscription.endsAt);
+
+  // Le kiné n'a encore attribué aucune séance (Philippe, 2026-11-16) : on ne
+  // demande pas la carte — l'essai gratuit ne doit pas commencer sur un
+  // programme vide. Écran d'attente honnête ; les données restent accessibles.
+  if (required && !subscription && !programmeReady && !demo) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-app-bg p-6 max-sm:bg-phone-bg">
+        <div className="w-full max-w-md rounded-2xl bg-surface p-6 text-center shadow-soft">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand">
+            <Clock className="h-6 w-6" strokeWidth={1.75} />
+          </span>
+          <h1 className="mt-4 text-xl font-semibold text-ink">{t("preparingTitle", { kineName })}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted">{t("preparingBody", { kineName })}</p>
+          {/* Vrai chargement : relit l'état (séance attribuée entre-temps ?). */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a href="/patient" className="mt-5 inline-flex rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">
+            {t("preparingRefresh")}
+          </a>
+          <p className="mt-4 text-xs text-muted">
+            <Link href="/patient/compte" className="underline">
+              {t("myData")}
+            </Link>
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   if (!live && kineReady) {
     return (
@@ -230,6 +257,18 @@ export default function SuiviView({
                         {t("undoCancel")}
                       </SubmitButton>
                     </form>
+                  ) : trialing ? (
+                    // Pendant l'essai (Philippe, 2026-11-16) : l'annulation est
+                    // visible tout de suite, pas cachée — rien n'est prélevé.
+                    <div>
+                      <p className="text-sm font-medium text-ink">{t("trialCancelTitle")}</p>
+                      <p className="mt-0.5 text-sm text-muted">{t("trialCancelBody", { date: date(subscription!.periodEnd) })}</p>
+                      <form action={demo ? undefined : cancelPlan} className="mt-2">
+                        <SubmitButton pendingText={t("cancelling")} className="rounded-full border border-danger px-4 py-1.5 text-sm font-semibold text-danger hover:bg-danger-soft">
+                          {t("trialCancelButton")}
+                        </SubmitButton>
+                      </form>
+                    </div>
                   ) : (
                     <details>
                       <summary className="cursor-pointer list-none text-sm font-medium text-muted hover:text-danger [&::-webkit-details-marker]:hidden">

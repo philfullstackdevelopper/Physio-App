@@ -11,9 +11,12 @@ import { refreshPatientSubscription } from "@/lib/billing/patientSubscription";
 // serveur. Le layout, les pages, les actions du patient et la signature des
 // vidéos lisent maintenant tous ce même état : ils ne peuvent plus diverger.
 //
-// Ordre (inchangé, CLAUDE.md §4) : fiche patient → CGU → accès payé
-// (lib/billing/patientPlans.ts, `patientMustSubscribe`) → questionnaire avec
-// consentement « données de santé ».
+// Ordre (Philippe, 2026-11-16 — « comme la plupart des services » ; avant, le
+// paiement venait juste après les CGU) : fiche patient → CGU → questionnaire
+// avec consentement « données de santé » → [programme prêt ?] → carte bancaire,
+// qui démarre l'essai gratuit (lib/billing/patientPlans.ts,
+// `patientMustSubscribe`) → appli. Tant que le kiné n'a attribué aucune séance,
+// on ne demande pas la carte : écran d'attente honnête (statut "waiting").
 //
 // cache() : un seul jeu de lectures par requête, quel que soit le nombre
 // d'appels (layout + page + composants).
@@ -35,6 +38,8 @@ export type PatientGate = {
   mustSubscribe: boolean;
   /** Consentement « données de santé » donné (fin du questionnaire). */
   healthConsent: boolean;
+  /** Le kiné a attribué au moins une séance (patient_recommended_workouts). */
+  programmeReady: boolean;
 };
 
 export const loadPatientGate = cache(async (): Promise<PatientGate> => {
@@ -51,6 +56,7 @@ export const loadPatientGate = cache(async (): Promise<PatientGate> => {
     kineSuspended: false,
     mustSubscribe: false,
     healthConsent: false,
+    programmeReady: false,
   };
 
   const { data: patient, error: patientError } = await supabase
@@ -90,16 +96,18 @@ export const loadPatientGate = cache(async (): Promise<PatientGate> => {
   // Ces lectures ne dépendent pas l'une de l'autre : en parallèle plutôt qu'à
   // la suite (audit du 2026-10-08 — chaque aller-retour vers PostgREST sur
   // Scalingo se paie).
-  const [profileRes, subRes] = await Promise.all([
+  const [profileRes, subRes, programmeRes] = await Promise.all([
     supabase.from("patient_profiles").select("health_data_consent_at").eq("id", user.id).maybeSingle(),
     gate.kineSuspended ? Promise.resolve(null) : loadSub(),
+    supabase.from("patient_recommended_workouts").select("workout_id", { count: "exact", head: true }).eq("patient_id", user.id),
   ]);
-  if (profileRes.error || subRes?.error) {
-    const err = profileRes.error ?? subRes?.error;
-    console.error("[barrière patient] lecture du profil ou de l'abonnement impossible", err?.code ?? "", err?.message);
+  if (profileRes.error || subRes?.error || programmeRes.error) {
+    const err = profileRes.error ?? subRes?.error ?? programmeRes.error;
+    console.error("[barrière patient] lecture du profil, de l'abonnement ou du programme impossible", err?.code ?? "", err?.message);
     return { ...gate, readFailed: true };
   }
   gate.healthConsent = !!profileRes.data?.health_data_consent_at;
+  gate.programmeReady = (programmeRes.count ?? 0) > 0;
 
   // Accès (modèle définitif du 2026-11-04, lib/billing/patientPlans.ts) : juste
   // après les CGU, AVANT le questionnaire — c'est le premier écran du patient
@@ -135,18 +143,20 @@ export const loadPatientGate = cache(async (): Promise<PatientGate> => {
  * - "error"       : lecture impossible, on ne sait pas (afficher « réessayez ») ;
  * - "no-patient"  : pas de fiche patient ;
  * - "terms"       : CGU pas encore acceptées ;
- * - "subscribe"   : doit souscrire (/patient/suivi) ;
  * - "onboarding"  : questionnaire + consentement santé à faire ;
+ * - "waiting"     : doit souscrire, mais le kiné n'a encore attribué aucune
+ *                   séance : on attend (pas de carte demandée) — /patient/suivi ;
+ * - "subscribe"   : doit souscrire (carte → essai gratuit) — /patient/suivi ;
  * - "ok"          : tout est en règle.
  */
-export type PatientAccessStatus = "error" | "no-patient" | "terms" | "subscribe" | "onboarding" | "ok";
+export type PatientAccessStatus = "error" | "no-patient" | "terms" | "onboarding" | "waiting" | "subscribe" | "ok";
 
 export function patientAccessStatus(gate: PatientGate): PatientAccessStatus {
   if (gate.readFailed) return "error";
   if (!gate.hasPatient) return "no-patient";
   if (!gate.termsAccepted) return "terms";
-  if (gate.mustSubscribe) return "subscribe";
   if (!gate.healthConsent) return "onboarding";
+  if (gate.mustSubscribe) return gate.programmeReady ? "subscribe" : "waiting";
   return "ok";
 }
 
