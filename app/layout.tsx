@@ -5,6 +5,7 @@ import { easyPhysioEN, easyPhysioFR } from "@/lib/clerk/localization";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import CookieBanner from "@/components/CookieBanner";
+import InstallPromptCatcher from "@/components/InstallPromptCatcher";
 import type { Locale } from "@/i18n/locales";
 import { siteConfig } from "@/lib/site";
 import AppBridge from "@/components/AppBridge";
@@ -108,6 +109,8 @@ export default async function RootLayout({
             <WebPushPrompt />
           </ClerkProvider>
           <CookieBanner />
+          {/* Garde l'offre « Installer » d'Android pour le bouton (lib/pwa/installPrompt.ts). */}
+          <InstallPromptCatcher />
         </NextIntlClientProvider>
       </body>
     </html>
