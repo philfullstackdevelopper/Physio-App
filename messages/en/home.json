@@ -218,12 +218,11 @@
     "forKine": "For physios",
     "forPatient": "For patients",
     "read": "Read the guide",
-    "back": "All guides",
     "updated": "Updated {date}",
-    "ctaTitle": "Try EasyPhysio",
-    "ctaKineOpen": "Create a practitioner account",
-    "ctaKineWaitlist": "Join the waiting list",
-    "ctaPatient": "Log in",
-    "more": "Also worth reading"
+    "more": "Also worth reading",
+    "heading": "Following exercises between physio sessions, explained simply",
+    "breadcrumb": "Breadcrumb",
+    "patientCtaTitle": "Has your physio invited you?",
+    "patientCtaBody": "Sign in to find your programme and do today's session."
   }
 }

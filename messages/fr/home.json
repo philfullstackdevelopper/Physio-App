@@ -214,12 +214,11 @@
     "forKine": "Pour les kinés",
     "forPatient": "Pour les patients",
     "read": "Lire le guide",
-    "back": "Tous les guides",
     "updated": "Mis à jour le {date}",
-    "ctaTitle": "Essayer EasyPhysio",
-    "ctaKineOpen": "Créer un compte praticien",
-    "ctaKineWaitlist": "Rejoindre la liste d'attente",
-    "ctaPatient": "Se connecter",
-    "more": "À lire aussi"
+    "more": "À lire aussi",
+    "heading": "Le suivi des exercices entre deux séances, expliqué simplement",
+    "breadcrumb": "Fil d'Ariane",
+    "patientCtaTitle": "Votre kiné vous a invité ?",
+    "patientCtaBody": "Connectez-vous pour retrouver votre programme et faire votre séance du jour."
   }
 }

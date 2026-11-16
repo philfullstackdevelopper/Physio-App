@@ -1,20 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
-import SiteHeader from "@/components/SiteHeader";
-import SiteFooter from "@/components/SiteFooter";
+import GuidesShell, { GuideCta } from "@/components/GuidesShell";
+import Reveal from "@/components/Reveal";
 import JsonLd from "@/components/JsonLd";
 import { GUIDES, findGuide } from "@/lib/content/guides";
 import { guideText } from "@/lib/content/guideText";
 import { articleLd, breadcrumbLd, graph } from "@/lib/seo/structuredData";
 import { siteConfig } from "@/lib/site";
-import { SIGNUPS_OPEN, WAITLIST_HREF } from "@/lib/launchFlags";
 import { intlTag } from "@/lib/i18n/translator";
 import type { Locale } from "@/i18n/locales";
 
-// Un guide public (contenu : lib/content/guides.ts). Textes d'interface :
-// home.json (home.guides).
+// Un guide public (contenu : lib/content/guides.ts ; textes d'interface :
+// home.json, home.guides). Même habillage que l'accueil.
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -43,12 +42,10 @@ export default async function GuidePage({ params }: Props) {
   const text = guideText(guide, locale);
   const url = `${siteConfig.url}/guides/${slug}`;
   const updated = new Date(guide.updated).toLocaleDateString(intlTag(locale), { day: "numeric", month: "long", year: "numeric" });
-  const ctaHref = guide.audience === "patient" ? "/login" : SIGNUPS_OPEN ? "/signup/kine" : WAITLIST_HREF;
-  const ctaLabel = guide.audience === "patient" ? t("ctaPatient") : SIGNUPS_OPEN ? t("ctaKineOpen") : t("ctaKineWaitlist");
-  const others = GUIDES.filter((g) => g.slug !== slug).map((g) => ({ slug: g.slug, title: guideText(g, locale).title }));
+  const others = GUIDES.filter((g) => g.slug !== slug).map((g) => ({ slug: g.slug, ...guideText(g, locale) }));
 
   return (
-    <div className="relative min-h-screen bg-[#f6f8fd] text-slate-800">
+    <GuidesShell>
       <JsonLd
         data={graph(
           articleLd({ url, title: text.title, description: text.description, published: guide.published, updated: guide.updated, locale: locale === "en" ? "en" : "fr" }),
@@ -59,54 +56,71 @@ export default async function GuidePage({ params }: Props) {
           ]),
         )}
       />
-      <SiteHeader />
-      <main className="mx-auto max-w-2xl p-6 pt-32 sm:p-8 sm:pt-36">
-        <Link href="/guides" className="inline-flex items-center gap-1 text-sm text-blue-700 hover:underline">
-          <ArrowLeft className="h-4 w-4" strokeWidth={2} /> {t("back")}
-        </Link>
-        <article className="mt-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <h1 className="font-display text-2xl font-semibold leading-snug text-slate-900 sm:text-3xl">{text.title}</h1>
-          <p className="mt-3 text-slate-600">{text.description}</p>
-          <p className="mt-2 text-xs text-slate-500">{t("updated", { date: updated })}</p>
-          <div className="mt-6 space-y-7 leading-relaxed text-slate-700">
+      <main className="mx-auto max-w-5xl px-6 pt-32 sm:pt-40">
+        <article className="mx-auto max-w-2xl">
+          <header className="animate-[fadeInUp_0.6s_ease-out_both]">
+            <nav aria-label={t("breadcrumb")} className="flex items-center gap-1 text-sm text-slate-500">
+              <Link href="/guides" className="font-medium text-blue-600 hover:underline">{t("title")}</Link>
+              <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />
+              <span>{guide.audience === "kine" ? t("forKine") : t("forPatient")}</span>
+            </nav>
+            <h1 className="font-display mt-4 text-3xl font-semibold leading-[1.15] tracking-tight text-slate-900 sm:text-[2.4rem]">
+              {text.title}
+            </h1>
+            <p className="mt-5 text-lg leading-relaxed text-slate-600">{text.description}</p>
+            <p className="mt-4 text-sm text-slate-500">{t("updated", { date: updated })}</p>
+          </header>
+
+          <div className="mt-10 border-t border-slate-200/70 pt-2">
             {text.sections.map((s) => (
-              <section key={s.heading}>
-                <h2 className="font-display text-lg font-semibold text-slate-900">{s.heading}</h2>
+              <section key={s.heading} className="mt-10">
+                <h2 className="font-display text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">{s.heading}</h2>
                 {s.paragraphs.map((p) => (
-                  <p key={p} className="mt-2">{p}</p>
+                  <p key={p} className="mt-4 text-[1.0625rem] leading-relaxed text-slate-700">{p}</p>
                 ))}
                 {s.bullets && (
-                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <ul className="mt-4 space-y-2.5">
                     {s.bullets.map((b) => (
-                      <li key={b}>{b}</li>
+                      <li key={b} className="flex gap-3 text-[1.0625rem] leading-relaxed text-slate-700">
+                        <span aria-hidden className="mt-[0.6em] h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                        <span>{b}</span>
+                      </li>
                     ))}
                   </ul>
                 )}
               </section>
             ))}
           </div>
-          <div className="mt-8 rounded-lg bg-blue-50 p-5">
-            <p className="font-display font-semibold text-slate-900">{t("ctaTitle")}</p>
-            <Link
-              href={ctaHref}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              {ctaLabel} <ArrowRight className="h-4 w-4" strokeWidth={2} />
-            </Link>
-          </div>
         </article>
-        <nav className="mt-8">
-          <p className="font-display text-sm font-semibold text-slate-900">{t("more")}</p>
-          <ul className="mt-2 space-y-1 text-sm">
-            {others.map((o) => (
-              <li key={o.slug}>
-                <Link href={`/guides/${o.slug}`} className="text-blue-700 hover:underline">{o.title}</Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+
+        <Reveal>
+          <section className="mt-20 sm:mt-24">
+            <GuideCta audience={guide.audience} />
+          </section>
+        </Reveal>
+
+        <Reveal>
+          <section className="my-20 sm:my-24">
+            <h2 className="font-display text-2xl font-semibold leading-tight text-slate-900">{t("more")}</h2>
+            <ul className="mt-6 grid gap-4 sm:grid-cols-3">
+              {others.map((o) => (
+                <li key={o.slug}>
+                  <Link
+                    href={`/guides/${o.slug}`}
+                    className="group flex h-full flex-col rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+                  >
+                    <span className="font-display flex-1 font-semibold leading-snug text-slate-900">{o.title}</span>
+                    <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600">
+                      {t("read")}
+                      <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" strokeWidth={2} />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </Reveal>
       </main>
-      <SiteFooter />
-    </div>
+    </GuidesShell>
   );
 }
