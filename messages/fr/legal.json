@@ -35,7 +35,7 @@
     "draft": "<b>Brouillon.</b> Ce document est en cours de rédaction et n'a pas encore été validé par un avocat. Il ne constitue pas encore un engagement juridique définitif d'EasyPhysio.",
     "title": "Politique de confidentialité — EasyPhysio",
     "s1Title": "1. Qui sommes-nous",
-    "s1": "EasyPhysio est un outil mis à disposition des masseurs-kinésithérapeutes pour le suivi d'exercices de leurs patients. Le kinésithérapeute reste le professionnel de santé responsable du suivi clinique ; EasyPhysio est l'éditeur de l'outil logiciel.",
+    "s1": "EasyPhysio est un outil mis à disposition des masseurs-kinésithérapeutes pour le suivi d'exercices de leurs patients. Le kinésithérapeute reste le professionnel de santé responsable du suivi clinique ; EasyPhysio est l'éditeur de l'outil logiciel. EasyPhysio est édité par Philippe Maupain Moran, entrepreneur individuel (SIREN 132 628 306), 12 rue du Ponceau, 95000 Cergy, France — contact@easyphysio.fr.",
     "s2Title": "2. Données que nous collectons",
     "s2a": "Compte et identification (nom, email, mot de passe chiffré) ; données de santé (condition, stade de récupération, profil physique, ressenti et douleur, séances réalisées, messages avec votre kinésithérapeute) ; données de facturation, gérées par notre prestataire de paiement — nous ne stockons jamais de numéro de carte.",
     "s2b": "<b>Liste d'attente.</b> Si vous laissez votre adresse e-mail sur la page d'accueil pour être prévenu du lancement, nous conservons uniquement cette adresse et votre statut (kiné ou patient). Elle ne sert qu'à vous annoncer le lancement, n'est transmise à personne, et est supprimée sur simple demande ou au plus tard un an après le lancement.",
@@ -44,7 +44,7 @@
     "s4Title": "4. Qui a accès à vos données",
     "s4": "Le kinésithérapeute qui vous suit — jamais un autre kinésithérapeute ni un autre patient. Cette séparation est appliquée techniquement au niveau de la base de données, pas seulement dans l'affichage. EasyPhysio ne vend ni ne loue aucune donnée.",
     "s5Title": "5. Hébergement et sécurité",
-    "s5": "L'article L.1111-8 du Code de la santé publique impose qu'un hébergement de données de santé à caractère personnel soit assuré par un prestataire certifié Hébergeur de Données de Santé (HDS). EasyPhysio est actuellement en cours de migration vers un tel hébergement certifié ; cette section sera mise à jour dès que la migration sera effective, avec le nom du prestataire certifié. Les mots de passe sont chiffrés, jamais stockés en clair.",
+    "s5": "L'article L.1111-8 du Code de la santé publique impose qu'un hébergement de données de santé à caractère personnel soit assuré par un prestataire certifié Hébergeur de Données de Santé (HDS). Depuis le 13 novembre 2026, l'application et sa base de données sont hébergées en France par Scalingo SAS (Strasbourg), hébergeur certifié HDS. Les mots de passe sont chiffrés, jamais stockés en clair.",
     "s6Title": "6. Sous-traitants",
     "s6": "EasyPhysio fait appel aux prestataires suivants pour fonctionner, chacun n'accédant qu'aux données strictement nécessaires à son rôle : Clerk (gestion de l'authentification et des comptes), Stripe (traitement des paiements — EasyPhysio ne voit ni ne stocke aucun numéro de carte), et notre hébergeur de base de données (stockage des données de santé et de suivi). Aucun de ces prestataires n'est autorisé à utiliser vos données à d'autres fins que la fourniture de leur service à EasyPhysio.",
     "s7Title": "7. Mesure d'audience",
@@ -56,13 +56,13 @@
     "s10Title": "10. Intelligence artificielle",
     "s10": "EasyPhysio n'utilise actuellement aucune intelligence artificielle générative traitant vos données de santé personnelles.",
     "s11Title": "11. Contact",
-    "s11": "Pour toute question sur cette politique ou vos données, contactez-nous depuis votre compte."
+    "s11": "Pour toute question sur cette politique ou vos données, ou pour exercer vos droits, écrivez à contact@easyphysio.fr, ou contactez-nous depuis votre compte."
   },
   "legalNotice": {
     "draft": "<b>Brouillon.</b> Les informations ci-dessous sont incomplètes et doivent être finalisées avant toute mise en ligne publique.",
     "title": "Mentions légales",
     "publisherTitle": "Éditeur du site",
-    "publisher": "[Raison sociale à compléter], [forme juridique]. Siège social : [adresse]. Directeur de la publication : [nom]. Contact : [email de contact].",
+    "publisher": "Philippe Maupain Moran, entrepreneur individuel (EI), exerçant sous le nom commercial EasyPhysio. SIREN 132 628 306, immatriculé au RCS de Pontoise. Adresse : 12 rue du Ponceau, 95000 Cergy, France. Directeur de la publication : Philippe Maupain Moran. Contact : contact@easyphysio.fr. TVA non applicable, art. 293 B du CGI.",
     "hostingTitle": "Hébergement",
     "hosting": "Scalingo SAS, société par actions simplifiée. Siège social : 13 rue Jacques Peirotes, 67000 Strasbourg, France. SIRET : 808 665 483 00034. Contact : support@scalingo.com.",
     "ipTitle": "Propriété intellectuelle",

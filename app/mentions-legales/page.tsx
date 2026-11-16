@@ -9,8 +9,10 @@ export async function generateMetadata() {
   return { title: t("legalNoticeTitle"), description: t("legalNoticeDescription") };
 }
 
-// Renders legal/mentions-legales.md for the app. Keep the two in sync by
-// hand — this is still a DRAFT pending legal review (see the banner below).
+// Mentions légales complétées le 2026-11-16 (EI, SIREN, RCS, adresse,
+// directeur de la publication) : plus de bandeau « Brouillon ». Reste à
+// ajouter le numéro de téléphone (LCEN art. 6-III pour un entrepreneur
+// individuel) dès que Philippe le donne.
 // Textes : messages/<langue>/legal.json (« legalNotice ») ; la version anglaise
 // est un brouillon à faire relire par un avocat, d'où le bandeau hors français.
 export default async function MentionsLegalesPage() {
@@ -27,11 +29,7 @@ export default async function MentionsLegalesPage() {
         {locale !== "fr" && (
           <p className="mb-4 rounded-lg bg-warn-soft px-3 py-2 text-sm text-ink">{tCommon("reviewBanner")}</p>
         )}
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          {t.rich("draft", { b: (c) => <strong>{c}</strong> })}
-        </div>
-
-        <h1 className="font-display mt-6 text-2xl font-semibold text-slate-900">{t("title")}</h1>
+        <h1 className="font-display text-2xl font-semibold text-slate-900">{t("title")}</h1>
 
         <div className="mt-6 space-y-6 text-sm leading-relaxed text-slate-700">
           <section>
