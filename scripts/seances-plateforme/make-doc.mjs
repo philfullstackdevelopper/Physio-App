@@ -11,8 +11,10 @@ const STAGES = [
   ["return_to_sport", "Phase 4 — Reprise"],
 ];
 const missing = new Set();
-const dose = (d) => {
-  if (/min$/.test(d)) return d.replace(/^1x/, "") .replace("min", " min");
+// Durée des activités : lue par l'appli dans la consigne (0096/0097), pas dans le programme.
+const MINUTES = { "Walking": 15, "Cycling": 10, "Running": 15, "Progressive Walk-to-Jog (Shin Splints, Soft Terrain)": 15, "Controlled Stair Climbing": 5, "Assisted Progressive Walking": 5 };
+const dose = (d, en) => {
+  if (/min$/.test(d)) return `${MINUTES[en]} min`;
   const x = parseDose(d);
   return x.hold ? `${x.sets} × ${x.hold} s` : `${x.sets} × ${x.reps}`;
 };
@@ -29,7 +31,7 @@ let md = `# Séances de la plateforme — à valider par Jules
 
 - **${conds.length} pathologies**, chacune avec ses **4 phases** (Soulagement, Mobilité, Renforcement, Reprise) : ${conds.length * 4} séances, plus 5 séances libres (Lombalgie chronique : express / complète / intensive ; Entorse de la cheville : mobilité / renforcement).
 - Chaque séance contient **5 à 6 exercices**, tous **filmés** (vidéo de Jules ou vidéo IA validée par Philippe) ou des activités du quotidien (marche, vélo, course, escaliers, corde à sauter).
-- Chaque exercice a un **dosage** (séries × répétitions, ou séries × tenue en secondes). Pour les activités d'endurance, la durée vient de la consigne de l'exercice.
+- Chaque exercice a un **dosage** (séries × répétitions, ou séries × tenue en secondes). Pour les activités d'endurance, la durée est celle écrite dans la consigne de l'exercice (marche 15 min, vélo 10 min, course 15 min, escaliers 5 min) ; le kiné peut l'ajuster par patient.
 - Les 21 pathologies créées en double (même nom) ont été fusionnées : chaque nom n'apparaît plus qu'une fois dans le sélecteur.
 - 13 pathologies n'avaient aucune séance (capsulite, coiffe, prothèse d'épaule, fractures, rhizarthrose, De Quervain, torticolis…) : elles ont maintenant leurs 4 phases.
 - Le kiné garde la main : il peut toujours ajuster la séance d'un patient (« Ajuster la séance »).
@@ -54,7 +56,7 @@ for (const c of conds) {
   for (const [s, label] of STAGES) {
     const list = PLAN[c][s].map((x) => {
       const [en, d] = x.split("|");
-      return `${name(en)} (${dose(d)})`;
+      return `${name(en)} (${dose(d, en)})`;
     });
     md += `| ${label} | ${list.join(" · ")} | ☐ |\n`;
   }
