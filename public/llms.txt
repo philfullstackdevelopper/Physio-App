@@ -1,0 +1,27 @@
+# EasyPhysio
+
+> EasyPhysio (easyphysio.fr) est une application française de suivi des exercices de rééducation entre deux séances de kinésithérapie. Le kiné (masseur-kinésithérapeute, physiothérapeute) compose un programme d'exercices filmés, le patient est guidé séance par séance sur son téléphone et note sa douleur, et le kiné suit l'assiduité et ajuste le programme à distance. EasyPhysio est gratuit pour le kiné.
+
+EasyPhysio is a French app for following rehab exercises between physiotherapy sessions. The physiotherapist builds a programme from filmed exercises, the patient is guided session by session on their phone and reports pain, and the physiotherapist tracks adherence and adjusts the programme remotely. EasyPhysio is free for physiotherapists. The app is available in French and English.
+
+## Points clés / Key facts
+
+- Nom : EasyPhysio (aussi écrit « Easy Physio »). Site : https://easyphysio.fr
+- Pour qui : kinésithérapeutes libéraux (dont kinés du sport) et leurs patients, en France.
+- Pour le kiné : gratuit, sans abonnement, nombre de patients illimité. Bibliothèque d'exercices filmés, programmes ajustables par patient, suivi de l'assiduité et de la douleur, messagerie avec le patient.
+- Pour le patient : sur invitation de son kiné. Après 10 jours d'essai, accès à l'application de 2,99 € à 6,99 € par mois selon l'engagement, plus 6 € par mois versés directement au kiné (sans commission pour EasyPhysio), uniquement les mois où le kiné met à jour le programme. Non remboursé par l'Assurance Maladie ; résiliable à tout moment.
+- Données de santé hébergées en France chez Scalingo, hébergeur certifié HDS (Hébergeur de Données de Santé).
+- EasyPhysio ne remplace pas le kiné : c'est le kiné qui choisit et adapte les exercices.
+- Statut : en phase de lancement (fin 2026) ; liste d'attente sur la page d'accueil.
+- Créé par Philippe Maupain, après sa propre rééducation du ligament croisé antérieur.
+
+## Pages
+
+- [Accueil](https://easyphysio.fr/): présentation, tarifs, questions fréquentes
+- [Guides](https://easyphysio.fr/guides): articles pour kinés et patients
+- [Logiciel d'exercices pour kiné gratuit](https://easyphysio.fr/guides/logiciel-exercices-kine-gratuit)
+- [Programme d'exercices à domicile](https://easyphysio.fr/guides/programme-exercices-domicile-patient)
+- [Être rémunéré pour le suivi entre les séances](https://easyphysio.fr/guides/suivi-entre-seances-kine-remuneration)
+- [Faire ses exercices de kiné à la maison](https://easyphysio.fr/guides/exercices-kine-a-la-maison)
+- [Mentions légales](https://easyphysio.fr/mentions-legales)
+- Contact : contact@easyphysio.fr

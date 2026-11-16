@@ -12,6 +12,7 @@ const COLUMNS = [
     links: [
       { href: "/#comparaison", label: "comparison" },
       { href: "/#tarifs", label: "pricing" },
+      { href: "/guides", label: "guides" },
     ],
   },
   {

@@ -31,7 +31,8 @@
       "faq": "FAQ",
       "cgu": "Terms of use",
       "privacy": "Privacy policy",
-      "legalNotice": "Legal notice"
+      "legalNotice": "Legal notice",
+      "guides": "Guides"
     },
     "copyright": "© 2026 EasyPhysio · made in France, between two physio sessions",
     "illustrations": "Some illustrations:"
@@ -208,5 +209,21 @@
   },
   "logo": {
     "homeAria": "EasyPhysio — home"
+  },
+  "guides": {
+    "metaTitle": "Guides for physios and patients",
+    "metaDescription": "EasyPhysio guides: free exercise software for physiotherapists, home exercise programmes, follow-up between sessions, doing physio exercises at home.",
+    "title": "Guides",
+    "intro": "Plain explanations about following exercises between physio sessions, for practitioners and their patients alike.",
+    "forKine": "For physios",
+    "forPatient": "For patients",
+    "read": "Read the guide",
+    "back": "All guides",
+    "updated": "Updated {date}",
+    "ctaTitle": "Try EasyPhysio",
+    "ctaKineOpen": "Create a practitioner account",
+    "ctaKineWaitlist": "Join the waiting list",
+    "ctaPatient": "Log in",
+    "more": "Also worth reading"
   }
 }

@@ -31,7 +31,8 @@
       "faq": "Questions fréquentes",
       "cgu": "CGU",
       "privacy": "Politique de confidentialité",
-      "legalNotice": "Mentions légales"
+      "legalNotice": "Mentions légales",
+      "guides": "Guides"
     },
     "copyright": "© 2026 EasyPhysio · fait en France, entre deux séances de kiné",
     "illustrations": "Certaines illustrations :"
@@ -204,5 +205,21 @@
   },
   "logo": {
     "homeAria": "EasyPhysio — accueil"
+  },
+  "guides": {
+    "metaTitle": "Guides pour kinés et patients",
+    "metaDescription": "Guides EasyPhysio : logiciel d'exercices gratuit pour kiné, programmes d'exercices à domicile, suivi entre les séances, exercices de kiné à la maison.",
+    "title": "Guides",
+    "intro": "Des explications simples sur le suivi des exercices entre deux séances de kiné, pour les praticiens comme pour leurs patients.",
+    "forKine": "Pour les kinés",
+    "forPatient": "Pour les patients",
+    "read": "Lire le guide",
+    "back": "Tous les guides",
+    "updated": "Mis à jour le {date}",
+    "ctaTitle": "Essayer EasyPhysio",
+    "ctaKineOpen": "Créer un compte praticien",
+    "ctaKineWaitlist": "Rejoindre la liste d'attente",
+    "ctaPatient": "Se connecter",
+    "more": "À lire aussi"
   }
 }

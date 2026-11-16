@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import JsonLd from "@/components/JsonLd";
+import { applicationLd, faqLd, graph, organizationLd, websiteLd } from "@/lib/seo/structuredData";
+import { buildFaq } from "@/lib/seo/faq";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 import FaqSection from "@/components/FaqSection";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -46,8 +51,19 @@ function PrimaryCta({
 export default async function Home() {
   // Textes : messages/<langue>/home.json (home.landing).
   const t = await getTranslations("home.landing");
+  // Données lues par Google et les assistants IA (lib/seo/structuredData.ts).
+  const locale = (await getLocale()) as Locale;
+  const tFaq = await getTranslations("home.faq");
+  const tSite = await getTranslations("common.site");
+  const seo = graph(
+    organizationLd(),
+    websiteLd(locale),
+    applicationLd(tSite("description")),
+    faqLd(buildFaq(tFaq as unknown as Parameters<typeof buildFaq>[0], intlTag(locale))),
+  );
   return (
     <div className="relative min-h-screen bg-[#f6f8fd] text-slate-800">
+      <JsonLd data={seo} />
       {/* Ouverture façon Aurascan (2026-10-07) : à chaque chargement de la page. */}
       <IntroSplash />
       {/* Ambient background: a soft blue glow behind the hero (echoes the
