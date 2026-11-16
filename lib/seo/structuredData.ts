@@ -14,6 +14,7 @@ const APP_ID = `${siteConfig.url}/#application`;
 /** Comptes publics d'EasyPhysio (à compléter quand ils existent : LinkedIn, Instagram…). */
 export const SAME_AS: string[] = [
   "https://www.linkedin.com/company/easyphysio-fr/", // créée le 2026-11-16
+  "https://www.instagram.com/easyphysio.fr/", // créé le 2026-11-16 (compte pro, contact@easyphysio.fr)
 ];
 
 export function organizationLd() {

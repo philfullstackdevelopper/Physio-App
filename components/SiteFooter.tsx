@@ -93,7 +93,7 @@ export default function SiteFooter() {
                 relie la marque à ses profils pour Google. Nom propre, non traduit. */}
             {SAME_AS.map((url) => (
               <a key={url} href={url} target="_blank" rel="me noopener noreferrer" className="ml-3 underline hover:text-slate-600">
-                {new URL(url).hostname.replace(/^www\./, "").replace(/\.com$/, "").replace(/^linkedin$/, "LinkedIn")}
+                {new URL(url).hostname.replace(/^www\./, "").replace(/\.com$/, "").replace(/^linkedin$/, "LinkedIn").replace(/^instagram$/, "Instagram")}
               </a>
             ))}
           </p>
