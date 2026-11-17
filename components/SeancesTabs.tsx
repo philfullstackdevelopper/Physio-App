@@ -469,15 +469,12 @@ export default function SeancesTabs({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Onglets « Mes exercices | Mes séances » à la place du titre (Philippe, 2026-11-17). */}
+      {/* « Nouvelle séance » sur la ligne des onglets ; plus de lien « Gérer
+          mes exercices » (l'onglet le remplace) — une ligne d'écran gagnée. */}
       <div className="animate-[fadeInUp_0.6s_ease-out_both]">
-        <LibraryTabs active="seances" />
-      </div>
-      <div className="animate-[fadeInUp_0.6s_ease-out_both] mt-3 flex flex-wrap items-center justify-end gap-4 max-sm:mt-2 max-sm:flex-nowrap max-sm:gap-2">
-        <div className="flex items-center gap-4 max-sm:gap-2">
-          <Link href="/dashboard/exercises" className="text-sm font-medium text-brand hover:underline max-sm:rounded-full max-sm:bg-surface max-sm:px-3 max-sm:py-2 max-sm:shadow-soft max-sm:hover:no-underline">
-            <span className="max-sm:hidden">{t("manageExercises")}</span>
-            <span className="hidden max-sm:inline">{t("myExercises")}</span>
-          </Link>
+        <LibraryTabs
+          active="seances"
+          action={
           <button
             type="button"
             onClick={() => {
@@ -490,7 +487,8 @@ export default function SeancesTabs({
             <Plus className="h-4 w-4 max-sm:h-5 max-sm:w-5" strokeWidth={2} />
             <span className="max-sm:hidden">{t("newSeance")}</span>
           </button>
-        </div>
+          }
+        />
       </div>
 
       {error && (

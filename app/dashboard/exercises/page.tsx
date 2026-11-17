@@ -1,4 +1,3 @@
-import Link from "next/link";
 import LibraryTabs from "@/components/LibraryTabs";
 import { getTranslations } from "next-intl/server";
 import { resolveMediaUrl } from "@/lib/storage/r2-videos";
@@ -102,7 +101,6 @@ export default async function ExercisesPage({
           <div className="flex min-w-0 flex-col gap-1">
             <ContributionSummary contributors={contributors} published={publishedCount} pending={pendingCount} />
           </div>
-          <Link href="/dashboard/seances" className="text-sm font-medium text-brand hover:underline max-sm:hidden">{t("manageSessions")}</Link>
         </div>
 
         {error && (
