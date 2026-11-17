@@ -501,3 +501,26 @@ Points d'attention particuliers :
 | Phase 2 — Mobilité | Rentrer le menton (3 × 10) · Rotation du cou (3 × 10) · Étirement du trapèze supérieur (2 × 30 s) · Extension du haut du dos sur chaise (2 × 10) · Glissés des bras au mur (2 × 10) | ☐ |
 | Phase 3 — Renforcement | Rentrer le menton (3 × 12) · Élévation des bras en T à plat ventre (3 × 10) · Tirage horizontal à l'élastique (3 × 12) · Ange des neiges inversé (3 × 10) · Rotation du cou (2 × 10) | ☐ |
 | Phase 4 — Reprise | Tirage vers le visage à l'élastique (3 × 12) · Tirage horizontal à l'élastique (3 × 12) · Élévation des bras en Y à plat ventre (3 × 12) · Rentrer le menton (2 × 10) · Planche (3 × 30 s) | ☐ |
+
+---
+
+## Remplacements automatiques faute de matériel (17/11)
+
+Quand le patient n’a pas déclaré le matériel, l’exercice est remplacé (premier remplaçant pas déjà dans la séance). Chaise, coussin et manche à balai sont considérés comme présents partout. À valider par Jules :
+
+| Exercice | Remplacé par (dans l’ordre) | OK ? |
+|---|---|---|
+| Vélo | Marche | ☐ |
+| Corde à sauter | Pas chassés → Saut et réception stabilisée | ☐ |
+| Tirage horizontal à l'élastique | Élévation des bras en T à plat ventre → Ange des neiges inversé → Élévation des bras en Y à plat ventre → Glissés des bras au mur | ☐ |
+| Tirage vers le visage à l'élastique | Élévation des bras en Y à plat ventre → Ange des neiges inversé → Élévation des bras en T à plat ventre → Glissés des bras au mur → Rentrer le menton → Extension du haut du dos sur chaise | ☐ |
+| Rotation externe de l'épaule à l'élastique | Contractions isométriques de l'épaule contre le mur → Élévation des bras en T à plat ventre → Glissés des bras au mur | ☐ |
+| Rotation interne de l'épaule à l'élastique | Contractions isométriques de l'épaule contre le mur → Étirement de l'épaule avec serviette dans le dos → Glissés des bras au mur → Cercles d'épaules | ☐ |
+| Rotation externe bras à 90° à l'élastique | Élévation des bras en Y à plat ventre → Élévation des bras en T à plat ventre → Glissés des bras au mur | ☐ |
+| Coquille à l'élastique | Abduction de hanche couché sur le côté → Pont fessier → Pont fessier avec marche → Équilibre sur une jambe → Quadrupédie bras-jambe opposés | ☐ |
+| Marche latérale à l'élastique | Abduction de hanche couché sur le côté → Équilibre sur une jambe → Transfert de poids latéral → Pont fessier | ☐ |
+| Abduction de hanche debout à l'élastique | Abduction de hanche couché sur le côté → Équilibre sur une jambe → Pont fessier | ☐ |
+| Pallof press | Dead bug → Planche latérale sur les genoux → Quadrupédie bras-jambe opposés → Planche | ☐ |
+| Extension du genou à l'élastique | Contraction du quadriceps → Élévation de la jambe tendue → Chaise contre le mur → Assis-debout | ☐ |
+| Éversion de cheville à l'élastique | Transfert de poids latéral → Équilibre sur une jambe → Montée sur la pointe des pieds → Y-balance (atteinte en équilibre) → Cercles de cheville | ☐ |
+| Marche du fermier | Planche → Quadrupédie bras-jambe opposés → Marche | ☐ |

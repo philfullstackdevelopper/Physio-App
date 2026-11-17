@@ -21,6 +21,8 @@ import { getTranslations } from "next-intl/server";
 import { getLibI18n } from "@/lib/dashboard/libI18n";
 import { intlTag } from "@/lib/i18n/translator";
 import { type AddableWorkout } from "@/components/AdjustWorkoutModal";
+import { isPlatformSeance, swapRows } from "@/lib/exercise/equipmentSwaps";
+import { platformExerciseName } from "@/lib/exercise/exerciseNames";
 import KineWeekProgramme, { type KineWorkoutSummary } from "@/components/KineWeekProgramme";
 import PatientActionsMenu from "@/components/PatientActionsMenu";
 import ConditionSelect from "@/components/ConditionSelect";
@@ -178,6 +180,32 @@ export default async function PatientDetailPage({ params, searchParams }: { para
   // La frise résout elle-même la séance effective de chaque semaine à partir
   // de la liste complète des assignations + un résumé de chaque séance.
   const assignments = recommended.map((r) => ({ id: r.recId, workoutId: r.workout.id, weekStartDate: r.weekStartDate, weekCount: r.weekCount }));
+  // Matériel du patient : dans une séance de la plateforme, un exercice qu'il
+  // ne peut pas faire est remplacé par un exercice sans matériel — le kiné voit
+  // exactement ce que voit le patient (lib/exercise/equipmentSwaps.ts).
+  const patientEquipment = (profile?.equipment as string[] | null | undefined) ?? null;
+  type SeanceExercise = NonNullable<Workout["workout_exercises"][number]["exercises"]>;
+  const platformExerciseByName = new Map(
+    ((allExercises ?? []) as unknown as (SeanceExercise & { created_by: string | null })[])
+      .filter((e) => !e.created_by)
+      .map((e) => [platformExerciseName(e.name), e] as const),
+  );
+  const seanceRows = (w: Workout) => {
+    const sorted = [...w.workout_exercises].sort((a, b) => a.position - b.position).filter((we) => !!we.exercises);
+    return isPlatformSeance(w)
+      ? swapRows(sorted, patientEquipment, (n): SeanceExercise | undefined => platformExerciseByName.get(n))
+      : sorted.map((we) => ({ ...we, swappedFrom: null as string | null }));
+  };
+  const toModalExercises = (w: Workout) =>
+    seanceRows(w).map((we) => ({
+      id: we.exercises!.id,
+      name: we.exercises!.name,
+      equipment: we.exercises!.equipment ?? [],
+      dose: doseFromRow(we),
+      doseKind: doseKindById.get(we.exercises!.id),
+      swappedFrom: we.swappedFrom,
+    }));
+
   const workoutSummaries: Record<string, KineWorkoutSummary> = {};
   for (const r of recommended) {
     workoutSummaries[r.workout.id] ??= {
@@ -186,10 +214,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       conditionId: r.workout.condition_id ?? null,
       stage: r.workout.stage ?? null,
       isPatientCopy: r.workout.patient_id === id,
-      exercises: [...r.workout.workout_exercises]
-        .sort((a, b) => a.position - b.position)
-        .filter((we) => !!we.exercises)
-        .map((we) => ({ id: we.exercises!.id, name: we.exercises!.name, equipment: we.exercises!.equipment ?? [], dose: doseFromRow(we), doseKind: doseKindById.get(we.exercises!.id) })),
+      exercises: toModalExercises(r.workout),
     };
   }
   const warning = programmeWarning({
@@ -255,11 +280,8 @@ export default async function PatientDetailPage({ params, searchParams }: { para
       stageLabel: w.stage ? stageLabel(w.stage as InjuryStage, tStage) : null,
       conditionName: conditionName(w.condition_id) ?? null,
       editHref: w.created_by === user.id ? `/dashboard/seances/${w.id}` : null,
-      exerciseNames: [...w.workout_exercises].sort((a, b) => a.position - b.position).map((we) => we.exercises?.name).filter((n): n is string => !!n),
-      exercises: [...w.workout_exercises]
-        .sort((a, b) => a.position - b.position)
-        .filter((we) => !!we.exercises)
-        .map((we) => ({ id: we.exercises!.id, name: we.exercises!.name, equipment: we.exercises!.equipment ?? [], dose: doseFromRow(we), doseKind: doseKindById.get(we.exercises!.id) })),
+      exerciseNames: seanceRows(w).map((we) => we.exercises?.name).filter((n): n is string => !!n),
+      exercises: toModalExercises(w),
       // Union of every one of this séance's exercises' tagged body parts —
       // lets the picker filter a séance by area without forcing it into a
       // single category (see lib/exercise/category.ts's primaryBodyPart,
@@ -397,7 +419,7 @@ export default async function PatientDetailPage({ params, searchParams }: { para
         patientId={patient.id}
         patientFirstName={firstName}
         // Matériel déclaré à l'onboarding — liste vide = pas encore renseigné (« aucun matériel » est une case à part) → null, aucun signalement.
-        patientEquipment={((profile?.equipment as string[] | null | undefined) ?? []).length > 0 ? (profile!.equipment as string[]) : null}
+        patientEquipment={patientEquipment}
         addableExercises={addableExercises}
         bodyParts={bodyParts ?? []}
         addableWorkouts={addableWorkouts}

@@ -11,6 +11,8 @@ import { resolveWorkoutForWeek } from "@/lib/exercise/activeRecommendation";
 import { primaryBodyPart, type BodyPart } from "@/lib/exercise/category";
 import { doseFromRow, type ExerciseDose } from "@/lib/exercise/prescription";
 import ProgrammeView, { type ProgrammeWorkout } from "./ProgrammeView";
+import { applyEquipmentSwaps, loadPatientEquipment } from "@/lib/exercise/applyEquipmentSwaps";
+import { isPlatformSeance } from "@/lib/exercise/equipmentSwaps";
 
 type Exercise = { id: string; name: string; instructions: string | null; bodyPartIds: string[]; dose?: ExerciseDose | null };
 type Workout = {
@@ -47,10 +49,12 @@ export default async function ProgrammePage() {
 
   // Les doses (séries, répétitions, maintien) viennent de la migration 0080 ;
   // tant qu'elle n'est pas passée, on relit sans elles (code Postgres 42703).
+  // Colonnes de l'exercice — aussi celles du remplaçant « faute de matériel ».
+  const EXERCISE_COLUMNS = "id, name, instructions, equipment, exercise_body_parts ( body_part_id )";
   const recSelect = (withDose: boolean) =>
     `week_start_date, week_count, workouts (
-        id, name, description, duration_minutes, times_per_week,
-        workout_exercises ( position${withDose ? ", sets, reps, hold_seconds" : ""}, exercises ( id, name, instructions, exercise_body_parts ( body_part_id ) ) )
+        id, name, description, duration_minutes, times_per_week, created_by, patient_id,
+        workout_exercises ( position${withDose ? ", sets, reps, hold_seconds" : ""}, exercises ( ${EXERCISE_COLUMNS} ) )
       )`;
   type RecRow = { week_start_date: string; week_count: number | null; workouts: unknown };
   const firstRec = await supabase.from("patient_recommended_workouts").select(recSelect(true)).eq("patient_id", user.id);
@@ -62,29 +66,39 @@ export default async function ProgrammePage() {
   const { data: bodyPartRows } = await supabase.from("body_parts").select("id, slug, label, position").order("position");
   const bodyParts = (bodyPartRows ?? []) as BodyPart[];
 
-  const allAssignments = (recRows ?? [])
-    .map((r) => {
+  // Matériel du patient : les exercices qu'il ne peut pas faire sont remplacés
+  // (séances de la plateforme seulement, lib/exercise/equipmentSwaps.ts).
+  const patientEquipment = await loadPatientEquipment(supabase, user.id);
+
+  const allAssignments = (
+    await Promise.all(
+      (recRows ?? []).map(async (r) => {
       const w = r.workouts as unknown as
         | (Omit<Workout, "workout_exercises"> & {
-            workout_exercises: { position: number | null; sets?: number | null; reps?: number | null; hold_seconds?: number | null; exercises: (Omit<Exercise, "bodyPartIds"> & { exercise_body_parts: { body_part_id: string }[] }) | null }[];
+            created_by?: string | null;
+            patient_id?: string | null;
+            workout_exercises: { position: number | null; sets?: number | null; reps?: number | null; hold_seconds?: number | null; exercises: (Omit<Exercise, "bodyPartIds"> & { equipment?: string[] | null; exercise_body_parts: { body_part_id: string }[] }) | null }[];
           })
         | null;
       if (!w) return null;
+      // Dans l'ordre de la séance (position), comme la séance guidée.
+      const sorted = [...w.workout_exercises].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      const rows = isPlatformSeance(w) ? await applyEquipmentSwaps(supabase, sorted, patientEquipment, EXERCISE_COLUMNS) : sorted;
       return {
         weekStartDate: r.week_start_date as string,
         weekCount: (r.week_count as number | null) ?? null,
         workout: {
           ...w,
-          // Dans l'ordre de la séance (position), comme la séance guidée.
-          workout_exercises: [...w.workout_exercises].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)).map((we) => ({
+          workout_exercises: rows.map((we) => ({
             exercises: we.exercises
               ? { ...we.exercises, bodyPartIds: we.exercises.exercise_body_parts.map((t) => t.body_part_id), dose: doseFromRow(we) }
               : null,
           })),
         } as Workout,
       };
-    })
-    .filter((r): r is { weekStartDate: string; weekCount: number | null; workout: Workout } => r != null);
+      }),
+    )
+  ).filter((r): r is { weekStartDate: string; weekCount: number | null; workout: Workout } => r != null);
 
   // Only one séance is ever "assigned" at a time now — the one whose
   // week_start_date is on or before this week's Monday (see lib/exercise/

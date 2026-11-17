@@ -230,6 +230,8 @@
     "seeDemo": "See the demonstration",
     "recommendedChanges": "Recommended changes",
     "recommendedApplied": "{count} applied",
+    "swappedFrom": "instead of {from} (equipment)",
+    "swappedTitle": "{name} doesn't have the equipment for {from}: automatically replaced with an exercise needing none.",
     "easier": "Easier",
     "harder": "Harder",
     "replaced": "Replaced",

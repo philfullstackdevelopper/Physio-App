@@ -127,6 +127,7 @@ export default function KineWeekProgramme({
 }) {
   const t = useTranslations("dashboard.weekProgramme");
   const tPass = useTranslations("exercise.phasePass");
+  const tAdjust = useTranslations("exercise.adjust");
   const locale = useLocale() as Locale;
   const loggedDateKeys = useMemo(
     () => new Set(Object.keys(dayDetails).filter((k) => dayDetails[k].length > 0)),
@@ -344,9 +345,14 @@ export default function KineWeekProgramme({
             {workout && workout.exercises.length > 0 ? (
               <span className="flex w-full flex-wrap items-start justify-center gap-x-2 gap-y-2 px-1 pb-1 max-sm:gap-x-3 max-sm:gap-y-3">
                 {workout.exercises.map((e) => (
-                  <span key={e.id} className="flex w-[3.75rem] flex-col items-center gap-1 max-sm:w-[5rem]">
+                  <span
+                    key={e.id}
+                    title={e.swappedFrom ? tAdjust("swappedTitle", { name: patientFirstName, from: e.swappedFrom }) : undefined}
+                    className="flex w-[3.75rem] flex-col items-center gap-1 max-sm:w-[5rem]"
+                  >
                     <ExerciseIllustration name={e.name} animate={false} className="h-14 w-14 shrink-0 max-sm:h-[4.5rem] max-sm:w-[4.5rem]" />
                     <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight max-sm:text-xs">{e.name}</span>
+                    {e.swappedFrom && <span className="line-clamp-2 text-center text-[10px] leading-tight opacity-75">{tAdjust("swappedFrom", { from: e.swappedFrom })}</span>}
                   </span>
                 ))}
               </span>
