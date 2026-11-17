@@ -161,7 +161,7 @@ export default async function KineTelephonePrototype({
     });
     screen = (
       <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
-        <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
+        <div className="mx-auto flex min-h-0 w-full flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
           <SeancesTabs
             // ?ecran=seances&nouvelle=1 : ouvre « Nouvelle séance » avec quelques
             // exercices fictifs, pour juger la liste et le bouton (i) de démonstration.
@@ -193,7 +193,7 @@ export default async function KineTelephonePrototype({
     const bodyParts = DEMO_BODY_PARTS;
     screen = (
       <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
-        <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
+        <div className="mx-auto flex min-h-0 w-full flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
           <LibraryTabs active="exercises" />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-4 max-sm:mt-2">
             <div className="flex min-w-0 flex-col gap-1">

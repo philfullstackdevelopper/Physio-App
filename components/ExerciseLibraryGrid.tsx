@@ -339,7 +339,7 @@ export default function ExerciseLibraryGrid({
         // Ordinateur (Philippe, 2026-10-12) : mêmes tuiles que le sélecteur
         // « Ajouter un exercice » — une seule rangée, dessin au-dessus du nom.
         <div
-          style={{ gridTemplateColumns: `repeat(${bodyParts.length}, minmax(0, 7.5rem))` }}
+          style={{ gridTemplateColumns: `repeat(${bodyParts.length}, minmax(0, 1fr))` }}
           className="mt-3 flex flex-wrap gap-1.5 max-sm:-mx-4 max-sm:flex-nowrap max-sm:gap-2 max-sm:overflow-x-auto max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none] md:grid"
         >
           {bodyParts.map((bp) => {
@@ -371,7 +371,7 @@ export default function ExerciseLibraryGrid({
       {/* Téléphone (Philippe, 2026-10-12) : même affichage que dans « Ajuster
           la séance » — blocs 2 par rangée, dessin plus grand, nom sur deux
           lignes ; les consignes restent sur ordinateur. */}
-      <div className="grid grid-cols-1 gap-3 max-sm:grid-cols-2 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 max-sm:grid-cols-2 max-sm:gap-2 sm:grid-cols-[repeat(auto-fit,minmax(15rem,1fr))]">
         {filtered.length === 0 ? (
           <p className="col-span-full rounded-xl border border-line bg-surface p-6 text-center text-sm text-muted">
             {cabinetOnly

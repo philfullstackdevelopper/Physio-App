@@ -153,7 +153,7 @@ const REVEAL_STEP = 12;
 // menu ou la corbeille dans le coin du bloc.
 // Ordinateur / tablette (Philippe, 2026-10-10) : exactement la grille de
 // « Mes exercices » — mêmes cartes, 2 / 3 / 4 par ligne selon la largeur.
-const CARD_GRID = "grid grid-cols-1 gap-3 max-sm:grid-cols-2 max-sm:gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+const CARD_GRID = "grid grid-cols-1 gap-3 max-sm:grid-cols-2 max-sm:gap-2 sm:grid-cols-[repeat(auto-fit,minmax(15rem,1fr))]";
 
 // The workout's own lead exercise (position 0) supplies a real illustration
 // via the same matching already solved for the exercise library — no
@@ -564,7 +564,7 @@ export default function SeancesTabs({
         // Ordinateur (Philippe, 2026-10-12) : mêmes tuiles que le sélecteur
         // « Ajouter un exercice » — une seule rangée, dessin au-dessus du nom.
         <div
-          style={{ gridTemplateColumns: `repeat(${zones.length + 1}, minmax(0, 7.5rem))` }}
+          style={{ gridTemplateColumns: `repeat(${zones.length + 1}, minmax(0, 1fr))` }}
           className="mt-3 flex shrink-0 flex-wrap gap-1.5 max-sm:-mx-4 max-sm:flex-nowrap max-sm:gap-2 max-sm:overflow-x-auto max-sm:px-4 max-sm:py-0.5 max-sm:[scrollbar-width:none] md:grid"
         >
           <button

@@ -92,7 +92,7 @@ export default async function ExercisesPage({
   return (
     // Une page = un écran : seule la grille d'exercices défile (audit 2026-10-10).
     <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
-      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
+      <div className="mx-auto flex min-h-0 w-full flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
         {/* Onglets « Mes exercices | Mes séances » à la place du titre (Philippe, 2026-11-17). */}
         <div className="animate-[fadeInUp_0.6s_ease-out_both]">
           <LibraryTabs active="exercises" />
