@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
-import { Check } from "lucide-react";
+import { Armchair, Bike, Check, Circle, CircleDot, Dumbbell, Grip, RectangleHorizontal, Slash, Waves, type LucideIcon } from "lucide-react";
 import type { InjuryStage } from "@/lib/exercise/prescription";
 import { equipmentLabels as equipmentLabelsFor, type EquipmentId } from "@/lib/exercise/equipment";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
@@ -14,6 +14,21 @@ import BodyPartIllustration from "@/components/BodyPartIllustration";
 // donné). La case vit maintenant en bas de l'étape « Équipement », dont le
 // bouton final enregistre. Elle reste distincte des CGU, même texte, même
 // champ envoyé (health_data_consent), toujours obligatoire.
+// Icône de chaque matériel : tuiles comme le choix des zones du corps
+// (Philippe, 2026-11-17 : « même présentation que les parties du corps »).
+const EQUIPMENT_ICONS: Record<EquipmentId, LucideIcon> = {
+  aucun: Circle,
+  tapis: RectangleHorizontal,
+  elastiques: Waves,
+  halteres: Dumbbell,
+  chaise: Armchair,
+  velo_rameur: Bike,
+  barre_traction: Grip,
+  swiss_ball: Circle,
+  ballon: CircleDot,
+  baton: Slash,
+};
+
 // Clés de patient.onboarding.steps.
 // 2 étapes depuis le 2026-11-16 (avant : situation, profil, équipement).
 const STEP_LABELS = ["situation", "equipment"] as const;
@@ -245,25 +260,26 @@ export default function OnboardingWizard({
           <p className="text-sm text-slate-500">
             {t("equipmentIntro")}
           </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {/* Tuiles comme les zones du corps (étape 1) : icône + libellé,
+              bordure bleue quand c'est coché. La case reste un vrai champ
+              « equipment » du formulaire, masquée visuellement. */}
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
             {/* "aucun" (poids du corps) n'est pas proposé ici : ces exercices
                 sont toujours réalisables, qu'il soit coché ou non — pas la
                 peine de demander au patient de le cocher (Philippe, 2026-09-09). */}
-            {equipmentOptions.filter((id) => id !== "aucun").map((id) => (
-              <label
-                key={id}
-                className="flex items-center gap-2.5 rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-700 transition-colors has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/60"
-              >
-                <input
-                  type="checkbox"
-                  name="equipment"
-                  value={id}
-                  defaultChecked={currentEquipment.has(id)}
-                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
-                />
-                {equipmentText[id]}
-              </label>
-            ))}
+            {equipmentOptions.filter((id) => id !== "aucun").map((id) => {
+              const Icon = EQUIPMENT_ICONS[id];
+              return (
+                <label
+                  key={id}
+                  className="flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2.5 text-center text-slate-500 transition-colors hover:bg-slate-50 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-600 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-600 short:gap-1 short:p-1.5"
+                >
+                  <input type="checkbox" name="equipment" value={id} defaultChecked={currentEquipment.has(id)} className="sr-only" />
+                  <Icon aria-hidden className="h-8 w-8 short:h-6 short:w-6" strokeWidth={1.5} />
+                  <span className="text-[11px] font-medium leading-tight text-slate-700">{equipmentText[id]}</span>
+                </label>
+              );
+            })}
           </div>
 
           {/* Facultatif, replié : utile au kiné, jamais bloquant. */}
