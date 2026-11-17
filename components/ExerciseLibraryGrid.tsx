@@ -33,6 +33,8 @@ export interface BodyPart {
 export interface LibraryExercise {
   id: string;
   name: string;
+  /** Démo seulement : nom (anglais, en base) de l'exercice de la banque dont on emprunte le dessin animé. */
+  drawingOf?: string;
   instructions: string | null;
   media_url: string | null;
   media_start_seconds: number;
@@ -389,6 +391,7 @@ export default function ExerciseLibraryGrid({
               <div className="flex items-start justify-between gap-2">
                 <ExerciseIllustration
                   name={ex.name}
+                  drawingOf={ex.drawingOf}
                   className="h-24 w-full text-brand max-sm:h-16"
                 />
                 <span className="flex shrink-0 items-center max-sm:absolute max-sm:right-1 max-sm:top-1">

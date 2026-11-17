@@ -25,7 +25,7 @@ export default function ExerciseInfoModal({
   onClose,
   footer,
 }: {
-  exercise: { id: string; name: string };
+  exercise: { id: string; name: string; drawingOf?: string };
   onClose: () => void;
   /** Contenu en bas de la fenêtre, ex. « Ajouter / Remplacer la vidéo » dans « Mes exercices ». */
   footer?: ReactNode;
@@ -136,7 +136,7 @@ export default function ExerciseInfoModal({
               <div className="flex h-56 w-full items-center justify-center text-sm text-muted">{t("loadingVideo")}</div>
             ) : (
               // Pas (encore) de vidéo pour cet exercice : le dessin, en secours.
-              <ExerciseIllustration name={exercise.name} className="h-56 w-full p-4 text-brand" />
+              <ExerciseIllustration name={exercise.name} drawingOf={exercise.drawingOf} className="h-56 w-full p-4 text-brand" />
             )}
           </div>
 

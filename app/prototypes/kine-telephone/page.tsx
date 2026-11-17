@@ -60,11 +60,13 @@ const PATHS: Record<string, string> = {
 // Exercices proposés par d'autres kinés et publiés (fictifs) : crédit
 // « Proposé par » sur les cartes, et classement des contributeurs.
 // Nom affiché : demo.samples.contribExercises.<key>.
-const DEMO_CONTRIB_EXERCISES: { key: string; bodyPartIds: string[]; author: string; authorId: string }[] = [
-  { key: "lateralStepUp", bodyPartIds: ["bp-genou"], author: "Claire Fontaine · Kiné du Parc", authorId: "k1" },
-  { key: "reverseLunge", bodyPartIds: ["bp-genou", "bp-hanche"], author: "Claire Fontaine · Kiné du Parc", authorId: "k1" },
-  { key: "singleLegBridgeBand", bodyPartIds: ["bp-hanche"], author: "Marc Lefèvre · Cabinet des Lilas", authorId: "k2" },
-  { key: "quadrupedThoracicRotation", bodyPartIds: ["bp-dos"], author: "Julien Roux", authorId: "moi" },
+// `drawingOf` : dessin animé emprunté à l'exercice de la banque qui fait le
+// même mouvement (Philippe, 2026-11-17 : la démo doit montrer des dessins).
+const DEMO_CONTRIB_EXERCISES: { key: string; bodyPartIds: string[]; author: string; authorId: string; drawingOf: string }[] = [
+  { key: "lateralStepUp", bodyPartIds: ["bp-genou"], author: "Claire Fontaine · Kiné du Parc", authorId: "k1", drawingOf: "Step-Up" },
+  { key: "reverseLunge", bodyPartIds: ["bp-genou", "bp-hanche"], author: "Claire Fontaine · Kiné du Parc", authorId: "k1", drawingOf: "Reverse Lunge" },
+  { key: "singleLegBridgeBand", bodyPartIds: ["bp-hanche"], author: "Marc Lefèvre · Cabinet des Lilas", authorId: "k2", drawingOf: "Single-Leg Glute Bridge" },
+  { key: "quadrupedThoracicRotation", bodyPartIds: ["bp-dos"], author: "Julien Roux", authorId: "moi", drawingOf: "Thread the Needle" },
 ];
 // Classement de démo : Julien Roux (le kiné de la démo) a 6 exercices publiés.
 const DEMO_RANKING_ROWS = [
@@ -223,6 +225,7 @@ export default async function KineTelephonePrototype({
             ...DEMO_CONTRIB_EXERCISES.map((e, i) => ({
               id: `kex${i}`,
               name: t(`contribExercises.${e.key}`),
+              drawingOf: e.drawingOf,
               instructions: null,
               media_url: null,
               media_start_seconds: 0,

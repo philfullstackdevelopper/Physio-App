@@ -116,8 +116,11 @@ export default function ExerciseIllustration({
   className = "h-28 w-full text-blue-600",
   animate = true,
   still,
+  drawingOf,
 }: {
   name: string;
+  /** Démo : nom de l'exercice de la banque dont on emprunte le dessin (sinon : `name`). */
+  drawingOf?: string;
   className?: string;
   /** false renders a single fixed frame instead of the cross-fading 3-frame loop. */
   animate?: boolean;
@@ -125,7 +128,8 @@ export default function ExerciseIllustration({
   still?: "start" | "middle";
 }) {
   // Nom affiché en français (lib/exercise/exerciseNames.ts) ou nom anglais en base.
-  const vendoredSlug = EXERCISE_ILLUSTRATION_MAP[name] ?? EXERCISE_ILLUSTRATION_MAP[platformExerciseName(name)];
+  const lookup = drawingOf ?? name;
+  const vendoredSlug = EXERCISE_ILLUSTRATION_MAP[lookup] ?? EXERCISE_ILLUSTRATION_MAP[platformExerciseName(lookup)];
   if (vendoredSlug) {
     return (
       <VendoredIllustration slug={vendoredSlug} name={name} className={className} animate={animate} still={still} />
