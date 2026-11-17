@@ -41,7 +41,7 @@ export const PLAN = {
   },
   "Déchirure du quadriceps": {
     acute: ["Quad Set|3x10", "Straight Leg Raise|2x10", "Heel Slide|2x10", "Glute Bridge|2x10", "Walking|1x10min"],
-    subacute: ["Straight Leg Raise|3x12", "Terminal Knee Extension (Band)|3x12", "Cycling|1x10min", "Wall Sit|3x20s", "Kneeling Hip Flexor Stretch|2x30s"],
+    subacute: ["Straight Leg Raise|3x12", "Terminal Knee Extension (Band)|3x12", "Cycling|1x10min", "Wall Sit|3x20s"],
     recovery: ["Bodyweight Squat|3x12", "Step-Up|3x10", "Reverse Lunge|3x8", "Wall Sit|3x30s", "Step-Down|3x8", "Single-Leg Glute Bridge|3x10"],
     return_to_sport: ["Step-Up|3x10", "Bulgarian Split Squat|3x8", "Jump Squat|3x8", "Hop and Stick|3x6", "Running|1x15min", "Lateral Shuffle|3x20s"],
   },
@@ -52,19 +52,19 @@ export const PLAN = {
     return_to_sport: ["Banded Face Pull|3x12", "Plank|3x30s", "Modified Side Plank (Light)|3x20s", "Bird Dog|3x12", "Banded Row|3x15", "Prone Back Extension (Hands Behind Head)|3x10"],
   },
   "Élongation des ischio-jambiers": {
-    acute: ["Glute Bridge|2x10", "Heel Slide|2x10", "Dead Bug|2x8", "Standing Bent-Leg Hamstring Stretch (Table)|2x20s", "Walking|1x10min"],
+    acute: ["Glute Bridge|2x10", "Heel Slide|2x10", "Dead Bug|2x8", "Walking|1x10min"],
     subacute: ["Glute Bridge|3x12", "Single-Leg Glute Bridge|3x8", "Glute Bridge March|3x8", "Hamstring Stretch|2x30s", "Walking|1x15min"],
     recovery: ["Romanian Deadlift|3x10", "Single-Leg Glute Bridge|3x10", "Single-Leg Romanian Deadlift|3x8", "Hip Thrust|3x10", "Bird Dog|3x10"],
     return_to_sport: ["Romanian Deadlift|3x10", "Single-Leg Romanian Deadlift|3x10", "Running|1x15min", "Lateral Shuffle|3x20s", "Skater Hop|3x8", "Hop and Stick|3x6"],
   },
   "Élongation du mollet": {
-    acute: ["Ankle Circles|2x10", "Wall Calf Stretch|2x20s", "Calf Raise|2x10", "Single-Leg Stance|2x20s", "Walking|1x10min"],
+    acute: ["Ankle Circles|2x10", "Calf Raise|2x10", "Single-Leg Stance|2x20s", "Walking|1x10min"],
     subacute: ["Calf Raise|3x15", "Wall Calf Stretch|3x30s", "Kneeling Calf and Hip Flexor Wall Stretch|2x30s", "Single-Leg Stance|3x30s", "Cycling|1x10min"],
     recovery: ["Single-Leg Calf Raise|3x12", "Calf Raise|3x15", "Step-Down|3x8", "Wall Tibialis Raise|3x15", "Walking|1x20min"],
     return_to_sport: ["Single-Leg Calf Raise|3x15", "Hop and Stick|3x6", "Lateral Jump (Two Feet)|3x10", "Single-Leg Forward Hop|3x6", "Progressive Walk-to-Jog (Shin Splints, Soft Terrain)|1x15min", "Jump Rope|3x30s"],
   },
   "Entorse de la cheville": {
-    acute: ["Ankle Circles|3x10", "Wall Calf Stretch|2x20s", "Single-Leg Stance|3x20s", "Glute Bridge|2x10", "Straight Leg Raise|2x10"],
+    acute: ["Ankle Circles|3x10", "Wall Calf Stretch|2x20s", "Glute Bridge|2x10", "Straight Leg Raise|2x10"],
     subacute: ["Ankle Circles|2x15", "Calf Raise|3x12", "Ankle Eversion (Band)|3x12", "Wall Calf Stretch|2x30s", "Single-Leg Stance|3x30s", "Wall Tibialis Raise|3x12"],
     recovery: ["Single-Leg Calf Raise|3x10", "Ankle Eversion (Band)|3x15", "Y-Balance Reach|3x8", "Single-Leg Stance|3x30s", "Step-Down|3x8", "Lateral Weight Shift|2x10"],
     return_to_sport: ["Hop and Stick|3x6", "Lateral Jump (Two Feet)|3x10", "Skater Hop|3x8", "Single-Leg Lateral Hop|3x6", "Lateral Shuffle|3x20s", "Single-Leg Calf Raise|3x15"],
@@ -112,13 +112,13 @@ export const PLAN = {
     return_to_sport: ["Step-Down|3x8", "Bodyweight Squat|3x10", "Obstacle Step-Over|3x8", "Floor to Stand|2x5", "Controlled Stair Climbing|1x5min", "Walking|1x20min"],
   },
   "Prothèse totale de hanche": {
-    acute: ["Ankle Circles|3x15", "Quad Set|3x10", "Heel Slide|2x10", "Glute Bridge|2x8", "Assisted Progressive Walking|1x5min"],
-    subacute: ["Glute Bridge|3x10", "Side-Lying Hip Abduction|3x10", "Heel Slide|3x10", "Straight Leg Raise|3x10", "Sit-to-Stand|2x8", "Assisted Progressive Walking|1x10min"],
+    acute: ["Ankle Circles|3x15", "Quad Set|3x10", "Heel Slide|2x10", "Assisted Progressive Walking|1x5min"],
+    subacute: ["Glute Bridge|3x10", "Side-Lying Hip Abduction|3x10", "Heel Slide|3x10", "Sit-to-Stand|2x8", "Assisted Progressive Walking|1x10min"],
     recovery: ["Sit-to-Stand|3x10", "Banded Standing Hip Abduction|3x12", "Banded Clamshell|3x12", "Step-Up|3x8", "Single-Leg Stance|3x20s", "Glute Bridge March|3x8"],
     return_to_sport: ["Walking|1x20min", "Controlled Stair Climbing|1x5min", "Obstacle Step-Over|3x8", "Floor to Stand|2x5", "Banded Lateral Walk|3x10", "Bodyweight Squat|3x10"],
   },
   "Pubalgie": {
-    acute: ["Glute Bridge|2x10", "Dead Bug|2x8", "Side-Lying Hip Abduction|2x10", "Kneeling Hip Flexor Stretch|2x30s", "Walking|1x10min"],
+    acute: ["Glute Bridge|2x10", "Dead Bug|2x8", "Side-Lying Hip Abduction|2x10", "Walking|1x10min"],
     subacute: ["Dead Bug|3x10", "Glute Bridge|3x12", "Bird Dog|3x10", "Pallof Press|3x10", "Lateral Lunge|2x8", "Cycling|1x10min"],
     recovery: ["Lateral Lunge|3x8", "Pallof Press|3x12", "Modified Side Plank (Light)|3x20s", "Banded Lateral Walk|3x10", "Single-Leg Glute Bridge|3x10", "Plank|3x30s"],
     return_to_sport: ["Lateral Shuffle|3x20s", "Skater Hop|3x8", "Curtsy Lunge|3x8", "Lateral Lunge|3x10", "Plank|3x30s", "Running|1x15min"],
@@ -142,7 +142,7 @@ export const PLAN = {
     return_to_sport: ["Step Drop Landing (Two Feet)|3x6", "Step Drop Landing (Single Leg)|3x6", "Hop and Stick|3x6", "Lateral Step-Over Hop|3x8", "Bulgarian Split Squat|3x8", "Lunge to Step-Up with Knee Drive|3x8"],
   },
   "Rupture du tendon d'Achille": {
-    acute: ["Ankle Circles|3x10", "Quad Set|3x10", "Straight Leg Raise|3x10", "Glute Bridge|2x10", "Assisted Progressive Walking|1x5min"],
+    acute: ["Quad Set|3x10", "Straight Leg Raise|3x10", "Glute Bridge|2x10", "Assisted Progressive Walking|1x5min"],
     subacute: ["Ankle Circles|3x15", "Wall Tibialis Raise|2x12", "Single-Leg Stance|3x20s", "Glute Bridge|3x12", "Cycling|1x10min"],
     recovery: ["Calf Raise|3x15", "Single-Leg Calf Raise|3x8", "Step-Down|3x8", "Single-Leg Stance|3x30s", "Walking|1x20min"],
     return_to_sport: ["Single-Leg Calf Raise|3x15", "Hop and Stick|3x6", "Lateral Jump (Two Feet)|3x10", "Single-Leg Forward Hop|3x6", "Progressive Walk-to-Jog (Shin Splints, Soft Terrain)|1x15min"],
@@ -172,7 +172,7 @@ export const PLAN = {
     return_to_sport: ["Lateral Shuffle|3x20s", "Skater Hop|3x8", "Bulgarian Split Squat|3x8", "Progressive Walk-to-Jog (Shin Splints, Soft Terrain)|1x15min", "Running|1x20min"],
   },
   "Syndrome du canal carpien": {
-    acute: ["Wrist Radial-Ulnar Deviation|2x10", "Foam Ball Squeeze|2x10", "Shoulder Circles|2x10", "Chin Tuck|2x10", "Upper Trapezius Stretch|2x30s"],
+    acute: ["Wrist Radial-Ulnar Deviation|2x10", "Shoulder Circles|2x10", "Chin Tuck|2x10", "Upper Trapezius Stretch|2x30s"],
     subacute: ["Wrist Radial-Ulnar Deviation|3x10", "Foam Ball Squeeze|3x10", "Thoracic Extension Over Chair|2x10", "Chin Tuck|2x10", "Wall Slides|2x10"],
     recovery: ["Wrist Radial-Ulnar Deviation|3x12", "Foam Ball Squeeze|3x12", "Banded Row|3x12", "Wall Push-up|3x10", "Chin Tuck|2x10"],
     return_to_sport: ["Wrist Radial-Ulnar Deviation|3x15", "Foam Ball Squeeze|3x15", "Incline Push-up|3x10", "Banded Row|3x12", "Farmer Carry|3x30s"],

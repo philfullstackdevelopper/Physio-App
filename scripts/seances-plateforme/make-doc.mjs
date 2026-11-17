@@ -23,18 +23,27 @@ const name = (en) => {
   return fr[en] ?? en;
 };
 const conds = Object.keys(PLAN).sort((a, b) => a.localeCompare(b, "fr"));
+const removed = JSON.parse(fs.readFileSync(new URL("./removed.json", import.meta.url), "utf8"));
+const REMOVED = removed.map((r) => `- **${r[0]}**, ${({acute:"phase 1",subacute:"phase 2",recovery:"phase 3",return_to_sport:"phase 4"})[r[1]]} : ${fr[r[2]] ?? r[2]} — ${r[3]}`).join("
+");
 let md = `# Séances de la plateforme — à valider par Jules
 
-*Mis à jour le 17 novembre 2026 (migration 0096, en ligne).*
+*Mis à jour le 17 novembre 2026 (migrations 0096 à 0099, en ligne).*
 
 ## Ce qui a été fait
 
 - **${conds.length} pathologies**, chacune avec ses **4 phases** (Soulagement, Mobilité, Renforcement, Reprise) : ${conds.length * 4} séances, plus 5 séances libres (Lombalgie chronique : express / complète / intensive ; Entorse de la cheville : mobilité / renforcement).
-- Chaque séance contient **5 à 6 exercices**, tous **filmés** (vidéo de Jules ou vidéo IA validée par Philippe) ou des activités du quotidien (marche, vélo, course, escaliers, corde à sauter).
+- Chaque séance contient **4 à 6 exercices**, tous **filmés** (vidéo de Jules ou vidéo IA validée par Philippe) ou des activités du quotidien (marche, vélo, course, escaliers, corde à sauter).
 - Chaque exercice a un **dosage** (séries × répétitions, ou séries × tenue en secondes). Pour les activités d'endurance, la durée est celle écrite dans la consigne de l'exercice (marche 15 min, vélo 10 min, course 15 min, escaliers 5 min) ; le kiné peut l'ajuster par patient.
 - Les 21 pathologies créées en double (même nom) ont été fusionnées : chaque nom n'apparaît plus qu'une fois dans le sélecteur.
 - 13 pathologies n'avaient aucune séance (capsulite, coiffe, prothèse d'épaule, fractures, rhizarthrose, De Quervain, torticolis…) : elles ont maintenant leurs 4 phases.
 - Le kiné garde la main : il peut toujours ajuster la séance d'un patient (« Ajuster la séance »).
+
+## Retirés par prudence (0099)
+
+Philippe : retirer tout exercice douteux en début de rééducation, en gardant au moins 4 exercices par phase. À remettre si Jules les juge adaptés :
+
+${REMOVED}
 
 ## Ce que Jules doit vérifier
 
