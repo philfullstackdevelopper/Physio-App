@@ -227,6 +227,8 @@
     "seeDemo": "Voir la démonstration",
     "recommendedChanges": "Changements recommandés",
     "recommendedApplied": "{count, plural, one {# appliqué} other {# appliqués}}",
+    "swappedFrom": "au lieu de {from} (matériel)",
+    "swappedTitle": "{name} n'a pas le matériel pour {from} : remplacé automatiquement par un exercice sans matériel.",
     "easier": "Plus facile",
     "harder": "Plus difficile",
     "replaced": "Remplacé",

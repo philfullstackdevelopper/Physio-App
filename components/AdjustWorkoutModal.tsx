@@ -55,6 +55,9 @@ export type ModalExercise = {
   equipment?: string[] | null;
   dose?: ExerciseDose | null;
   doseKind?: "reps" | "hold" | "duration";
+  /** Exercice d'origine, quand celui-ci le remplace faute de matériel chez le
+   *  patient (lib/exercise/equipmentSwaps.ts). */
+  swappedFrom?: string | null;
 };
 export type AddableExercise = ModalExercise & { bodyPartIds: string[]; searchKeywords?: string[] | null };
 
@@ -266,6 +269,11 @@ function SeanceComposer({
                 >
                   <ExerciseIllustration name={ex.name} className={`h-16 w-full shrink-0 md:h-20 ${marked ? "text-danger" : "text-brand"}`} />
                   <span className="line-clamp-2 min-h-[2.5em] text-[13px] leading-tight">{ex.name}</span>
+                  {ex.swappedFrom && (
+                    <span title={t("swappedTitle", { name: patientFirstName, from: ex.swappedFrom })} className="line-clamp-2 text-[10px] leading-tight text-muted no-underline">
+                      {t("swappedFrom", { from: ex.swappedFrom })}
+                    </span>
+                  )}
                   {!marked && <MissingEquipmentPill required={ex.equipment} owned={patientEquipment} firstName={patientFirstName} />}
                   {marked ? (
                     <span className="flex items-center gap-1 text-xs font-medium no-underline">

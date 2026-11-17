@@ -7,6 +7,8 @@ import { stageWithFeedback, type Rating } from "@/lib/exercise/stageProgress";
 import { resolveWorkoutForWeek } from "@/lib/exercise/activeRecommendation";
 import { buildWeeks, currentWeekNumber, thisWeekStartDateKey } from "@/lib/patient/weeks";
 import { startOfTodayISO, startOfWeekISO, daysAgoISO } from "@/lib/week";
+import { applyEquipmentSwaps } from "@/lib/exercise/applyEquipmentSwaps";
+import { isPlatformSeance } from "@/lib/exercise/equipmentSwaps";
 
 export type Workout = {
   id: string;
@@ -14,11 +16,13 @@ export type Workout = {
   description: string | null;
   duration_minutes: number | null;
   times_per_week: number | null;
-  workout_exercises: { position?: number | null; exercises: { name: string } | null }[];
+  created_by?: string | null;
+  patient_id?: string | null;
+  workout_exercises: { position?: number | null; exercises: { name: string; equipment?: string[] | null } | null }[];
 };
 
 const WORKOUT_FIELDS =
-  "id, name, description, duration_minutes, times_per_week, workout_exercises ( position, exercises ( name ) )";
+  "id, name, description, duration_minutes, times_per_week, created_by, patient_id, workout_exercises ( position, exercises ( name, equipment ) )";
 
 export interface PatientHome {
   fullName: string | null;
@@ -53,7 +57,7 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
   const [{ data: profile }, { data: patient }, { data: feedbackRows }, { data: logs }] = await Promise.all([
     supabase
       .from("patient_profiles")
-      .select("condition_id, injury_stage, date_of_birth, height_cm, weight_kg, activity_level, updated_at, stage_declared_at")
+      .select("condition_id, injury_stage, date_of_birth, height_cm, weight_kg, activity_level, updated_at, stage_declared_at, equipment")
       .eq("id", userId)
       .maybeSingle(),
     supabase.from("patients").select("full_name, condition_id, trial_ends_at, created_at").eq("id", userId).maybeSingle(),
@@ -113,9 +117,21 @@ export async function loadPatientHome(supabase: SupabaseClient, userId: string):
       .eq("patient_id", userId),
   ]);
 
-  const recommended = (recRows ?? [])
-    .map((r) => ({ weekStartDate: r.week_start_date as string, weekCount: (r.week_count as number | null) ?? null, workout: r.workouts as unknown as Workout | null }))
-    .filter((r): r is { weekStartDate: string; weekCount: number | null; workout: Workout } => r.workout != null);
+  // Exercices remplacés faute de matériel, comme dans la séance guidée
+  // (séances de la plateforme seulement, lib/exercise/equipmentSwaps.ts).
+  const patientEquipment = (profile!.equipment as string[] | null | undefined) ?? null;
+  const recommended = (
+    await Promise.all(
+      (recRows ?? []).map(async (r) => {
+        const w = r.workouts as unknown as Workout | null;
+        if (w && isPlatformSeance(w)) {
+          const sorted = [...w.workout_exercises].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+          w.workout_exercises = await applyEquipmentSwaps(supabase, sorted, patientEquipment, "name, equipment");
+        }
+        return { weekStartDate: r.week_start_date as string, weekCount: (r.week_count as number | null) ?? null, workout: w };
+      }),
+    )
+  ).filter((r): r is { weekStartDate: string; weekCount: number | null; workout: Workout } => r.workout != null);
 
   const weekStart = startOfWeekISO();
   const weekCounts: Record<string, number> = {};

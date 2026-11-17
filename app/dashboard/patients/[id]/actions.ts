@@ -21,6 +21,8 @@ import { getLibI18n } from "@/lib/dashboard/libI18n";
 
 import { doseColumnsFromForm, doseColumnsFromRow, type DoseColumns } from "@/lib/exercise/doseForm";
 import { notifyNewMessage } from "@/lib/push/notify";
+import { applyEquipmentSwaps, loadPatientEquipment } from "@/lib/exercise/applyEquipmentSwaps";
+import { isPlatformSeance } from "@/lib/exercise/equipmentSwaps";
 
 // Traducteur « dashboard.lib » pour friendlyDbError (langue du kiné).
 const tLib = async () => (await getLibI18n()).t;
@@ -370,7 +372,7 @@ async function applySeanceChanges({
 
   const { data: workout } = await supabase
     .from("workouts")
-    .select("id, name, description, condition_id, stage, duration_minutes, times_per_week, patient_id")
+    .select("id, name, description, condition_id, stage, duration_minutes, times_per_week, patient_id, created_by")
     .eq("id", workoutId)
     .maybeSingle();
   if (!workout) return { error: t("sessionNotFound") };
@@ -379,9 +381,21 @@ async function applySeanceChanges({
   // La nouvelle liste est calculée AVANT de créer la copie : rien n'est
   // écrit si la séance resterait vide ou inchangée.
   // select("*") : lit aussi les doses (migration 0080).
-  const { data: sourceRows } = await supabase.from("workout_exercises").select("*").eq("workout_id", workout.id);
-  const current = (sourceRows ?? []).map((r) => ({ exerciseId: r.exercise_id as string, position: r.position as number }));
-  const oldDose = new Map((sourceRows ?? []).map((r) => [r.exercise_id as string, doseColumnsFromRow(r)]));
+  const { data: rawRows } = await supabase
+    .from("workout_exercises")
+    .select("*, exercises ( id, name, equipment )")
+    .eq("workout_id", workout.id);
+  // Séance de la plateforme : la fenêtre a montré au kiné les exercices déjà
+  // remplacés faute de matériel (comme le patient les voit) — on part donc de
+  // cette même liste, pour que la copie corresponde à ce qu'il a vu.
+  type SourceRow = Record<string, unknown> & { exercises: { id: string; name: string; equipment: string[] | null } | null };
+  const typedRows = (rawRows ?? []) as SourceRow[];
+  const sourceRows = isPlatformSeance(workout)
+    ? await applyEquipmentSwaps(supabase, typedRows, await loadPatientEquipment(supabase, patientId), "id, name, equipment")
+    : typedRows;
+  const rowExerciseId = (r: SourceRow) => (r.exercises?.id ?? r.exercise_id) as string;
+  const current = sourceRows.map((r) => ({ exerciseId: rowExerciseId(r), position: r.position as number }));
+  const oldDose = new Map(sourceRows.map((r) => [rowExerciseId(r), doseColumnsFromRow(r)]));
   const next = applyAdjustment(current, removeIds, addIds);
   if (next.length === 0) return { error: t("keepOne") };
 

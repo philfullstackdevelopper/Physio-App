@@ -109,9 +109,14 @@ export function missingEquipment(
   patientEquipment: readonly string[] | null | undefined,
 ): ExerciseEquipmentId[] {
   if (!required || required.length === 0 || patientEquipment == null) return [];
-  const owned = new Set(patientEquipment);
+  const owned = new Set<string>([...patientEquipment, ...HOUSEHOLD_EQUIPMENT]);
   return required.filter((r): r is ExerciseEquipmentId => isExerciseEquipmentId(r) && !owned.has(r));
 }
+
+/** Objets que tout le monde a à la maison (Philippe, 2026-11-17) : une chaise,
+ *  un coussin ou une chaussette roulée (« petit ballon »), un manche à balai
+ *  (« bâton »). Comptés comme disponibles même si le patient ne les a pas cochés. */
+export const HOUSEHOLD_EQUIPMENT: readonly ExerciseEquipmentId[] = ["chaise", "ballon", "baton"];
 
 /** « Haltères, Chaise ou banc » — pour la pastille et les infobulles. */
 export function equipmentListLabel(ids: readonly string[], t?: Tr): string {

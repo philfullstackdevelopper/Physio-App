@@ -7,6 +7,8 @@ import { requirePatientAccess } from "@/lib/patient/requirePatientAccess";
 import { doseFromRow, recommendPrescription } from "@/lib/exercise/prescription";
 import { isProfileComplete, profileToContext } from "@/lib/exercise/patientProfile";
 import WorkoutSession, { type SessionExercise } from "@/components/WorkoutSession";
+import { applyEquipmentSwaps } from "@/lib/exercise/applyEquipmentSwaps";
+import { isPlatformSeance } from "@/lib/exercise/equipmentSwaps";
 
 type WorkoutExerciseRow = {
   position: number;
@@ -19,8 +21,12 @@ type WorkoutExerciseRow = {
     instructions: string | null;
     media_url: string | null;
     media_start_seconds: number | null;
+    equipment?: string[] | null;
   } | null;
 };
+
+// Colonnes de l'exercice — aussi celles du remplaçant « faute de matériel ».
+const EXERCISE_COLUMNS = "id, name, instructions, media_url, media_start_seconds, equipment";
 
 export default async function SeancePage({
   params,
@@ -37,7 +43,7 @@ export default async function SeancePage({
 
   const { data: profile } = await supabase
     .from("patient_profiles")
-    .select("condition_id, injury_stage, date_of_birth, height_cm, weight_kg, activity_level")
+    .select("condition_id, injury_stage, date_of_birth, height_cm, weight_kg, activity_level, equipment")
     .eq("id", user.id)
     .maybeSingle();
   if (!isProfileComplete(profile)) redirect("/patient/onboarding");
@@ -52,7 +58,7 @@ export default async function SeancePage({
   const firstTry = await supabase
     .from("workouts")
     .select(
-      "id, name, workout_exercises ( position, sets, reps, hold_seconds, exercises ( id, name, instructions, media_url, media_start_seconds ) )",
+      `id, name, created_by, patient_id, workout_exercises ( position, sets, reps, hold_seconds, exercises ( ${EXERCISE_COLUMNS} ) )`,
     )
     .eq("id", workoutId)
     .maybeSingle();
@@ -61,7 +67,7 @@ export default async function SeancePage({
     ({ data: workoutData } = await supabase
       .from("workouts")
       // Sans les doses (migration 0080 pas encore passée).
-      .select("id, name, workout_exercises ( position, exercises ( id, name, instructions, media_url, media_start_seconds ) )")
+      .select(`id, name, created_by, patient_id, workout_exercises ( position, exercises ( ${EXERCISE_COLUMNS} ) )`)
       .eq("id", workoutId)
       .maybeSingle());
   }
@@ -90,13 +96,21 @@ export default async function SeancePage({
   const workout = workoutData as unknown as {
     id: string;
     name: string;
+    created_by: string | null;
+    patient_id: string | null;
     workout_exercises: WorkoutExerciseRow[];
   };
 
+  // Séance de la plateforme : un exercice dont le patient n'a pas le matériel
+  // est remplacé par un exercice sans matériel (lib/exercise/equipmentSwaps.ts).
+  const sortedRows = [...(workout.workout_exercises ?? [])].sort((a, b) => a.position - b.position);
+  const rows = isPlatformSeance(workout)
+    ? await applyEquipmentSwaps(supabase, sortedRows, (profile?.equipment as string[] | null | undefined) ?? null, EXERCISE_COLUMNS)
+    : sortedRows;
+
   const tc = await getTranslations("patient.common");
   const exercises: SessionExercise[] = await Promise.all(
-    [...(workout.workout_exercises ?? [])]
-      .sort((a, b) => a.position - b.position)
+    rows
       .map(async (we) => ({
         id: we.exercises?.id ?? null,
         name: we.exercises?.name ?? tc("exercise"),

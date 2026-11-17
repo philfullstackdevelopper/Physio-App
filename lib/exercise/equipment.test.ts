@@ -15,6 +15,11 @@ test("missingEquipment : signale ce que le patient n'a pas coché", () => {
   assert.deepEqual(missingEquipment(["elastiques"], []), ["elastiques"]);
 });
 
+test("missingEquipment : chaise, coussin et manche à balai comptent comme disponibles", () => {
+  assert.deepEqual(missingEquipment(["chaise"], []), []);
+  assert.deepEqual(missingEquipment(["ballon", "baton", "elastiques"], []), ["elastiques"]);
+});
+
 test("missingEquipment : le matériel de salle manque toujours à la maison", () => {
   assert.deepEqual(missingEquipment(["salle"], ["tapis", "elastiques", "halteres", "chaise", "velo_rameur", "barre_traction", "swiss_ball"]), ["salle"]);
 });
