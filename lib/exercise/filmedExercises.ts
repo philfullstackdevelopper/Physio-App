@@ -59,7 +59,6 @@ export const FILMED_EXERCISE_NAMES: ReadonlySet<string> = new Set<string>([
   "Plank Shoulder Tap",
   "Step-Down",
   "Lunge to Step-Up with Knee Drive",
-  "Rotational Step-Up",
   "Lateral Step-Over Hop",
   "Step Drop Landing (Two Feet)",
   "Step Drop Landing (Single Leg)",

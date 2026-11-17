@@ -6,7 +6,7 @@
 export const FILMED_VIDEO_FILES: Readonly<Record<string, string>> = {
   "Bodyweight Squat": "bodyweight-squat.mp4",
   "Single-Leg Calf Raise": "single-leg-calf-raise.mp4",
-  "Wall Push-up": "wall-push-up.mp4",
+  "Wall Push-up": "ia-wall-push-up.mp4",
   "Wall Sit": "wall-sit.mp4",
   "Wall Calf Stretch": "wall-calf-stretch.mp4",
   "Kneeling Calf and Hip Flexor Wall Stretch": "kneeling-calf-hip-flexor-wall-stretch.mp4",
@@ -51,7 +51,6 @@ export const FILMED_VIDEO_FILES: Readonly<Record<string, string>> = {
   "Plank Shoulder Tap": "plank-shoulder-tap.mp4",
   "Step-Down": "step-down.mp4",
   "Lunge to Step-Up with Knee Drive": "reverse-lunge-to-step-up.mp4",
-  "Rotational Step-Up": "rotational-step-up.mp4",
   "Lateral Step-Over Hop": "step-straddle-jump.mp4",
   "Step Drop Landing (Two Feet)": "step-drop-landing.mp4",
   "Step Drop Landing (Single Leg)": "step-drop-single-leg-landing.mp4",

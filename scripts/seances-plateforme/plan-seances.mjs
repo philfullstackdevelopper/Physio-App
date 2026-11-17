@@ -43,7 +43,7 @@ export const PLAN = {
     acute: ["Quad Set|3x10", "Straight Leg Raise|2x10", "Heel Slide|2x10", "Glute Bridge|2x10", "Walking|1x10min"],
     subacute: ["Straight Leg Raise|3x12", "Terminal Knee Extension (Band)|3x12", "Cycling|1x10min", "Wall Sit|3x20s", "Kneeling Hip Flexor Stretch|2x30s"],
     recovery: ["Bodyweight Squat|3x12", "Step-Up|3x10", "Reverse Lunge|3x8", "Wall Sit|3x30s", "Step-Down|3x8", "Single-Leg Glute Bridge|3x10"],
-    return_to_sport: ["Rotational Step-Up|3x8", "Bulgarian Split Squat|3x8", "Jump Squat|3x8", "Hop and Stick|3x6", "Running|1x15min", "Lateral Shuffle|3x20s"],
+    return_to_sport: ["Step-Up|3x10", "Bulgarian Split Squat|3x8", "Jump Squat|3x8", "Hop and Stick|3x6", "Running|1x15min", "Lateral Shuffle|3x20s"],
   },
   "Dorsalgie": {
     acute: ["Cat-Cow Stretch|2x10", "Child's Pose to Press-Up Flow|2x8", "Thoracic Extension Over Chair|2x8", "Shoulder Circles|2x10", "Walking|1x10min"],
