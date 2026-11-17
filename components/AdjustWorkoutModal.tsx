@@ -100,11 +100,28 @@ function RecommendedChanges({
   onSwap: (r: Recommendation, on: boolean) => void;
 }) {
   const t = useTranslations("exercise.adjust");
+  // Repliée par défaut (Philippe, 2026-11-17 : la liste prenait la place du
+  // choix des exercices) : une seule ligne, ouverte au clic.
+  const [expanded, setExpanded] = useState(false);
+  const listId = useId();
   if (items.length === 0) return null;
+  const applied = items.filter((r) => removeIds.has(r.forId) && addIds.has(r.alt.id)).length;
   return (
-    <section aria-label={t("recommendedChanges")} className="shrink-0 rounded-xl border border-line bg-surface p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t("recommendedChanges")}</p>
-      <ul className="mt-2 max-h-44 space-y-1.5 overflow-y-auto pr-1">
+    <section aria-label={t("recommendedChanges")} className="shrink-0 rounded-xl border border-line bg-surface">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={listId}
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-app-bg"
+      >
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted">{t("recommendedChanges")}</span>
+        <span className="rounded-full bg-app-bg px-2 py-0.5 text-[11px] font-semibold text-ink">{items.length}</span>
+        {applied > 0 && <span className="text-xs font-medium text-ok">{t("recommendedApplied", { count: applied })}</span>}
+        <ChevronDown aria-hidden className={`ml-auto h-4 w-4 text-muted transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </button>
+      {expanded && (
+      <ul id={listId} className="max-h-32 space-y-1.5 overflow-y-auto px-3 pb-3 pr-2">
         {items.map((r) => {
           const on = removeIds.has(r.forId) && addIds.has(r.alt.id);
           return (
@@ -130,6 +147,7 @@ function RecommendedChanges({
           );
         })}
       </ul>
+      )}
     </section>
   );
 }

@@ -226,6 +226,7 @@
     "seeDemoAria": "Voir la démonstration : {name}",
     "seeDemo": "Voir la démonstration",
     "recommendedChanges": "Changements recommandés",
+    "recommendedApplied": "{count, plural, one {# appliqué} other {# appliqués}}",
     "easier": "Plus facile",
     "harder": "Plus difficile",
     "replaced": "Remplacé",

@@ -229,6 +229,7 @@
     "seeDemoAria": "See the demonstration: {name}",
     "seeDemo": "See the demonstration",
     "recommendedChanges": "Recommended changes",
+    "recommendedApplied": "{count} applied",
     "easier": "Easier",
     "harder": "Harder",
     "replaced": "Replaced",
