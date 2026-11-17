@@ -25,6 +25,7 @@ import ExerciseLibraryGrid from "@/components/ExerciseLibraryGrid";
 import ContributionSummary from "@/components/ContributionSummary";
 import ContributorsView from "@/components/ContributorsView";
 import NewPatientView from "@/components/NewPatientView";
+import LibraryTabs from "@/components/LibraryTabs";
 import JoinQrCard from "@/components/JoinQrCard";
 import { contributorRanking } from "@/lib/exercise/kineExercises";
 import { KINE_FOLLOW_UP_CENTS } from "@/lib/billing/patientPlans";
@@ -191,9 +192,9 @@ export default async function KineTelephonePrototype({
     screen = (
       <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
         <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-8 sm:py-6 short:sm:py-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <LibraryTabs active="exercises" />
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-4 max-sm:mt-2">
             <div className="flex min-w-0 flex-col gap-1">
-              <h1 className="text-2xl font-semibold text-ink">{t("myExercises")}</h1>
               <ContributionSummary
                 contributors={contributorRanking(DEMO_RANKING_ROWS).map((r) => ({ id: r.authorId, label: r.label }))}
                 published={DEMO_PUBLISHED}

@@ -356,7 +356,8 @@
     "title": "Mes exercices",
     "mySessions": "Mes séances",
     "unnamedPatient": "Patient sans nom",
-    "aColleague": "un collègue"
+    "aColleague": "un collègue",
+    "manageSessions": "Gérer mes séances →"
   },
   "seances": {
     "edit": "Modifier",
@@ -621,5 +622,10 @@
   },
   "storage": {
     "uploadFailedStatus": "Échec de l'envoi ({status})."
+  },
+  "libraryTabs": {
+    "label": "Bibliothèque",
+    "exercises": "Mes exercices",
+    "seances": "Mes séances"
   }
 }

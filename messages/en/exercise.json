@@ -359,7 +359,8 @@
     "title": "My exercises",
     "mySessions": "My sessions",
     "unnamedPatient": "Unnamed patient",
-    "aColleague": "a colleague"
+    "aColleague": "a colleague",
+    "manageSessions": "Manage my sessions →"
   },
   "seances": {
     "edit": "Edit",
@@ -627,5 +628,10 @@
   },
   "storage": {
     "uploadFailedStatus": "Upload failed ({status})."
+  },
+  "libraryTabs": {
+    "label": "Library",
+    "exercises": "My exercises",
+    "seances": "My sessions"
   }
 }

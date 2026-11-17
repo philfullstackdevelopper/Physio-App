@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
+import LibraryTabs from "@/components/LibraryTabs";
 import { useTranslations } from "next-intl";
 import { Search, Dumbbell, Trash2, Pencil, EyeOff, Eye, Plus } from "lucide-react";
 import ExerciseIllustration from "@/components/ExerciseIllustration";
@@ -467,10 +468,11 @@ export default function SeancesTabs({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-start justify-between gap-4 max-sm:flex-nowrap max-sm:items-center max-sm:gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold text-ink">{t("title")}</h1>
-        </div>
+      {/* Onglets « Mes exercices | Mes séances » à la place du titre (Philippe, 2026-11-17). */}
+      <div className="animate-[fadeInUp_0.6s_ease-out_both]">
+        <LibraryTabs active="seances" />
+      </div>
+      <div className="animate-[fadeInUp_0.6s_ease-out_both] mt-3 flex flex-wrap items-center justify-end gap-4 max-sm:mt-2 max-sm:flex-nowrap max-sm:gap-2">
         <div className="flex items-center gap-4 max-sm:gap-2">
           <Link href="/dashboard/exercises" className="text-sm font-medium text-brand hover:underline max-sm:rounded-full max-sm:bg-surface max-sm:px-3 max-sm:py-2 max-sm:shadow-soft max-sm:hover:no-underline">
             <span className="max-sm:hidden">{t("manageExercises")}</span>
