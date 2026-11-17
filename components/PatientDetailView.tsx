@@ -72,7 +72,7 @@ export default function PatientDetailView({
     <main className="min-h-screen max-sm:flex max-sm:h-[calc(100dvh-var(--phone-chrome))] max-sm:min-h-0 max-sm:flex-col">
       {/* max-w-7xl comme la liste patients (Philippe, 2026-09-09 : « prendre
           toute la place ») — la frise a besoin de largeur. */}
-      <div className="mx-auto max-w-7xl px-6 py-5 max-sm:flex max-sm:min-h-0 max-sm:w-full max-sm:flex-1 max-sm:flex-col max-sm:px-4 max-sm:pb-3 max-sm:pt-1 sm:px-8 sm:py-6 short:sm:py-4">
+      <div className="mx-auto w-full px-6 py-5 max-sm:flex max-sm:min-h-0 max-sm:w-full max-sm:flex-1 max-sm:flex-col max-sm:px-4 max-sm:pb-3 max-sm:pt-1 sm:px-8 sm:py-6 short:sm:py-4">
         <Link href="/dashboard/patients" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink max-sm:hidden"><ArrowLeft className="h-4 w-4" strokeWidth={1.75} />{t("backToList")}</Link>
         {/* En-tête épuré (Philippe, 2026-10-01 : « trop d'information ») :
             le nom, les alertes et « Gérer ». Condition, profil déclaré et

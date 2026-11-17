@@ -50,7 +50,7 @@ export default function CabinetView({
 
   return (
     <main>
-      <div className="mx-auto max-w-4xl p-5 max-sm:p-4 max-sm:pt-2">
+      <div className="mx-auto w-full p-5 max-sm:p-4 max-sm:pt-2">
         <h1 className="text-xl font-semibold text-ink max-sm:text-2xl">{t("title")}</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted">{t("intro")}</p>
         {message && (

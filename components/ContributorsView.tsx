@@ -51,7 +51,7 @@ export default function ContributorsView({
   const myCount = mine?.count ?? 0;
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-8 pt-2 sm:px-8 sm:py-6">
+    <main className="mx-auto w-full max-w-3xl sm:max-w-none px-4 pb-8 pt-2 sm:px-8 sm:py-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="text-2xl font-semibold text-ink">{t("title")}</h1>
         <Link href={backHref} className="text-sm font-medium text-brand hover:underline max-sm:hidden">

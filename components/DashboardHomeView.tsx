@@ -113,7 +113,7 @@ export default function DashboardHomeView({
 
   return (
     <main className="min-h-screen max-sm:min-h-0">
-      <div className="mx-auto max-w-7xl px-4 pb-4 pt-2 sm:px-8 sm:py-6">
+      <div className="mx-auto w-full px-4 pb-4 pt-2 sm:px-8 sm:py-6">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] flex flex-wrap items-baseline justify-between gap-2 max-sm:flex-col max-sm:gap-0.5">
           <h1 className="text-2xl font-semibold text-ink">{t("hello", { name: h.firstName })}</h1>
           <p className="text-sm text-muted first-letter:uppercase sm:first-letter:normal-case">{h.todayLabel}</p>

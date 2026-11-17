@@ -59,7 +59,7 @@ export default function KineMessagesView({
       data-hide-phone-tabbar={phoneThread ? "" : undefined}
       className={`flex h-dvh flex-col ${phoneThread ? "max-sm:h-dvh" : "max-sm:h-[calc(100dvh-var(--phone-chrome))]"}`}
     >
-      <div className={`mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col p-6 sm:p-8 short:sm:py-5 ${phoneThread ? "max-sm:p-0" : "max-sm:px-4 max-sm:pb-3 max-sm:pt-2"}`}>
+      <div className={`mx-auto flex w-full min-h-0 flex-1 flex-col p-6 sm:p-8 short:sm:py-5 ${phoneThread ? "max-sm:p-0" : "max-sm:px-4 max-sm:pb-3 max-sm:pt-2"}`}>
         <div className={`flex flex-wrap items-center justify-between gap-4 max-sm:gap-3 ${onlyWhenList}`}>
           <h1 className="text-2xl font-semibold text-ink">{t("title")}</h1>
           <form method="get" action="/dashboard/messages" className="relative w-full sm:w-80">

@@ -51,7 +51,7 @@ export default function FacturationView({
   const shortDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(intlTag(locale), { day: "numeric", month: "short" }) : "");
   return (
     <main>
-      <div className="mx-auto max-w-7xl p-3 max-sm:p-4 max-sm:pt-2 sm:p-5 short:sm:py-3">
+      <div className="mx-auto w-full p-3 max-sm:p-4 max-sm:pt-2 sm:p-5 short:sm:py-3">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
           <h1 className="text-xl font-semibold text-ink max-sm:text-2xl">{t("title")}</h1>
           <p className="text-sm text-muted max-sm:text-xs max-sm:short:hidden">{t("subtitle")}</p>

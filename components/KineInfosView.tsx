@@ -34,7 +34,7 @@ export default function KineInfosView({
   const tr = useTranslations("dashboard.infos");
   return (
     <main className="min-h-screen max-sm:min-h-0">
-      <div className="mx-auto max-w-xl px-4 pb-4 pt-2 sm:px-8 sm:py-6">
+      <div className="mx-auto max-w-xl sm:max-w-none px-4 pb-4 pt-2 sm:px-8 sm:py-6">
         <div className="flex items-center gap-3">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-soft text-base font-semibold text-brand">
             {initials(instructorName)}
@@ -45,7 +45,7 @@ export default function KineInfosView({
           </div>
         </div>
 
-        <nav aria-label={tr("title")} className="mt-5 flex flex-col gap-3">
+        <nav aria-label={tr("title")} className="mt-5 flex flex-col gap-3 sm:grid sm:grid-cols-2">
           {TILES.map((t) => (
             <Link
               key={t.href}

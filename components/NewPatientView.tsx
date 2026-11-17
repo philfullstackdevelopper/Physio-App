@@ -33,7 +33,7 @@ export default function NewPatientView({
       {/* Ordinateur et tablette (≥ 768 px) : invitation par e-mail et QR code
           côte à côte, de même hauteur (Philippe, 2026-11-17). Téléphone :
           l'un sous l'autre, inchangé. */}
-      <div className="mx-auto max-w-sm md:max-w-4xl">
+      <div className="mx-auto max-w-sm md:max-w-none">
         <Link
           href="/dashboard/patients"
           className="animate-[fadeInUp_0.6s_ease-out_both] text-sm text-muted hover:underline max-sm:hidden"
