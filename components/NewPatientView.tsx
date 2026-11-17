@@ -30,7 +30,10 @@ export default function NewPatientView({
   const locale = useLocale() as Locale;
   return (
     <main className="min-h-screen p-8 max-sm:min-h-0 max-sm:px-4 max-sm:pb-4 max-sm:pt-2">
-      <div className="mx-auto max-w-sm">
+      {/* Ordinateur et tablette (≥ 768 px) : invitation par e-mail et QR code
+          côte à côte, de même hauteur (Philippe, 2026-11-17). Téléphone :
+          l'un sous l'autre, inchangé. */}
+      <div className="mx-auto max-w-sm md:max-w-4xl">
         <Link
           href="/dashboard/patients"
           className="animate-[fadeInUp_0.6s_ease-out_both] text-sm text-muted hover:underline max-sm:hidden"
@@ -38,6 +41,7 @@ export default function NewPatientView({
           {t("back")}
         </Link>
 
+        <div className="md:grid md:grid-cols-2 md:gap-4">
         <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-4 rounded-xl border border-line bg-surface p-8 max-sm:mt-1 max-sm:rounded-2xl max-sm:border-0 max-sm:p-5 max-sm:shadow-soft">
           <h1 className="mb-1 text-2xl font-semibold text-ink">
             {t("title")}
@@ -136,6 +140,7 @@ export default function NewPatientView({
 
         {/* QR code personnel (2026-11-04) : le patient rejoint ce kiné seul. */}
         {qr}
+        </div>
       </div>
     </main>
   );
