@@ -1,15 +1,41 @@
 # Séances de la plateforme — à valider par Jules
 
-*Mis à jour le 17 novembre 2026 (migration 0096, en ligne).*
+*Mis à jour le 17 novembre 2026 (migrations 0096 à 0099, en ligne).*
 
 ## Ce qui a été fait
 
 - **50 pathologies**, chacune avec ses **4 phases** (Soulagement, Mobilité, Renforcement, Reprise) : 200 séances, plus 5 séances libres (Lombalgie chronique : express / complète / intensive ; Entorse de la cheville : mobilité / renforcement).
-- Chaque séance contient **5 à 6 exercices**, tous **filmés** (vidéo de Jules ou vidéo IA validée par Philippe) ou des activités du quotidien (marche, vélo, course, escaliers, corde à sauter).
+- Chaque séance contient **4 à 6 exercices**, tous **filmés** (vidéo de Jules ou vidéo IA validée par Philippe) ou des activités du quotidien (marche, vélo, course, escaliers, corde à sauter).
 - Chaque exercice a un **dosage** (séries × répétitions, ou séries × tenue en secondes). Pour les activités d'endurance, la durée est celle écrite dans la consigne de l'exercice (marche 15 min, vélo 10 min, course 15 min, escaliers 5 min) ; le kiné peut l'ajuster par patient.
 - Les 21 pathologies créées en double (même nom) ont été fusionnées : chaque nom n'apparaît plus qu'une fois dans le sélecteur.
 - 13 pathologies n'avaient aucune séance (capsulite, coiffe, prothèse d'épaule, fractures, rhizarthrose, De Quervain, torticolis…) : elles ont maintenant leurs 4 phases.
 - Le kiné garde la main : il peut toujours ajuster la séance d'un patient (« Ajuster la séance »).
+
+## Retirés par prudence (0099)
+
+Philippe : retirer tout exercice douteux en début de rééducation, en gardant au moins 4 exercices par phase. À remettre si Jules les juge adaptés :
+
+- **Réparation de la coiffe des rotateurs**, phase 2 : Contractions isométriques de l'épaule contre le mur — contraction contre résistance trop tôt après suture
+- **Prothèse totale d'épaule**, phase 1 : Élévation des bras allongé avec bâton — élévation active-aidée : selon protocole du chirurgien
+- **Prothèse totale d'épaule**, phase 2 : Contractions isométriques de l'épaule contre le mur — rotation interne contre résistance (sous-scapulaire réinséré)
+- **Rupture du tendon d'Achille**, phase 1 : Cercles de cheville — flexion dorsale à éviter (botte)
+- **Fracture de la cheville**, phase 1 : Cercles de cheville — mobilisation selon l'ostéosynthèse
+- **Prothèse totale de hanche**, phase 1 : Pont fessier — trop tôt la première semaine
+- **Prothèse totale de hanche**, phase 2 : Élévation de la jambe tendue — sollicite l'avant de la hanche opérée
+- **Tendinopathie de De Quervain**, phase 1 : Inclinaison latérale du poignet — charge les tendons atteints
+- **Tendinopathie de De Quervain**, phase 1 : Balle en mousse serrée dans la main — serrage = douleur
+- **Tendinopathie de De Quervain**, phase 2 : Inclinaison latérale du poignet — charge les tendons atteints
+- **Tendinopathie de De Quervain**, phase 4 : Marche du fermier — prise forte prolongée
+- **Rhizarthrose**, phase 1 : Balle en mousse serrée dans la main — pince pouce-doigts en poussée douloureuse
+- **Rhizarthrose**, phase 4 : Marche du fermier — prise forte prolongée
+- **Syndrome du canal carpien**, phase 1 : Balle en mousse serrée dans la main — serrage répété
+- **Fracture du poignet**, phase 1 : Inclinaison latérale du poignet — poignet immobilisé
+- **Entorse du poignet**, phase 1 : Inclinaison latérale du poignet — trop tôt
+- **Élongation des ischio-jambiers**, phase 1 : Étirement des ischio-jambiers jambe pliée sur la table — étirement déconseillé sur lésion récente
+- **Élongation du mollet**, phase 1 : Étirement du mollet contre le mur — étirement déconseillé sur lésion récente
+- **Déchirure du quadriceps**, phase 2 : Étirement du psoas, pied sur un support — étire le droit fémoral lésé
+- **Entorse de la cheville**, phase 1 : Équilibre sur une jambe — appui unipodal trop tôt
+- **Pubalgie**, phase 1 : Étirement du psoas, pied sur un support — étirement en phase douloureuse
 
 ## Ce que Jules doit vérifier
 
@@ -94,7 +120,7 @@ Points d'attention particuliers :
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
 | Phase 1 — Soulagement | Contraction du quadriceps (3 × 10) · Élévation de la jambe tendue (2 × 10) · Glissement du talon (2 × 10) · Pont fessier (2 × 10) · Marche (15 min) | ☐ |
-| Phase 2 — Mobilité | Élévation de la jambe tendue (3 × 12) · Extension du genou à l'élastique (3 × 12) · Vélo (10 min) · Chaise contre le mur (3 × 20 s) · Étirement du psoas, pied sur un support (2 × 30 s) | ☐ |
+| Phase 2 — Mobilité | Élévation de la jambe tendue (3 × 12) · Extension du genou à l'élastique (3 × 12) · Vélo (10 min) · Chaise contre le mur (3 × 20 s) | ☐ |
 | Phase 3 — Renforcement | Squat au poids du corps (3 × 12) · Montée de marche (3 × 10) · Fente arrière (3 × 8) · Chaise contre le mur (3 × 30 s) · Descente de marche contrôlée (3 × 8) · Pont fessier sur une jambe (3 × 10) | ☐ |
 | Phase 4 — Reprise | Montée de marche (3 × 10) · Squat bulgare (3 × 8) · Squat sauté (3 × 8) · Saut et réception stabilisée (3 × 6) · Course à pied (15 min) · Pas chassés (3 × 20 s) | ☐ |
 
@@ -111,7 +137,7 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Pont fessier (2 × 10) · Glissement du talon (2 × 10) · Dead bug (2 × 8) · Étirement des ischio-jambiers jambe pliée sur la table (2 × 20 s) · Marche (15 min) | ☐ |
+| Phase 1 — Soulagement | Pont fessier (2 × 10) · Glissement du talon (2 × 10) · Dead bug (2 × 8) · Marche (15 min) | ☐ |
 | Phase 2 — Mobilité | Pont fessier (3 × 12) · Pont fessier sur une jambe (3 × 8) · Pont fessier avec marche (3 × 8) · Étirement des ischio-jambiers (2 × 30 s) · Marche (15 min) | ☐ |
 | Phase 3 — Renforcement | Soulevé de terre jambes semi-tendues (3 × 10) · Pont fessier sur une jambe (3 × 10) · Soulevé de terre sur une jambe (3 × 8) · Hip thrust (3 × 10) · Quadrupédie bras-jambe opposés (3 × 10) | ☐ |
 | Phase 4 — Reprise | Soulevé de terre jambes semi-tendues (3 × 10) · Soulevé de terre sur une jambe (3 × 10) · Course à pied (15 min) · Pas chassés (3 × 20 s) · Sauts du patineur (3 × 8) · Saut et réception stabilisée (3 × 6) | ☐ |
@@ -120,7 +146,7 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Cercles de cheville (2 × 10) · Étirement du mollet contre le mur (2 × 20 s) · Montée sur la pointe des pieds (2 × 10) · Équilibre sur une jambe (2 × 20 s) · Marche (15 min) | ☐ |
+| Phase 1 — Soulagement | Cercles de cheville (2 × 10) · Montée sur la pointe des pieds (2 × 10) · Équilibre sur une jambe (2 × 20 s) · Marche (15 min) | ☐ |
 | Phase 2 — Mobilité | Montée sur la pointe des pieds (3 × 15) · Étirement du mollet contre le mur (3 × 30 s) · Étirement mollet et psoas à genou contre le mur (2 × 30 s) · Équilibre sur une jambe (3 × 30 s) · Vélo (10 min) | ☐ |
 | Phase 3 — Renforcement | Montée sur la pointe d'un pied (3 × 12) · Montée sur la pointe des pieds (3 × 15) · Descente de marche contrôlée (3 × 8) · Relevé des orteils dos au mur (3 × 15) · Marche (15 min) | ☐ |
 | Phase 4 — Reprise | Montée sur la pointe d'un pied (3 × 15) · Saut et réception stabilisée (3 × 6) · Saut latéral à deux pieds (3 × 10) · Saut vers l'avant à cloche-pied (3 × 6) · Marche puis course progressive sur terrain souple (15 min) · Corde à sauter (3 × 30 s) | ☐ |
@@ -147,7 +173,7 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Cercles de cheville (3 × 10) · Étirement du mollet contre le mur (2 × 20 s) · Équilibre sur une jambe (3 × 20 s) · Pont fessier (2 × 10) · Élévation de la jambe tendue (2 × 10) | ☐ |
+| Phase 1 — Soulagement | Cercles de cheville (3 × 10) · Étirement du mollet contre le mur (2 × 20 s) · Pont fessier (2 × 10) · Élévation de la jambe tendue (2 × 10) | ☐ |
 | Phase 2 — Mobilité | Cercles de cheville (2 × 15) · Montée sur la pointe des pieds (3 × 12) · Éversion de cheville à l'élastique (3 × 12) · Étirement du mollet contre le mur (2 × 30 s) · Équilibre sur une jambe (3 × 30 s) · Relevé des orteils dos au mur (3 × 12) | ☐ |
 | Phase 3 — Renforcement | Montée sur la pointe d'un pied (3 × 10) · Éversion de cheville à l'élastique (3 × 15) · Y-balance (atteinte en équilibre) (3 × 8) · Équilibre sur une jambe (3 × 30 s) · Descente de marche contrôlée (3 × 8) · Transfert de poids latéral (2 × 10) | ☐ |
 | Phase 4 — Reprise | Saut et réception stabilisée (3 × 6) · Saut latéral à deux pieds (3 × 10) · Sauts du patineur (3 × 8) · Saut latéral à cloche-pied (3 × 6) · Pas chassés (3 × 20 s) · Montée sur la pointe d'un pied (3 × 15) | ☐ |
@@ -165,7 +191,7 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Inclinaison latérale du poignet (2 × 10) · Balle en mousse serrée dans la main (2 × 10) · Cercles d'épaules (2 × 10) · Rentrer le menton (2 × 10) · Marche (15 min) | ☐ |
+| Phase 1 — Soulagement | Balle en mousse serrée dans la main (2 × 10) · Cercles d'épaules (2 × 10) · Rentrer le menton (2 × 10) · Marche (15 min) | ☐ |
 | Phase 2 — Mobilité | Inclinaison latérale du poignet (3 × 10) · Balle en mousse serrée dans la main (3 × 10) · Pompe contre le mur (2 × 8) · Tirage horizontal à l'élastique (3 × 12) · Extension du haut du dos sur chaise (2 × 10) | ☐ |
 | Phase 3 — Renforcement | Inclinaison latérale du poignet (3 × 15) · Balle en mousse serrée dans la main (3 × 15) · Pompe contre le mur (3 × 10) · Tirage horizontal à l'élastique (3 × 12) · Rotation externe de l'épaule à l'élastique (3 × 12) | ☐ |
 | Phase 4 — Reprise | Inclinaison latérale du poignet (3 × 15) · Balle en mousse serrée dans la main (3 × 15) · Pompe inclinée (3 × 10) · Gainage de l'ours (3 × 20 s) · Marche du fermier (3 × 30 s) · Pompe (3 × 8) | ☐ |
@@ -183,7 +209,7 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Cercles de cheville (3 × 10) · Contraction du quadriceps (3 × 10) · Élévation de la jambe tendue (3 × 10) · Pont fessier (2 × 10) · Marche progressive avec aide (5 min) | ☐ |
+| Phase 1 — Soulagement | Contraction du quadriceps (3 × 10) · Élévation de la jambe tendue (3 × 10) · Pont fessier (2 × 10) · Marche progressive avec aide (5 min) | ☐ |
 | Phase 2 — Mobilité | Cercles de cheville (3 × 15) · Montée sur la pointe des pieds (2 × 10) · Étirement du mollet contre le mur (2 × 30 s) · Équilibre sur une jambe (3 × 20 s) · Vélo (10 min) · Abduction de hanche couché sur le côté (3 × 12) | ☐ |
 | Phase 3 — Renforcement | Montée sur la pointe des pieds (3 × 15) · Montée sur la pointe d'un pied (3 × 8) · Montée de marche (3 × 10) · Descente de marche contrôlée (3 × 8) · Équilibre sur une jambe (3 × 30 s) · Marche (15 min) | ☐ |
 | Phase 4 — Reprise | Montée sur la pointe d'un pied (3 × 12) · Y-balance (atteinte en équilibre) (3 × 8) · Saut et réception stabilisée (3 × 6) · Saut latéral à deux pieds (3 × 10) · Marche puis course progressive sur terrain souple (15 min) | ☐ |
@@ -192,7 +218,7 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Balle en mousse serrée dans la main (2 × 10) · Inclinaison latérale du poignet (2 × 8) · Cercles d'épaules (2 × 10) · Élévation des bras allongé avec bâton (2 × 10) · Rentrer le menton (2 × 10) | ☐ |
+| Phase 1 — Soulagement | Balle en mousse serrée dans la main (2 × 10) · Cercles d'épaules (2 × 10) · Élévation des bras allongé avec bâton (2 × 10) · Rentrer le menton (2 × 10) | ☐ |
 | Phase 2 — Mobilité | Inclinaison latérale du poignet (3 × 10) · Balle en mousse serrée dans la main (3 × 10) · Glissés des bras au mur (3 × 10) · Tirage horizontal à l'élastique (3 × 12) · Cercles d'épaules (2 × 10) | ☐ |
 | Phase 3 — Renforcement | Inclinaison latérale du poignet (3 × 15) · Balle en mousse serrée dans la main (3 × 15) · Pompe contre le mur (3 × 10) · Tirage horizontal à l'élastique (3 × 12) · Rotation externe de l'épaule à l'élastique (3 × 12) | ☐ |
 | Phase 4 — Reprise | Inclinaison latérale du poignet (3 × 15) · Balle en mousse serrée dans la main (3 × 15) · Pompe inclinée (3 × 10) · Gainage de l'ours (3 × 20 s) · Marche du fermier (3 × 30 s) | ☐ |
@@ -255,8 +281,8 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Pendulaire de Codman (2 × 30 s) · Élévation des bras allongé avec bâton (2 × 10) · Cercles d'épaules (2 × 10) · Rentrer le menton (2 × 10) · Marche (15 min) | ☐ |
-| Phase 2 — Mobilité | Élévation des bras allongé avec bâton (3 × 10) · Pendulaire de Codman (2 × 30 s) · Contractions isométriques de l'épaule contre le mur (3 × 5) · Glissés des bras au mur (2 × 8) · Extension du haut du dos sur chaise (2 × 10) | ☐ |
+| Phase 1 — Soulagement | Pendulaire de Codman (2 × 30 s) · Cercles d'épaules (2 × 10) · Rentrer le menton (2 × 10) · Marche (15 min) | ☐ |
+| Phase 2 — Mobilité | Élévation des bras allongé avec bâton (3 × 10) · Pendulaire de Codman (2 × 30 s) · Glissés des bras au mur (2 × 8) · Extension du haut du dos sur chaise (2 × 10) | ☐ |
 | Phase 3 — Renforcement | Rotation externe couché sur le côté (3 × 12) · Rotation externe assis, coude sur le genou (3 × 12) · Rotation interne de l'épaule à l'élastique (3 × 12) · Tirage horizontal à l'élastique (3 × 12) · Glissés des bras au mur (3 × 10) · Pompe contre le mur (3 × 10) | ☐ |
 | Phase 4 — Reprise | Rotation externe de l'épaule à l'élastique (3 × 12) · Élévation latérale des bras (3 × 10) · Tirage horizontal à l'élastique (3 × 12) · Élévation des bras en T à plat ventre (3 × 10) · Pompe inclinée (3 × 10) | ☐ |
 
@@ -273,8 +299,8 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Cercles de cheville (3 × 15) · Contraction du quadriceps (3 × 10) · Glissement du talon (2 × 10) · Pont fessier (2 × 8) · Marche progressive avec aide (5 min) | ☐ |
-| Phase 2 — Mobilité | Pont fessier (3 × 10) · Abduction de hanche couché sur le côté (3 × 10) · Glissement du talon (3 × 10) · Élévation de la jambe tendue (3 × 10) · Assis-debout (2 × 8) · Marche progressive avec aide (5 min) | ☐ |
+| Phase 1 — Soulagement | Cercles de cheville (3 × 15) · Contraction du quadriceps (3 × 10) · Glissement du talon (2 × 10) · Marche progressive avec aide (5 min) | ☐ |
+| Phase 2 — Mobilité | Pont fessier (3 × 10) · Abduction de hanche couché sur le côté (3 × 10) · Glissement du talon (3 × 10) · Assis-debout (2 × 8) · Marche progressive avec aide (5 min) | ☐ |
 | Phase 3 — Renforcement | Assis-debout (3 × 10) · Abduction de hanche debout à l'élastique (3 × 12) · Coquille à l'élastique (3 × 12) · Montée de marche (3 × 8) · Équilibre sur une jambe (3 × 20 s) · Pont fessier avec marche (3 × 8) | ☐ |
 | Phase 4 — Reprise | Marche (15 min) · Montée d'escaliers contrôlée (5 min) · Franchissement d'obstacle (3 × 8) · Se relever du sol (2 × 5) · Marche latérale à l'élastique (3 × 10) · Squat au poids du corps (3 × 10) | ☐ |
 
@@ -282,7 +308,7 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Pont fessier (2 × 10) · Dead bug (2 × 8) · Abduction de hanche couché sur le côté (2 × 10) · Étirement du psoas, pied sur un support (2 × 30 s) · Marche (15 min) | ☐ |
+| Phase 1 — Soulagement | Pont fessier (2 × 10) · Dead bug (2 × 8) · Abduction de hanche couché sur le côté (2 × 10) · Marche (15 min) | ☐ |
 | Phase 2 — Mobilité | Dead bug (3 × 10) · Pont fessier (3 × 12) · Quadrupédie bras-jambe opposés (3 × 10) · Pallof press (3 × 10) · Fente latérale (2 × 8) · Vélo (10 min) | ☐ |
 | Phase 3 — Renforcement | Fente latérale (3 × 8) · Pallof press (3 × 12) · Planche latérale sur les genoux (3 × 20 s) · Marche latérale à l'élastique (3 × 10) · Pont fessier sur une jambe (3 × 10) · Planche (3 × 30 s) | ☐ |
 | Phase 4 — Reprise | Pas chassés (3 × 20 s) · Sauts du patineur (3 × 8) · Fente croisée arrière (3 × 8) · Fente latérale (3 × 10) · Planche (3 × 30 s) · Course à pied (15 min) | ☐ |
@@ -301,7 +327,7 @@ Points d'attention particuliers :
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
 | Phase 1 — Soulagement | Pendulaire de Codman (3 × 30 s) · Cercles d'épaules (2 × 10) · Rentrer le menton (2 × 10) · Étirement du trapèze supérieur (2 × 30 s) · Marche (15 min) | ☐ |
-| Phase 2 — Mobilité | Élévation des bras allongé avec bâton (3 × 10) · Pendulaire de Codman (2 × 30 s) · Glissés des bras au mur (2 × 8) · Contractions isométriques de l'épaule contre le mur (3 × 5) · Extension du haut du dos sur chaise (2 × 10) | ☐ |
+| Phase 2 — Mobilité | Élévation des bras allongé avec bâton (3 × 10) · Pendulaire de Codman (2 × 30 s) · Glissés des bras au mur (2 × 8) · Extension du haut du dos sur chaise (2 × 10) | ☐ |
 | Phase 3 — Renforcement | Rotation externe couché sur le côté (3 × 12) · Rotation externe assis, coude sur le genou (3 × 12) · Rotation externe de l'épaule à l'élastique (3 × 12) · Rotation interne de l'épaule à l'élastique (3 × 12) · Tirage horizontal à l'élastique (3 × 12) · Élévation des bras en T à plat ventre (3 × 10) | ☐ |
 | Phase 4 — Reprise | Rotation externe bras à 90° à l'élastique (3 × 12) · Élévation latérale des bras (3 × 10) · Tirage vers le visage à l'élastique (3 × 12) · Élévation des bras en Y à plat ventre (3 × 10) · Pompe inclinée (3 × 10) | ☐ |
 
@@ -309,10 +335,10 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Balle en mousse serrée dans la main (2 × 8) · Inclinaison latérale du poignet (2 × 10) · Cercles d'épaules (2 × 10) · Rentrer le menton (2 × 10) · Étirement du trapèze supérieur (2 × 30 s) | ☐ |
+| Phase 1 — Soulagement | Inclinaison latérale du poignet (2 × 10) · Cercles d'épaules (2 × 10) · Rentrer le menton (2 × 10) · Étirement du trapèze supérieur (2 × 30 s) | ☐ |
 | Phase 2 — Mobilité | Balle en mousse serrée dans la main (3 × 10) · Inclinaison latérale du poignet (3 × 10) · Cercles d'épaules (2 × 10) · Extension du haut du dos sur chaise (2 × 10) · Glissés des bras au mur (2 × 10) | ☐ |
 | Phase 3 — Renforcement | Balle en mousse serrée dans la main (3 × 12) · Inclinaison latérale du poignet (3 × 12) · Tirage horizontal à l'élastique (3 × 12) · Pompe contre le mur (3 × 10) · Rotation externe de l'épaule à l'élastique (3 × 12) | ☐ |
-| Phase 4 — Reprise | Balle en mousse serrée dans la main (3 × 15) · Inclinaison latérale du poignet (3 × 15) · Marche du fermier (3 × 30 s) · Tirage horizontal à l'élastique (3 × 12) · Pompe inclinée (3 × 10) | ☐ |
+| Phase 4 — Reprise | Balle en mousse serrée dans la main (3 × 15) · Inclinaison latérale du poignet (3 × 15) · Tirage horizontal à l'élastique (3 × 12) · Pompe inclinée (3 × 10) | ☐ |
 
 ## Rupture du ligament croisé antérieur
 
@@ -327,7 +353,7 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Cercles de cheville (3 × 10) · Contraction du quadriceps (3 × 10) · Élévation de la jambe tendue (3 × 10) · Pont fessier (2 × 10) · Marche progressive avec aide (5 min) | ☐ |
+| Phase 1 — Soulagement | Contraction du quadriceps (3 × 10) · Élévation de la jambe tendue (3 × 10) · Pont fessier (2 × 10) · Marche progressive avec aide (5 min) | ☐ |
 | Phase 2 — Mobilité | Cercles de cheville (3 × 15) · Relevé des orteils dos au mur (2 × 12) · Équilibre sur une jambe (3 × 20 s) · Pont fessier (3 × 12) · Vélo (10 min) | ☐ |
 | Phase 3 — Renforcement | Montée sur la pointe des pieds (3 × 15) · Montée sur la pointe d'un pied (3 × 8) · Descente de marche contrôlée (3 × 8) · Équilibre sur une jambe (3 × 30 s) · Marche (15 min) | ☐ |
 | Phase 4 — Reprise | Montée sur la pointe d'un pied (3 × 15) · Saut et réception stabilisée (3 × 6) · Saut latéral à deux pieds (3 × 10) · Saut vers l'avant à cloche-pied (3 × 6) · Marche puis course progressive sur terrain souple (15 min) | ☐ |
@@ -372,7 +398,7 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Inclinaison latérale du poignet (2 × 10) · Balle en mousse serrée dans la main (2 × 10) · Cercles d'épaules (2 × 10) · Rentrer le menton (2 × 10) · Étirement du trapèze supérieur (2 × 30 s) | ☐ |
+| Phase 1 — Soulagement | Inclinaison latérale du poignet (2 × 10) · Cercles d'épaules (2 × 10) · Rentrer le menton (2 × 10) · Étirement du trapèze supérieur (2 × 30 s) | ☐ |
 | Phase 2 — Mobilité | Inclinaison latérale du poignet (3 × 10) · Balle en mousse serrée dans la main (3 × 10) · Extension du haut du dos sur chaise (2 × 10) · Rentrer le menton (2 × 10) · Glissés des bras au mur (2 × 10) | ☐ |
 | Phase 3 — Renforcement | Inclinaison latérale du poignet (3 × 12) · Balle en mousse serrée dans la main (3 × 12) · Tirage horizontal à l'élastique (3 × 12) · Pompe contre le mur (3 × 10) · Rentrer le menton (2 × 10) | ☐ |
 | Phase 4 — Reprise | Inclinaison latérale du poignet (3 × 15) · Balle en mousse serrée dans la main (3 × 15) · Pompe inclinée (3 × 10) · Tirage horizontal à l'élastique (3 × 12) · Marche du fermier (3 × 30 s) | ☐ |
@@ -417,10 +443,10 @@ Points d'attention particuliers :
 
 | Phase | Exercices (dosage) | OK ? |
 |---|---|---|
-| Phase 1 — Soulagement | Balle en mousse serrée dans la main (2 × 8) · Inclinaison latérale du poignet (2 × 8) · Cercles d'épaules (2 × 10) · Rentrer le menton (2 × 10) · Étirement du trapèze supérieur (2 × 30 s) | ☐ |
-| Phase 2 — Mobilité | Inclinaison latérale du poignet (3 × 10) · Balle en mousse serrée dans la main (3 × 10) · Tirage horizontal à l'élastique (3 × 12) · Pompe contre le mur (2 × 10) · Extension du haut du dos sur chaise (2 × 10) | ☐ |
+| Phase 1 — Soulagement | Cercles d'épaules (2 × 10) · Rentrer le menton (2 × 10) · Étirement du trapèze supérieur (2 × 30 s) · Extension du haut du dos sur chaise (2 × 10) | ☐ |
+| Phase 2 — Mobilité | Balle en mousse serrée dans la main (3 × 10) · Tirage horizontal à l'élastique (3 × 12) · Pompe contre le mur (2 × 10) · Extension du haut du dos sur chaise (2 × 10) | ☐ |
 | Phase 3 — Renforcement | Inclinaison latérale du poignet (3 × 15) · Balle en mousse serrée dans la main (3 × 15) · Tirage horizontal à l'élastique (3 × 12) · Pompe contre le mur (3 × 10) · Rotation externe de l'épaule à l'élastique (3 × 12) | ☐ |
-| Phase 4 — Reprise | Inclinaison latérale du poignet (3 × 15) · Balle en mousse serrée dans la main (3 × 15) · Marche du fermier (3 × 30 s) · Pompe inclinée (3 × 10) · Tirage horizontal à l'élastique (3 × 15) | ☐ |
+| Phase 4 — Reprise | Inclinaison latérale du poignet (3 × 15) · Balle en mousse serrée dans la main (3 × 15) · Pompe inclinée (3 × 10) · Tirage horizontal à l'élastique (3 × 15) | ☐ |
 
 ## Tendinopathie de l'épaule
 

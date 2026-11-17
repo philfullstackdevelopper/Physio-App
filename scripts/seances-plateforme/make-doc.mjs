@@ -24,8 +24,7 @@ const name = (en) => {
 };
 const conds = Object.keys(PLAN).sort((a, b) => a.localeCompare(b, "fr"));
 const removed = JSON.parse(fs.readFileSync(new URL("./removed.json", import.meta.url), "utf8"));
-const REMOVED = removed.map((r) => `- **${r[0]}**, ${({acute:"phase 1",subacute:"phase 2",recovery:"phase 3",return_to_sport:"phase 4"})[r[1]]} : ${fr[r[2]] ?? r[2]} — ${r[3]}`).join("
-");
+const REMOVED = removed.map((r) => `- **${r[0]}**, ${({acute:"phase 1",subacute:"phase 2",recovery:"phase 3",return_to_sport:"phase 4"})[r[1]]} : ${fr[r[2]] ?? r[2]} — ${r[3]}`).join("\n");
 let md = `# Séances de la plateforme — à valider par Jules
 
 *Mis à jour le 17 novembre 2026 (migrations 0096 à 0099, en ligne).*
