@@ -172,7 +172,8 @@
     "optional": "(optional)",
     "later": "Later, from their record",
     "connectNotice": "Your Stripe payments aren’t activated yet: until then, you won’t receive your patients’ €{amount} for their programme (in months when you update it).",
-    "connectLink": "Activate my payments"
+    "connectLink": "Activate my payments",
+    "connectNoticeAmount": "Your Stripe payments aren’t activated yet: until then, you won’t receive your patients’ {amount} for their programme (in months when you update it)."
   },
   "patientActions": {
     "fillAll": "Please fill in all the fields.",

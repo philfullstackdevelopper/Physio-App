@@ -1,6 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
-import { LOWEST_MONTHLY_TOTAL_CENTS, TRIAL_DAYS, eurosFR, isLegacySubscription, isPlatformOfferKey, isPlatformSubscription, platformOffer, type SubscriptionRow } from "@/lib/billing/patientPlans";
+import {
+  FRANCE_PRICING,
+  TRIAL_DAYS,
+  eurosFR,
+  isLegacySubscription,
+  isPlatformOfferKey,
+  isPlatformSubscription,
+  moneyLabel,
+  monthlyTotalIn,
+  platformOffer,
+  platformOffersIn,
+  pricingForCountry,
+  type SubscriptionRow,
+} from "@/lib/billing/patientPlans";
 import { nativeAppPlatform } from "@/lib/app/nativeAppServer";
 import { getLocale, getTranslations } from "next-intl/server";
 import { intlTag } from "@/lib/i18n/translator";
@@ -22,9 +35,15 @@ export default async function CompteePage({
   const user = await requireUser(supabase);
 
   const [{ data: patient }, { data: sub }] = await Promise.all([
-    supabase.from("patients").select("full_name").eq("id", user.id).maybeSingle(),
+    supabase.from("patients").select("full_name, instructor_id").eq("id", user.id).maybeSingle(),
     supabase.from("subscriptions").select("plan, status, current_period_end, cancel_at_period_end, stripe_account_id").eq("user_id", user.id).maybeSingle(),
   ]);
+  // Monnaie et montants du pays de SON kiné (2026-11-18) ; France = comme avant.
+  const { data: kine } = patient?.instructor_id
+    ? await supabase.from("instructors").select("country").eq("id", patient.instructor_id as string).maybeSingle()
+    : { data: null };
+  const pricing = pricingForCountry((kine?.country as string | null) ?? null) ?? FRANCE_PRICING;
+  const lowestTotal = Math.min(...platformOffersIn(pricing).map((o) => monthlyTotalIn(o, pricing)));
   const row = (sub as unknown as SubscriptionRow | null) ?? null;
   const legacy = isLegacySubscription(row);
   const known = legacy || isPlatformSubscription(row);
@@ -45,10 +64,12 @@ export default async function CompteePage({
             : t("lineNextMonth", { offer: offer ? t(`offers.${offer.key}`) : t("lineActive"), date })
         : refused
           ? t("lineRefused")
-          : t("lineNone", { days: TRIAL_DAYS, price: eurosFR(LOWEST_MONTHLY_TOTAL_CENTS, locale) }),
+          : pricing.currency === "eur"
+            ? t("lineNone", { days: TRIAL_DAYS, price: eurosFR(lowestTotal, locale) })
+            : t("lineNoneAmount", { days: TRIAL_DAYS, price: moneyLabel(lowestTotal, pricing.currency, locale, (a) => a) }),
   };
 
   // Appli mobile : pas de carte « Mon suivi » avec ses prix (règles d'Apple / Google).
   const inApp = !!(await nativeAppPlatform());
-  return <CompteView fullName={(patient?.full_name as string | null) ?? null} error={error} followUp={summary} inApp={inApp} />;
+  return <CompteView fullName={(patient?.full_name as string | null) ?? null} error={error} followUp={summary} inApp={inApp} pricing={pricing} />;
 }

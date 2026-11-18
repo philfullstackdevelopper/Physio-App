@@ -90,3 +90,42 @@ test("cookie d'inscription : pays et numéro", () => {
   assert.equal(parsePendingCabinet({ ...base, country: "DE", professionalId: "123456" }), null);
   assert.equal(parsePendingCabinet({ ...base, country: "CH" }), null);
 });
+
+// Cohérence (2026-11-18) : pour un patient donné, TOUT découle du pays de son
+// kiné. Chaque pays ouvert doit donc avoir sa monnaie, ses montants, sa mention
+// de facture, son numéro professionnel et ses mentions de note, dans les deux
+// langues — sinon un patient verrait un mélange de France et de son pays.
+import { readFileSync } from "node:fs";
+import { PLATFORM_INVOICE_FOOTERS } from "./patientPlans.ts";
+import { countryConfig } from "./countries.ts";
+import { professionalIdRule } from "../instructor/professionalId.ts";
+
+const json = (p: string) => JSON.parse(readFileSync(new URL(`../../messages/${p}`, import.meta.url), "utf8"));
+const msgs = { fr: { auth: json("fr/auth.json"), billing: json("fr/billing.json") }, en: { auth: json("en/auth.json"), billing: json("en/billing.json") } };
+
+test("chaque pays ouvert est complet (monnaie, montants, facture, numéro, note) en FR et EN", () => {
+  for (const code of ENABLED_COUNTRY_CODES) {
+    const p = pricingForCountry(code)!;
+    assert.equal(p.currency, countryConfig(code)!.currency, code);
+    assert.ok(PLATFORM_INVOICE_FOOTERS[code], `${code} : mention de facture`);
+    if (code === "FR") continue;
+    const key = professionalIdRule(code).key;
+    for (const lang of ["fr", "en"] as const) {
+      assert.ok(msgs[lang].auth.cabinet.proId[key]?.label, `${code}/${lang} : libellé du numéro`);
+      const note = msgs[lang].billing.feeNoteCountry[code];
+      assert.ok(note?.line && note?.legal && note?.id, `${code}/${lang} : mentions de la note`);
+    }
+  }
+});
+
+test("les montants d'un patient suivent le pays de son kiné, jamais un mélange", () => {
+  const ch = pricingForCountry("CH")!;
+  const gb = pricingForCountry("GB")!;
+  // Les trois offres et le programme du kiné sont tous dans la même monnaie.
+  for (const o of platformOffersIn(ch)) assert.equal(o.platformCents, ch.platform[o.key]);
+  assert.notDeepEqual(ch.platform, gb.platform);
+  assert.equal(platformInvoiceFooter("CH"), PLATFORM_INVOICE_FOOTERS.CH);
+  assert.equal(platformInvoiceFooter("GB"), PLATFORM_INVOICE_FOOTERS.GB);
+  // Kiné sans pays enregistré (anciennes fiches) : France, exactement comme avant.
+  assert.equal(platformInvoiceFooter(null), PLATFORM_INVOICE_FOOTER);
+});

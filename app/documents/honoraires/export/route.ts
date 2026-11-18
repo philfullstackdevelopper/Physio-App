@@ -6,6 +6,7 @@ import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstru
 import { loadMonthFeeNotes } from "@/lib/billing/feeNotes";
 import { estimateStripeFeeCents } from "@/lib/billing/reviewModel";
 import { csvCell, periodOf } from "@/lib/billing/reviewModel";
+import { countryConfig, instructorCountry } from "@/lib/billing/countries";
 
 // Tableur des recettes d'un mois pour le comptable du kiné (nouveau modèle,
 // 2026-10-24). CSV séparé par « ; », montants à la française, avec BOM pour
@@ -25,6 +26,12 @@ export async function GET(req: Request) {
   const locale = (await getLocale()) as Locale;
   const t = await getTranslations("billing.csv");
   const notes = await loadMonthFeeNotes(supabase, user.id, period, locale);
+  // Pays du kiné (2026-11-18) : monnaie des colonnes et libellé de la ligne.
+  // France : en-têtes et libellé d'origine, inchangés.
+  const { data: me } = await supabase.from("instructors").select("country").eq("id", user.id).maybeSingle();
+  const country = instructorCountry((me?.country as string | null) ?? null);
+  const france = country === "FR";
+  const currency = (countryConfig(country)?.currency ?? "eur").toUpperCase();
 
   const statusText = (s: (typeof notes)[number]["paymentStatus"]) =>
     ({
@@ -35,13 +42,13 @@ export async function GET(req: Request) {
       refunded: t("statusRefunded"),
       disputed: t("statusDisputed"),
     })[s] ?? t("statusFailed");
-  const header = [t("date"), t("number"), t("patient"), t("designation"), t("amount"), t("payment"), t("collectedOn"), t("stripeFees")];
+  const header = [t("date"), t("number"), t("patient"), t("designation"), france ? t("amount") : t("amountIn", { currency }), t("payment"), t("collectedOn"), france ? t("stripeFees") : t("stripeFeesIn", { currency })];
   const lines = notes.map((n) =>
     [
       new Date(n.validatedAt).toLocaleDateString(intlTag(locale)),
       n.number,
       n.patientName,
-      t("line"),
+      france ? t("line") : t("lineIntl"),
       amount(n.amountCents),
       statusText(n.paymentStatus),
       // Date d'encaissement : seulement pour un paiement resté encaissé.

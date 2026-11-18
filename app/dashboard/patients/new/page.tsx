@@ -7,6 +7,7 @@ import { PHASE_NUMBER, isStage } from "@/lib/exercise/phasePlan";
 import { addPatient } from "../actions";
 import JoinQrCard from "@/components/JoinQrCard";
 import NewPatientView from "@/components/NewPatientView";
+import { pricingForCountry } from "@/lib/billing/patientPlans";
 import { getTranslations } from "next-intl/server";
 
 export default async function NewPatientPage({
@@ -26,13 +27,14 @@ export default async function NewPatientPage({
   // kiné (jamais les copies d'un patient), par pathologie puis par phase.
   // En même temps : ses paiements Stripe sont-ils actifs ? (rappel non
   // bloquant dans la page, audit du 2026-11-08).
-  const [{ data: rows }, { data: connect }] = await Promise.all([
+  const [{ data: rows }, { data: connect }, { data: me }] = await Promise.all([
     supabase
       .from("workouts")
       .select("id, name, stage, created_by, conditions(name), workout_exercises(exercises(name))")
       .is("patient_id", null)
       .or(`created_by.is.null,created_by.eq.${user.id}`),
     supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", user.id).maybeSingle(),
+    supabase.from("instructors").select("country").eq("id", user.id).maybeSingle(),
   ]);
   const rank = (s: string | null) => (isStage(s) ? STAGE_ORDER.indexOf(s) : 99);
   const groups = new Map<string, { id: string; label: string; rank: number }[]>();
@@ -55,6 +57,7 @@ export default async function NewPatientPage({
   return (
     <NewPatientView
       connectMissing={connectMissing}
+      pricing={pricingForCountry((me?.country as string | null) ?? null) ?? undefined}
       open={open}
       error={error}
       addPatientAction={addPatient}

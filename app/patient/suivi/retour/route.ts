@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 import { ensureKineCard, refreshPatientSubscription } from "@/lib/billing/patientSubscription";
 import { requestOrigin } from "@/lib/requestOrigin";
+import { FRANCE_PRICING, pricingForCountry } from "@/lib/billing/patientPlans";
 
 // Retour de Stripe après la souscription de l'accès (modèle définitif du
 // 2026-11-04). La session vit sur le compte d'EasyPhysio : on la relit, on
@@ -37,6 +38,9 @@ export async function GET(req: Request) {
               .maybeSingle()
           : { data: null };
         if (ok && instructorId && connect?.status === "active" && connect.stripe_connect_account_id) {
+          // Montant du programme dans la monnaie du pays du kiné (2026-11-18).
+          const { data: kine } = await supabase.from("instructors").select("country").eq("id", instructorId).maybeSingle();
+          const pricing = pricingForCountry((kine?.country as string | null) ?? null) ?? FRANCE_PRICING;
           await ensureKineCard({
             patientId: user.id,
             instructorId,
@@ -44,6 +48,7 @@ export async function GET(req: Request) {
             platformSubscriptionId: subId,
             email: user.email ?? null,
             name: (patient?.full_name as string | null) ?? null,
+            priceCents: pricing.kineFollowUp,
           });
         }
       }

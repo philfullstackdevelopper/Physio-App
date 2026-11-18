@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CreditCard, Info } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { KINE_FOLLOW_UP_CENTS, eurosFR } from "@/lib/billing/patientPlans";
+import { FRANCE_PRICING, eurosFR, moneyLabel, type CountryPricing } from "@/lib/billing/patientPlans";
 import type { Locale } from "@/i18n/locales";
 
 // « Ajouter un patient » : invitation par e-mail, ou QR code à faire scanner
@@ -15,7 +15,10 @@ export default function NewPatientView({
   qr,
   seanceGroups = [],
   connectMissing = false,
+  pricing = FRANCE_PRICING,
 }: {
+  /** Monnaie et montant du pays du kiné (2026-11-18) ; défaut : France. */
+  pricing?: CountryPricing;
   /** Paiements Stripe du kiné pas encore actifs : petit rappel, non bloquant. */
   connectMissing?: boolean;
   /** Séances proposées pour démarrer, groupées par pathologie (facultatif). */
@@ -62,7 +65,9 @@ export default function NewPatientView({
             <p className="mb-4 flex items-start gap-2 rounded-lg bg-warn-soft p-3 text-sm text-ink">
               <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-warn" strokeWidth={1.75} />
               <span>
-                {t("connectNotice", { amount: eurosFR(KINE_FOLLOW_UP_CENTS, locale) })}{" "}
+                {pricing.currency === "eur"
+                  ? t("connectNotice", { amount: eurosFR(pricing.kineFollowUp, locale) })
+                  : t("connectNoticeAmount", { amount: moneyLabel(pricing.kineFollowUp, pricing.currency, locale, (a) => a) })}{" "}
                 <Link href="/dashboard/facturation" className="font-medium text-brand hover:underline">
                   {t("connectLink")}
                 </Link>

@@ -9,6 +9,7 @@ import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstru
 import { loadFeeNote, loadMonthFeeNotes, type FeeNote } from "@/lib/billing/feeNotes";
 import { estimateStripeFeeCents } from "@/lib/billing/reviewModel";
 import { eurosFR, nextPeriod, periodLabel, periodOf } from "@/lib/billing/reviewModel";
+import { moneyLabel } from "@/lib/billing/patientPlans";
 import FeeNoteSheet from "@/components/FeeNoteSheet";
 import PrintButton from "@/components/PrintButton";
 
@@ -139,7 +140,10 @@ async function Recap({
   const locale = (await getLocale()) as Locale;
   const t = await getTranslations("billing.documents");
   const tf = await getTranslations("billing.format");
-  const eur = (cents: number) => tf("eur", { amount: eurosFR(cents, 2, locale) });
+  // Monnaie du kiné (2026-11-18) : en euros, format d'origine inchangé.
+  const currency = notes[0]?.currency ?? "eur";
+  const eur = (cents: number) =>
+    currency === "eur" ? tf("eur", { amount: eurosFR(cents, 2, locale) }) : moneyLabel(cents, currency, locale, (amount) => tf("eur", { amount }));
   const lastDay = new Date(new Date(`${nextPeriod(period)}T00:00:00Z`).getTime() - 86_400_000).toLocaleDateString(intlTag(locale), { timeZone: "UTC" });
 
   return (

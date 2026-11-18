@@ -97,7 +97,10 @@
     "filename": "recettes-easyphysio-{month}.csv",
     "statusActionRequired": "À confirmer par le patient",
     "statusRefunded": "Remboursé",
-    "statusDisputed": "Contesté"
+    "statusDisputed": "Contesté",
+    "amountIn": "Montant ({currency})",
+    "stripeFeesIn": "Frais Stripe estimés ({currency})",
+    "lineIntl": "Suivi mensuel du programme d'exercices à domicile"
   },
   "feeNote": {
     "profession": "Masseur-kinésithérapeute",

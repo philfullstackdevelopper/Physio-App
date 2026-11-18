@@ -6,7 +6,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import InstallAppButton from "@/components/InstallAppButton";
 import type { Locale } from "@/i18n/locales";
 import { deleteMyAccount } from "./actions";
-import { KINE_FOLLOW_UP_CENTS, LOWEST_PLATFORM_CENTS, eurosFR } from "@/lib/billing/patientPlans";
+import { FRANCE_PRICING, eurosFR, moneyLabel, type CountryPricing } from "@/lib/billing/patientPlans";
 
 // Affichage seul de « Paramètres » du patient (les données viennent de
 // page.tsx) — séparé pour pouvoir le prévisualiser avec des données fictives
@@ -26,6 +26,8 @@ export interface CompteViewProps {
   followUp: FollowUpSummary;
   /** Appli mobile : pas de carte « Mon suivi » (prix et paiement interdits dans l'appli). */
   inApp?: boolean;
+  /** Monnaie et montants du pays du kiné (2026-11-18) ; défaut : France. */
+  pricing?: CountryPricing;
 }
 
 // La carte « Mon suivi » résume l'abonnement (modèle du 2026-11-04,
@@ -47,9 +49,19 @@ export default function CompteView({
   notice,
   followUp,
   inApp = false,
+  pricing = FRANCE_PRICING,
 }: CompteViewProps) {
   const t = useTranslations("patient.compte");
   const locale = useLocale() as Locale;
+  const lowestPlatform = Math.min(...Object.values(pricing.platform));
+  // En euros : phrase et format d'origine ; autre monnaie : montants avec leur symbole.
+  const twoPayments =
+    pricing.currency === "eur"
+      ? t("twoPayments", { platform: eurosFR(lowestPlatform, locale), kine: eurosFR(pricing.kineFollowUp, locale) })
+      : t("twoPaymentsAmounts", {
+          platform: moneyLabel(lowestPlatform, pricing.currency, locale, (a) => a),
+          kine: moneyLabel(pricing.kineFollowUp, pricing.currency, locale, (a) => a),
+        });
   const f = followUpText(followUp, t);
   return (
     // Téléphone (Philippe, 2026-10-04 : tout sur un écran, plus efficace) :
@@ -84,7 +96,7 @@ export default function CompteView({
             {/* Modèle du 2026-11-04 : deux paiements distincts (l'ancienne phrase
                 « EasyPhysio ne prend rien » était fausse — Philippe, 2026-11-06). */}
             <p className="mt-2 text-sm text-muted">
-              {t("twoPayments", { platform: eurosFR(LOWEST_PLATFORM_CENTS, locale), kine: eurosFR(KINE_FOLLOW_UP_CENTS, locale) })}
+              {twoPayments}
             </p>
             <Link
               href="/patient/suivi"

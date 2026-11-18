@@ -100,7 +100,10 @@
     "filename": "easyphysio-income-{month}.csv",
     "statusActionRequired": "To be confirmed by the patient",
     "statusRefunded": "Refunded",
-    "statusDisputed": "Disputed"
+    "statusDisputed": "Disputed",
+    "amountIn": "Amount ({currency})",
+    "stripeFeesIn": "Estimated Stripe fees ({currency})",
+    "lineIntl": "Monthly home-exercise programme follow-up"
   },
   "feeNote": {
     "_review": "Draft translation — needs review by a lawyer before launch",
