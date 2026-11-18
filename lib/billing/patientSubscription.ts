@@ -284,6 +284,8 @@ export async function ensureKineCard(p: {
   platformSubscriptionId: string;
   email?: string | null;
   name?: string | null;
+  /** Programme du kiné dans la monnaie de son pays (défaut : montant France). */
+  priceCents?: number;
 }): Promise<boolean> {
   const stripe = getStripe();
   try {
@@ -328,7 +330,7 @@ export async function ensureKineCard(p: {
     await upsertFollowUp({
       patientId: p.patientId,
       instructorId: p.instructorId,
-      priceCents: KINE_FOLLOW_UP_CENTS,
+      priceCents: p.priceCents ?? KINE_FOLLOW_UP_CENTS,
       status: "active",
       stripeCustomerId: customer.id,
       stripePaymentMethodId: clone.id,

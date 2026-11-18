@@ -9,12 +9,14 @@ import LoopVideo from "@/components/LoopVideo";
 import SubmitButton from "@/components/SubmitButton";
 import {
   DEFAULT_OFFER_KEY,
-  KINE_FOLLOW_UP_CENTS,
+  FRANCE_PRICING,
   PLATFORM_OFFERS,
   TRIAL_DAYS,
-  eurosFR,
-  monthlyTotalCents,
-  savingsPercent,
+  moneyLabel,
+  monthlyTotalIn,
+  platformOffersIn,
+  savingsPercentIn,
+  type CountryPricing,
 } from "@/lib/billing/patientPlans";
 import { startPlan } from "./actions";
 
@@ -90,6 +92,7 @@ export default function PaywallVideo({
   firstChargeLabel,
   programmeReady,
   demo,
+  pricing = FRANCE_PRICING,
 }: {
   kineName: string;
   trial: boolean;
@@ -102,16 +105,18 @@ export default function PaywallVideo({
   /** Le kiné a déjà attribué une séance : sinon, pas de « programme prêt ». */
   programmeReady: boolean;
   demo: boolean;
+  /** Monnaie et montants du pays du kiné (2026-11-18) ; défaut : France. */
+  pricing?: CountryPricing;
 }) {
   const [index, setIndex] = useState(DEFAULT_INDEX);
-  const offer = PLATFORM_OFFERS[index];
-  const save = savingsPercent(offer);
+  const offer = platformOffersIn(pricing)[index];
+  const save = savingsPercentIn(offer, pricing);
   const t = useTranslations("billing.paywall");
   const tf = useTranslations("billing.format");
   const tOffer = useTranslations("billing.offers");
   const tc = useTranslations("common");
   const locale = useLocale() as Locale;
-  const eur = (cents: number) => tf("eur", { amount: eurosFR(cents, locale) });
+  const eur = (cents: number) => moneyLabel(cents, pricing.currency, locale, (amount) => tf("eur", { amount }));
 
   return (
     <main className="min-h-dvh bg-slate-950 text-white md:grid md:h-dvh md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
@@ -182,12 +187,12 @@ export default function PaywallVideo({
           {/* Le prix */}
           <div className="mt-5 flex items-end gap-3 short:md:mt-3" aria-live="polite">
             <p className="font-display text-5xl font-semibold tabular-nums tracking-tight max-sm:text-4xl">
-              {eur(monthlyTotalCents(offer))}<span className="text-base font-normal text-slate-400">{` ${t("perMonth")}`}</span>
+              {eur(monthlyTotalIn(offer, pricing))}<span className="text-base font-normal text-slate-400">{` ${t("perMonth")}`}</span>
             </p>
             {save > 0 && <span className="mb-2 rounded-full bg-emerald-400/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">{tf("pct", { n: save })}</span>}
           </div>
           <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
-            {t("split", { platform: eur(offer.platformCents), kine: eur(KINE_FOLLOW_UP_CENTS), kineName })}{" "}
+            {t("split", { platform: eur(offer.platformCents), kine: eur(pricing.kineFollowUp), kineName })}{" "}
             {offer.commitmentMonths ? t("splitCommitment", { months: offer.commitmentMonths }) : t("splitNoCommitment")}
           </p>
 

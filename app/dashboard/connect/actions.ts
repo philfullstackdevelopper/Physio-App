@@ -8,6 +8,8 @@ import { getStripe } from "@/lib/billing/stripe";
 import { isMissingStripeObject } from "@/lib/billing/connectStatus";
 import { requestOrigin } from "@/lib/requestOrigin";
 import { getTranslations } from "next-intl/server";
+import { instructorCountry } from "@/lib/billing/countries";
+import { pricingForCountry } from "@/lib/billing/patientPlans";
 
 // Starts (or resumes) Stripe Connect onboarding for the kiné — this is the
 // account that receives his 6 € monthly fees from his patients directly
@@ -23,6 +25,16 @@ export async function startConnectOnboarding() {
   // refusé ou suspendu — ou un patient — ne crée pas de compte Stripe.
   const { user } = await requireApprovedInstructor(supabase);
   const stripe = getStripe();
+
+  // Pays du compte Stripe = pays d'exercice du kiné (migration 0101 ; vide =
+  // France). Un pays fermé (lib/billing/countries.ts) ne crée aucun compte :
+  // ses patients ne pourraient pas être facturés.
+  const { data: kineRow } = await supabase.from("instructors").select("country").eq("id", user.id).maybeSingle();
+  const country = instructorCountry((kineRow?.country as string | null) ?? null);
+  if (!pricingForCountry(country)) {
+    const t = await getTranslations("dashboard.patientActions");
+    redirect(`/dashboard/facturation?error=${encodeURIComponent(t("connectCountryClosed"))}`);
+  }
 
   // Lecture vérifiée (audit du 2026-11-10, A6) : en cas d'échec on s'arrête,
   // au lieu de conclure « pas encore de compte » et d'en créer un second.
@@ -59,7 +71,7 @@ export async function startConnectOnboarding() {
     // ligne de frais séparée visible pour lui.
     // Clé d'idempotence : un double clic ne crée pas deux comptes Stripe.
     const account = await stripe.accounts.create(
-      { type: "standard", email: user.email },
+      { type: "standard", email: user.email, country },
       { idempotencyKey: staleId ? `connect-account-${user.id}-replaces-${staleId}` : `connect-account-${user.id}` },
     );
     accountId = account.id;

@@ -8,12 +8,13 @@ import PaywallVideo from "./PaywallVideo";
 import SubmitButton from "@/components/SubmitButton";
 import {
   EARLY_ACCESS_PLAN_KEY,
-  KINE_FOLLOW_UP_CENTS,
+  FRANCE_PRICING,
   TRIAL_DAYS,
-  eurosFR,
   isPlatformOfferKey,
-  monthlyTotalCents,
-  platformOffer,
+  moneyLabel,
+  monthlyTotalIn,
+  platformOfferIn,
+  type CountryPricing,
   type PlatformOffer,
 } from "@/lib/billing/patientPlans";
 import { cancelPlan, changeCard, openInvoices, resumePlan } from "./actions";
@@ -56,6 +57,8 @@ export type SuiviViewProps = {
   paymentNotice?: ReactNode;
   /** Abonnement d'accès EasyPhysio : « Changer de carte » et « Mes factures ». */
   canManageCard?: boolean;
+  /** Monnaie et montants du pays du kiné (2026-11-18) ; défaut : France. */
+  pricing?: CountryPricing;
 };
 
 const card = "rounded-2xl border border-line bg-surface p-5 shadow-sm max-sm:border-0 max-sm:p-4 max-sm:shadow-soft short:p-4";
@@ -65,18 +68,19 @@ function dateFR(iso: string | null | undefined, locale: Locale): string {
 }
 
 /** Les deux montants qui composent le total, tels qu'ils figurent sur les deux factures. */
-function Breakdown({ offer, kineName, compact = false }: { offer: PlatformOffer; kineName: string; compact?: boolean }) {
+function Breakdown({ offer, kineName, compact = false, pricing = FRANCE_PRICING }: { offer: PlatformOffer; kineName: string; compact?: boolean; pricing?: CountryPricing }) {
   const t = useTranslations("billing.suivi");
   const tf = useTranslations("billing.format");
   const locale = useLocale() as Locale;
+  const money = (cents: number) => moneyLabel(cents, pricing.currency, locale, (amount) => tf("eur", { amount }));
   return (
     <ul className={`space-y-1 text-xs text-muted ${compact ? "" : "mt-2"}`}>
       <li className="flex gap-2">
-        <span className="w-14 shrink-0 text-right font-semibold tabular-nums text-ink">{tf("eur", { amount: eurosFR(offer.platformCents, locale) })}</span>
+        <span className="w-14 shrink-0 text-right font-semibold tabular-nums text-ink">{money(offer.platformCents)}</span>
         <span>{t("breakdownPlatform")}</span>
       </li>
       <li className="flex gap-2">
-        <span className="w-14 shrink-0 text-right font-semibold tabular-nums text-ink">{tf("eur", { amount: eurosFR(KINE_FOLLOW_UP_CENTS, locale) })}</span>
+        <span className="w-14 shrink-0 text-right font-semibold tabular-nums text-ink">{money(pricing.kineFollowUp)}</span>
         <span>{t("breakdownKine", { kineName })}</span>
       </li>
     </ul>
@@ -101,6 +105,7 @@ export default function SuiviView({
   demo = false,
   paymentNotice = null,
   canManageCard = false,
+  pricing = FRANCE_PRICING,
 }: SuiviViewProps) {
   const t = useTranslations("billing.suivi");
   const tf = useTranslations("billing.format");
@@ -109,7 +114,7 @@ export default function SuiviView({
   const date = (iso: string | null | undefined) => dateFR(iso, locale);
   const known = !!subscription && (isPlatformOfferKey(subscription.plan) || subscription.plan === EARLY_ACCESS_PLAN_KEY);
   const legacy = known && !!subscription!.legacy;
-  const offer = known && isPlatformOfferKey(subscription!.plan) && !legacy ? platformOffer(subscription!.plan) : null;
+  const offer = known && isPlatformOfferKey(subscription!.plan) && !legacy ? platformOfferIn(subscription!.plan, pricing) : null;
   const live = known && (subscription!.status === "active" || subscription!.status === "trialing") && !required;
   const trialing = live && subscription!.status === "trialing";
   const refused = known && ["past_due", "unpaid", "incomplete"].includes(subscription!.status);
@@ -153,6 +158,7 @@ export default function SuiviView({
         reminderLabel={shortDay(daysFromNow(TRIAL_DAYS - 2), locale)}
         firstChargeLabel={shortDay(daysFromNow(TRIAL_DAYS), locale)}
         programmeReady={programmeReady}
+        pricing={pricing}
         demo={demo}
       />
     );
@@ -208,7 +214,7 @@ export default function SuiviView({
                     {legacy
                       ? t("legacyPlan")
                       : offer
-                        ? t("offerLine", { label: tOffer(offer.key), total: tf("eur", { amount: eurosFR(monthlyTotalCents(offer), locale) }) })
+                        ? t("offerLine", { label: tOffer(offer.key), total: moneyLabel(monthlyTotalIn(offer, pricing), pricing.currency, locale, (amount) => tf("eur", { amount })) })
                         : t("platformAccess")}
                   </p>
                 </div>
@@ -217,7 +223,7 @@ export default function SuiviView({
                   {t("accessOpen")}
                 </span>
               </div>
-              {offer && <Breakdown offer={offer} kineName={kineName} />}
+              {offer && <Breakdown offer={offer} kineName={kineName} pricing={pricing} />}
               <p className="mt-3 flex items-center gap-2 text-sm text-ink">
                 <CalendarClock className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
                 {legacy

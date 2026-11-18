@@ -2,7 +2,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { CreditCard } from "lucide-react";
 import type { Locale } from "@/i18n/locales";
 import SubmitButton from "@/components/SubmitButton";
-import { eurosFR } from "@/lib/billing/patientPlans";
+import { FRANCE_PRICING, moneyLabel, type CountryPricing } from "@/lib/billing/patientPlans";
 import { periodLabel } from "@/lib/billing/reviewModel";
 import { payReview } from "./actions";
 
@@ -17,7 +17,16 @@ export type UnpaidReview = {
   status: "failed" | "action_required";
 };
 
-export default function ReviewPaymentNotice({ reviews, kineName }: { reviews: UnpaidReview[]; kineName: string }) {
+export default function ReviewPaymentNotice({
+  reviews,
+  kineName,
+  pricing = FRANCE_PRICING,
+}: {
+  reviews: UnpaidReview[];
+  kineName: string;
+  /** Monnaie du pays du kiné (2026-11-18) ; défaut : euro. */
+  pricing?: CountryPricing;
+}) {
   const t = useTranslations("billing.reviewPayment");
   const tf = useTranslations("billing.format");
   const locale = useLocale() as Locale;
@@ -29,8 +38,8 @@ export default function ReviewPaymentNotice({ reviews, kineName }: { reviews: Un
           <CreditCard className="h-5 w-5 shrink-0 text-warn" strokeWidth={1.75} />
           <p className="min-w-0 flex-1">
             {r.status === "action_required"
-              ? t("actionRequired", { kineName, period: periodLabel(r.period, locale), amount: tf("eur", { amount: eurosFR(r.amountCents, locale) }) })
-              : t("failed", { kineName, period: periodLabel(r.period, locale), amount: tf("eur", { amount: eurosFR(r.amountCents, locale) }) })}
+              ? t("actionRequired", { kineName, period: periodLabel(r.period, locale), amount: moneyLabel(r.amountCents, pricing.currency, locale, (amount) => tf("eur", { amount })) })
+              : t("failed", { kineName, period: periodLabel(r.period, locale), amount: moneyLabel(r.amountCents, pricing.currency, locale, (amount) => tf("eur", { amount })) })}
           </p>
           <form action={payReview}>
             <input type="hidden" name="review_id" value={r.id} />

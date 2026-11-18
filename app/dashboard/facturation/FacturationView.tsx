@@ -5,7 +5,16 @@ import type { Locale } from "@/i18n/locales";
 import { CheckCircle2, ChevronRight, Circle, ExternalLink, Tag, Users } from "lucide-react";
 import SubmitButton from "@/components/SubmitButton";
 import PhoneFold from "@/components/PhoneFold";
-import { HIGHEST_MONTHLY_TOTAL_CENTS, HIGHEST_PLATFORM_CENTS, LOWEST_MONTHLY_TOTAL_CENTS, LOWEST_PLATFORM_CENTS, KINE_FOLLOW_UP_CENTS, KINE_NET_CENTS, TRIAL_DAYS, eurosFR } from "@/lib/billing/patientPlans";
+import {
+  FRANCE_PRICING,
+  TRIAL_DAYS,
+  eurosFR,
+  moneyLabel,
+  monthlyTotalIn,
+  platformOffersIn,
+  stripeFeeCents,
+  type CountryPricing,
+} from "@/lib/billing/patientPlans";
 import { startConnectOnboarding } from "../connect/actions";
 
 // Page « Suivi & facturation » du kiné — modèle définitif (Philippe,
@@ -35,6 +44,7 @@ export default function FacturationView({
   monthlyCents,
   patientCount,
   error,
+  pricing = FRANCE_PRICING,
 }: {
   connectStatus: ConnectStatus;
   subscribers: SubscriberRow[];
@@ -42,12 +52,24 @@ export default function FacturationView({
   monthlyCents: number;
   patientCount: number;
   error?: string;
+  /** Monnaie et montants du pays du kiné (2026-11-18) ; défaut : France. */
+  pricing?: CountryPricing;
 }) {
   const active = subscribers.filter((s) => s.status !== "refused");
   const t = useTranslations("billing.facturation");
   const tf = useTranslations("billing.format");
   const locale = useLocale() as Locale;
-  const eur = (cents: number) => tf("eur", { amount: eurosFR(cents, locale) });
+  const eur = (cents: number) => moneyLabel(cents, pricing.currency, locale, (amount) => tf("eur", { amount }));
+  // Fourchettes et net dans la monnaie du pays (en euros : mêmes chiffres qu'avant).
+  const offers = platformOffersIn(pricing);
+  const KINE_FOLLOW_UP_CENTS = pricing.kineFollowUp;
+  const KINE_NET_CENTS = pricing.kineFollowUp - stripeFeeCents(pricing.kineFollowUp);
+  const LOWEST_PLATFORM_CENTS = Math.min(...offers.map((o) => o.platformCents));
+  const HIGHEST_PLATFORM_CENTS = Math.max(...offers.map((o) => o.platformCents));
+  const LOWEST_MONTHLY_TOTAL_CENTS = Math.min(...offers.map((o) => monthlyTotalIn(o, pricing)));
+  const HIGHEST_MONTHLY_TOTAL_CENTS = Math.max(...offers.map((o) => monthlyTotalIn(o, pricing)));
+  const range = (low: number, high: number) =>
+    pricing.currency === "eur" ? tf("eurRange", { low: eurosFR(low, locale), high: eurosFR(high, locale) }) : `${eur(low)} – ${eur(high)}`;
   const shortDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(intlTag(locale), { day: "numeric", month: "short" }) : "");
   return (
     <main>
@@ -140,13 +162,13 @@ export default function FacturationView({
                   <tr>
                     <td className="py-1.5 text-ink">{t("rowAccess")}</td>
                     <td className="py-1.5 text-right tabular-nums text-ink">
-                      {tf("eurRange", { low: eurosFR(LOWEST_PLATFORM_CENTS, locale), high: eurosFR(HIGHEST_PLATFORM_CENTS, locale) })}
+                      {range(LOWEST_PLATFORM_CENTS, HIGHEST_PLATFORM_CENTS)}
                     </td>
                   </tr>
                   <tr>
                     <td className="py-1.5 font-medium text-ink">{t("rowTotal")}</td>
                     <td className="py-1.5 text-right font-medium tabular-nums text-ink">
-                      {tf("eurRange", { low: eurosFR(LOWEST_MONTHLY_TOTAL_CENTS, locale), high: eurosFR(HIGHEST_MONTHLY_TOTAL_CENTS, locale) })}
+                      {range(LOWEST_MONTHLY_TOTAL_CENTS, HIGHEST_MONTHLY_TOTAL_CENTS)}
                     </td>
                   </tr>
                 </tbody>

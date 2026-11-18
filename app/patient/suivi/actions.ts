@@ -8,17 +8,18 @@ import { getStripe } from "@/lib/billing/stripe";
 import { requestOrigin } from "@/lib/requestOrigin";
 import {
   BILLING_TERMS_VERSION,
-  KINE_FOLLOW_UP_CENTS,
   TRIAL_DAYS,
   cancellationMode,
   trialGranted,
   commitmentEnd,
   commitmentEndOfSubscription,
-  eurosFR,
   isPlatformOfferKey,
-  PLATFORM_INVOICE_FOOTER,
   isPlatformSubscription,
-  platformOffer,
+  moneyLabel,
+  platformInvoiceFooter,
+  platformOfferIn,
+  pricingForCountry,
+  type PlatformOfferKey,
   subscriptionGivesAccess,
   type SubscriptionRow,
 } from "@/lib/billing/patientPlans";
@@ -59,7 +60,7 @@ async function context() {
   if (!patient) fail((await tr())("patientNotFound"));
   const instructorId = patient!.instructor_id as string;
   const [{ data: kine }, { data: connect }, { data: sub, error: subError }] = await Promise.all([
-    supabase.from("instructors").select("status, full_name").eq("id", instructorId).maybeSingle(),
+    supabase.from("instructors").select("status, full_name, country").eq("id", instructorId).maybeSingle(),
     supabase.from("instructor_connect_accounts").select("stripe_connect_account_id, status").eq("instructor_id", instructorId).maybeSingle(),
     supabase
       .from("subscriptions")
@@ -93,7 +94,11 @@ export async function startPlan(formData: FormData) {
   // deuxième (le patient annule plutôt sa résiliation).
   if (subscriptionGivesAccess((sub as unknown as SubscriptionRow | null) ?? null)) fail(t("alreadySubscribed"));
 
-  const offer = platformOffer(key as Parameters<typeof platformOffer>[0]);
+  // Monnaie et montants du pays du KINÉ (lib/billing/patientPlans.ts,
+  // COUNTRY / CURRENCY_PRICES) : France = exactement les montants d'avant.
+  const pricing = pricingForCountry((kine?.country as string | null) ?? null);
+  if (!pricing) fail(t("kineUnavailable"));
+  const offer = platformOfferIn(key as PlatformOfferKey, pricing!);
   const stripe = getStripe();
   // Langue de la page de paiement Stripe = celle du patient.
   const locale = (await getLocale()) === "en" ? "en" : "fr";
@@ -129,14 +134,15 @@ export async function startPlan(formData: FormData) {
     }
     if (alreadyLive) throw new AlreadySubscribed();
     // Mention « TVA non applicable » sur chaque facture d'accès (micro-entreprise).
+    const footer = platformInvoiceFooter(pricing!.country);
     if (customerId) {
-      await stripe.customers.update(customerId, { invoice_settings: { footer: PLATFORM_INVOICE_FOOTER } });
+      await stripe.customers.update(customerId, { invoice_settings: { footer } });
     } else {
       const c = await stripe.customers.create({
         email: user.email ?? undefined,
         name: (patient.full_name as string | null) ?? undefined,
         metadata: { patient_id: user.id },
-        invoice_settings: { footer: PLATFORM_INVOICE_FOOTER },
+        invoice_settings: { footer },
       });
       customerId = c.id;
     }
@@ -160,10 +166,12 @@ export async function startPlan(formData: FormData) {
       patientId: user.id,
       offerKey: offer.key,
       platformCents: offer.platformCents,
-      kineCents: KINE_FOLLOW_UP_CENTS,
+      kineCents: pricing!.kineFollowUp,
       trialDays: firstTime ? TRIAL_DAYS : 0,
       locale,
-      termsVersion: BILLING_TERMS_VERSION,
+      // Hors euro, la monnaie est notée avec la version (« 2026-11-08/CHF ») :
+      // pas de colonne monnaie dans l'accord enregistré (migration 0089).
+      termsVersion: pricing!.currency === "eur" ? BILLING_TERMS_VERSION : `${BILLING_TERMS_VERSION}/${pricing!.currency.toUpperCase()}`,
     });
     const paidStart = new Date(Date.now() + (firstTime ? TRIAL_DAYS * 86_400_000 : 0));
     const commitUntil = commitmentEnd(offer, paidStart);
@@ -173,6 +181,7 @@ export async function startPlan(formData: FormData) {
       ...(commitUntil ? { commit_until: commitUntil } : {}),
     };
     const kineName = (kine?.full_name as string | null) ?? t("kineFallback");
+    const tFormat = await getTranslations("billing.format");
     // Le nom et la description du produit restent en français : ils figurent
     // sur la facture d'EasyPhysio.
     const session = await stripe.checkout.sessions.create({
@@ -187,7 +196,7 @@ export async function startPlan(formData: FormData) {
         {
           quantity: 1,
           price_data: {
-            currency: "eur",
+            currency: pricing!.currency,
             unit_amount: offer.platformCents,
             recurring: { interval: "month" },
             product_data: {
@@ -205,7 +214,7 @@ export async function startPlan(formData: FormData) {
         submit: {
           message: t("checkoutNote", {
             kineName,
-            amount: (await getTranslations("billing.format"))("eur", { amount: eurosFR(KINE_FOLLOW_UP_CENTS, locale) }),
+            amount: moneyLabel(pricing!.kineFollowUp, pricing!.currency, locale, (amount) => tFormat("eur", { amount })),
           }),
         },
       },
@@ -381,14 +390,18 @@ export async function payReview(formData: FormData) {
     : { data: null };
   if (!review || !reviewPayableByPatient(review.payment_status as string)) fail(t("reviewNotPayable"));
 
-  const [{ data: connect }, followUp] = await Promise.all([
+  const [{ data: connect }, followUp, { data: reviewKine }] = await Promise.all([
     supabase
       .from("instructor_connect_accounts")
       .select("stripe_connect_account_id, status")
       .eq("instructor_id", review!.instructor_id as string)
       .maybeSingle(),
     followUpForCharge(user.id),
+    supabase.from("instructors").select("country").eq("id", review!.instructor_id as string).maybeSingle(),
   ]);
+  // Monnaie du pays du kiné qui a émis la note (France : euro, comme avant).
+  const reviewPricing = pricingForCountry((reviewKine?.country as string | null) ?? null);
+  if (!reviewPricing) fail(t("reviewKineUnavailable"));
   const accountId = connect?.status === "active" ? ((connect.stripe_connect_account_id as string | null) ?? null) : null;
   if (!accountId) fail(t("reviewKineUnavailable"));
 
@@ -424,10 +437,11 @@ export async function payReview(formData: FormData) {
       url = await createReviewPaymentCheckout({
         reviewId,
         amountCents,
+        currency: reviewPricing!.currency,
         accountId: accountId!,
         customerId,
         productName: t("reviewProductName", { period: periodLabel(period, locale) }),
-        description: reviewChargeDescription(period, review!.fee_note_year as number, review!.fee_note_seq as number, amountCents),
+        description: reviewChargeDescription(period, review!.fee_note_year as number, review!.fee_note_seq as number, amountCents, reviewPricing),
         receiptEmail: user.email ?? null,
         locale,
         // Au retour, le paiement est vérifié côté serveur (app/patient/suivi/paiement)

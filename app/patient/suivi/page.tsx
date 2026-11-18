@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { pricingForCountry } from "@/lib/billing/patientPlans";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import {
@@ -43,7 +44,7 @@ export default async function SuiviPage({
   // patient_recommended_workouts, lisible par le patient pour lui-même).
   const [{ data: kine }, subRes, { count: assignedCount }] = await Promise.all([
     instructorId
-      ? supabase.from("instructors").select("full_name, status").eq("id", instructorId).maybeSingle()
+      ? supabase.from("instructors").select("full_name, status, country").eq("id", instructorId).maybeSingle()
       : Promise.resolve({ data: null }),
     loadSub(),
     supabase.from("patient_recommended_workouts").select("workout_id", { count: "exact", head: true }).eq("patient_id", user.id),
@@ -105,8 +106,9 @@ export default async function SuiviPage({
       kineReady={kineReady}
       required={required}
       programmeReady={(assignedCount ?? 0) > 0}
-      paymentNotice={unpaid.length > 0 ? <ReviewPaymentNotice reviews={unpaid} kineName={kineName} /> : null}
+      paymentNotice={unpaid.length > 0 ? <ReviewPaymentNotice reviews={unpaid} kineName={kineName} pricing={pricingForCountry((kine?.country as string | null) ?? null) ?? undefined} /> : null}
       canManageCard={!!row && isPlatformSubscription(row) && !!sub?.stripe_subscription_id}
+      pricing={pricingForCountry((kine?.country as string | null) ?? null) ?? undefined}
       subscription={
         sub
           ? {

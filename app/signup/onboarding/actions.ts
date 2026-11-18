@@ -9,6 +9,8 @@ import { friendlyDbError } from "@/lib/format/dbError";
 import { getTranslations } from "next-intl/server";
 import { trackServer } from "@/lib/analytics/serverTrack";
 import { alertKineSignup } from "@/lib/alerts/discord";
+import { isCountryEnabled } from "@/lib/billing/countries";
+import { checkProfessionalId, professionalIdAutoApproves } from "@/lib/instructor/professionalId";
 
 // Saves the cabinet/practice details collected right after Clerk signup (see
 // app/signup/onboarding/page.tsx).
@@ -58,10 +60,19 @@ export async function saveInstructorOnboarding(formData: FormData) {
   if (missing.length > 0) {
     redirect(`/signup/onboarding?error=${encodeURIComponent(t("errorMissing", { fields: missing.join(", ") }))}`);
   }
-  if (rppsNumber && !/^\d{9,11}$/.test(rppsNumber)) {
+  // Pays d'exercice (migration 0101) : seulement un pays ouvert ; hors France,
+  // numéro professionnel obligatoire et format vérifié s'il existe une règle.
+  const country = String(formData.get("country") ?? "FR").toUpperCase();
+  if (!isCountryEnabled(country)) redirect(`/signup/onboarding?error=${encodeURIComponent(t("countryNotOpen"))}`);
+  const isFrance = country === "FR";
+  const proCheck = isFrance ? null : checkProfessionalId(country, String(formData.get("professional_id") ?? ""));
+  if (proCheck && !proCheck.ok) {
+    redirect(`/signup/onboarding?error=${encodeURIComponent(proCheck.reason === "required" ? t("proIdRequired") : t("proIdFormat"))}`);
+  }
+  if (isFrance && rppsNumber && !/^\d{9,11}$/.test(rppsNumber)) {
     redirect(`/signup/onboarding?error=${encodeURIComponent(t("errorRppsDigits"))}`);
   }
-  if (siret && !/^\d{14}$/.test(siret)) {
+  if (isFrance && siret && !/^\d{14}$/.test(siret)) {
     redirect(`/signup/onboarding?error=${encodeURIComponent(t("errorSiretDigits"))}`);
   }
 
@@ -71,7 +82,7 @@ export async function saveInstructorOnboarding(formData: FormData) {
   // unverified RPPS, or one whose name doesn't match, still needs a human.
   // Inscription libre (Philippe, 2026-11-02) : le RPPS, facultatif, ne sert
   // plus qu'à la pastille « RPPS vérifié », jamais à bloquer l'accès.
-  const verification = rppsNumber ? await verifyRpps(rppsNumber, fullName) : null;
+  const verification = isFrance && rppsNumber ? await verifyRpps(rppsNumber, fullName) : null;
   const rppsVerified = !!rppsNumber && verification?.status === "verified" && !(await rppsInUse(rppsNumber, user.id));
 
   const { error } = await supabase
@@ -81,8 +92,10 @@ export async function saveInstructorOnboarding(formData: FormData) {
       cabinet_name: cabinetName,
       cabinet_address: cabinetAddress,
       phone,
-      rpps_number: rppsNumber || null,
-      siret,
+      rpps_number: isFrance ? rppsNumber || null : null,
+      siret: isFrance ? siret : null,
+      country,
+      professional_id: proCheck?.ok ? proCheck.value : null,
     })
     .eq("id", user.id);
 
@@ -92,6 +105,11 @@ export async function saveInstructorOnboarding(formData: FormData) {
 
   // Badge « RPPS vérifié » : écrit par le serveur (migration 0063).
   if (rppsVerified && verification?.status === "verified") await setInstructorRppsVerified(user.id, verification.verifiedAt);
+  // Hors France, numéro sans règle publique (ou pays à revue imposée) : attend la validation de l'admin.
+  if (!isFrance && !professionalIdAutoApproves(country, proCheck?.ok ? proCheck.value : null)) {
+    await alertKineSignup("terminee", { name: fullName, cabinetAddress });
+    redirect("/apres-connexion");
+  }
   // Validé d'office dès que le cabinet est renseigné.
   await setInstructorStatus(user.id, "approved");
   await trackServer("kine_inscription_terminee", { etape: "formulaire_cabinet" });

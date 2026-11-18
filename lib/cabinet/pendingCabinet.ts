@@ -10,6 +10,11 @@
 //     le demandait pas : le nom devenait le début de l'e-mail) ;
 //   - inviteToken : arrivé par le lien d'invitation d'un collègue
 //     (/cabinet/<code>, migration 0091) : il entre directement dans le cabinet.
+// Depuis le 2026-11-18 (international, migration 0101) :
+//   - country : pays d'exercice, seulement un pays OUVERT (lib/billing/
+//     countries.ts) ; absent (ancien cookie) = France ;
+//   - professionalId : numéro professionnel hors France (INAMI, GLN…), vérifié
+//     par lib/instructor/professionalId.ts. En France, rppsNumber comme avant.
 export type PendingCabinet = {
   mode: "create" | "join";
   cabinetId: string | null;
@@ -21,7 +26,12 @@ export type PendingCabinet = {
   firstName: string | null;
   lastName: string | null;
   inviteToken: string | null;
+  country: string;
+  professionalId: string | null;
 };
+
+import { DEFAULT_COUNTRY, isCountryEnabled } from "../billing/countries.ts";
+import { checkProfessionalId } from "../instructor/professionalId.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TOKEN = /^[0-9a-f]{32}$/;
@@ -46,6 +56,14 @@ export function parsePendingCabinet(raw: unknown): PendingCabinet | null {
   const firstName = str(r.firstName, 60) || null;
   const lastName = str(r.lastName, 60) || null;
   const inviteToken = typeof r.inviteToken === "string" && TOKEN.test(r.inviteToken) ? r.inviteToken : null;
+  const country = r.country === undefined || r.country === null ? DEFAULT_COUNTRY : str(r.country, 2).toUpperCase();
+  if (!isCountryEnabled(country)) return null;
+  let professionalId: string | null = null;
+  if (country !== "FR") {
+    const check = checkProfessionalId(country, typeof r.professionalId === "string" ? r.professionalId : "");
+    if (!check.ok || !check.value) return null;
+    professionalId = check.value;
+  }
   if (!cabinetName || !phone) return null;
   if (mode === "join" && !cabinetId) return null;
   if (mode === "create" && !cabinetAddress) return null;
@@ -55,10 +73,12 @@ export function parsePendingCabinet(raw: unknown): PendingCabinet | null {
     cabinetName,
     cabinetAddress,
     phone,
-    rppsNumber: /^\d{9,11}$/.test(rpps) ? rpps : null,
-    siret: /^\d{14}$/.test(siret) ? siret : null,
+    rppsNumber: country === "FR" && /^\d{9,11}$/.test(rpps) ? rpps : null,
+    siret: country === "FR" && /^\d{14}$/.test(siret) ? siret : null,
     firstName,
     lastName,
     inviteToken: mode === "join" ? inviteToken : null,
+    country,
+    professionalId,
   };
 }

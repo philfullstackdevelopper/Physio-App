@@ -28,6 +28,7 @@
 // =============================================================================
 
 import { INTL_TAGS, type Locale } from "../../i18n/locales.ts";
+import { countryConfig, instructorCountry, type CurrencyCode } from "./countries.ts";
 
 /** Programme du kiné, centimes, par mois où il met à jour le programme (honoraires). */
 export const KINE_FOLLOW_UP_CENTS = 600;
@@ -144,6 +145,108 @@ export function commitmentEndOfSubscription(sub: {
   const startUnix = sub.trial_end ?? sub.start_date ?? null;
   if (startUnix) return commitmentEnd(platformOffer(sub.plan), new Date(startUnix * 1000));
   return sub.commit_until ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Montants par pays / monnaie (2026-11-18). Le pays du KINÉ décide de la
+// monnaie des deux paiements de ses patients (lib/billing/countries.ts).
+// La France (et tout pays en euros) garde exactement PLATFORM_OFFERS et
+// KINE_FOLLOW_UP_CENTS ci-dessus. Les montants hors euro sont une PROPOSITION
+// à valider par Philippe (arrondis proches du prix en euros).
+// « Centimes » = plus petite unité de la monnaie (rappen, pence…), comme Stripe.
+// ---------------------------------------------------------------------------
+
+export interface CurrencyPrices {
+  /** Accès à la plateforme, par offre, plus petite unité de la monnaie. */
+  platform: Record<PlatformOfferKey, number>;
+  /** Programme du kiné, par mois où il met à jour le programme. */
+  kineFollowUp: number;
+}
+
+/** Une ligne par monnaie ; un pays dont la monnaie n'a pas de ligne ne peut pas facturer. */
+export const CURRENCY_PRICES: Partial<Record<CurrencyCode, CurrencyPrices>> = {
+  eur: {
+    platform: { plan_1m: PLATFORM_OFFERS[0].platformCents, plan_3m: PLATFORM_OFFERS[1].platformCents, plan_6m: PLATFORM_OFFERS[2].platformCents },
+    kineFollowUp: KINE_FOLLOW_UP_CENTS,
+  },
+  chf: { platform: { plan_1m: 690, plan_3m: 390, plan_6m: 290 }, kineFollowUp: 600 },
+  gbp: { platform: { plan_1m: 599, plan_3m: 349, plan_6m: 249 }, kineFollowUp: 500 },
+  usd: { platform: { plan_1m: 749, plan_3m: 449, plan_6m: 349 }, kineFollowUp: 650 },
+  cad: { platform: { plan_1m: 999, plan_3m: 599, plan_6m: 449 }, kineFollowUp: 900 },
+};
+
+export type CountryPricing = CurrencyPrices & { currency: CurrencyCode; country: string };
+
+/** Monnaie et montants des patients d'un kiné de ce pays (vide = France), ou null si le pays n'est pas ouvert. */
+export function pricingForCountry(country: string | null | undefined): CountryPricing | null {
+  const code = instructorCountry(country);
+  const cfg = countryConfig(code);
+  if (!cfg?.enabled) return null;
+  const prices = CURRENCY_PRICES[cfg.currency];
+  if (!prices) return null;
+  return { ...prices, currency: cfg.currency, country: code };
+}
+
+/** Montants France (euro) : valeur par défaut des écrans. */
+export const FRANCE_PRICING: CountryPricing = { ...CURRENCY_PRICES.eur!, currency: "eur", country: "FR" };
+
+/** Économie par rapport à l'offre sans engagement, dans la monnaie du pays (% arrondi). */
+export function savingsPercentIn(offer: PlatformOffer, prices: CurrencyPrices): number {
+  const base = Math.max(...PLATFORM_OFFERS.map((o) => monthlyTotalIn(platformOfferIn(o.key, prices), prices)));
+  return Math.round((1 - monthlyTotalIn(offer, prices) / base) * 100);
+}
+
+/** Offre d'accès dans la monnaie du pays (même clé, même engagement, autre montant). */
+export function platformOfferIn(key: PlatformOfferKey, prices: CurrencyPrices): PlatformOffer {
+  return { ...platformOffer(key), platformCents: prices.platform[key] };
+}
+
+/** Les trois offres dans la monnaie du pays. */
+export function platformOffersIn(prices: CurrencyPrices): PlatformOffer[] {
+  return PLATFORM_OFFERS.map((o) => platformOfferIn(o.key, prices));
+}
+
+/** Prix mensuel total dans la monnaie du pays (accès + programme du kiné). */
+export function monthlyTotalIn(offer: PlatformOffer, prices: CurrencyPrices): number {
+  return offer.platformCents + prices.kineFollowUp;
+}
+
+/**
+ * Mention TVA sur la facture d'accès d'EasyPhysio, selon le pays du kiné
+ * (donc du patient). France et UE (sous le seuil de 10 000 € de ventes à
+ * distance UE, règles françaises) : franchise en base, mention habituelle.
+ * Suisse : BROUILLON à faire relire (service électronique à un client hors UE,
+ * hors champ de la TVA française ; TVA suisse due seulement au-delà de
+ * CHF 100 000 de chiffre d'affaires mondial) — docs/international-billing.md.
+ */
+export const PLATFORM_INVOICE_FOOTERS: Readonly<Record<string, string>> = {
+  FR: PLATFORM_INVOICE_FOOTER,
+  IE: PLATFORM_INVOICE_FOOTER,
+  // Royaume-Uni : BROUILLON. Tant qu'EasyPhysio n'est pas immatriculé à la TVA
+  // britannique, il ne doit PAS facturer de vrais patients au Royaume-Uni
+  // (docs/international-billing.md). Mention à remplacer par le n° de TVA UK.
+  GB: "TVA non applicable, art. 293 B du CGI. [À COMPLÉTER : n° de TVA britannique avant tout patient réel]",
+  CA: "TVA non applicable, art. 293 B du CGI. Client établi au Canada : TPS/TVH non perçue (ventes canadiennes inférieures à 30 000 $ CA).",
+  US: "TVA non applicable, art. 293 B du CGI. Client établi aux États-Unis.",
+  CH: "TVA non applicable, art. 293 B du CGI. Client établi en Suisse : TVA suisse non due (chiffre d'affaires mondial du prestataire inférieur à CHF 100 000).",
+};
+
+export function platformInvoiceFooter(country: string | null | undefined): string {
+  return PLATFORM_INVOICE_FOOTERS[instructorCountry(country)] ?? PLATFORM_INVOICE_FOOTER;
+}
+
+/**
+ * Montant prêt à afficher : en euros, le format habituel des textes
+ * (`eurFormat`, ex. message billing.format.eur — la France reste identique) ;
+ * autre monnaie, le format Intl de la langue (« CHF 6.90 »).
+ */
+export function moneyLabel(cents: number, currency: CurrencyCode, locale: Locale, eurFormat: (amount: string) => string): string {
+  return currency === "eur" ? eurFormat(eurosFR(cents, locale)) : formatMoney(cents, currency, locale);
+}
+
+/** « CHF 6.90 », « £5.99 » : montant dans sa monnaie, au format de la langue. */
+export function formatMoney(cents: number, currency: CurrencyCode, locale: Locale = "fr"): string {
+  return new Intl.NumberFormat(INTL_TAGS[locale], { style: "currency", currency: currency.toUpperCase(), minimumFractionDigits: 2 }).format(cents / 100);
 }
 
 /** « 12,99 » (en : « 12.99 ») ; le nom reste « eurosFR », le montant reste en euros. */

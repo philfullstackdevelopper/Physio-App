@@ -18,12 +18,31 @@ import { followUpForCharge, kineFeesAcceptance, recordMonthlyReview } from "@/li
 import { chargeReview } from "./followUp";
 import { feeNoteNumber, periodLabel, periodOf } from "./reviewModel";
 import { reviewNeedsChargeRetry } from "./reviewPayment";
-import { KINE_FOLLOW_UP_CENTS, eurosFR, kineFeesAccepted, kineFollowUpChargeable, type SubscriptionRow } from "./patientPlans";
+import {
+  KINE_FOLLOW_UP_CENTS,
+  eurosFR,
+  formatMoney,
+  kineFeesAccepted,
+  kineFollowUpChargeable,
+  pricingForCountry,
+  type CountryPricing,
+  type SubscriptionRow,
+} from "./patientPlans";
 import { ensureKineCard } from "./patientSubscription";
 
 /** Libellé du paiement chez Stripe (relevé du kiné, reçu du patient). */
-export function reviewChargeDescription(period: string, feeNoteYear: number, feeNoteSeq: number, amountCents: number = KINE_FOLLOW_UP_CENTS): string {
-  return `Programme mensuel hors nomenclature - ${periodLabel(period)} - note n° ${feeNoteNumber(feeNoteYear, feeNoteSeq)} (${eurosFR(amountCents)} €)`;
+export function reviewChargeDescription(
+  period: string,
+  feeNoteYear: number,
+  feeNoteSeq: number,
+  amountCents: number = KINE_FOLLOW_UP_CENTS,
+  pricing: Pick<CountryPricing, "country" | "currency"> | null = null,
+): string {
+  const country = pricing?.country ?? "FR";
+  // France : libellé d'origine, inchangé (« hors nomenclature » n'existe qu'en France).
+  if (country === "FR") return `Programme mensuel hors nomenclature - ${periodLabel(period)} - note n° ${feeNoteNumber(feeNoteYear, feeNoteSeq)} (${eurosFR(amountCents)} €)`;
+  // Hors France : BROUILLON à faire relire (docs/international-billing.md).
+  return `Monthly exercise programme follow-up - ${periodLabel(period, "en")} - fee note no. ${feeNoteNumber(feeNoteYear, feeNoteSeq)} (${formatMoney(amountCents, pricing!.currency, "en")})`;
 }
 
 export async function recordMonthlyReviewIfDue(p: {
@@ -62,7 +81,7 @@ export async function recordMonthlyReviewIfDue(p: {
         .eq("user_id", p.patientId)
         .maybeSingle(),
       p.supabase.from("instructor_connect_accounts").select("status, stripe_connect_account_id").eq("instructor_id", p.instructorId).maybeSingle(),
-      p.supabase.from("instructors").select("status").eq("id", p.instructorId).maybeSingle(),
+      p.supabase.from("instructors").select("status, country").eq("id", p.instructorId).maybeSingle(),
       p.supabase.from("patients").select("full_name, email").eq("id", p.patientId).maybeSingle(),
     ]);
     // Patient sans abonnement d'accès actif, ou encore en essai : rien à prélever.
@@ -70,6 +89,10 @@ export async function recordMonthlyReviewIfDue(p: {
     if ((kine?.status as string | null) === "suspended") return;
     const accountId = connect?.status === "active" ? ((connect.stripe_connect_account_id as string | null) ?? null) : null;
     if (!accountId) return;
+    // Monnaie et montant du pays du kiné (France : 6,00 € comme avant). Pays
+    // fermé entre-temps : rien n'est prélevé.
+    const pricing = pricingForCountry((kine?.country as string | null) ?? null);
+    if (!pricing) return;
     // Accord écrit du patient (audit M4) : donné pour un AUTRE kiné (le
     // patient a changé de kiné) → ni copie de carte ni prélèvement tant qu'il
     // n'a pas redonné son accord. Le mois n'est pas enregistré non plus.
@@ -91,6 +114,7 @@ export async function recordMonthlyReviewIfDue(p: {
         platformSubscriptionId: sub!.stripe_subscription_id as string,
         email: (patient?.email as string | null) ?? null,
         name: (patient?.full_name as string | null) ?? null,
+        priceCents: pricing.kineFollowUp,
       });
       if (!copied) return;
       followUp = await followUpForCharge(p.patientId);
@@ -98,7 +122,7 @@ export async function recordMonthlyReviewIfDue(p: {
     }
 
     let review: { review_id: string; fee_note_year: number; fee_note_seq: number };
-    let amountCents = KINE_FOLLOW_UP_CENTS;
+    let amountCents = pricing.kineFollowUp;
     if (retry) {
       // La note existe déjà : même numéro, même montant.
       review = {
@@ -114,7 +138,7 @@ export async function recordMonthlyReviewIfDue(p: {
           instructorId: p.instructorId,
           period,
           feedback: p.note.slice(0, 2000) || "Programme mis à jour",
-          amountCents: KINE_FOLLOW_UP_CENTS,
+          amountCents: pricing.kineFollowUp,
         });
       } catch (e) {
         // 23505 = un autre onglet vient d'enregistrer le mois : rien à faire.
@@ -128,10 +152,11 @@ export async function recordMonthlyReviewIfDue(p: {
     await chargeReview({
       reviewId: review.review_id,
       amountCents,
+      currency: pricing.currency,
       accountId,
       customerId: followUp!.stripe_customer_id!,
       paymentMethodId: followUp!.stripe_payment_method_id!,
-      description: reviewChargeDescription(period, review.fee_note_year, review.fee_note_seq, amountCents),
+      description: reviewChargeDescription(period, review.fee_note_year, review.fee_note_seq, amountCents, pricing),
       receiptEmail: (patient?.email as string | null) ?? null,
       recheck: retry,
     });

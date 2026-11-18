@@ -12,6 +12,7 @@ export default function SignupOnboardingView({
   error,
   defaults,
   action,
+  countries,
 }: {
   error?: string;
   defaults: {
@@ -22,8 +23,12 @@ export default function SignupOnboardingView({
     phone: string | null;
     rpps_number: string | null;
     siret: string | null;
+    country?: string | null;
+    professional_id?: string | null;
   };
   action: (formData: FormData) => void | Promise<void>;
+  /** Pays ouverts, nom déjà dans la langue de la page (page.tsx). */
+  countries?: { code: string; name: string }[];
 }) {
   const t = useTranslations("auth.cabinet");
   const tShared = useTranslations("auth.shared");
@@ -131,6 +136,27 @@ export default function SignupOnboardingView({
               />
             </label>
             </div>
+
+            {/* Hors France (2026-11-18, migration 0101) : replié, la France ne voit qu'une ligne. */}
+            <details className="text-sm" open={!!defaults.country && defaults.country !== "FR"}>
+              <summary className="cursor-pointer font-medium text-slate-700">{t("abroadSummary")}</summary>
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                <label>
+                  <span className="text-sm font-medium text-slate-700">{t("countryLabel")}</span>
+                  <select name="country" defaultValue={defaults.country ?? "FR"} className={fieldClass}>
+                    {(countries ?? []).map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span className="text-sm font-medium text-slate-700">{t("proId.other.label")}</span>
+                  <input type="text" name="professional_id" defaultValue={defaults.professional_id ?? ""} className={fieldClass} />
+                </label>
+              </div>
+            </details>
 
             {/* Désactivé pendant l'envoi : pas de double clic (audit du 2026-11-10). */}
             <SubmitButton

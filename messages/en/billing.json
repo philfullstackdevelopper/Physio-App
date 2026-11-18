@@ -240,5 +240,56 @@
     "failed": "Your bank declined the payment of {kineName}'s fees for {period} ({amount}).",
     "pay": "Pay",
     "opening": "Opening…"
+  },
+  "feeNoteCountry": {
+    "_review": "DRAFT — non-French wording must be reviewed by a local lawyer before any real use (docs/international-billing.md)",
+    "CH": {
+      "profession": "Physiotherapist",
+      "id": "GLN no.: {id}",
+      "line": "Monthly home-exercise programme follow-up, {period}",
+      "lineDetail": "Review of sessions and feedback, programme adjustment. Paid directly by the patient, outside the LAMal/KVG tariff.",
+      "legal": "Not billed to compulsory health insurance (LAMal/KVG); price accepted in writing by the patient beforehand.",
+      "vat": "Excluded from VAT (art. 21 para. 2 no. 3 VAT Act — healthcare services)."
+    },
+    "IE": {
+      "profession": "Physiotherapist",
+      "id": "CORU no.: {id}",
+      "line": "Monthly home-exercise programme follow-up, {period}",
+      "lineDetail": "Review of sessions and feedback, programme adjustment. Private service paid directly by the patient.",
+      "legal": "Price accepted in writing by the patient beforehand.",
+      "vat": "VAT exempt (medical care, Value-Added Tax Consolidation Act 2010, Sch. 1)."
+    },
+    "default": {
+      "profession": "Physiotherapist",
+      "id": "Registration no.: {id}",
+      "line": "Monthly home-exercise programme follow-up, {period}",
+      "lineDetail": "Review of sessions and feedback, programme adjustment.",
+      "legal": "Price accepted in writing by the patient beforehand.",
+      "vat": ""
+    },
+    "GB": {
+      "profession": "Physiotherapist (HCPC registered)",
+      "id": "HCPC no.: {id}",
+      "line": "Monthly home-exercise programme follow-up, {period}",
+      "lineDetail": "Review of sessions and feedback, programme adjustment. Private service paid directly by the patient.",
+      "legal": "Private service, outside the NHS; price accepted in writing by the patient beforehand.",
+      "vat": "VAT exempt (care by a registered health professional, VATA 1994, Sch. 9, Group 7)."
+    },
+    "CA": {
+      "profession": "Physiotherapist",
+      "id": "Registration no.: {id}",
+      "line": "Monthly home-exercise programme follow-up, {period}",
+      "lineDetail": "Review of sessions and feedback, programme adjustment. Private service paid directly by the patient.",
+      "legal": "Price accepted in writing by the patient beforehand.",
+      "vat": "Physiotherapy service exempt from GST/HST (Excise Tax Act, Sch. V, Part II)."
+    },
+    "US": {
+      "profession": "Physical therapist",
+      "id": "License no.: {id}",
+      "line": "Monthly home-exercise program follow-up, {period}",
+      "lineDetail": "Review of sessions and feedback, program adjustment. Private service paid directly by the patient.",
+      "legal": "Price accepted in writing by the patient beforehand; not billed to insurance.",
+      "vat": ""
+    }
   }
 }

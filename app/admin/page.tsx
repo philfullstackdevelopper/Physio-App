@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { countryConfig } from "@/lib/billing/countries";
+import { professionalIdRule } from "@/lib/instructor/professionalId";
 import { UserCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
@@ -50,6 +52,16 @@ export default async function AdminPage({
   ]);
 
   const pending = rows;
+  // Pays et numéro professionnel (migration 0101). Tant que la migration
+  // n'est pas appliquée, la fonction n'existe pas : rien n'est affiché.
+  const countryOf = new Map<string, { country: string; professional_id: string | null }>();
+  try {
+    const { rows: cRows } = await getPool().query("select * from internal.admin_instructor_countries()");
+    for (const r of cRows) countryOf.set(r.id as string, { country: r.country as string, professional_id: (r.professional_id as string | null) ?? null });
+  } catch (e) {
+    console.warn("admin : pays des kinés indisponibles (migration 0101 non appliquée ?)", e);
+  }
+  const tCountry = await getTranslations("admin.country");
 
   // Comptes de test (migration 0064). Tant qu'elle n'est pas appliquée, la
   // fonction n'existe pas en base : la section l'indique au lieu de faire
@@ -290,6 +302,29 @@ export default async function AdminPage({
                       {p.rpps_verified_at && <span className="ml-1.5 text-emerald-600">✓ vérifié</span>}
                     </p>
                     {p.siret && <p>SIRET {p.siret as string}</p>}
+                    {(() => {
+                      // Kiné hors France : pays, numéro et lien vers le registre public.
+                      const c = countryOf.get(p.id as string);
+                      if (!c || c.country === "FR") return null;
+                      const rule = professionalIdRule(c.country);
+                      const cfg = countryConfig(c.country);
+                      return (
+                        <div className="mt-1 text-amber-700">
+                          <p>
+                            {tCountry("line", { country: c.country, id: c.professional_id ?? "—" })}
+                            {rule.lookupUrl && (
+                              <>
+                                {" · "}
+                                <a href={rule.lookupUrl} target="_blank" rel="noopener noreferrer" className="underline hover:no-underline">
+                                  {tCountry("register")}
+                                </a>
+                              </>
+                            )}
+                          </p>
+                          {cfg?.status === "enabled_conditions" && <p>{tCountry("conditions", { note: cfg.note })}</p>}
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <p className="mt-2 text-xs italic text-amber-600">

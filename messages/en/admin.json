@@ -15,5 +15,10 @@
     "cancel": "Cancel",
     "mergeInvalid": "Choose two different practices.",
     "mergeFailed": "The merge failed. Nothing was changed."
+  },
+  "country": {
+    "line": "Country: {country} · Registration no.: {id}",
+    "register": "check the register",
+    "conditions": "Country open with conditions: {note}"
   }
 }

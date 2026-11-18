@@ -9,6 +9,12 @@ import { SIGNUPS_OPEN } from "@/lib/launchFlags";
 import { createCabinet, joinCabinetByInvite, requestJoinCabinet } from "@/lib/db/cabinets";
 import { splitPostalCity } from "@/lib/cabinet/address";
 import { parsePendingCabinet, pendingFullName, type PendingCabinet } from "@/lib/cabinet/pendingCabinet";
+import { professionalIdAutoApproves } from "@/lib/instructor/professionalId";
+
+/** France (comme avant) ou numéro étranger au format vérifié, sans revue admin imposée. */
+function autoApprovable(c: PendingCabinet): boolean {
+  return professionalIdAutoApproves(c.country, c.professionalId);
+}
 import { trackServer } from "@/lib/analytics/serverTrack";
 import { alertKineSignup } from "@/lib/alerts/discord";
 
@@ -104,7 +110,7 @@ async function destination(): Promise<string> {
 
   const { data: existing } = await supabase
     .from("instructors")
-    .select("status, cabinet_name")
+    .select("status, cabinet_name, country")
     .eq("id", appId)
     .maybeSingle();
 
@@ -150,6 +156,9 @@ async function destination(): Promise<string> {
         phone: pendingCabinet.phone,
         rpps_number: pendingCabinet.rppsNumber,
         siret: pendingCabinet.siret,
+        // Pays d'exercice et numéro hors France (migration 0101).
+        country: pendingCabinet.country,
+        professional_id: pendingCabinet.professionalId,
       }),
     });
 
@@ -163,6 +172,14 @@ async function destination(): Promise<string> {
     if (!pendingCabinet) await alertKineSignup("compte_cree", { name: fullName });
     // Badge « RPPS vérifié » : écrit par le serveur (migration 0063).
     if (rppsVerified && verification?.status === "verified") await setInstructorRppsVerified(appId, verification.verifiedAt);
+    // Hors France, numéro sans règle publique de format, ou pays à revue
+    // imposée (lib/instructor/professionalId.ts) : le compte attend la validation de Philippe dans
+    // /admin, le cabinet est quand même enregistré.
+    if (pendingCabinet && !autoApprovable(pendingCabinet)) {
+      await applyCabinetChoice(appId, pendingCabinet);
+      await alertKineSignup("compte_cree", { name: fullName });
+      return "/dashboard";
+    }
     // Validé d'office dès que le cabinet est renseigné → directement dans
     // l'appli. Cabinet manquant (cookie perdu) → on le demande d'abord.
     if (pendingCabinet) {
@@ -183,8 +200,9 @@ async function destination(): Promise<string> {
   // Already had a profile (re-run, or previously approved account re-signing up).
   // Validé, refusé ou suspendu : /dashboard affiche l'espace ou le bon message.
   if ((existing.status ?? "approved") !== "pending") return ("/dashboard");
-  // Resté « en attente » d'avant l'inscription libre, cabinet renseigné : validé.
-  if (existing.cabinet_name) {
+  // Resté « en attente » d'avant l'inscription libre, cabinet renseigné : validé
+  // — sauf un kiné hors France dont le numéro attend la revue de l'admin.
+  if (existing.cabinet_name && ((existing.country as string | null) ?? "FR") === "FR") {
     try {
       await setInstructorStatus(appId, "approved");
     } catch (e) {

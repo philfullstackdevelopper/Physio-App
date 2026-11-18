@@ -15,5 +15,10 @@
     "cancel": "Annuler",
     "mergeInvalid": "Choisissez deux cabinets différents.",
     "mergeFailed": "La fusion a échoué. Rien n'a été modifié."
+  },
+  "country": {
+    "line": "Pays : {country} · N° professionnel : {id}",
+    "register": "vérifier dans le registre",
+    "conditions": "Pays ouvert sous conditions : {note}"
   }
 }

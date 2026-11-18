@@ -234,5 +234,56 @@
     "failed": "Le paiement des honoraires de {kineName} pour {period} ({amount}) a été refusé par votre banque.",
     "pay": "Payer",
     "opening": "Ouverture…"
+  },
+  "feeNoteCountry": {
+    "_review": "BROUILLON — mentions hors France à faire relire par un juriste local avant tout usage réel (docs/international-billing.md)",
+    "CH": {
+      "profession": "Physiothérapeute",
+      "id": "N° GLN : {id}",
+      "line": "Suivi mensuel du programme d'exercices à domicile, {period}",
+      "lineDetail": "Analyse des séances et ressentis, ajustement du programme. Prestation payée directement par le patient, hors tarif LAMal.",
+      "legal": "Prestation non facturée à l'assurance obligatoire des soins (LAMal) ; prix accepté par écrit par le patient avant la prestation.",
+      "vat": "Exclu du champ de la TVA (art. 21, al. 2, ch. 3 LTVA — prestations de soins)."
+    },
+    "IE": {
+      "profession": "Physiothérapeute",
+      "id": "N° CORU : {id}",
+      "line": "Suivi mensuel du programme d'exercices à domicile, {period}",
+      "lineDetail": "Analyse des séances et ressentis, ajustement du programme. Prestation privée payée directement par le patient.",
+      "legal": "Prix accepté par écrit par le patient avant la prestation.",
+      "vat": "Exonéré de TVA (soins médicaux, Value-Added Tax Consolidation Act 2010, Sch. 1)."
+    },
+    "default": {
+      "profession": "Physiothérapeute",
+      "id": "N° professionnel : {id}",
+      "line": "Suivi mensuel du programme d'exercices à domicile, {period}",
+      "lineDetail": "Analyse des séances et ressentis, ajustement du programme.",
+      "legal": "Prix accepté par écrit par le patient avant la prestation.",
+      "vat": ""
+    },
+    "GB": {
+      "profession": "Physiothérapeute (HCPC)",
+      "id": "N° HCPC : {id}",
+      "line": "Suivi mensuel du programme d'exercices à domicile, {period}",
+      "lineDetail": "Analyse des séances et ressentis, ajustement du programme. Prestation privée payée directement par le patient.",
+      "legal": "Prestation privée, hors NHS ; prix accepté par écrit par le patient avant la prestation.",
+      "vat": "Exonéré de TVA (soins par un professionnel de santé enregistré, VATA 1994, Sch. 9, Group 7)."
+    },
+    "CA": {
+      "profession": "Physiothérapeute",
+      "id": "N° d'inscription : {id}",
+      "line": "Suivi mensuel du programme d'exercices à domicile, {period}",
+      "lineDetail": "Analyse des séances et ressentis, ajustement du programme. Prestation privée payée directement par le patient.",
+      "legal": "Prix accepté par écrit par le patient avant la prestation.",
+      "vat": "Service de physiothérapie exonéré de TPS/TVH (LTA, ann. V, partie II)."
+    },
+    "US": {
+      "profession": "Physiothérapeute",
+      "id": "N° de licence : {id}",
+      "line": "Suivi mensuel du programme d'exercices à domicile, {period}",
+      "lineDetail": "Analyse des séances et ressentis, ajustement du programme. Prestation privée payée directement par le patient.",
+      "legal": "Prix accepté par écrit par le patient avant la prestation ; non facturé à une assurance.",
+      "vat": ""
+    }
   }
 }

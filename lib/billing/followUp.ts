@@ -25,6 +25,7 @@
 // pourrait créer à la main une session ou un paiement portant de fausses
 // metadata. Le webhook n'accepte que ce qu'EasyPhysio a signé.
 // =============================================================================
+import type { CurrencyCode } from "./countries";
 import type Stripe from "stripe";
 import { getStripe } from "./stripe";
 import { sign, verify } from "./signing";
@@ -112,6 +113,8 @@ function reviewMetadata(reviewId: string, accountId: string): Record<string, str
 export async function chargeReview(p: {
   reviewId: string;
   amountCents: number;
+  /** Monnaie du pays du kiné (lib/billing/countries.ts) ; défaut : euro, comme avant. */
+  currency?: CurrencyCode;
   accountId: string;
   customerId: string;
   paymentMethodId: string;
@@ -143,7 +146,7 @@ export async function chargeReview(p: {
     const intent = await stripe.paymentIntents.create(
       {
         amount: p.amountCents,
-        currency: "eur",
+        currency: p.currency ?? "eur",
         customer: p.customerId,
         payment_method: p.paymentMethodId,
         off_session: true,
@@ -316,6 +319,8 @@ export async function openReviewCheckoutUrl(p: { reviewId: string; amountCents: 
 export async function createReviewPaymentCheckout(p: {
   reviewId: string;
   amountCents: number;
+  /** Monnaie du pays du kiné ; défaut : euro, comme avant. */
+  currency?: CurrencyCode;
   accountId: string;
   customerId: string | null;
   productName: string;
@@ -333,7 +338,7 @@ export async function createReviewPaymentCheckout(p: {
       line_items: [
         {
           quantity: 1,
-          price_data: { currency: "eur", unit_amount: p.amountCents, product_data: { name: p.productName } },
+          price_data: { currency: p.currency ?? "eur", unit_amount: p.amountCents, product_data: { name: p.productName } },
         },
       ],
       payment_intent_data: {

@@ -2,7 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingStripeObject, refreshConnectStatus } from "@/lib/billing/connectStatus";
 import { upsertConnectAccount } from "@/lib/db/admin";
-import { KINE_FOLLOW_UP_CENTS, isLegacySubscription, isPlatformOfferKey, isPlatformSubscription, platformOffer, type SubscriptionRow } from "@/lib/billing/patientPlans";
+import { FRANCE_PRICING, pricingForCountry, isLegacySubscription, isPlatformOfferKey, isPlatformSubscription, platformOffer, type SubscriptionRow } from "@/lib/billing/patientPlans";
 import FacturationView, { type ConnectStatus, type SubscriberRow } from "./FacturationView";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 
@@ -22,10 +22,13 @@ export default async function FacturationPage({
   // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
   const { user } = await requireApprovedInstructor(supabase);
 
-  const [{ data: connect }, { data: patients }] = await Promise.all([
+  const [{ data: connect }, { data: patients }, { data: me }] = await Promise.all([
     supabase.from("instructor_connect_accounts").select("status, stripe_connect_account_id").eq("instructor_id", user.id).maybeSingle(),
     supabase.from("patients").select("id, full_name").eq("instructor_id", user.id),
+    supabase.from("instructors").select("country").eq("id", user.id).maybeSingle(),
   ]);
+  // Monnaie et montants du pays du kiné (2026-11-18) ; France = comme avant.
+  const pricing = pricingForCountry((me?.country as string | null) ?? null) ?? FRANCE_PRICING;
   const ids = (patients ?? []).map((p) => p.id as string);
   // Abonnements de SES patients seulement (règle subscriptions_instructor_read).
   const { data: subs } = ids.length
@@ -46,7 +49,7 @@ export default async function FacturationPage({
     const refused = ["past_due", "unpaid", "incomplete"].includes(s.status as string);
     if (!live && !refused) continue;
     // Ses honoraires : 6 € par patient abonné (hors essai), les mois où il met à jour le programme.
-    if (live && !legacy && s.status === "active" && !s.cancel_at_period_end) monthlyCents += KINE_FOLLOW_UP_CENTS;
+    if (live && !legacy && s.status === "active" && !s.cancel_at_period_end) monthlyCents += pricing.kineFollowUp;
     subscribers.push({
       patientId: s.user_id as string,
       name: nameOf.get(s.user_id as string) ?? t("patientFallback"),
@@ -89,6 +92,7 @@ export default async function FacturationPage({
       connectStatus={connectStatus}
       subscribers={subscribers}
       monthlyCents={monthlyCents}
+      pricing={pricing}
       patientCount={ids.length}
       error={error}
     />

@@ -10,6 +10,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { feeNoteNumber, feeNotePatientName, nextPeriod } from "./reviewModel";
 import type { ReviewPaymentStatus } from "./reviewPayment";
 import type { Locale } from "@/i18n/locales";
+import { countryConfig, instructorCountry, type CurrencyCode } from "./countries";
 import { intlTag, libTranslator } from "@/lib/i18n/translator";
 import fr from "@/messages/fr/billing.json";
 import en from "@/messages/en/billing.json";
@@ -23,7 +24,18 @@ export type FeeNote = {
   paymentStatus: ReviewPaymentStatus;
   paidAt: string | null;
   patientName: string;
-  kine: { name: string; cabinet: string | null; address: string | null; rpps: string | null };
+  kine: {
+    name: string;
+    cabinet: string | null;
+    address: string | null;
+    rpps: string | null;
+    /** Pays d'exercice (migration 0101) : décide des mentions de la note. Vide = France. */
+    country: string;
+    /** Numéro professionnel hors France (INAMI, GLN, CORU…). */
+    professionalId: string | null;
+  };
+  /** Monnaie du montant (celle du pays du kiné). */
+  currency: CurrencyCode;
 };
 
 type Row = {
@@ -51,7 +63,7 @@ async function toNotes(supabase: SupabaseClient, rows: Row[], locale: Locale = "
   const kineIds = [...new Set(rows.map((r) => r.instructor_id))];
   const [{ data: patients }, { data: kines }] = await Promise.all([
     patientIds.length ? supabase.from("patients").select("id, full_name").in("id", patientIds) : Promise.resolve({ data: [] as { id: string; full_name: string | null }[] }),
-    supabase.from("instructors").select("id, full_name, cabinet_name, cabinet_address, rpps_number").in("id", kineIds),
+    supabase.from("instructors").select("id, full_name, cabinet_name, cabinet_address, rpps_number, country, professional_id").in("id", kineIds),
   ]);
   const patientName = new Map((patients ?? []).filter((p) => !!p.full_name).map((p) => [p.id as string, p.full_name as string]));
   const kine = new Map((kines ?? []).map((k) => [k.id as string, k]));
@@ -75,7 +87,10 @@ async function toNotes(supabase: SupabaseClient, rows: Row[], locale: Locale = "
         cabinet: (k?.cabinet_name as string | null) ?? null,
         address: (k?.cabinet_address as string | null) ?? null,
         rpps: (k?.rpps_number as string | null) ?? null,
+        country: instructorCountry((k?.country as string | null) ?? null),
+        professionalId: (k?.professional_id as string | null) ?? null,
       },
+      currency: countryConfig(instructorCountry((k?.country as string | null) ?? null))?.currency ?? "eur",
     };
   });
 }

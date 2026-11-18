@@ -3,6 +3,18 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { createClient } from "@/lib/supabase/server";
 import SignupOnboardingView from "./SignupOnboardingView";
 import { saveInstructorOnboarding } from "./actions";
+import { getLocale } from "next-intl/server";
+import { COUNTRIES } from "@/lib/billing/countries";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
+
+function regionName(code: string, locale: Locale): string {
+  try {
+    return new Intl.DisplayNames([intlTag(locale)], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
 // Page technique : rien à référencer dans les moteurs de recherche.
 export const metadata = { robots: { index: false, follow: false } };
 
@@ -21,12 +33,13 @@ export default async function SignupOnboardingPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  const locale = (await getLocale()) as Locale;
   const user = await requireUser();
   const supabase = await createClient();
 
   const { data: instructor } = await supabase
     .from("instructors")
-    .select("status, full_name, cabinet_name, cabinet_address, phone, rpps_number, siret")
+    .select("status, full_name, cabinet_name, cabinet_address, phone, rpps_number, siret, country, professional_id")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -54,7 +67,10 @@ export default async function SignupOnboardingPage({
         phone: (instructor.phone as string | null) ?? null,
         rpps_number: (instructor.rpps_number as string | null) ?? null,
         siret: (instructor.siret as string | null) ?? null,
+        country: (instructor.country as string | null) ?? "FR",
+        professional_id: (instructor.professional_id as string | null) ?? null,
       }}
+      countries={COUNTRIES.filter((c) => c.enabled).map((c) => ({ code: c.code, name: regionName(c.code, locale) }))}
       action={saveInstructorOnboarding}
     />
   );

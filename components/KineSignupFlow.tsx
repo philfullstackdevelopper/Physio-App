@@ -8,7 +8,12 @@ import { brandedHeaderTitle } from "@/lib/clerk/brandedTitle";
 import { compactClerkElements } from "@/lib/clerk/compact";
 import { findCabinetByRpps, findSimilarCabinetsForSignup, searchCabinetsForSignup } from "@/app/signup/kine/actions";
 import type { CabinetInviteInfo, CabinetSearchResult } from "@/lib/db/cabinets";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { COUNTRIES, DEFAULT_COUNTRY } from "@/lib/billing/countries";
+import { checkProfessionalId, professionalIdRule } from "@/lib/instructor/professionalId";
+import { WAITLIST_HREF } from "@/lib/launchFlags";
+import { intlTag } from "@/lib/i18n/translator";
+import type { Locale } from "@/i18n/locales";
 
 // Cabinet details FIRST, account creation LAST — the order a professional
 // signup on a real B2B site follows (Philippe, 2026-09-10), reversed from
@@ -51,6 +56,13 @@ type Found = { fullName: string; cabinetName: string | null; cabinetAddress: str
 //    (même code postal, nom ou adresse ressemblants) et on propose de le rejoindre.
 type InviteProp = { token: string } & CabinetInviteInfo;
 
+// International (2026-11-18, lib/billing/countries.ts) : le kiné choisit son
+// pays d'exercice. France : tout reste comme avant (RPPS facultatif, SIRET,
+// « Retrouver mon cabinet »). Autre pays ouvert : son numéro professionnel est
+// demandé (format vérifié quand une règle publique existe, sinon revue par
+// l'admin), pas de SIRET. « Autre pays » : renvoi vers la liste d'attente.
+const OTHER_COUNTRY = "other";
+
 export default function KineSignupFlow({ invite = null }: { invite?: InviteProp | null }) {
   const [step, setStep] = useState<"cabinet" | "account">("cabinet");
   const [mode, setMode] = useState<"search" | "join" | "create">(invite ? "join" : "search");
@@ -70,6 +82,18 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
   const t = useTranslations("auth.cabinet");
   const tKine = useTranslations("auth.signupKine");
   const tShared = useTranslations("auth.shared");
+  const locale = useLocale() as Locale;
+  const [country, setCountry] = useState<string>(DEFAULT_COUNTRY);
+  const isFrance = country === "FR";
+  const countryOpen = country !== OTHER_COUNTRY;
+  const regionName = (code: string) => {
+    try {
+      return new Intl.DisplayNames([intlTag(locale)], { type: "region" }).of(code) ?? code;
+    } catch {
+      return code;
+    }
+  };
+  const proIdRule = professionalIdRule(country);
 
   const set = (key: keyof typeof fields) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setFields((f) => ({ ...f, [key]: e.target.value }));
@@ -109,6 +133,28 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
     return { firstName, lastName };
   };
 
+  // Numéro professionnel : France = RPPS facultatif (comme avant) ; ailleurs
+  // obligatoire, format vérifié quand le pays a une règle publique.
+  const professionalIdValid = (): boolean => {
+    if (isFrance) {
+      const raw = fields.rppsNumber.replace(/\s+/g, "");
+      if (raw && !/^\d{9,11}$/.test(raw)) {
+        setError(t("errorRppsDigitsOrEmpty"));
+        return false;
+      }
+      return true;
+    }
+    const check = checkProfessionalId(country, fields.rppsNumber);
+    if (!check.ok) {
+      setError(check.reason === "required" ? t("proIdRequired") : t("proIdFormat"));
+      return false;
+    }
+    return true;
+  };
+  // Hors France : ni RPPS ni SIRET, le numéro part dans professionalId.
+  const countryPayload = () =>
+    isFrance ? { country: "FR", professionalId: null } : { country, professionalId: fields.rppsNumber.trim() || null, rppsNumber: null, siret: null };
+
   const saveAndContinue = (payload: Record<string, unknown>) => {
     document.cookie = `${COOKIE_NAME}=${encodeURIComponent(JSON.stringify(payload))}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`;
     setError(null);
@@ -122,14 +168,12 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
     if (!who) return;
     const phone = fields.phone.trim();
     const rppsNumber = fields.rppsNumber.replace(/\s+/g, "");
+    if (!countryOpen) return;
     if (!phone) {
       setError(t("errorPhone"));
       return;
     }
-    if (rppsNumber && !/^\d{9,11}$/.test(rppsNumber)) {
-      setError(t("errorRppsDigitsOrEmpty"));
-      return;
-    }
+    if (!professionalIdValid()) return;
     saveAndContinue({
       mode: "join",
       cabinetId: joining.id,
@@ -140,6 +184,7 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
       siret: null,
       ...who,
       inviteToken: invitedHere ? invite!.token : null,
+      ...countryPayload(),
     });
   };
 
@@ -173,17 +218,14 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
   // passait sans contrôle).
   const createFormValid = (): boolean => {
     if (!names()) return false;
-    const rppsNumber = fields.rppsNumber.replace(/\s+/g, "");
+    if (!countryOpen) return false;
     const siret = fields.siret.replace(/\s+/g, "");
     if (!fields.cabinetName.trim() || !fields.cabinetAddress.trim() || !fields.phone.trim()) {
       setError(t("errorRequired"));
       return false;
     }
-    if (rppsNumber && !/^\d{9,11}$/.test(rppsNumber)) {
-      setError(t("errorRppsDigitsOrEmpty"));
-      return false;
-    }
-    if (siret && !/^\d{14}$/.test(siret)) {
+    if (!professionalIdValid()) return false;
+    if (isFrance && siret && !/^\d{14}$/.test(siret)) {
       setError(t("errorSiretDigitsOrEmpty"));
       return false;
     }
@@ -221,6 +263,7 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
     siret: fields.siret.replace(/\s+/g, "") || null,
     firstName: fields.firstName.trim(),
     lastName: fields.lastName.trim(),
+    ...countryPayload(),
   });
 
   // « Non, c'est un autre cabinet » : on inscrit quand même.
@@ -230,6 +273,58 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
     if (!createFormValid()) return;
     saveAndContinue(createPayload());
   };
+
+  // Pays d'exercice : une ligne compacte en tête des deux formulaires.
+  const countryField = (
+    <div>
+      <label className="flex items-center gap-3">
+        <span className="shrink-0 text-sm font-medium text-slate-700">{t("countryLabel")}</span>
+        <select
+          name="country"
+          value={country}
+          onChange={(e) => {
+            setCountry(e.target.value);
+            setError(null);
+            setLookup("idle");
+            setFound(null);
+          }}
+          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
+        >
+          {COUNTRIES.filter((x) => x.enabled).map((x) => (
+            <option key={x.code} value={x.code}>
+              {regionName(x.code)}
+            </option>
+          ))}
+          <option value={OTHER_COUNTRY}>{t("countryOther")}</option>
+        </select>
+      </label>
+      {!countryOpen && (
+        <p className="mt-2 rounded-xl bg-amber-50 px-3.5 py-2.5 text-sm text-slate-700">
+          {t("countryNotOpen")}{" "}
+          <Link href={WAITLIST_HREF} className="font-medium text-blue-700 hover:underline">
+            {t("countryWaitlist")}
+          </Link>
+        </p>
+      )}
+    </div>
+  );
+
+  // Numéro professionnel hors France : obligatoire, sans recherche d'annuaire.
+  const foreignIdField = () => (
+    <label>
+      <span className="text-sm font-medium text-slate-700">{t(`proId.${proIdRule.key}.label`)}</span>
+      <input
+        type="text"
+        name="professional_id"
+        required
+        value={fields.rppsNumber}
+        onChange={set("rppsNumber")}
+        placeholder={t(`proId.${proIdRule.key}.placeholder`)}
+        className={fieldClass}
+      />
+      {!proIdRule.validate && <span className="mt-1 block text-xs text-slate-500">{t("proIdReviewHelp")}</span>}
+    </label>
+  );
 
   // Prénom + nom, en tête des deux formulaires (rejoindre / inscrire).
   const nameFields = (
@@ -365,26 +460,35 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
         </div>
         {error && <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
         <form onSubmit={handleJoin} className="mt-4 flex flex-col gap-4 short:mt-3 short:gap-2.5">
+          {countryField}
           {nameFields}
           <label>
             <span className="text-sm font-medium text-slate-700">{t("phoneShortLabel")}</span>
             <input type="tel" name="phone" required value={fields.phone} onChange={set("phone")} placeholder={t("phonePlaceholder")} className={fieldClass} />
           </label>
-          <label>
-            <span className="text-sm font-medium text-slate-700">
-              {t("rppsLabel")} <span className="font-normal text-slate-400">{t("optional")}</span>
-            </span>
-            <input
-              type="text"
-              name="rpps_number"
-              inputMode="numeric"
-              value={fields.rppsNumber}
-              onChange={set("rppsNumber")}
-              placeholder={t("rppsPlaceholder")}
-              className={fieldClass}
-            />
-          </label>
-          <button type="submit" className="mt-2 rounded-xl bg-blue-600 py-2.5 font-medium text-white transition hover:bg-blue-700 short:mt-1">
+          {isFrance ? (
+            <label>
+              <span className="text-sm font-medium text-slate-700">
+                {t("rppsLabel")} <span className="font-normal text-slate-400">{t("optional")}</span>
+              </span>
+              <input
+                type="text"
+                name="rpps_number"
+                inputMode="numeric"
+                value={fields.rppsNumber}
+                onChange={set("rppsNumber")}
+                placeholder={t("rppsPlaceholder")}
+                className={fieldClass}
+              />
+            </label>
+          ) : (
+            countryOpen && foreignIdField()
+          )}
+          <button
+            type="submit"
+            disabled={!countryOpen}
+            className="mt-2 rounded-xl bg-blue-600 py-2.5 font-medium text-white transition hover:bg-blue-700 disabled:opacity-50 short:mt-1"
+          >
             {tShared("continue")}
           </button>
         </form>
@@ -446,8 +550,10 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
       )}
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4 short:mt-3 short:gap-2.5">
+        {countryField}
         {nameFields}
-        <div>
+        {!isFrance && countryOpen && foreignIdField()}
+        <div className={isFrance ? undefined : "hidden"}>
           <span className="text-sm font-medium text-slate-700">
             {t("rppsLabel")} <span className="font-normal text-slate-400">{t("optional")}</span>
           </span>
@@ -534,7 +640,7 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
           />
         </label>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className={isFrance ? "grid grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
           <label>
             <span className="text-sm font-medium text-slate-700">{t("phoneShortLabel")}</span>
             <input
@@ -548,7 +654,7 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
             />
           </label>
 
-          <label>
+          <label className={isFrance ? undefined : "hidden"}>
             <span className="text-sm font-medium text-slate-700">
               SIRET <span className="font-normal text-slate-400">{t("optional")}</span>
             </span>
@@ -566,7 +672,7 @@ export default function KineSignupFlow({ invite = null }: { invite?: InviteProp 
 
         <button
           type="submit"
-          disabled={checking}
+          disabled={checking || !countryOpen}
           className="mt-2 rounded-xl bg-blue-600 py-2.5 font-medium text-white transition hover:bg-blue-700 disabled:opacity-60 short:mt-1"
         >
           {checking ? t("searching") : tShared("continue")}
