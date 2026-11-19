@@ -20,6 +20,8 @@ import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
 import { isClerkAPIResponseError } from "@clerk/shared/error";
 import { requestOrigin } from "@/lib/requestOrigin";
+import { getTranslations } from "next-intl/server";
+import { emailSendingConfigured, sendPlainEmail } from "@/lib/email/send";
 
 /** Durée de validité d'une invitation, fixée explicitement (audit du 2026-11-08). */
 export const PATIENT_INVITATION_DAYS = 30;
@@ -36,12 +38,30 @@ export async function invitePatient(email: string, fullName: string | null, cont
   try {
     const client = await clerkClient();
     const origin = await requestOrigin();
-    await client.invitations.createInvitation({
+    const base = {
       emailAddress: email,
       redirectUrl: `${origin}/invitation`,
       publicMetadata: { full_name: fullName },
       expiresInDays: PATIENT_INVITATION_DAYS,
-    });
+    };
+    // E-mail envoyé par notre propre boîte (lib/email/send.ts, 2026-11-19 :
+    // celui de Clerk tombe dans « Promotions »). Si notre envoi échoue, on
+    // annule cette invitation et Clerk envoie la sienne, comme avant.
+    if (emailSendingConfigured()) {
+      const invitation = await client.invitations.createInvitation({ ...base, notify: false });
+      if (invitation.url) {
+        const t = await getTranslations("auth.invitationEmail");
+        const firstName = (fullName ?? "").trim().split(/\s+/)[0] ?? "";
+        const sent = await sendPlainEmail({
+          to: email,
+          subject: t("subject"),
+          text: t("body", { greeting: firstName ? t("helloName", { name: firstName }) : t("hello"), url: invitation.url, days: PATIENT_INVITATION_DAYS }),
+        });
+        if (sent) return "sent";
+      }
+      await client.invitations.revokeInvitation(invitation.id).catch(() => null);
+    }
+    await client.invitations.createInvitation(base);
     return "sent";
   } catch (e) {
     // Le détail utile est dans `.errors[]`, jamais dans `.message` (résumé

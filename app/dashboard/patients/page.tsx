@@ -6,9 +6,10 @@ import { getPatientThread, sendPatientMessage, reactivatePatient } from "./actio
 import { deletePatient } from "./[id]/actions";
 import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstructor";
 import { getLibI18n } from "@/lib/dashboard/libI18n";
+import { getTranslations } from "next-intl/server";
 
-export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ filtre?: string }> }) {
-  const { filtre } = await searchParams;
+export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ filtre?: string; invitation?: string }> }) {
+  const { filtre, invitation } = await searchParams;
   const supabase = await createClient();
   await requireApprovedInstructor(supabase);
 
@@ -20,7 +21,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
     filtre === "surveiller" ? "surveiller" : filtre === "jour" ? "jour" : "tous";
 
   return (
-    <PatientsPageView>
+    <PatientsPageView notice={invitation === "envoyee" ? (await getTranslations("dashboard.newPatient"))("sentHint") : undefined}>
       <PatientsTable
         rows={rows}
         conditions={conditions ?? []}

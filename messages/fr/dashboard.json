@@ -160,7 +160,7 @@
   "newPatient": {
     "back": "← Mes patients",
     "title": "Ajouter un patient",
-    "intro": "Le patient recevra un e-mail pour créer son mot de passe.",
+    "intro": "Le patient recevra un e-mail pour créer son mot de passe. Prévenez-le : il arrive parfois dans l’onglet « Promotions » ou dans les spams.",
     "fullName": "Nom complet",
     "email": "Adresse e-mail",
     "send": "Envoyer l'invitation",
@@ -173,7 +173,8 @@
     "later": "Plus tard, depuis sa fiche",
     "connectNotice": "Vos paiements Stripe ne sont pas encore activés : d’ici là, vous ne recevrez pas les {amount} € de vos patients pour leur programme (les mois où vous le mettez à jour).",
     "connectLink": "Activer mes paiements",
-    "connectNoticeAmount": "Vos paiements Stripe ne sont pas encore activés : d’ici là, vous ne recevrez pas les {amount} de vos patients pour leur programme (les mois où vous le mettez à jour)."
+    "connectNoticeAmount": "Vos paiements Stripe ne sont pas encore activés : d’ici là, vous ne recevrez pas les {amount} de vos patients pour leur programme (les mois où vous le mettez à jour).",
+    "sentHint": "Invitation envoyée. Si votre patient ne la voit pas, qu’il regarde dans l’onglet « Promotions » (Gmail) ou dans ses spams — ou faites-lui scanner votre QR code."
   },
   "patientActions": {
     "fillAll": "Veuillez remplir tous les champs.",

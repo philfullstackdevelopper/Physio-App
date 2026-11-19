@@ -160,7 +160,7 @@
   "newPatient": {
     "back": "← My patients",
     "title": "Add a patient",
-    "intro": "The patient will receive an email to create their password.",
+    "intro": "The patient will receive an email to create their password. Let them know: it sometimes lands in the “Promotions” tab or in spam.",
     "fullName": "Full name",
     "email": "Email address",
     "send": "Send the invitation",
@@ -173,7 +173,8 @@
     "later": "Later, from their record",
     "connectNotice": "Your Stripe payments aren’t activated yet: until then, you won’t receive your patients’ €{amount} for their programme (in months when you update it).",
     "connectLink": "Activate my payments",
-    "connectNoticeAmount": "Your Stripe payments aren’t activated yet: until then, you won’t receive your patients’ {amount} for their programme (in months when you update it)."
+    "connectNoticeAmount": "Your Stripe payments aren’t activated yet: until then, you won’t receive your patients’ {amount} for their programme (in months when you update it).",
+    "sentHint": "Invitation sent. If your patient can’t find it, they should check the “Promotions” tab (Gmail) or their spam folder — or let them scan your QR code."
   },
   "patientActions": {
     "fillAll": "Please fill in all the fields.",

@@ -16,14 +16,25 @@ function withAppName<T>(value: T): T {
   return value;
 }
 
+// Écran « code de vérification » : le code tombe souvent dans « Promotions »
+// ou les spams (Philippe, 2026-11-19) — on le dit là où on l'attend.
+const FR_CODE_HINT = "Entrez le code reçu par e-mail. Pas reçu ? Regardez dans « Promotions » ou les spams.";
+const EN_CODE_HINT = "Enter the code we emailed you. Nothing? Check the Promotions tab or spam.";
+
+const fr = withAppName(frFR);
 export const easyPhysioFR: Loc = {
-  ...withAppName(frFR),
+  ...fr,
   formFieldInputPlaceholder__signUpPassword: "Créez un mot de passe",
+  signUp: { ...fr.signUp, emailCode: { ...fr.signUp?.emailCode, formSubtitle: FR_CODE_HINT } },
+  signIn: { ...fr.signIn, emailCode: { ...fr.signIn?.emailCode, subtitle: FR_CODE_HINT } },
 };
 
 // Même chose en anglais (interface en anglais, 2026-11-06) : pack officiel
 // enGB, nom d'application remplacé par « EasyPhysio », et le même complément.
+const en = withAppName(enGB);
 export const easyPhysioEN: typeof enGB = {
-  ...withAppName(enGB),
+  ...en,
   formFieldInputPlaceholder__signUpPassword: "Create a password",
+  signUp: { ...en.signUp, emailCode: { ...en.signUp?.emailCode, formSubtitle: EN_CODE_HINT } },
+  signIn: { ...en.signIn, emailCode: { ...en.signIn?.emailCode, subtitle: EN_CODE_HINT } },
 };

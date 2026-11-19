@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-export default function PatientsPageView({ children }: { children: React.ReactNode }) {
+export default function PatientsPageView({ children, notice }: { children: React.ReactNode; notice?: React.ReactNode }) {
   const t = useTranslations("dashboard.patients");
   return (
     <main className="flex h-dvh min-h-0 flex-col max-sm:h-[calc(100dvh-var(--phone-chrome))]">
@@ -25,6 +25,12 @@ export default function PatientsPageView({ children }: { children: React.ReactNo
             <span className="max-sm:hidden">{t("add")}</span>
           </Link>
         </div>
+        {/* Bandeau ponctuel (ex. « invitation envoyée », 2026-11-19). */}
+        {notice && (
+          <p role="status" className="mt-3 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm text-muted">
+            {notice}
+          </p>
+        )}
         <div className="animate-[fadeInUp_0.6s_ease-out_both] [animation-delay:120ms] mt-6 flex min-h-0 flex-1 flex-col max-sm:mt-3 short:sm:mt-4">
           {children}
         </div>

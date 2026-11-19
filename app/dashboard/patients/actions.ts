@@ -144,7 +144,8 @@ export async function addPatient(formData: FormData) {
   }
 
   revalidatePath("/dashboard/patients");
-  redirect("/dashboard/patients");
+  // ?invitation=envoyee : bandeau « regardez dans Promotions / spams » (2026-11-19).
+  redirect("/dashboard/patients?invitation=envoyee");
 }
 
 // Renvoie l'invitation Clerk à un patient qui n'a jamais accepté les CGU

@@ -64,7 +64,7 @@ export default async function LoginPage() {
             />
             {/* Patient sans compte (audit du 2026-11-16) : il ne s'inscrit pas
                 ici, son kiné l'invite. Une ligne, pour ne pas chercher. */}
-            <p className="mt-3 text-center text-xs leading-relaxed text-slate-500">
+            <p className="mt-1.5 text-center text-xs leading-snug text-slate-500">
               {tLogin("patientHint")}{" "}
               <Link href="/signup/patient" className="font-medium text-blue-700 hover:underline">
                 {tLogin("patientHintLink")}
