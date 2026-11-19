@@ -18,3 +18,11 @@ test("texte de l'alerte", () => {
   assert.equal(kineSignupText("directe", "Marie Dupont · 69003 Lyon"), "✅ Nouveau kiné inscrit : **Marie Dupont · 69003 Lyon** — il est dans l'appli");
   assert.match(kineSignupText("compte_cree", "Marie"), /cabinet pas encore renseigné/);
 });
+
+test("alertes d'argent : montant lisible, préfixe en mode test", async () => {
+  const { moneyAlertText, formatAmount } = await import("./discordText.ts");
+  assert.equal(formatAmount(699, "eur"), "6,99 €");
+  assert.equal(formatAmount(1200, "gbp"), "12,00 GBP");
+  assert.match(moneyAlertText("access_paid", { cents: 699, currency: "eur" }), /6,99 €/);
+  assert.match(moneyAlertText("kine_paid", { cents: 600 }, false), /^\[test\] /);
+});

@@ -18,6 +18,7 @@ import {
   stopAccessOnPlatformDispute,
   syncPatientSubscriptionFromEvent,
 } from "@/lib/billing/patientSubscription";
+import { alertMoney } from "@/lib/alerts/discord";
 
 // Stripe needs the Node runtime (not Edge) and the raw request body to verify
 // the signature, so this route reads req.text() and never parses JSON first.
@@ -100,6 +101,10 @@ export async function POST(req: Request) {
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
       await syncPatientSubscriptionFromEvent(event.data.object as Stripe.Subscription, event.account ?? null);
+      // Alerte Discord : un nouveau patient vient de s'abonner (compte EasyPhysio).
+      if (event.type === "customer.subscription.created" && !event.account) {
+        await alertMoney("subscription_started", {}, event.livemode);
+      }
       break;
     }
     case "account.updated": {
@@ -140,13 +145,22 @@ export async function POST(req: Request) {
     case "payment_intent.processing":
     case "payment_intent.payment_failed": {
       if (event.account) {
-        await syncReviewPaymentFromIntent(event.data.object as Stripe.PaymentIntent, event.account);
+        const intent = event.data.object as Stripe.PaymentIntent;
+        await syncReviewPaymentFromIntent(intent, event.account);
+        // Alerte Discord : honoraires d'un kiné payés ou refusés.
+        if (event.type === "payment_intent.succeeded") {
+          await alertMoney("kine_paid", { cents: intent.amount_received || intent.amount, currency: intent.currency }, event.livemode);
+        } else if (event.type === "payment_intent.payment_failed") {
+          await alertMoney("kine_failed", { cents: intent.amount, currency: intent.currency }, event.livemode);
+        }
       }
       break;
     }
     // Remboursement par le kiné, ou litige ouvert / clos par la banque du patient.
     case "charge.refunded": {
-      if (event.account) await syncReviewRefund(event.data.object as Stripe.Charge, event.account);
+      const charge = event.data.object as Stripe.Charge;
+      if (event.account) await syncReviewRefund(charge, event.account);
+      await alertMoney("refund", { cents: charge.amount_refunded, currency: charge.currency }, event.livemode);
       break;
     }
     case "charge.dispute.created":
@@ -155,13 +169,27 @@ export async function POST(req: Request) {
       // Litige sur l'abonnement d'accès (compte EasyPhysio) : accès coupé
       // (audit du 2026-11-13, M-F).
       else if (event.type === "charge.dispute.created") await stopAccessOnPlatformDispute(event.data.object as Stripe.Dispute);
+      if (event.type === "charge.dispute.created") {
+        const dispute = event.data.object as Stripe.Dispute;
+        await alertMoney("dispute", { cents: dispute.amount, currency: dispute.currency }, event.livemode);
+      }
       break;
     }
     // Facture EasyPhysio du kiné (compte plateforme).
     case "invoice.paid":
     case "invoice.payment_failed":
     case "invoice.marked_uncollectible": {
-      if (!event.account) await syncPlatformInvoice(event.data.object as Stripe.Invoice);
+      const invoice = event.data.object as Stripe.Invoice;
+      if (!event.account) {
+        await syncPlatformInvoice(invoice);
+        // Alerte Discord : accès EasyPhysio payé (pas les factures à 0 € de
+        // l'essai gratuit) ou refusé.
+        if (event.type === "invoice.paid" && invoice.amount_paid > 0) {
+          await alertMoney("access_paid", { cents: invoice.amount_paid, currency: invoice.currency }, event.livemode);
+        } else if (event.type === "invoice.payment_failed") {
+          await alertMoney("access_failed", { cents: invoice.amount_due, currency: invoice.currency }, event.livemode);
+        }
+      }
       break;
     }
     default:

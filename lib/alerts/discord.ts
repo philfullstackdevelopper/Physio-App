@@ -1,5 +1,5 @@
 import "server-only";
-import { kineSignupText, whoLine } from "./discordText";
+import { kineSignupText, moneyAlertText, whoLine, type MoneyEvent } from "./discordText";
 
 // Alerte instantanée pour Philippe sur Discord (2026-11-16 : « une alerte
 // tout de suite quand un kiné s'inscrit, pas par e-mail »). Le serveur poste
@@ -40,4 +40,14 @@ export function alertKineSignup(
   who: { name?: string | null; cabinetAddress?: string | null } = {},
 ): Promise<boolean> {
   return alertDiscord(kineSignupText(step, whoLine(who.name, who.cabinetAddress)));
+}
+
+/** Paiement, refus, remboursement, litige, nouvel abonnement (texte :
+ *  discordText.ts). Montants seulement, jamais de nom de patient. */
+export function alertMoney(
+  event: MoneyEvent,
+  amount: { cents?: number | null; currency?: string | null } = {},
+  live = true,
+): Promise<boolean> {
+  return alertDiscord(moneyAlertText(event, amount, live));
 }
