@@ -58,7 +58,8 @@
     "cancelFailed": "Your subscription couldn't be cancelled right now. Your account is intact — try again in a few minutes.",
     "deleteKineAccount": "This account is also a physiotherapist account: it can't be deleted from here. Request deletion from your physio space (My information).",
     "twoPaymentsAmounts": "Two separate payments: access to the app, paid to EasyPhysio (from {platform} per month), and your physio's programme ({kine}), paid directly to them in months when they update it.",
-    "lineNoneAmount": "{days} days free, then from {price} per month (not reimbursed)"
+    "lineNoneAmount": "{days} days free, then from {price} per month (not reimbursed)",
+    "twoPaymentsFree": "You only pay for app access, to EasyPhysio (from {platform} per month). Your physio offers your programme follow-up free of charge."
   },
   "informations": {
     "back": "Back to settings",

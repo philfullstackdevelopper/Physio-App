@@ -50,7 +50,17 @@
       "redirecting": "Redirecting…",
       "resume": "Resume sign-up",
       "activate": "Activate payments"
-    }
+    },
+    "priceLabel": "Your monthly fee",
+    "priceAria": "Your monthly fee, from 0 to 500",
+    "priceSave": "Save",
+    "priceSaving": "…",
+    "priceSaved": "Saved",
+    "priceHelp": "From 0 to {max}. 0 = programme free of charge. An increase applies to your current patients once they accept it.",
+    "priceInvalid": "Enter 0 or an amount between {min} and {max}.",
+    "priceFree": "Free",
+    "patientPaysSummaryFree": "Programme free",
+    "patientPaysNoteFree": "You offer the programme: your patients only pay for app access. {days} days free for the patient."
   },
   "connect": {
     "verifyError": "Couldn't check your Stripe account right now. Reload this page in a few minutes."
@@ -176,7 +186,13 @@
     "preparingRefresh": "Check again",
     "trialCancelTitle": "Not convinced?",
     "trialCancelBody": "Cancel before {date}: nothing will be charged, neither by EasyPhysio nor by your physio. You keep access until the end of the trial.",
-    "trialCancelButton": "Cancel my trial"
+    "trialCancelButton": "Cancel my trial",
+    "breakdownKineFree": "follow-up by {kineName}, free of charge",
+    "priceRaiseTitle": "{kineName} has changed their fee",
+    "priceRaiseText": "Programme: {old} → {new} per month, in months they update it. Until you accept, you keep paying {old}.",
+    "priceRaiseConsent": "I accept this new fee.",
+    "priceRaiseAccept": "Accept",
+    "priceAccepted": "New fee accepted."
   },
   "paywall": {
     "_review": "Draft translation — needs review by a lawyer before launch (acceptance text); exercise names by the partner physio",
@@ -210,7 +226,9 @@
     "startFree": "Start for free",
     "activate": "Activate my follow-up",
     "noChargeBefore": "No charge before {date}, cancel any time until then",
-    "myData": "My data"
+    "myData": "My data",
+    "splitFree": "{platform} for EasyPhysio access each month. Your programme follow-up is offered free by {kineName}.",
+    "consentFree": "I accept this amount, charged every month by EasyPhysio, the chosen commitment and immediate access (if I withdraw, only the period used is payable)."
   },
   "appAccess": {
     "activeTitle": "Your access is active",
@@ -236,7 +254,8 @@
     "alreadySubscribed": "You already have a subscription. To keep it, undo its cancellation instead.",
     "reviewNotPayable": "This payment no longer needs to be made.",
     "reviewKineUnavailable": "Your physiotherapist can't receive online payments at the moment.",
-    "reviewProductName": "Monthly programme (outside the French fee schedule) — {period}"
+    "reviewProductName": "Monthly programme (outside the French fee schedule) — {period}",
+    "priceChanged": "Your physio's fee has just changed: please check the new amount."
   },
   "reviewPayment": {
     "actionRequired": "Your bank asks you to confirm the payment of {kineName}'s fees for {period} ({amount}).",

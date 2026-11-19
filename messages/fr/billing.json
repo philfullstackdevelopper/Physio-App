@@ -49,7 +49,17 @@
       "redirecting": "Redirection…",
       "resume": "Reprendre l'inscription",
       "activate": "Activer les paiements"
-    }
+    },
+    "priceLabel": "Votre tarif mensuel",
+    "priceAria": "Votre tarif mensuel, de 0 à 500",
+    "priceSave": "Enregistrer",
+    "priceSaving": "…",
+    "priceSaved": "Enregistré",
+    "priceHelp": "De 0 à {max}. 0 = programme offert. Une hausse s'applique à vos patients actuels après leur accord.",
+    "priceInvalid": "Indiquez un montant de 0 ou entre {min} et {max}.",
+    "priceFree": "Offert",
+    "patientPaysSummaryFree": "Programme offert",
+    "patientPaysNoteFree": "Vous offrez le programme : vos patients ne paient que l'accès à l'appli. {days} jours offerts au patient."
   },
   "connect": {
     "verifyError": "Impossible de vérifier votre compte Stripe pour le moment. Rechargez cette page dans quelques minutes."
@@ -171,7 +181,13 @@
     "preparingRefresh": "Vérifier à nouveau",
     "trialCancelTitle": "Pas convaincu ?",
     "trialCancelBody": "Annulez avant le {date} : rien ne sera prélevé, ni par EasyPhysio ni par votre kiné. Vous gardez l'accès jusqu'à la fin de l'essai.",
-    "trialCancelButton": "Annuler mon essai"
+    "trialCancelButton": "Annuler mon essai",
+    "breakdownKineFree": "suivi par {kineName}, offert",
+    "priceRaiseTitle": "{kineName} a changé son tarif",
+    "priceRaiseText": "Programme : {old} → {new} par mois, les mois où il le met à jour. D'ici votre accord, vous continuez à payer {old}.",
+    "priceRaiseConsent": "J'accepte ce nouveau tarif.",
+    "priceRaiseAccept": "Accepter",
+    "priceAccepted": "Nouveau tarif accepté."
   },
   "paywall": {
     "clips": {
@@ -204,7 +220,9 @@
     "startFree": "Commencer gratuitement",
     "activate": "Activer mon suivi",
     "noChargeBefore": "Aucun débit avant le {date}, annulable d'ici là",
-    "myData": "Mes données"
+    "myData": "Mes données",
+    "splitFree": "{platform} d'accès à EasyPhysio chaque mois. Le suivi de votre programme est offert par {kineName}.",
+    "consentFree": "J'accepte ce montant, prélevé chaque mois par EasyPhysio, l'engagement choisi et l'accès immédiat (en cas de rétractation, seule la période utilisée est due)."
   },
   "appAccess": {
     "activeTitle": "Votre accès est actif",
@@ -230,7 +248,8 @@
     "alreadySubscribed": "Vous avez déjà un abonnement en cours. Pour le garder, annulez plutôt sa résiliation.",
     "reviewNotPayable": "Ce paiement n'est plus à régler.",
     "reviewKineUnavailable": "Votre kinésithérapeute ne peut pas recevoir de paiement en ligne pour le moment.",
-    "reviewProductName": "Programme mensuel hors nomenclature — {period}"
+    "reviewProductName": "Programme mensuel hors nomenclature — {period}",
+    "priceChanged": "Le tarif de votre kiné vient de changer : vérifiez le nouveau montant."
   },
   "reviewPayment": {
     "actionRequired": "Votre banque demande de confirmer le paiement des honoraires de {kineName} pour {period} ({amount}).",

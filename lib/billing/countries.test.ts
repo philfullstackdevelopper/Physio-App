@@ -129,3 +129,39 @@ test("les montants d'un patient suivent le pays de son kiné, jamais un mélange
   // Kiné sans pays enregistré (anciennes fiches) : France, exactement comme avant.
   assert.equal(platformInvoiceFooter(null), PLATFORM_INVOICE_FOOTER);
 });
+
+// Tarif libre du kiné (2026-11-19).
+import { chargeableKineCents, kinePriceCents, kinePriceRaisePending, kinePriceValid, parseKinePrice, withKinePrice } from "./patientPlans.ts";
+
+test("tarif du kiné : 0 ou de 1,00 à 500,00, saisie souple", () => {
+  assert.equal(parseKinePrice("0"), 0);
+  assert.equal(parseKinePrice("12"), 1200);
+  assert.equal(parseKinePrice("12,5"), 1250);
+  assert.equal(parseKinePrice(" 7.90 "), 790);
+  assert.equal(parseKinePrice("500"), 50_000);
+  assert.equal(parseKinePrice("500,01"), null);
+  assert.equal(parseKinePrice("0,50"), null); // sous 1,00 : refusé (frais de carte)
+  assert.equal(parseKinePrice("-3"), null);
+  assert.equal(parseKinePrice("abc"), null);
+  assert.equal(kinePriceValid(0), true);
+  assert.equal(kinePriceValid(99), false);
+});
+
+test("tarif du kiné : par défaut celui du pays, sinon le sien, dans la monnaie du pays", () => {
+  const ch = pricingForCountry("CH")!;
+  assert.equal(kinePriceCents(null, ch), 600);
+  assert.equal(withKinePrice(ch, 2500).kineFollowUp, 2500);
+  assert.equal(withKinePrice(ch, 0).kineFollowUp, 0);
+  assert.equal(withKinePrice(ch, 2500).currency, "chf");
+  assert.equal(withKinePrice(FRANCE_PRICING, null).kineFollowUp, KINE_FOLLOW_UP_CENTS); // France inchangée
+});
+
+test("prélèvement : jamais plus que le montant accepté par le patient", () => {
+  assert.equal(chargeableKineCents(600, 1200), 600); // hausse non acceptée : ancien prix
+  assert.equal(chargeableKineCents(1200, 800), 800); // baisse : tout de suite
+  assert.equal(chargeableKineCents(600, 0), 0); // passé à « offert » : rien
+  assert.equal(chargeableKineCents(null, 900), 900); // abonné avant les accords enregistrés
+  assert.equal(kinePriceRaisePending(600, 1200), true);
+  assert.equal(kinePriceRaisePending(1200, 800), false);
+  assert.equal(kinePriceRaisePending(null, 1200), false);
+});

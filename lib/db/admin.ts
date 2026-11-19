@@ -584,3 +584,10 @@ export async function kineFeesAcceptance(patientId: string, instructorId: string
   const r = rows[0]?.r;
   return r === "yes" || r === "other" ? r : "none";
 }
+
+/** Montant du programme accepté par écrit par le patient pour CE kiné (migration 0102), ou null. */
+export async function kineFeesAcceptedCents(patientId: string, instructorId: string): Promise<number | null> {
+  const { rows } = await getPool().query<{ c: number | null }>("select internal.kine_fees_accepted_cents($1, $2) as c", [patientId, instructorId]);
+  const c = rows[0]?.c;
+  return typeof c === "number" ? c : null;
+}

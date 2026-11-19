@@ -61,7 +61,8 @@ export default function NewPatientView({
           )}
           {/* Rappel sobre (audit du 2026-11-08) : vaut pour l'invitation par
               e-mail comme pour le QR code plus bas. N'empêche rien. */}
-          {open && connectMissing && (
+          {/* Programme offert (tarif 0) : rien à encaisser, pas de rappel Stripe. */}
+          {open && connectMissing && pricing.kineFollowUp > 0 && (
             <p className="mb-4 flex items-start gap-2 rounded-lg bg-warn-soft p-3 text-sm text-ink">
               <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-warn" strokeWidth={1.75} />
               <span>

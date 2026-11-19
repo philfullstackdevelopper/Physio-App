@@ -14,7 +14,7 @@
 //
 // Ne bloque JAMAIS l'action du kiné : toute erreur est seulement journalisée.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { followUpForCharge, kineFeesAcceptance, recordMonthlyReview } from "@/lib/db/admin";
+import { followUpForCharge, kineFeesAcceptance, kineFeesAcceptedCents, recordMonthlyReview } from "@/lib/db/admin";
 import { chargeReview } from "./followUp";
 import { feeNoteNumber, periodLabel, periodOf } from "./reviewModel";
 import { reviewNeedsChargeRetry } from "./reviewPayment";
@@ -24,6 +24,8 @@ import {
   formatMoney,
   kineFeesAccepted,
   kineFollowUpChargeable,
+  chargeableKineCents,
+  kinePriceCents,
   pricingForCountry,
   type CountryPricing,
   type SubscriptionRow,
@@ -81,7 +83,7 @@ export async function recordMonthlyReviewIfDue(p: {
         .eq("user_id", p.patientId)
         .maybeSingle(),
       p.supabase.from("instructor_connect_accounts").select("status, stripe_connect_account_id").eq("instructor_id", p.instructorId).maybeSingle(),
-      p.supabase.from("instructors").select("status, country").eq("id", p.instructorId).maybeSingle(),
+      p.supabase.from("instructors").select("status, country, review_price_cents").eq("id", p.instructorId).maybeSingle(),
       p.supabase.from("patients").select("full_name, email").eq("id", p.patientId).maybeSingle(),
     ]);
     // Patient sans abonnement d'accès actif, ou encore en essai : rien à prélever.
@@ -100,6 +102,12 @@ export async function recordMonthlyReviewIfDue(p: {
       console.warn(`[autoReview] patient ${p.patientId} : pas d'accord pour le kiné ${p.instructorId}, aucun prélèvement.`);
       return;
     }
+    // Tarif libre du kiné (2026-11-19) : le moins élevé entre le montant
+    // accepté par le patient et le tarif actuel. 0 = programme offert : ni
+    // carte copiée, ni mois facturé, ni prélèvement.
+    const currentCents = kinePriceCents((kine?.review_price_cents as number | null) ?? null, pricing);
+    const chargeCents = chargeableKineCents(await kineFeesAcceptedCents(p.patientId, p.instructorId), currentCents);
+    if (chargeCents === 0 && !retry) return;
 
     // Carte du patient chez le kiné : copiée à la souscription ; sinon (ou si
     // le kiné a changé de compte Stripe), on la copie maintenant.
@@ -114,7 +122,7 @@ export async function recordMonthlyReviewIfDue(p: {
         platformSubscriptionId: sub!.stripe_subscription_id as string,
         email: (patient?.email as string | null) ?? null,
         name: (patient?.full_name as string | null) ?? null,
-        priceCents: pricing.kineFollowUp,
+        priceCents: chargeCents,
       });
       if (!copied) return;
       followUp = await followUpForCharge(p.patientId);
@@ -122,7 +130,7 @@ export async function recordMonthlyReviewIfDue(p: {
     }
 
     let review: { review_id: string; fee_note_year: number; fee_note_seq: number };
-    let amountCents = pricing.kineFollowUp;
+    let amountCents = chargeCents;
     if (retry) {
       // La note existe déjà : même numéro, même montant.
       review = {
@@ -138,7 +146,7 @@ export async function recordMonthlyReviewIfDue(p: {
           instructorId: p.instructorId,
           period,
           feedback: p.note.slice(0, 2000) || "Programme mis à jour",
-          amountCents: pricing.kineFollowUp,
+          amountCents: chargeCents,
         });
       } catch (e) {
         // 23505 = un autre onglet vient d'enregistrer le mois : rien à faire.

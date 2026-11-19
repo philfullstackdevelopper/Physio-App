@@ -20,6 +20,7 @@ import {
   platformOfferIn,
   pricingForCountry,
   type PlatformOfferKey,
+  withKinePrice,
   subscriptionGivesAccess,
   type SubscriptionRow,
 } from "@/lib/billing/patientPlans";
@@ -60,7 +61,7 @@ async function context() {
   if (!patient) fail((await tr())("patientNotFound"));
   const instructorId = patient!.instructor_id as string;
   const [{ data: kine }, { data: connect }, { data: sub, error: subError }] = await Promise.all([
-    supabase.from("instructors").select("status, full_name, country").eq("id", instructorId).maybeSingle(),
+    supabase.from("instructors").select("status, full_name, country, review_price_cents").eq("id", instructorId).maybeSingle(),
     supabase.from("instructor_connect_accounts").select("stripe_connect_account_id, status").eq("instructor_id", instructorId).maybeSingle(),
     supabase
       .from("subscriptions")
@@ -96,8 +97,10 @@ export async function startPlan(formData: FormData) {
 
   // Monnaie et montants du pays du KINÉ (lib/billing/patientPlans.ts,
   // COUNTRY / CURRENCY_PRICES) : France = exactement les montants d'avant.
-  const pricing = pricingForCountry((kine?.country as string | null) ?? null);
-  if (!pricing) fail(t("kineUnavailable"));
+  // Tarif libre du kiné (2026-11-19) : son prix à la place du tarif par défaut.
+  const countryPricing = pricingForCountry((kine?.country as string | null) ?? null);
+  if (!countryPricing) fail(t("kineUnavailable"));
+  const pricing = withKinePrice(countryPricing!, (kine?.review_price_cents as number | null) ?? null);
   const offer = platformOfferIn(key as PlatformOfferKey, pricing!);
   const stripe = getStripe();
   // Langue de la page de paiement Stripe = celle du patient.
@@ -210,14 +213,19 @@ export async function startPlan(formData: FormData) {
         metadata,
         ...(firstTime ? { trial_period_days: TRIAL_DAYS } : {}),
       },
-      custom_text: {
-        submit: {
-          message: t("checkoutNote", {
-            kineName,
-            amount: moneyLabel(pricing!.kineFollowUp, pricing!.currency, locale, (amount) => tFormat("eur", { amount })),
-          }),
-        },
-      },
+      // Programme offert par le kiné (0) : aucune mention de ses honoraires.
+      ...(pricing!.kineFollowUp > 0
+        ? {
+            custom_text: {
+              submit: {
+                message: t("checkoutNote", {
+                  kineName,
+                  amount: moneyLabel(pricing!.kineFollowUp, pricing!.currency, locale, (amount) => tFormat("eur", { amount })),
+                }),
+              },
+            },
+          }
+        : {}),
       metadata,
       locale,
       // Page de paiement valable 30 min (minimum Stripe ; audit du 2026-11-13,
@@ -457,4 +465,34 @@ export async function payReview(formData: FormData) {
   if (settled === "pending") fail(t("reviewNotPayable"));
   if (!url) fail(t("paymentUnavailable"));
   redirect(url!);
+}
+
+/**
+ * Tarif libre (2026-11-19) : le kiné a AUGMENTÉ son tarif depuis l'accord du
+ * patient. Tant que le patient n'accepte pas, on lui prélève l'ancien montant
+ * (chargeableKineCents). Ici il accepte le nouveau : un nouvel accord écrit est
+ * enregistré (mêmes champs qu'à la souscription), daté, avec le nouveau montant.
+ */
+export async function acceptKinePrice(formData: FormData) {
+  const t = await tr();
+  if (formData.get("consent") !== "on") fail(t("consentRequired"));
+  const { user, kine, sub } = await context();
+  const countryPricing = pricingForCountry((kine?.country as string | null) ?? null);
+  const plan = (sub?.plan as string | null) ?? null;
+  if (!countryPricing || !isPlatformOfferKey(plan)) fail(t("noSubscription"));
+  const pricing = withKinePrice(countryPricing!, (kine?.review_price_cents as number | null) ?? null);
+  // Le montant affiché au patient est revérifié ici : un tarif changé entre
+  // l'affichage et le clic n'est pas accepté à sa place.
+  if (Number(formData.get("kine_cents")) !== pricing.kineFollowUp) fail(t("priceChanged"));
+  const locale = (await getLocale()) === "en" ? "en" : "fr";
+  await recordBillingAcceptance({
+    patientId: user.id,
+    offerKey: plan!,
+    platformCents: platformOfferIn(plan as PlatformOfferKey, pricing).platformCents,
+    kineCents: pricing.kineFollowUp,
+    trialDays: 0,
+    locale,
+    termsVersion: pricing.currency === "eur" ? BILLING_TERMS_VERSION : `${BILLING_TERMS_VERSION}/${pricing.currency.toUpperCase()}`,
+  });
+  redirect("/patient/suivi?tarif=1");
 }

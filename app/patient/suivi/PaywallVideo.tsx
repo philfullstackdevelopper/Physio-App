@@ -192,7 +192,9 @@ export default function PaywallVideo({
             {save > 0 && <span className="mb-2 rounded-full bg-emerald-400/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">{tf("pct", { n: save })}</span>}
           </div>
           <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
-            {t("split", { platform: eur(offer.platformCents), kine: eur(pricing.kineFollowUp), kineName })}{" "}
+            {pricing.kineFollowUp === 0
+              ? t("splitFree", { platform: eur(offer.platformCents), kineName })
+              : t("split", { platform: eur(offer.platformCents), kine: eur(pricing.kineFollowUp), kineName })}{" "}
             {offer.commitmentMonths ? t("splitCommitment", { months: offer.commitmentMonths }) : t("splitNoCommitment")}
           </p>
 
@@ -206,7 +208,7 @@ export default function PaywallVideo({
           <label className="mt-4 flex items-start gap-2.5 text-[11px] leading-snug text-slate-400 short:md:mt-3">
             <input type="checkbox" name="consent" required className="mt-0.5 h-4 w-4 shrink-0 rounded accent-blue-500" />
             <span>
-              {t("consent")}{" "}
+              {pricing.kineFollowUp === 0 ? t("consentFree") : t("consent")}{" "}
               <Link href="/cgu" target="_blank" className="underline hover:text-white">
                 {t("conditions")}
               </Link>

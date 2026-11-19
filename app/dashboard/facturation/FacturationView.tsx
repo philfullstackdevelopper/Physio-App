@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { intlTag } from "@/lib/i18n/translator";
 import type { Locale } from "@/i18n/locales";
-import { CheckCircle2, ChevronRight, Circle, ExternalLink, Tag, Users } from "lucide-react";
+import { Check, CheckCircle2, ChevronRight, Circle, ExternalLink, Tag, Users } from "lucide-react";
 import SubmitButton from "@/components/SubmitButton";
 import PhoneFold from "@/components/PhoneFold";
 import {
@@ -16,6 +16,8 @@ import {
   type CountryPricing,
 } from "@/lib/billing/patientPlans";
 import { startConnectOnboarding } from "../connect/actions";
+import { setKinePrice } from "./actions";
+import { KINE_PRICE_MAX_CENTS } from "@/lib/billing/patientPlans";
 
 // Page « Suivi & facturation » du kiné — modèle définitif (Philippe,
 // 2026-11-04 ; lib/billing/patientPlans.ts) : l'appli est GRATUITE pour le
@@ -45,7 +47,13 @@ export default function FacturationView({
   patientCount,
   error,
   pricing = FRANCE_PRICING,
+  priceSaved = false,
+  demo = false,
 }: {
+  /** Démo (/demo/kine) : le tarif s'affiche, rien n'est enregistré. */
+  demo?: boolean;
+  /** Le tarif vient d'être enregistré (petite coche à côté de l'aide). */
+  priceSaved?: boolean;
   connectStatus: ConnectStatus;
   subscribers: SubscriberRow[];
   /** Revenu mensuel moyen des formules en cours, pour le kiné (centimes). */
@@ -70,6 +78,16 @@ export default function FacturationView({
   const HIGHEST_MONTHLY_TOTAL_CENTS = Math.max(...offers.map((o) => monthlyTotalIn(o, pricing)));
   const range = (low: number, high: number) =>
     pricing.currency === "eur" ? tf("eurRange", { low: eurosFR(low, locale), high: eurosFR(high, locale) }) : `${eur(low)} – ${eur(high)}`;
+  const free = KINE_FOLLOW_UP_CENTS === 0;
+  // « 500 € » / « CHF 500 » (montant rond, sans décimales) pour l'aide.
+  const wholeMoney = (cents: number) =>
+    new Intl.NumberFormat(intlTag(locale), { style: "currency", currency: pricing.currency.toUpperCase(), maximumFractionDigits: 0 }).format(cents / 100);
+  // Champ du tarif : « 6,00 » / « 6.00 » selon la langue, symbole à droite.
+  const priceInput = (KINE_FOLLOW_UP_CENTS / 100).toLocaleString(intlTag(locale), { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
+  const currencySymbol =
+    new Intl.NumberFormat(intlTag(locale), { style: "currency", currency: pricing.currency.toUpperCase(), currencyDisplay: "narrowSymbol" })
+      .formatToParts(0)
+      .find((p) => p.type === "currency")?.value ?? pricing.currency.toUpperCase();
   const shortDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(intlTag(locale), { day: "numeric", month: "short" }) : "");
   return (
     <main>
@@ -151,13 +169,41 @@ export default function FacturationView({
                   {t("patientPaysTitle")}
                 </h2>
               }
-              summary={t("patientPaysSummary", { amount: eur(KINE_FOLLOW_UP_CENTS) })}
+              summary={free ? t("patientPaysSummaryFree") : t("patientPaysSummary", { amount: eur(KINE_FOLLOW_UP_CENTS) })}
             >
+              {/* Tarif libre (2026-11-19) : le montant de « Votre programme »
+                  est lui-même le champ ; une coche l'enregistre. */}
+              <form action={demo ? undefined : setKinePrice}>
               <table className="mt-2 w-full text-left text-xs">
                 <tbody className="divide-y divide-line">
                   <tr>
-                    <td className="py-1.5 text-ink">{t("rowProgramme")}</td>
-                    <td className="py-1.5 text-right font-semibold tabular-nums text-ok">{eur(KINE_FOLLOW_UP_CENTS)}</td>
+                    <td className="py-1.5 pr-2 text-ink">
+                      <label htmlFor="kine-price">{t("rowProgramme")}</label>
+                    </td>
+                    <td className="py-1 text-right">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="relative">
+                          <input
+                            id="kine-price"
+                            name="price"
+                            inputMode="decimal"
+                            autoComplete="off"
+                            defaultValue={priceInput}
+                            aria-label={t("priceAria")}
+                            className="w-[5.5rem] rounded-lg border border-line bg-surface py-1 pl-2 pr-6 text-right text-xs font-semibold tabular-nums text-ok focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                          />
+                          <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs font-semibold text-ok">{currencySymbol}</span>
+                        </span>
+                        <SubmitButton
+                          pendingText="…"
+                          aria-label={t("priceSave")}
+                          title={t("priceSave")}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand text-white transition hover:bg-brand-dark"
+                        >
+                          <Check className="h-4 w-4" strokeWidth={2.25} />
+                        </SubmitButton>
+                      </span>
+                    </td>
                   </tr>
                   <tr>
                     <td className="py-1.5 text-ink">{t("rowAccess")}</td>
@@ -173,8 +219,20 @@ export default function FacturationView({
                   </tr>
                 </tbody>
               </table>
+              </form>
               <p className="mt-2 text-[11px] leading-snug text-muted">
-                {t("patientPaysNote", { amount: eur(KINE_FOLLOW_UP_CENTS), net: eur(KINE_NET_CENTS), days: TRIAL_DAYS })}
+                {priceSaved && (
+                  <span className="mr-1 inline-flex items-center gap-1 font-medium text-ok">
+                    <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
+                    {t("priceSaved")} ·
+                  </span>
+                )}
+                {t("priceHelp", { max: wholeMoney(KINE_PRICE_MAX_CENTS) })}
+              </p>
+              <p className="mt-1 text-[11px] leading-snug text-muted">
+                {free
+                  ? t("patientPaysNoteFree", { days: TRIAL_DAYS })
+                  : t("patientPaysNote", { amount: eur(KINE_FOLLOW_UP_CENTS), net: eur(Math.max(0, KINE_NET_CENTS)), days: TRIAL_DAYS })}
               </p>
             </PhoneFold>
           </div>

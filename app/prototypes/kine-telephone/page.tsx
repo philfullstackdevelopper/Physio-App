@@ -131,6 +131,7 @@ export default async function KineTelephonePrototype({
       // reste de la démo, mêmes libellés et même calcul que la vraie page
       // (6 € par patient abonné hors essai et hors résiliation).
       <FacturationView
+        demo
         connectStatus="active"
         patientCount={d.rows.length}
         monthlyCents={3 * KINE_FOLLOW_UP_CENTS}

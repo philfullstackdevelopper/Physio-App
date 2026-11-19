@@ -12,6 +12,7 @@ import {
   platformOffer,
   platformOffersIn,
   pricingForCountry,
+  withKinePrice,
   type SubscriptionRow,
 } from "@/lib/billing/patientPlans";
 import { nativeAppPlatform } from "@/lib/app/nativeAppServer";
@@ -40,9 +41,9 @@ export default async function CompteePage({
   ]);
   // Monnaie et montants du pays de SON kiné (2026-11-18) ; France = comme avant.
   const { data: kine } = patient?.instructor_id
-    ? await supabase.from("instructors").select("country").eq("id", patient.instructor_id as string).maybeSingle()
+    ? await supabase.from("instructors").select("country, review_price_cents").eq("id", patient.instructor_id as string).maybeSingle()
     : { data: null };
-  const pricing = pricingForCountry((kine?.country as string | null) ?? null) ?? FRANCE_PRICING;
+  const pricing = withKinePrice(pricingForCountry((kine?.country as string | null) ?? null) ?? FRANCE_PRICING, (kine?.review_price_cents as number | null) ?? null);
   const lowestTotal = Math.min(...platformOffersIn(pricing).map((o) => monthlyTotalIn(o, pricing)));
   const row = (sub as unknown as SubscriptionRow | null) ?? null;
   const legacy = isLegacySubscription(row);

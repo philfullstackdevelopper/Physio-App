@@ -52,11 +52,14 @@ export default function CompteView({
   pricing = FRANCE_PRICING,
 }: CompteViewProps) {
   const t = useTranslations("patient.compte");
+  const tFormat = useTranslations("billing.format");
   const locale = useLocale() as Locale;
   const lowestPlatform = Math.min(...Object.values(pricing.platform));
   // En euros : phrase et format d'origine ; autre monnaie : montants avec leur symbole.
   const twoPayments =
-    pricing.currency === "eur"
+    pricing.kineFollowUp === 0
+      ? t("twoPaymentsFree", { platform: moneyLabel(lowestPlatform, pricing.currency, locale, (a) => tFormat("eur", { amount: a })) })
+      : pricing.currency === "eur"
       ? t("twoPayments", { platform: eurosFR(lowestPlatform, locale), kine: eurosFR(pricing.kineFollowUp, locale) })
       : t("twoPaymentsAmounts", {
           platform: moneyLabel(lowestPlatform, pricing.currency, locale, (a) => a),

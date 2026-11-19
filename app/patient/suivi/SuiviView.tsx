@@ -42,7 +42,7 @@ export type SuiviSubscription = {
 };
 
 export type SuiviViewProps = {
-  sp: { error?: string; ok?: string; attente?: string; arret?: string; reprise?: string; carte?: string; paye?: string };
+  sp: { error?: string; ok?: string; attente?: string; arret?: string; reprise?: string; carte?: string; paye?: string; tarif?: string };
   kineName: string;
   /** Le kiné a activé ses paiements en ligne (Stripe). */
   kineReady: boolean;
@@ -81,7 +81,7 @@ function Breakdown({ offer, kineName, compact = false, pricing = FRANCE_PRICING 
       </li>
       <li className="flex gap-2">
         <span className="w-14 shrink-0 text-right font-semibold tabular-nums text-ink">{money(pricing.kineFollowUp)}</span>
-        <span>{t("breakdownKine", { kineName })}</span>
+        <span>{pricing.kineFollowUp === 0 ? t("breakdownKineFree", { kineName }) : t("breakdownKine", { kineName })}</span>
       </li>
     </ul>
   );
@@ -202,6 +202,7 @@ export default function SuiviView({
         {sp.reprise === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">{t("resumed")}</p>}
         {sp.carte === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">{t("cardChanged")}</p>}
         {sp.paye === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">{t("reviewPaid")}</p>}
+        {sp.tarif === "1" && <p className="mt-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">{t("priceAccepted")}</p>}
         {paymentNotice && <div className="mt-3">{paymentNotice}</div>}
 
         <section className={`mt-4 ${card}`}>

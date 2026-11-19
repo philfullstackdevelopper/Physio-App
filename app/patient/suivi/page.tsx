@@ -1,5 +1,9 @@
 import { getTranslations } from "next-intl/server";
-import { pricingForCountry } from "@/lib/billing/patientPlans";
+import { FRANCE_PRICING, chargeableKineCents, kinePriceRaisePending, moneyLabel, pricingForCountry, withKinePrice } from "@/lib/billing/patientPlans";
+import { kineFeesAcceptedCents } from "@/lib/db/admin";
+import PriceRaiseNotice from "./PriceRaiseNotice";
+import { getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/locales";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import {
@@ -25,7 +29,7 @@ import { nativeAppPlatform } from "@/lib/app/nativeAppServer";
 export default async function SuiviPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string; attente?: string; arret?: string; reprise?: string; carte?: string; paye?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; attente?: string; arret?: string; reprise?: string; carte?: string; paye?: string; tarif?: string }>;
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
@@ -44,7 +48,7 @@ export default async function SuiviPage({
   // patient_recommended_workouts, lisible par le patient pour lui-même).
   const [{ data: kine }, subRes, { count: assignedCount }] = await Promise.all([
     instructorId
-      ? supabase.from("instructors").select("full_name, status, country").eq("id", instructorId).maybeSingle()
+      ? supabase.from("instructors").select("full_name, status, country, review_price_cents").eq("id", instructorId).maybeSingle()
       : Promise.resolve({ data: null }),
     loadSub(),
     supabase.from("patient_recommended_workouts").select("workout_id", { count: "exact", head: true }).eq("patient_id", user.id),
@@ -98,6 +102,31 @@ export default async function SuiviPage({
   // Honoraires du kiné refusés ou à valider par la banque : bouton « Payer ».
   const unpaid = await loadUnpaidReviews(supabase, user.id);
   const kineName = (kine?.full_name as string | null) ?? t("kineFallback");
+  // Monnaie du pays du kiné + SON tarif (2026-11-19, de 0 à 500).
+  const countryPricing = pricingForCountry((kine?.country as string | null) ?? null);
+  let pricing = countryPricing ? withKinePrice(countryPricing, (kine?.review_price_cents as number | null) ?? null) : undefined;
+  // Hausse de tarif pas encore acceptée : petite carte « Accepter ».
+  let raise: { old: string; next: string; cents: number } | null = null;
+  if (pricing && instructorId && row && isPlatformSubscription(row) && (row.status === "active" || row.status === "trialing")) {
+    let accepted: number | null = null;
+    try {
+      accepted = await kineFeesAcceptedCents(user.id, instructorId);
+    } catch (e) {
+      console.error("[patient/suivi] lecture du tarif accepté impossible :", e);
+    }
+    const current = pricing.kineFollowUp;
+    // « Mon offre » affiche ce que le patient paie VRAIMENT : le moins élevé
+    // entre son tarif accepté et le tarif actuel (même règle que le prélèvement).
+    pricing = { ...pricing, kineFollowUp: chargeableKineCents(accepted, current) };
+    if (kinePriceRaisePending(accepted, current)) {
+      const locale = (await getLocale()) as Locale;
+      const tf = await getTranslations("billing.format");
+      const currency = pricing.currency;
+      const money = (c: number) => moneyLabel(c, currency, locale, (amount) => tf("eur", { amount }));
+      raise = { old: money(accepted!), next: money(current), cents: current };
+    }
+  }
+  const priceNotice = raise ? <PriceRaiseNotice kineName={kineName} oldLabel={raise.old} newLabel={raise.next} newCents={raise.cents} /> : null;
 
   return (
     <SuiviView
@@ -106,9 +135,16 @@ export default async function SuiviPage({
       kineReady={kineReady}
       required={required}
       programmeReady={(assignedCount ?? 0) > 0}
-      paymentNotice={unpaid.length > 0 ? <ReviewPaymentNotice reviews={unpaid} kineName={kineName} pricing={pricingForCountry((kine?.country as string | null) ?? null) ?? undefined} /> : null}
+      paymentNotice={
+        unpaid.length > 0 || priceNotice ? (
+          <div className="space-y-3">
+            {priceNotice}
+            {unpaid.length > 0 && <ReviewPaymentNotice reviews={unpaid} kineName={kineName} pricing={countryPricing ?? FRANCE_PRICING} />}
+          </div>
+        ) : null
+      }
       canManageCard={!!row && isPlatformSubscription(row) && !!sub?.stripe_subscription_id}
-      pricing={pricingForCountry((kine?.country as string | null) ?? null) ?? undefined}
+      pricing={pricing}
       subscription={
         sub
           ? {

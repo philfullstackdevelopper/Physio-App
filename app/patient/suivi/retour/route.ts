@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { getStripe } from "@/lib/billing/stripe";
 import { ensureKineCard, refreshPatientSubscription } from "@/lib/billing/patientSubscription";
 import { requestOrigin } from "@/lib/requestOrigin";
-import { FRANCE_PRICING, pricingForCountry } from "@/lib/billing/patientPlans";
+import { FRANCE_PRICING, pricingForCountry, withKinePrice } from "@/lib/billing/patientPlans";
 
 // Retour de Stripe après la souscription de l'accès (modèle définitif du
 // 2026-11-04). La session vit sur le compte d'EasyPhysio : on la relit, on
@@ -39,9 +39,10 @@ export async function GET(req: Request) {
           : { data: null };
         if (ok && instructorId && connect?.status === "active" && connect.stripe_connect_account_id) {
           // Montant du programme dans la monnaie du pays du kiné (2026-11-18).
-          const { data: kine } = await supabase.from("instructors").select("country").eq("id", instructorId).maybeSingle();
-          const pricing = pricingForCountry((kine?.country as string | null) ?? null) ?? FRANCE_PRICING;
-          await ensureKineCard({
+          const { data: kine } = await supabase.from("instructors").select("country, review_price_cents").eq("id", instructorId).maybeSingle();
+          const pricing = withKinePrice(pricingForCountry((kine?.country as string | null) ?? null) ?? FRANCE_PRICING, (kine?.review_price_cents as number | null) ?? null);
+          // Programme offert (0) : rien à prélever, la carte n'est pas copiée.
+          if (pricing.kineFollowUp > 0) await ensureKineCard({
             patientId: user.id,
             instructorId,
             connectAccountId: connect.stripe_connect_account_id as string,

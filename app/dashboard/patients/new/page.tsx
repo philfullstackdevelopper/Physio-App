@@ -7,7 +7,7 @@ import { PHASE_NUMBER, isStage } from "@/lib/exercise/phasePlan";
 import { addPatient } from "../actions";
 import JoinQrCard from "@/components/JoinQrCard";
 import NewPatientView from "@/components/NewPatientView";
-import { pricingForCountry } from "@/lib/billing/patientPlans";
+import { pricingForCountry, withKinePrice } from "@/lib/billing/patientPlans";
 import { getTranslations } from "next-intl/server";
 
 export default async function NewPatientPage({
@@ -34,7 +34,7 @@ export default async function NewPatientPage({
       .is("patient_id", null)
       .or(`created_by.is.null,created_by.eq.${user.id}`),
     supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", user.id).maybeSingle(),
-    supabase.from("instructors").select("country").eq("id", user.id).maybeSingle(),
+    supabase.from("instructors").select("country, review_price_cents").eq("id", user.id).maybeSingle(),
   ]);
   const rank = (s: string | null) => (isStage(s) ? STAGE_ORDER.indexOf(s) : 99);
   const groups = new Map<string, { id: string; label: string; rank: number }[]>();
@@ -57,7 +57,10 @@ export default async function NewPatientPage({
   return (
     <NewPatientView
       connectMissing={connectMissing}
-      pricing={pricingForCountry((me?.country as string | null) ?? null) ?? undefined}
+      pricing={(() => {
+        const p = pricingForCountry((me?.country as string | null) ?? null);
+        return p ? withKinePrice(p, (me?.review_price_cents as number | null) ?? null) : undefined;
+      })()}
       open={open}
       error={error}
       addPatientAction={addPatient}

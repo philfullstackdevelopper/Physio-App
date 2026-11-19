@@ -177,6 +177,60 @@ export const CURRENCY_PRICES: Partial<Record<CurrencyCode, CurrencyPrices>> = {
 
 export type CountryPricing = CurrencyPrices & { currency: CurrencyCode; country: string };
 
+// ---------------------------------------------------------------------------
+// Tarif libre du kiné (Philippe, 2026-11-19) : de 0 à 500 dans sa monnaie.
+// 0 = programme offert (le patient ne paie que l'accès EasyPhysio). Sinon de
+// 1,00 à 500,00 (en dessous de 1, les frais de carte mangent le paiement).
+// Colonne instructors.review_price_cents (contrainte de la migration 0077 :
+// 0 ou 100 à 50 000). Vide = tarif par défaut du pays (CURRENCY_PRICES).
+// L'accès à la plateforme, lui, ne change pas.
+//
+// Règle de prélèvement : le patient paie le MOINS ÉLEVÉ entre le tarif qu'il
+// a accepté par écrit et le tarif actuel du kiné. Une baisse s'applique tout
+// de suite ; une hausse seulement après son nouvel accord (art. R.4321-98 CSP
+// pour la France : prix annoncé et accepté avant).
+// ---------------------------------------------------------------------------
+
+export const KINE_PRICE_MIN_CENTS = 100;
+export const KINE_PRICE_MAX_CENTS = 50_000;
+
+/** 0, ou un montant entier de 1,00 à 500,00. */
+export function kinePriceValid(cents: unknown): cents is number {
+  return typeof cents === "number" && Number.isInteger(cents) && (cents === 0 || (cents >= KINE_PRICE_MIN_CENTS && cents <= KINE_PRICE_MAX_CENTS));
+}
+
+/** « 12 », « 12,5 », « 12.50 », « 0 » → centimes ; null si illisible ou hors limites. */
+export function parseKinePrice(input: unknown): number | null {
+  const s = String(input ?? "").trim().replace(/\s/g, "").replace(",", ".");
+  if (!/^\d{1,3}(\.\d{1,2})?$/.test(s)) return null;
+  const cents = Math.round(Number(s) * 100);
+  return kinePriceValid(cents) ? cents : null;
+}
+
+/** Tarif du kiné : le sien s'il en a fixé un, sinon celui du pays. */
+export function kinePriceCents(reviewPriceCents: number | null | undefined, pricing: CurrencyPrices): number {
+  return kinePriceValid(reviewPriceCents) ? reviewPriceCents : pricing.kineFollowUp;
+}
+
+/** Montants du pays avec le tarif de CE kiné à la place du tarif par défaut. */
+export function withKinePrice<T extends CurrencyPrices>(pricing: T, reviewPriceCents: number | null | undefined): T {
+  return { ...pricing, kineFollowUp: kinePriceCents(reviewPriceCents, pricing) };
+}
+
+/**
+ * Ce que l'on prélève au patient ce mois-ci : le moins élevé entre son tarif
+ * accepté et le tarif actuel. Sans accord enregistré (abonné avant le
+ * 2026-11-10), le tarif actuel, comme avant. 0 = rien à prélever.
+ */
+export function chargeableKineCents(acceptedCents: number | null | undefined, currentCents: number): number {
+  return typeof acceptedCents === "number" ? Math.min(acceptedCents, currentCents) : currentCents;
+}
+
+/** Le kiné a augmenté son tarif depuis l'accord du patient : nouvel accord à demander. */
+export function kinePriceRaisePending(acceptedCents: number | null | undefined, currentCents: number): boolean {
+  return typeof acceptedCents === "number" && currentCents > acceptedCents;
+}
+
 /** Monnaie et montants des patients d'un kiné de ce pays (vide = France), ou null si le pays n'est pas ouvert. */
 export function pricingForCountry(country: string | null | undefined): CountryPricing | null {
   const code = instructorCountry(country);
