@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, Smartphone, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { isPhoneFormat } from "@/lib/phoneFormat";
 import { APP_USER_AGENT_MARK } from "@/lib/app/nativeApp";
 import { joinWaitlist, type WaitlistState } from "@/app/waitlistActions";
@@ -83,11 +83,11 @@ export default function AppComingSoonBanner({ enabled }: { enabled: boolean }) {
     <div
       role="region"
       aria-label={t("label")}
-      className="fixed inset-x-0 top-0 z-50 bg-ink px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-white shadow-lg"
+      className="fixed inset-x-0 top-0 z-50 bg-ink px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-white"
     >
       {state.ok ? (
         <p className="flex items-center gap-2 py-1 text-xs" role="status">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" strokeWidth={2} />
+          <Check className="h-4 w-4 shrink-0 text-emerald-300" strokeWidth={2} />
           {t("thanks")}
         </p>
       ) : asking ? (
@@ -102,7 +102,7 @@ export default function AppComingSoonBanner({ enabled }: { enabled: boolean }) {
             autoFocus={!email}
             aria-label={t("emailLabel")}
             placeholder={t("placeholder")}
-            className="min-w-0 flex-1 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs text-white placeholder:text-white/50 focus:border-white/60 focus:outline-none"
+            className="min-w-0 flex-1 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs text-white placeholder:text-white/70 focus:border-white/60 focus:outline-none"
           />
           <button
             type="submit"
@@ -111,24 +111,23 @@ export default function AppComingSoonBanner({ enabled }: { enabled: boolean }) {
           >
             {pending ? t("sending") : t("submit")}
           </button>
-          <button type="button" onClick={close} aria-label={t("close")} className="shrink-0 rounded-md p-1 text-white/70">
+          <button type="button" onClick={close} aria-label={t("close")} className="shrink-0 rounded-md p-1 text-white/80 hover:text-white">
             <X className="h-4 w-4" strokeWidth={1.75} />
           </button>
         </form>
       ) : (
         <div className="flex items-center gap-2">
-          <Smartphone className="h-4 w-4 shrink-0 text-white/80" strokeWidth={1.75} />
           <p className="min-w-0 flex-1 text-xs leading-snug">{t("text")}</p>
           <button type="button" onClick={() => setAsking(true)} className="shrink-0 rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-ink">
             {t("notify")}
           </button>
-          <button type="button" onClick={close} aria-label={t("close")} className="shrink-0 rounded-md p-1 text-white/70">
+          <button type="button" onClick={close} aria-label={t("close")} className="shrink-0 rounded-md p-1 text-white/80 hover:text-white">
             <X className="h-4 w-4" strokeWidth={1.75} />
           </button>
         </div>
       )}
       {state.error && !state.ok && <p className="mt-1 text-[11px] text-red-200">{state.error}</p>}
-      {asking && !state.ok && <p className="mt-1 text-[10px] leading-snug text-white/60">{t("privacy")}</p>}
+      {asking && !state.ok && <p className="mt-1 text-[11px] leading-snug text-white/75">{t("privacy")}</p>}
     </div>
   );
 }

@@ -79,14 +79,14 @@
       "cabinetInviteHint": "With your practice's link",
       "price": "Set your price",
       "priceHint": "{price} / month, by default",
-      "priceDoneHint": "{price} / month · can be changed",
+      "priceDoneHint": "{price} / month, can be changed",
       "priceFree": "programme free",
-      "payLine": "You set your price and it's paid straight to you: EasyPhysio takes nothing.",
+      "payLine": "Your price is paid straight to you. EasyPhysio takes nothing from it.",
       "payMore": "How?",
       "pay1": "You set the price of your follow-up, from 0 to {max}, in “Follow-up & billing”.",
       "pay2": "It's paid straight into your Stripe account, with the fee note in your name. EasyPhysio takes no commission.",
       "pay3": "The patient is only charged in months when you update their programme, never during their {days}-day trial.",
-      "pay4": "App access is a separate payment from the patient to EasyPhysio. A price increase only applies to a patient once they agree."
+      "pay4": "The patient pays for app access separately, to EasyPhysio. If you raise your price, each patient has to accept it first."
     }
   },
   "layout": {
@@ -184,7 +184,7 @@
     "connectNotice": "Your Stripe payments aren’t activated yet: until then, you won’t receive your patients’ €{amount} for their programme (in months when you update it).",
     "connectLink": "Activate my payments",
     "connectNoticeAmount": "Your Stripe payments aren’t activated yet: until then, you won’t receive your patients’ {amount} for their programme (in months when you update it).",
-    "sentHint": "Invitation sent. If your patient can’t find it, they should check the “Promotions” tab (Gmail) or their spam folder — or let them scan your QR code."
+    "sentHint": "Invitation sent. If your patient can’t find it, they should check the “Promotions” tab (Gmail) or their spam folder. Otherwise, let them scan your QR code."
   },
   "patientActions": {
     "fillAll": "Please fill in all the fields.",

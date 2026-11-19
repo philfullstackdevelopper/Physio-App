@@ -79,14 +79,14 @@
       "cabinetInviteHint": "Avec le lien de votre cabinet",
       "price": "Fixer votre prix",
       "priceHint": "{price} / mois, par défaut",
-      "priceDoneHint": "{price} / mois · modifiable",
+      "priceDoneHint": "{price} / mois, modifiable",
       "priceFree": "programme offert",
-      "payLine": "Vous fixez votre prix, il vous est versé directement : EasyPhysio ne prend rien.",
+      "payLine": "Votre prix vous est versé directement. EasyPhysio ne prend rien dessus.",
       "payMore": "Comment ?",
       "pay1": "Vous fixez le prix de votre suivi, de 0 à {max}, dans « Suivi & facturation ».",
       "pay2": "Il est versé directement sur votre compte Stripe, avec la note d'honoraires à votre nom. EasyPhysio ne prend aucune commission.",
       "pay3": "Le patient n'est prélevé que les mois où vous mettez à jour son programme, jamais pendant ses {days} jours d'essai.",
-      "pay4": "L'accès à l'appli est un paiement séparé du patient à EasyPhysio. Une hausse de votre prix ne s'applique à un patient qu'après son accord."
+      "pay4": "Le patient paie l'accès à l'appli à part, à EasyPhysio. Si vous augmentez votre prix, chaque patient doit d'abord l'accepter."
     }
   },
   "layout": {
@@ -184,7 +184,7 @@
     "connectNotice": "Vos paiements Stripe ne sont pas encore activés : d’ici là, vous ne recevrez pas les {amount} € de vos patients pour leur programme (les mois où vous le mettez à jour).",
     "connectLink": "Activer mes paiements",
     "connectNoticeAmount": "Vos paiements Stripe ne sont pas encore activés : d’ici là, vous ne recevrez pas les {amount} de vos patients pour leur programme (les mois où vous le mettez à jour).",
-    "sentHint": "Invitation envoyée. Si votre patient ne la voit pas, qu’il regarde dans l’onglet « Promotions » (Gmail) ou dans ses spams — ou faites-lui scanner votre QR code."
+    "sentHint": "Invitation envoyée. Si votre patient ne la voit pas, qu’il regarde dans l’onglet « Promotions » (Gmail) ou dans ses spams. Sinon, faites-lui scanner votre QR code."
   },
   "patientActions": {
     "fillAll": "Veuillez remplir tous les champs.",
