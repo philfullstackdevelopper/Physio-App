@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
-import { Armchair, Bike, Check, Circle, CircleDot, Dumbbell, Grip, RectangleHorizontal, Slash, Waves, type LucideIcon } from "lucide-react";
+import { Check } from "lucide-react";
 import type { InjuryStage } from "@/lib/exercise/prescription";
 import { equipmentLabels as equipmentLabelsFor, type EquipmentId } from "@/lib/exercise/equipment";
 import BodyPartIllustration from "@/components/BodyPartIllustration";
@@ -14,20 +14,12 @@ import BodyPartIllustration from "@/components/BodyPartIllustration";
 // donné). La case vit maintenant en bas de l'étape « Équipement », dont le
 // bouton final enregistre. Elle reste distincte des CGU, même texte, même
 // champ envoyé (health_data_consent), toujours obligatoire.
-// Icône de chaque matériel : tuiles comme le choix des zones du corps
-// (Philippe, 2026-11-17 : « même présentation que les parties du corps »).
-const EQUIPMENT_ICONS: Record<EquipmentId, LucideIcon> = {
-  aucun: Circle,
-  tapis: RectangleHorizontal,
-  elastiques: Waves,
-  halteres: Dumbbell,
-  chaise: Armchair,
-  velo_rameur: Bike,
-  barre_traction: Grip,
-  swiss_ball: Circle,
-  ballon: CircleDot,
-  baton: Slash,
-};
+// Matériel : tuiles comme le choix des zones du corps (Philippe, 2026-11-17 :
+// « même présentation que les parties du corps »), avec un vrai dessin de
+// l'objet, bleu au trait comme les illustrations d'exercices
+// (public/equipment/<id>.svg, générés par Codex le 2026-11-19). Les icônes
+// génériques d'avant (rectangle, vagues, points…) ne se lisaient pas
+// (Philippe, 2026-11-19 : « the UI here has to be improved »).
 
 // Clés de patient.onboarding.steps.
 // 2 étapes depuis le 2026-11-16 (avant : situation, profil, équipement).
@@ -85,6 +77,8 @@ export default function OnboardingWizard({
   const locale = useLocale();
   // Libellés du matériel dans la langue de l'interface (en français : ceux reçus de la page).
   const equipmentText = locale === "fr" ? equipmentLabels : equipmentLabelsFor(tEquipment);
+  // Tuile : un nom court + une précision en petit (« Haltères » / « ou poids légers »).
+  const tTile = useTranslations("exercise.equipmentTile");
   // A failed save (server-side validation) reloads the page and resets this
   // component from scratch — landing back on step 0 made the error message
   // above the form invisible-in-spirit: nothing on screen (body-part picker)
@@ -268,15 +262,22 @@ export default function OnboardingWizard({
                 sont toujours réalisables, qu'il soit coché ou non — pas la
                 peine de demander au patient de le cocher (Philippe, 2026-09-09). */}
             {equipmentOptions.filter((id) => id !== "aucun").map((id) => {
-              const Icon = EQUIPMENT_ICONS[id];
+              const hint = tTile(`${id}.hint`);
               return (
                 <label
                   key={id}
-                  className="flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2.5 text-center text-slate-500 transition-colors hover:bg-slate-50 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-600 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-600 short:gap-1 short:p-1.5"
+                  title={equipmentText[id]}
+                  className="group relative flex cursor-pointer flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white px-1.5 pb-2 pt-2.5 text-center transition-colors hover:border-slate-300 hover:bg-slate-50 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-600 short:pb-1.5 short:pt-1.5"
                 >
-                  <input type="checkbox" name="equipment" value={id} defaultChecked={currentEquipment.has(id)} className="sr-only" />
-                  <Icon aria-hidden className="h-8 w-8 short:h-6 short:w-6" strokeWidth={1.5} />
-                  <span className="text-[11px] font-medium leading-tight text-slate-700">{equipmentText[id]}</span>
+                  <input type="checkbox" name="equipment" value={id} defaultChecked={currentEquipment.has(id)} className="peer sr-only" />
+                  {/* Coche : on voit d'un coup d'œil ce qui est choisi. */}
+                  <span aria-hidden className="absolute right-1.5 top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-white peer-checked:flex">
+                    <Check className="h-3 w-3" strokeWidth={3} />
+                  </span>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- petit SVG statique */}
+                  <img src={`/equipment/${id}.svg`} alt="" aria-hidden className="h-14 w-14 object-contain short:h-11 short:w-11" />
+                  <span className="text-[12px] font-medium leading-tight text-slate-800">{tTile(`${id}.title`)}</span>
+                  {hint && <span className="-mt-0.5 text-[10.5px] leading-tight text-slate-500">{hint}</span>}
                 </label>
               );
             })}

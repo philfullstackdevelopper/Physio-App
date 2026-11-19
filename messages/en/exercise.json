@@ -11,6 +11,44 @@
     "ballon": "Small ball (or cushion)",
     "baton": "Stick (or broom handle)"
   },
+  "equipmentTile": {
+    "tapis": {
+      "title": "Exercise mat",
+      "hint": ""
+    },
+    "elastiques": {
+      "title": "Resistance bands",
+      "hint": ""
+    },
+    "halteres": {
+      "title": "Dumbbells",
+      "hint": "or light weights"
+    },
+    "chaise": {
+      "title": "Chair or bench",
+      "hint": "sturdy"
+    },
+    "velo_rameur": {
+      "title": "Exercise bike",
+      "hint": "or rowing machine"
+    },
+    "barre_traction": {
+      "title": "Pull-up bar",
+      "hint": ""
+    },
+    "swiss_ball": {
+      "title": "Swiss ball",
+      "hint": "gym ball"
+    },
+    "ballon": {
+      "title": "Small ball",
+      "hint": "or cushion"
+    },
+    "baton": {
+      "title": "Stick",
+      "hint": "or broom handle"
+    }
+  },
   "exerciseEquipment": {
     "elastiques": "Band",
     "halteres": "Dumbbells",

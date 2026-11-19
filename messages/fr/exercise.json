@@ -11,6 +11,44 @@
     "ballon": "Petit ballon (ou coussin)",
     "baton": "Bâton (ou manche à balai)"
   },
+  "equipmentTile": {
+    "tapis": {
+      "title": "Tapis de sol",
+      "hint": ""
+    },
+    "elastiques": {
+      "title": "Élastiques",
+      "hint": "de résistance"
+    },
+    "halteres": {
+      "title": "Haltères",
+      "hint": "ou poids légers"
+    },
+    "chaise": {
+      "title": "Chaise ou banc",
+      "hint": "stable"
+    },
+    "velo_rameur": {
+      "title": "Vélo d'appartement",
+      "hint": "ou rameur"
+    },
+    "barre_traction": {
+      "title": "Barre de traction",
+      "hint": ""
+    },
+    "swiss_ball": {
+      "title": "Swiss ball",
+      "hint": "ballon de gym"
+    },
+    "ballon": {
+      "title": "Petit ballon",
+      "hint": "ou coussin"
+    },
+    "baton": {
+      "title": "Bâton",
+      "hint": "ou manche à balai"
+    }
+  },
   "exerciseEquipment": {
     "elastiques": "Élastique",
     "halteres": "Haltères",
