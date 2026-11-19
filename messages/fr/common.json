@@ -21,5 +21,17 @@
     "text": "Recevez les messages de votre kiné et le rappel de votre séance, même appli fermée.",
     "enable": "Activer",
     "later": "Plus tard"
+  },
+  "appSoon": {
+    "label": "Appli mobile bientôt disponible",
+    "text": "L'appli EasyPhysio arrive bientôt sur iPhone et Android.",
+    "notify": "Me prévenir",
+    "close": "Fermer",
+    "emailLabel": "Votre adresse e-mail",
+    "placeholder": "votre@email.fr",
+    "sending": "…",
+    "submit": "OK",
+    "thanks": "C'est noté : nous vous écrirons dès la sortie de l'appli.",
+    "privacy": "Votre e-mail ne sert qu'à vous annoncer la sortie de l'appli."
   }
 }

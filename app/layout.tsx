@@ -10,7 +10,8 @@ import type { Locale } from "@/i18n/locales";
 import { siteConfig } from "@/lib/site";
 import AppBridge from "@/components/AppBridge";
 import WebPushPrompt from "@/components/WebPushPrompt";
-import { appStoreId } from "@/lib/app/storeLinks";
+import { appStoreId, storeLinks } from "@/lib/app/storeLinks";
+import AppComingSoonBanner from "@/components/AppComingSoonBanner";
 import "./globals.css";
 
 // Bannière Safari « Ouvrir dans l'App Store » sur iPhone, une fois l'appli
@@ -107,6 +108,8 @@ export default async function RootLayout({
             <AppBridge />
             {/* Site installé sur l'écran d'accueil : notifications (rien ailleurs). */}
             <WebPushPrompt />
+            {/* Téléphone : « l'appli arrive bientôt » tant que les stores ne sont pas configurés. */}
+            <AppComingSoonBanner enabled={!storeLinks().ios && !storeLinks().android} />
           </ClerkProvider>
           <CookieBanner />
           {/* Garde l'offre « Installer » d'Android pour le bouton (lib/pwa/installPrompt.ts). */}

@@ -21,5 +21,17 @@
     "text": "Get messages from your physio and your session reminder, even with the app closed.",
     "enable": "Turn on",
     "later": "Later"
+  },
+  "appSoon": {
+    "label": "Mobile app coming soon",
+    "text": "The EasyPhysio app is coming soon to iPhone and Android.",
+    "notify": "Notify me",
+    "close": "Close",
+    "emailLabel": "Your email address",
+    "placeholder": "you@email.com",
+    "sending": "…",
+    "submit": "OK",
+    "thanks": "Got it: we'll email you as soon as the app is out.",
+    "privacy": "Your email is only used to tell you when the app is out."
   }
 }
