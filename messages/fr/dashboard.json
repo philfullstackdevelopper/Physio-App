@@ -70,13 +70,23 @@
       "patient": "Ajouter votre premier patient",
       "patientHint": "Par e-mail ou avec votre QR code",
       "patientClosed": "Les invitations ouvriront au lancement",
-      "payments": "Recevoir vos 6 € par patient",
-      "paymentsHint": "Pour recevoir le suivi réglé par vos patients",
+      "payments": "Activer vos paiements",
+      "paymentsHint": "Compte Stripe à votre nom",
       "cabinetNone": "Rejoindre ou créer votre cabinet",
       "cabinetNoneHint": "Pour partager vos exercices",
       "cabinetPending": "Demande envoyée à votre cabinet",
       "cabinetInvite": "Inviter vos collègues",
-      "cabinetInviteHint": "Avec le lien de votre cabinet"
+      "cabinetInviteHint": "Avec le lien de votre cabinet",
+      "price": "Fixer votre prix",
+      "priceHint": "{price} / mois, par défaut",
+      "priceDoneHint": "{price} / mois · modifiable",
+      "priceFree": "programme offert",
+      "payLine": "Vous fixez votre prix, il vous est versé directement : EasyPhysio ne prend rien.",
+      "payMore": "Comment ?",
+      "pay1": "Vous fixez le prix de votre suivi, de 0 à {max}, dans « Suivi & facturation ».",
+      "pay2": "Il est versé directement sur votre compte Stripe, avec la note d'honoraires à votre nom. EasyPhysio ne prend aucune commission.",
+      "pay3": "Le patient n'est prélevé que les mois où vous mettez à jour son programme, jamais pendant ses {days} jours d'essai.",
+      "pay4": "L'accès à l'appli est un paiement séparé du patient à EasyPhysio. Une hausse de votre prix ne s'applique à un patient qu'après son accord."
     }
   },
   "layout": {

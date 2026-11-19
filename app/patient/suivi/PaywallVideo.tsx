@@ -10,13 +10,13 @@ import SubmitButton from "@/components/SubmitButton";
 import {
   DEFAULT_OFFER_KEY,
   FRANCE_PRICING,
-  PLATFORM_OFFERS,
   TRIAL_DAYS,
   moneyLabel,
   monthlyTotalIn,
   platformOffersIn,
   savingsPercentIn,
   type CountryPricing,
+  type PlatformOfferKey,
 } from "@/lib/billing/patientPlans";
 import { startPlan } from "./actions";
 
@@ -27,9 +27,9 @@ import { startPlan } from "./actions";
 //   - Ordinateur : à gauche Jules qui fait l'exercice, toute la hauteur ; à
 //     droite le choix de la durée et le prix.
 //   - Téléphone : la vidéo en haut, le choix dessous.
-// Le choix de l'offre est un curseur « combien de temps » (Libre / 3 mois /
-// 6 mois) : le grand prix change avec lui, et UNE ligne dit l'origine des deux
-// montants. Tient sur un écran.
+// Le choix de l'offre : les trois formules en liste (2026-11-19, à la place du
+// curseur « Libre / 3 mois / 6 mois »), comparables d'un coup d'œil ; dessous,
+// UNE ligne dit l'origine des deux montants. Tient sur un écran.
 //
 // Les vidéos (Philippe, 2026-11-04 : « les exos qui coulissent du haut vers le
 // bas … celle où la caméra reste le plus stable ») : deux bandes qui
@@ -75,9 +75,6 @@ function Strip({ clips, tile, motion }: { clips: Clip[]; tile: string; motion: s
   );
 }
 
-const STOPS = ["stopFree", "stop3", "stop6"] as const;
-const DEFAULT_INDEX = Math.max(0, PLATFORM_OFFERS.findIndex((o) => o.key === DEFAULT_OFFER_KEY));
-
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   return ((parts[0]?.[0] ?? "K") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
@@ -108,9 +105,9 @@ export default function PaywallVideo({
   /** Monnaie et montants du pays du kiné (2026-11-18) ; défaut : France. */
   pricing?: CountryPricing;
 }) {
-  const [index, setIndex] = useState(DEFAULT_INDEX);
-  const offer = platformOffersIn(pricing)[index];
-  const save = savingsPercentIn(offer, pricing);
+  const [offerKey, setOfferKey] = useState<PlatformOfferKey>(DEFAULT_OFFER_KEY);
+  const offers = platformOffersIn(pricing);
+  const offer = offers.find((o) => o.key === offerKey) ?? offers[0];
   const t = useTranslations("billing.paywall");
   const tf = useTranslations("billing.format");
   const tOffer = useTranslations("billing.offers");
@@ -121,7 +118,7 @@ export default function PaywallVideo({
   return (
     <main className="min-h-dvh bg-slate-950 text-white md:grid md:h-dvh md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
       {/* Jules fait les exercices : ce que le patient va recevoir. */}
-      <div className="relative h-[38dvh] overflow-hidden md:h-full">
+      <div className="relative h-[24dvh] overflow-hidden md:h-full">
         <style>{`@keyframes paywall-descend{from{transform:translateY(-50%)}to{transform:translateY(0)}}`}</style>
         <div className="absolute inset-0 grid grid-cols-[1fr_1.1fr] gap-2 px-2">
           <Strip clips={STANDING} tile="aspect-[9/16]" motion="[animation:paywall-descend_48s_linear_infinite]" />
@@ -155,53 +152,63 @@ export default function PaywallVideo({
             </p>
           )}
 
-          {/* Combien de temps */}
-          <input type="hidden" name="plan" value={offer.key} />
-          <div className="mt-6 short:md:mt-4">
-            <input
-              type="range"
-              min={0}
-              max={PLATFORM_OFFERS.length - 1}
-              step={1}
-              value={index}
-              onChange={(e) => setIndex(Number(e.target.value))}
-              aria-label={t("durationAria")}
-              aria-valuetext={tOffer(offer.key)}
-              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-700 accent-blue-500 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-white [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg"
-              style={{ background: `linear-gradient(to right, #3b82f6 ${(index / (PLATFORM_OFFERS.length - 1)) * 100}%, #334155 ${(index / (PLATFORM_OFFERS.length - 1)) * 100}%)` }}
-            />
-            <div className="mt-2 flex justify-between text-xs">
-              {STOPS.map((stop, i) => (
-                <button
-                  key={stop}
-                  type="button"
-                  onClick={() => setIndex(i)}
-                  className={`transition ${i === index ? "font-semibold text-white" : "text-slate-500 hover:text-slate-300"}`}
-                >
-                  {t(stop)}
-                </button>
-              ))}
+          {/* Les trois formules côte à côte (Philippe, 2026-11-19 : le curseur
+              ne permettait pas de comparer d'un coup d'œil). Une ligne par
+              formule : total par mois, accès par mois × durée, économie. */}
+          <fieldset className="mt-4 short:md:mt-3">
+            <legend className="sr-only">{t("plansLegend")}</legend>
+            <div className="grid gap-1.5">
+              {offers.map((o) => {
+                const pct = savingsPercentIn(o, pricing);
+                const selected = o.key === offer.key;
+                return (
+                  <label
+                    key={o.key}
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 transition short:md:py-1.5 ${
+                      selected ? "border-blue-500 bg-blue-500/10" : "border-slate-700 hover:border-slate-500"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="plan"
+                      value={o.key}
+                      checked={selected}
+                      onChange={() => setOfferKey(o.key)}
+                      className="h-4 w-4 shrink-0 accent-blue-500"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2 text-sm font-semibold">
+                        {tOffer(o.key)}
+                        {pct > 0 && <span className="rounded-full bg-emerald-400/15 px-1.5 py-px text-[11px] font-semibold text-emerald-300">{tf("pct", { n: pct })}</span>}
+                      </span>
+                      <span className="block text-[11px] leading-snug text-slate-400">
+                        {o.commitmentMonths
+                          ? t("planAccessCommit", { access: eur(o.platformCents), months: o.commitmentMonths, total: eur(o.platformCents * o.commitmentMonths) })
+                          : t("planAccessFree", { access: eur(o.platformCents) })}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block font-display text-lg font-semibold tabular-nums leading-tight">{eur(monthlyTotalIn(o, pricing))}</span>
+                      <span className="block text-[11px] text-slate-400">{t("perMonth")}</span>
+                    </span>
+                  </label>
+                );
+              })}
             </div>
-          </div>
+          </fieldset>
 
-          {/* Le prix */}
-          <div className="mt-5 flex items-end gap-3 short:md:mt-3" aria-live="polite">
-            <p className="font-display text-5xl font-semibold tabular-nums tracking-tight max-sm:text-4xl">
-              {eur(monthlyTotalIn(offer, pricing))}<span className="text-base font-normal text-slate-400">{` ${t("perMonth")}`}</span>
-            </p>
-            {save > 0 && <span className="mb-2 rounded-full bg-emerald-400/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">{tf("pct", { n: save })}</span>}
-          </div>
-          <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
+          {/* L'origine du total : deux paiements séparés. */}
+          <p className="mt-2 text-[11px] leading-snug text-slate-400" aria-live="polite">
             {pricing.kineFollowUp === 0
-              ? t("splitFree", { platform: eur(offer.platformCents), kineName })
-              : t("split", { platform: eur(offer.platformCents), kine: eur(pricing.kineFollowUp), kineName })}{" "}
-            {offer.commitmentMonths ? t("splitCommitment", { months: offer.commitmentMonths }) : t("splitNoCommitment")}
+              ? t("originFree", { platform: eur(offer.platformCents), kineName })
+              : t("origin", { platform: eur(offer.platformCents), kine: eur(pricing.kineFollowUp), kineName })}{" "}
+            {t("afterCommitment")}
           </p>
 
           {trial && (
-            <p className="mt-3 flex items-center gap-2 text-xs text-slate-300">
-              <Bell className="h-3.5 w-3.5 shrink-0 text-blue-400" strokeWidth={2} />
-              {t("reminder", { reminder: reminderLabel, first: firstChargeLabel })}
+            <p className="mt-2 flex items-start gap-2 text-xs text-slate-300">
+              <Bell className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-400" strokeWidth={2} />
+              {t("trialLine", { days: TRIAL_DAYS, reminder: reminderLabel, first: firstChargeLabel })}
             </p>
           )}
 
@@ -225,9 +232,7 @@ export default function PaywallVideo({
           </SubmitButton>
           <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-500">
             <Lock className="h-3 w-3 shrink-0" strokeWidth={2} />
-            {/* (Philippe, 2026-11-06 : audit, on allège) « Résiliable à tout
-                moment » retiré d'ici : déjà dit sous le prix. */}
-            {trial ? `${t("noChargeBefore", { date: firstChargeLabel })} · ` : ""}
+            {/* « Aucun débit avant le … » : déjà dit dans la ligne de l'essai. */}
             <Link href="/patient/compte" className="hover:text-slate-300 hover:underline">
               {t("myData")}
             </Link>

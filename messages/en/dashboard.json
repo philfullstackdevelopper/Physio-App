@@ -70,13 +70,23 @@
       "patient": "Add your first patient",
       "patientHint": "By email or with your QR code",
       "patientClosed": "Invitations open at launch",
-      "payments": "Receive your €6 per patient",
-      "paymentsHint": "To receive the follow-up your patients pay for",
+      "payments": "Activate your payments",
+      "paymentsHint": "Stripe account in your name",
       "cabinetNone": "Join or create your practice",
       "cabinetNoneHint": "To share your exercises",
       "cabinetPending": "Request sent to your practice",
       "cabinetInvite": "Invite your colleagues",
-      "cabinetInviteHint": "With your practice's link"
+      "cabinetInviteHint": "With your practice's link",
+      "price": "Set your price",
+      "priceHint": "{price} / month, by default",
+      "priceDoneHint": "{price} / month · can be changed",
+      "priceFree": "programme free",
+      "payLine": "You set your price and it's paid straight to you: EasyPhysio takes nothing.",
+      "payMore": "How?",
+      "pay1": "You set the price of your follow-up, from 0 to {max}, in “Follow-up & billing”.",
+      "pay2": "It's paid straight into your Stripe account, with the fee note in your name. EasyPhysio takes no commission.",
+      "pay3": "The patient is only charged in months when you update their programme, never during their {days}-day trial.",
+      "pay4": "App access is a separate payment from the patient to EasyPhysio. A price increase only applies to a patient once they agree."
     }
   },
   "layout": {

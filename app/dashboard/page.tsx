@@ -7,10 +7,13 @@ import { loadUnreadMessages } from "@/lib/dashboard/unreadMessages";
 import DashboardHomeView from "@/components/DashboardHomeView";
 import { getLibI18n } from "@/lib/dashboard/libI18n";
 import { cookies } from "next/headers";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import FirstSteps, { FIRST_STEPS_COOKIE, type FirstStep } from "@/components/FirstSteps";
 import { cabinetView } from "@/lib/db/cabinets";
 import { canInvitePatients } from "@/lib/launch";
+import { FRANCE_PRICING, KINE_PRICE_MAX_CENTS, TRIAL_DAYS, moneyLabel, pricingForCountry, withKinePrice } from "@/lib/billing/patientPlans";
+import type { Locale } from "@/i18n/locales";
+import { intlTag } from "@/lib/i18n/translator";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -44,23 +47,33 @@ export default async function DashboardPage() {
 
 // « Premiers pas » (Philippe, 2026-11-16) : un patient, les paiements, le
 // cabinet. Rien n'est affiché si le kiné a fermé la carte ou si tout est fait.
+// 2026-11-19 (Philippe) : d'abord « Fixer votre prix » (fait dès qu'il l'a
+// enregistré une fois, même à 6 € — une hausse ultérieure demande l'accord de
+// chaque patient, d'où l'intérêt de le fixer avant le premier patient), et une
+// courte explication de sa rémunération dans la carte.
 async function firstStepsFor(supabase: Awaited<ReturnType<typeof createClient>>, userId: string, email: string | null) {
   if ((await cookies()).get(FIRST_STEPS_COOKIE)?.value === "1") return null;
   const t = await getTranslations("dashboard.home.firstSteps");
-  const [{ count: patients }, { data: connect }, cabinet] = await Promise.all([
+  const tf = await getTranslations("billing.format");
+  const locale = (await getLocale()) as Locale;
+  const [{ count: patients }, { data: connect }, cabinet, { data: me }] = await Promise.all([
     supabase.from("patients").select("id", { count: "exact", head: true }).eq("instructor_id", userId),
     supabase.from("instructor_connect_accounts").select("status").eq("instructor_id", userId).maybeSingle(),
     cabinetView(userId).catch(() => null),
+    supabase.from("instructors").select("country, review_price_cents").eq("id", userId).maybeSingle(),
   ]);
+  const priceCents = (me?.review_price_cents as number | null) ?? null;
+  const pricing = withKinePrice(pricingForCountry((me?.country as string | null) ?? null) ?? FRANCE_PRICING, priceCents);
+  const price = pricing.kineFollowUp === 0 ? t("priceFree") : moneyLabel(pricing.kineFollowUp, pricing.currency, locale, (amount) => tf("eur", { amount }));
   const activeMembers = cabinet?.members.filter((m) => m.status === "active").length ?? 0;
   const invitationsOpen = canInvitePatients(email);
   const steps: FirstStep[] = [
     {
-      key: "patient",
-      done: (patients ?? 0) > 0,
-      href: "/dashboard/patients/new",
-      label: t("patient"),
-      hint: invitationsOpen ? t("patientHint") : t("patientClosed"),
+      key: "price",
+      done: priceCents !== null,
+      href: "/dashboard/facturation?prix=1",
+      label: t("price"),
+      hint: priceCents !== null ? t("priceDoneHint", { price }) : t("priceHint", { price }),
     },
     {
       key: "payments",
@@ -69,6 +82,13 @@ async function firstStepsFor(supabase: Awaited<ReturnType<typeof createClient>>,
       label: t("payments"),
       hint: t("paymentsHint"),
     },
+    {
+      key: "patient",
+      done: (patients ?? 0) > 0,
+      href: "/dashboard/patients/new",
+      label: t("patient"),
+      hint: invitationsOpen ? t("patientHint") : t("patientClosed"),
+    },
     !cabinet
       ? { key: "cabinet", done: false, href: "/dashboard/cabinet", label: t("cabinetNone"), hint: t("cabinetNoneHint") }
       : cabinet.me.status === "pending"
@@ -76,5 +96,6 @@ async function firstStepsFor(supabase: Awaited<ReturnType<typeof createClient>>,
         : { key: "cabinet", done: activeMembers >= 2, href: "/dashboard/cabinet", label: t("cabinetInvite"), hint: t("cabinetInviteHint") },
   ];
   if (steps.every((s) => s.done)) return null;
-  return <FirstSteps steps={steps} />;
+  const maxPrice = new Intl.NumberFormat(intlTag(locale), { style: "currency", currency: pricing.currency.toUpperCase(), maximumFractionDigits: 0 }).format(KINE_PRICE_MAX_CENTS / 100);
+  return <FirstSteps steps={steps} maxPrice={maxPrice} trialDays={TRIAL_DAYS} />;
 }

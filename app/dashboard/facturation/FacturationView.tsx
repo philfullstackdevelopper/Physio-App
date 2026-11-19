@@ -48,8 +48,11 @@ export default function FacturationView({
   error,
   pricing = FRANCE_PRICING,
   priceSaved = false,
+  focusPrice = false,
   demo = false,
 }: {
+  /** Arrivée depuis « Premiers pas → Fixer votre prix » : carte ouverte, champ actif. */
+  focusPrice?: boolean;
   /** Démo (/demo/kine) : le tarif s'affiche, rien n'est enregistré. */
   demo?: boolean;
   /** Le tarif vient d'être enregistré (petite coche à côté de l'aide). */
@@ -163,6 +166,7 @@ export default function FacturationView({
           <div className="flex min-w-0 flex-col gap-3">
             <PhoneFold
               className={CARD}
+              defaultOpen={focusPrice}
               title={
                 <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
                   <Tag className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.75} />
@@ -189,8 +193,9 @@ export default function FacturationView({
                             inputMode="decimal"
                             autoComplete="off"
                             defaultValue={priceInput}
+                            autoFocus={focusPrice}
                             aria-label={t("priceAria")}
-                            className="w-[5.5rem] rounded-lg border border-line bg-surface py-1 pl-2 pr-6 text-right text-xs font-semibold tabular-nums text-ok focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                            className={`w-[5.5rem] rounded-lg border bg-surface ${focusPrice ? "border-brand ring-2 ring-brand/20" : "border-line"} py-1 pl-2 pr-6 text-right text-xs font-semibold tabular-nums text-ok focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20`}
                           />
                           <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs font-semibold text-ok">{currencySymbol}</span>
                         </span>

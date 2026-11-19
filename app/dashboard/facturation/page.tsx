@@ -14,9 +14,9 @@ import { requireApprovedInstructor } from "@/lib/dashboard/requireApprovedInstru
 export default async function FacturationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; tarif?: string }>;
+  searchParams: Promise<{ error?: string; tarif?: string; prix?: string }>;
 }) {
-  const { error, tarif } = await searchParams;
+  const { error, tarif, prix } = await searchParams;
   const supabase = await createClient();
   // Validation du compte vérifiée ICI aussi (audit du 2026-10-08) : le
   // layout ne se ré-exécute pas à chaque navigation (doc Next.js 16).
@@ -97,6 +97,7 @@ export default async function FacturationPage({
       patientCount={ids.length}
       error={error}
       priceSaved={tarif === "ok"}
+      focusPrice={prix === "1"}
     />
   );
 }

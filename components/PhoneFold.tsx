@@ -14,15 +14,18 @@ export default function PhoneFold({
   title,
   summary,
   children,
+  defaultOpen = false,
 }: {
   className: string;
+  /** Ouverte d'emblée sur téléphone (ex. arrivée depuis « Fixer votre prix »). */
+  defaultOpen?: boolean;
   /** Titre de la carte (icône + texte), affiché tel quel sur ordinateur. */
   title: ReactNode;
   /** Chiffre ou état clé, visible sur la ligne repliée du téléphone. */
   summary?: ReactNode;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <section className={className}>
       <button
