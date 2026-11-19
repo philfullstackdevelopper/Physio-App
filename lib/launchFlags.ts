@@ -21,7 +21,9 @@
 //
 // LE JOUR DU LANCEMENT : passer les deux à `true`, et c'est tout.
 export const SIGNUPS_OPEN = true;
-export const PATIENT_INVITATIONS_OPEN = false;
+// Ouvert le 2026-11-19 après le premier vrai test de paiement réussi
+// (accès EasyPhysio 6,99 € + suivi kiné 6 €, note d'honoraires n° 1).
+export const PATIENT_INVITATIONS_OPEN = true;
 
 /** Où mènent les boutons d'inscription tant que SIGNUPS_OPEN est faux. */
 export const WAITLIST_HREF = "/#liste-attente";
