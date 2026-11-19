@@ -70,20 +70,39 @@ export async function startConnectOnboarding() {
     // pour tout compte Standard — un seul montant net par paiement, pas de
     // ligne de frais séparée visible pour lui.
     // Clé d'idempotence : un double clic ne crée pas deux comptes Stripe.
-    const account = await stripe.accounts.create(
-      { type: "standard", email: user.email, country },
-      { idempotencyKey: staleId ? `connect-account-${user.id}-replaces-${staleId}` : `connect-account-${user.id}` },
-    );
-    accountId = account.id;
+    // Elle change toutes les 10 minutes (2026-11-19) : Stripe garde une clé
+    // 24 h, y compris quand la demande a échoué ; une clé fixe bloquait donc
+    // toute nouvelle tentative pendant 24 h (« Keys for idempotent requests
+    // can only be used with the same parameters »).
+    const window = Math.floor(Date.now() / 600_000);
+    const key = staleId ? `connect-account-${user.id}-replaces-${staleId}-${window}` : `connect-account-${user.id}-${window}`;
+    try {
+      const account = await stripe.accounts.create({ type: "standard", email: user.email, country }, { idempotencyKey: key });
+      accountId = account.id;
+    } catch (err) {
+      // Refus de Stripe (profil de plateforme, paramètres…) : un message
+      // clair plutôt que la page « Une erreur est survenue ».
+      console.error("startConnectOnboarding: création du compte Stripe refusée", err);
+      const t = await getTranslations("dashboard.patientActions");
+      redirect(`/dashboard/facturation?error=${encodeURIComponent(t("connectStartFailed"))}`);
+    }
     await upsertConnectAccount({ instructorId: user.id, stripeConnectAccountId: accountId, status: "onboarding" });
   }
 
   const base = await requestOrigin();
-  const link = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: `${base}/dashboard/connect/refresh`,
-    return_url: `${base}/dashboard/connect/return`,
-    type: "account_onboarding",
-  });
-  redirect(link.url);
+  let linkUrl: string;
+  try {
+    const link = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${base}/dashboard/connect/refresh`,
+      return_url: `${base}/dashboard/connect/return`,
+      type: "account_onboarding",
+    });
+    linkUrl = link.url;
+  } catch (err) {
+    console.error("startConnectOnboarding: lien d'inscription Stripe refusé", err);
+    const t = await getTranslations("dashboard.patientActions");
+    redirect(`/dashboard/facturation?error=${encodeURIComponent(t("connectStartFailed"))}`);
+  }
+  redirect(linkUrl);
 }

@@ -201,7 +201,8 @@
     "tooManyInvites": "Too many invitations sent in a short time. Try again in an hour.",
     "connectCheckFailed": "We couldn't check your payment account right now. Please try again in a moment.",
     "isKine": "This address belongs to an EasyPhysio physio account: it can't be invited as a patient. Ask the person for another address.",
-    "connectCountryClosed": "Online payments aren't open in your country yet."
+    "connectCountryClosed": "Online payments aren't open in your country yet.",
+    "connectStartFailed": "We couldn’t open the Stripe sign-up right now. Please try again in a few minutes; if it keeps happening, contact us."
   },
   "patientDetail": {
     "thisPatient": "this patient",
