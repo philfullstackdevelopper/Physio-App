@@ -23,6 +23,8 @@ export interface GuideText {
   /** Phrase sous le titre, reprise dans la description Google. */
   description: string;
   sections: GuideSection[];
+  /** Sources citées (pages officielles, avec la date de relevé dans le texte). */
+  sources?: { label: string; url: string }[];
 }
 
 export interface Guide {
@@ -405,6 +407,105 @@ export const GUIDES: Guide[] = [
               "EasyPhysio is free for physiotherapists, with no subscription and no patient limit. The physio chooses the exercises and adjusts the programme; the app replaces neither the assessment nor the sessions in the clinic.",
             ],
           },
+        ],
+      },
+    },
+  },
+  // Comparatif (2026-11-25) : les pages « comparatif / alternative » sont celles
+  // qui amènent le plus d'inscriptions pour un logiciel. Règles : prix relevés
+  // sur les pages officielles des éditeurs, avec la date ; on dit que la page
+  // est publiée par EasyPhysio ; aucun jugement sur les concurrents. À revoir
+  // quand un prix change (relever de nouveau, changer la date partout).
+  {
+    slug: "comparatif-logiciel-exercices-kine",
+    audience: "kine",
+    published: "2026-11-25",
+    updated: "2026-11-25",
+    text: {
+      fr: {
+        title: "Logiciel d'exercices kiné : comparatif des prix",
+        description:
+          "Prix de 3 logiciels d'exercices pour kiné, relevés le 25 novembre 2026 : Physitrack, Physiom, et EasyPhysio, gratuit pour le kiné. Qui paie, et combien.",
+        sections: [
+          {
+            heading: "Qui paie : le kiné ou le patient ?",
+            paragraphs: [
+              "La plupart des logiciels d'exercices pour kiné sont payés par le kiné, par un abonnement mensuel par praticien. EasyPhysio fonctionne autrement : il est gratuit pour le kiné, et c'est le patient qui paie s'il choisit de souscrire au suivi entre les séances.",
+            ],
+          },
+          {
+            heading: "Les prix affichés, relevés le 25 novembre 2026",
+            paragraphs: ["Prix publiés sur la page officielle de chaque éditeur à cette date :"],
+            bullets: [
+              "Physitrack : 23,99 $ par praticien et par mois (formule mensuelle, moins de 20 praticiens), ou 259,09 $ par an ; 2 semaines d'essai ; application patient gratuite.",
+              "Physiom : 24,90 € par mois, soit 298,80 € par an ; patients illimités ; application patient comprise ; 15 jours d'essai sans carte bancaire.",
+              "EasyPhysio : 0 € pour le kiné, sans abonnement, patients illimités. Le patient qui souscrit paie l'accès à l'application ({low} € à {high} € par mois selon l'engagement, après {trial} jours d'essai) et le prix du programme fixé par son kiné ({kine} € par mois par défaut), versé au kiné sans commission.",
+            ],
+          },
+          {
+            heading: "Comment choisir ?",
+            paragraphs: ["Quelques questions à poser à chaque éditeur avant de se décider :"],
+            bullets: [
+              "qui paie, et combien par mois pour votre nombre de patients ;",
+              "où sont hébergées les données de santé (en France, un hébergeur certifié HDS est obligatoire) ;",
+              "les exercices sont-ils montrés en vidéo, avec des consignes en français ;",
+              "voyez-vous l'assiduité et la douleur du patient entre les séances ;",
+              "pouvez-vous ajuster le programme d'un patient à distance.",
+            ],
+          },
+          {
+            heading: "À savoir",
+            paragraphs: [
+              "Cette page est publiée par EasyPhysio. Les prix des autres logiciels peuvent changer : vérifiez-les sur le site de chaque éditeur, dont les liens figurent ci-dessous. Pour voir EasyPhysio avant de créer un compte, la démo s'essaie sans inscription.",
+            ],
+          },
+        ],
+        sources: [
+          { label: "Physitrack : tarifs (page officielle, consultée le 25/11/2026)", url: "https://www.physitrack.com/fr/physitrack-pricing" },
+          { label: "Physiom : tarifs (page officielle, consultée le 25/11/2026)", url: "https://physiom.tech/#tarifs" },
+        ],
+      },
+      en: {
+        title: "Physio exercise software: price comparison",
+        description:
+          "Prices of 3 exercise apps for physios, checked on 25 November 2026: Physitrack, Physiom, and EasyPhysio, free for the physio. Who pays, and how much.",
+        sections: [
+          {
+            heading: "Who pays: the physio or the patient?",
+            paragraphs: [
+              "Most exercise software for physiotherapists is paid by the physio, through a monthly subscription per practitioner. EasyPhysio works differently: it is free for the physio, and the patient pays if they choose to subscribe to follow-up between sessions.",
+            ],
+          },
+          {
+            heading: "Listed prices, checked on 25 November 2026",
+            paragraphs: ["Prices published on each vendor's official page on that date:"],
+            bullets: [
+              "Physitrack: $23.99 per practitioner per month (monthly plan, under 20 practitioners), or $259.09 a year; 2-week trial; free patient app.",
+              "Physiom: €24.90 a month, i.e. €298.80 a year; unlimited patients; patient app included; 15-day trial with no card.",
+              "EasyPhysio: €0 for the physio, no subscription, unlimited patients. A patient who subscribes pays for app access (€{low} to €{high} a month depending on commitment, after a {trial}-day trial) and the programme price their physio sets (€{kine} a month by default), paid to the physio with no commission.",
+            ],
+          },
+          {
+            heading: "How to choose?",
+            paragraphs: ["A few questions to ask each vendor before deciding:"],
+            bullets: [
+              "who pays, and how much a month for your number of patients;",
+              "where health data is hosted (in France, a certified HDS host is mandatory);",
+              "whether exercises are shown on video, with instructions in your language;",
+              "whether you see the patient's adherence and pain between sessions;",
+              "whether you can adjust a patient's programme remotely.",
+            ],
+          },
+          {
+            heading: "Good to know",
+            paragraphs: [
+              "This page is published by EasyPhysio. Other vendors' prices may change: check them on each vendor's website, linked below. To see EasyPhysio before creating an account, the demo works without signing up.",
+            ],
+          },
+        ],
+        sources: [
+          { label: "Physitrack: pricing (official page, checked 25/11/2026)", url: "https://www.physitrack.com/physitrack-pricing" },
+          { label: "Physiom: pricing (official page, checked 25/11/2026)", url: "https://physiom.tech/#tarifs" },
         ],
       },
     },

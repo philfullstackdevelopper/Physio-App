@@ -21,6 +21,7 @@ EasyPhysio is an app for following rehab exercises between physiotherapy session
 - [Démo sans inscription](https://easyphysio.fr/demo): espace kiné et espace patient avec des patients fictifs
 - [Guides](https://easyphysio.fr/guides): articles pour kinés et patients
 - [Logiciel d'exercices kiné gratuit](https://easyphysio.fr/guides/logiciel-exercices-kine-gratuit)
+- [Logiciel d'exercices kiné : comparatif des prix](https://easyphysio.fr/guides/comparatif-logiciel-exercices-kine)
 - [Kiné du sport : suivre le retour au sport à distance](https://easyphysio.fr/guides/kine-du-sport-suivi-retour-au-sport)
 - [Savoir si votre patient fait ses exercices à la maison](https://easyphysio.fr/guides/savoir-si-patient-fait-ses-exercices)
 - [Appli kiné et données de santé : l'hébergement HDS](https://easyphysio.fr/guides/appli-kine-hebergement-hds)

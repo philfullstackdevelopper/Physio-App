@@ -17,6 +17,9 @@ import type { Locale } from "@/i18n/locales";
 
 type Props = { params: Promise<{ slug: string }> };
 
+/** Auteur des guides (identique à l'auteur des données Article, lib/seo/structuredData.ts). */
+const AUTHOR = "Philippe Maupain";
+
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
 }
@@ -74,7 +77,10 @@ export default async function GuidePage({ params }: Props) {
               {text.title}
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-slate-600">{text.description}</p>
-            <p className="mt-4 text-sm text-slate-500">{t("updated", { date: updated })}</p>
+            {/* Auteur visible (expérience vécue, E-E-A-T) — même nom que articleLd. */}
+            <p className="mt-4 text-sm text-slate-500">
+              {t("byline", { name: AUTHOR })} · {t("updated", { date: updated })}
+            </p>
           </header>
 
           <div className="mt-10 border-t border-slate-200/70 pt-2">
@@ -96,7 +102,26 @@ export default async function GuidePage({ params }: Props) {
                 )}
               </section>
             ))}
+            {text.sources && text.sources.length > 0 && (
+              <section className="mt-10">
+                <h2 className="font-display text-lg font-semibold text-slate-900">{t("sources")}</h2>
+                <ul className="mt-3 space-y-1.5 text-[0.95rem]">
+                  {text.sources.map((s) => (
+                    <li key={s.url}>
+                      <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline-offset-4 hover:underline">
+                        {s.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </div>
+
+          <aside className="mt-12 rounded-2xl border border-slate-200/70 bg-white p-5 text-[0.95rem] leading-relaxed text-slate-600">
+            <p className="font-semibold text-slate-900">{t("authorTitle")}</p>
+            <p className="mt-1.5">{t("authorBody", { name: AUTHOR })}</p>
+          </aside>
         </article>
 
         <Reveal>

@@ -28,5 +28,6 @@ export function guideText(guide: Guide, locale: string): GuideText {
       paragraphs: s.paragraphs.map(fill),
       bullets: s.bullets?.map(fill),
     })),
+    sources: src.sources,
   };
 }
