@@ -58,7 +58,7 @@ export const GUIDES: Guide[] = [
             heading: "Ce qu'il doit faire, concrètement",
             paragraphs: ["Pour être utile au quotidien d'un cabinet, l'outil doit au minimum :"],
             bullets: [
-              "proposer une bibliothèque d'exercices montrés en vidéo ou en animation, avec des consignes claires ;",
+              "proposer une bibliothèque d'exercices montrés en vidéo ou en animation, avec des consignes claires (voir [envoyer des exercices en vidéo à vos patients](/guides/envoyer-exercices-video-patient)) ;",
               "permettre d'assembler un programme en quelques minutes, puis de l'ajuster pour un patient précis ;",
               "guider le patient séance par séance sur son téléphone, sans matériel particulier ;",
               "remonter au kiné l'assiduité et la douleur ressentie, pour adapter le programme ;",
@@ -97,7 +97,7 @@ export const GUIDES: Guide[] = [
             heading: "What it should actually do",
             paragraphs: ["To be useful in a busy practice, the tool should at least:"],
             bullets: [
-              "offer a library of exercises shown on video or animation, with clear instructions;",
+              "offer a library of exercises shown on video or animation, with clear instructions (see [sending exercise videos to your patients](/guides/envoyer-exercices-video-patient));",
               "let you build a programme in a few minutes, then adjust it for a given patient;",
               "guide the patient session by session on their phone, with no special equipment;",
               "report adherence and pain back to the physio, so the programme can be adapted;",
@@ -405,6 +405,76 @@ export const GUIDES: Guide[] = [
             paragraphs: [
               "Knowing their physio sees their follow-up motivates patients more. The guided session helps too (see the [5 principles of a home exercise programme](/guides/programme-exercices-domicile-patient)): each exercise is shown on video or as a drawing, with repetitions and rest times, and a phone is enough, with no camera or smartwatch.",
               "EasyPhysio is [free exercise software for physios](/guides/logiciel-exercices-kine-gratuit), with no subscription and no patient limit. The physio chooses the exercises and adjusts the programme; the app replaces neither the assessment nor the sessions in the clinic.",
+            ],
+          },
+        ],
+      },
+    },
+  },
+  {
+    slug: "envoyer-exercices-video-patient",
+    audience: "kine",
+    published: "2026-11-25",
+    updated: "2026-11-25",
+    text: {
+      fr: {
+        title: "Envoyer des exercices en vidéo à vos patients",
+        description:
+          "Envoyer des exercices en vidéo à un patient : un programme dans une appli vaut mieux qu'une vidéo par message. Il la retrouve, vous voyez ce qu'il fait.",
+        sections: [
+          {
+            heading: "Vidéo par message ou programme dans une appli ?",
+            paragraphs: [
+              "Pour envoyer des exercices en vidéo à un patient, le plus efficace est de les lui donner dans un programme sur son téléphone, plutôt qu'une vidéo envoyée par message. Une vidéo filmée au cabinet et envoyée par SMS ou par une messagerie se perd vite dans la conversation, ne dit ni combien de répétitions faire ni dans quel ordre, et ne vous renvoie aucune information.",
+              "Une messagerie grand public n'est pas non plus un hébergeur certifié pour les données de santé : une vidéo du patient ou de ses exercices y circule hors du cadre [HDS](/guides/appli-kine-hebergement-hds).",
+            ],
+          },
+          {
+            heading: "Ce que permet EasyPhysio",
+            paragraphs: ["Avec EasyPhysio, le patient retrouve sa séance du jour dans l'application :"],
+            bullets: [
+              "les exercices sont montrés en vidéo (filmés par un kiné) ou en dessin animé, avec les consignes écrites, les répétitions et les temps de repos ;",
+              "le kiné peut ajouter ses propres exercices et leur vidéo (MP4 ou MOV) ;",
+              "la vidéo se lit en plein écran sur le téléphone, sans son ;",
+              "à la fin de la séance, le patient note sa douleur, et le kiné la voit ;",
+              "le programme peut aussi être imprimé pour le patient qui préfère le papier.",
+            ],
+          },
+          {
+            heading: "Et ensuite ?",
+            paragraphs: [
+              "Vous voyez qui a fait ses séances et qui a eu mal, et vous ajustez le programme à distance (voir [savoir si votre patient fait ses exercices](/guides/savoir-si-patient-fait-ses-exercices)). EasyPhysio est un [logiciel d'exercices gratuit pour le kiné](/guides/logiciel-exercices-kine-gratuit), sans abonnement ni limite de patients ; la [démo](/demo) s'essaie sans inscription.",
+            ],
+          },
+        ],
+      },
+      en: {
+        title: "Sending exercise videos to your patients",
+        description:
+          "To send exercise videos to a patient, a programme in an app beats a video sent by message: the patient finds it again, and you see what they do.",
+        sections: [
+          {
+            heading: "Video by message or programme in an app?",
+            paragraphs: [
+              "To send exercise videos to a patient, the most effective way is to give them a programme on their phone rather than a video sent by message. A video filmed in the clinic and sent by text or a messaging app soon gets lost in the conversation, says neither how many repetitions to do nor in what order, and tells you nothing back.",
+              "A consumer messaging app is not a certified health-data host either: a video of the patient or their exercises travels outside the [HDS](/guides/appli-kine-hebergement-hds) framework.",
+            ],
+          },
+          {
+            heading: "What EasyPhysio does",
+            paragraphs: ["With EasyPhysio, the patient finds their session of the day in the app:"],
+            bullets: [
+              "exercises are shown on video (filmed by a physio) or as an animation, with written instructions, repetitions and rest times;",
+              "the physio can add their own exercises and their video (MP4 or MOV);",
+              "videos play full screen on the phone, without sound;",
+              "at the end of the session the patient notes their pain, and the physio sees it;",
+              "the programme can also be printed for patients who prefer paper.",
+            ],
+          },
+          {
+            heading: "And then?",
+            paragraphs: [
+              "You see who did their sessions and who had pain, and you adjust the programme remotely (see [how to know if your patient does their home exercises](/guides/savoir-si-patient-fait-ses-exercices)). EasyPhysio is [free exercise software for physios](/guides/logiciel-exercices-kine-gratuit), with no subscription and no patient limit; the [demo](/demo) works without signing up.",
             ],
           },
         ],
