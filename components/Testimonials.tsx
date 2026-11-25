@@ -36,21 +36,21 @@ const TESTIMONIALS: {
   {
     id: "julien",
     name: "Julien M.",
-    photo: "/testimonials/julien.png",
+    photo: "/testimonials/julien.webp",
     city: "Lyon",
     voice: "kine",
   },
   {
     id: "claire",
     name: "Claire D.",
-    photo: "/testimonials/claire.png",
+    photo: "/testimonials/claire.webp",
     city: "Villeurbanne",
     voice: "patient",
   },
   {
     id: "nadia",
     name: "Nadia B.",
-    photo: "/testimonials/nadia.png",
+    photo: "/testimonials/nadia.webp",
     city: "Bordeaux",
     voice: "kine",
   },
@@ -62,12 +62,14 @@ const TRUST = ["trust1", "trust2", "trust3"] as const;
 function Avatar({ src, name, size = "sm" }: { src: string; name: string; size?: "sm" | "lg" }) {
   const tr = useTranslations("home.testimonials");
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- small static local PNG
+    // eslint-disable-next-line @next/next/no-img-element -- small static local WebP (PNG originals kept beside it)
     <img
       src={src}
       alt={tr("portrait", { name })}
       width={size === "lg" ? 80 : 56}
       height={size === "lg" ? 80 : 56}
+      loading="lazy"
+      decoding="async"
       className={`shrink-0 rounded-full object-cover ring-4 ring-white ${
         size === "lg" ? "h-20 w-20" : "h-14 w-14"
       }`}

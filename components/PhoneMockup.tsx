@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type MouseEvent } from "react";
-import { motion } from "motion/react";
+import { useInView } from "motion/react";
 import { Wifi, BatteryFull } from "lucide-react";
 import { usePhoneDemo, PhoneDemoBody, DemoTabBar } from "@/components/PhoneDemoScreens";
 
@@ -18,9 +18,11 @@ export default function PhoneMockup() {
   const frameRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState(REST_TILT);
   // Autoplays immediately — the hero phone is above the fold, visible on
-  // load, so "on page load" just means "always active" here (PhoneShowcase
-  // uses the same demo but gates it on scroll visibility instead).
-  const { step, stepIndex, reducedMotion } = usePhoneDemo(true);
+  // load. It only pauses when it can't be seen: scrolled away, or hidden on a
+  // phone (max-sm:hidden on the home page), where it used to keep cycling —
+  // and download the séance video — for nothing (audit vitesse 2026-11-25).
+  const inView = useInView(frameRef);
+  const { step, stepIndex, reducedMotion } = usePhoneDemo(inView);
 
   function handleMouseMove(e: MouseEvent<HTMLDivElement>) {
     const el = frameRef.current;
@@ -36,11 +38,8 @@ export default function PhoneMockup() {
       {/* Ambient glow — reads as the device floating above the page. */}
       <div className="absolute inset-x-6 top-10 -z-10 h-[480px] rounded-full bg-blue-600/10 blur-[80px]" />
 
-      <motion.div
-        animate={{ y: [0, -10, 0] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-        style={{ perspective: "900px" }}
-      >
+      {/* Flotte doucement : animation CSS ep-float (app/globals.css). */}
+      <div className="animate-[ep-float_7s_ease-in-out_infinite]" style={{ perspective: "900px" }}>
         {/* Device frame */}
         <div
           ref={frameRef}
@@ -75,7 +74,7 @@ export default function PhoneMockup() {
             <DemoTabBar screen={step.screen} />
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

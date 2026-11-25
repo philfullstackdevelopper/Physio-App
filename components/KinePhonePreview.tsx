@@ -63,6 +63,25 @@ export default function KinePhonePreview() {
 
   const boxRef = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);
+  // La démo (toute une page de l'appli) ne se charge qu'une fois la page
+  // d'accueil elle-même chargée : avant, elle partait en même temps et
+  // ralentissait l'affichage de l'accueil sur téléphone (audit vitesse du
+  // 2026-11-25). Même rendu, quelques instants plus tard.
+  const [pageLoaded, setPageLoaded] = useState(false);
+  useEffect(() => {
+    // Un minuteur (même déjà chargée) : pas de mise à jour d'état directement
+    // dans l'effet.
+    let id: number | undefined;
+    const onLoad = () => {
+      id = window.setTimeout(() => setPageLoaded(true), 0);
+    };
+    if (document.readyState === "complete") onLoad();
+    else window.addEventListener("load", onLoad, { once: true });
+    return () => {
+      window.removeEventListener("load", onLoad);
+      window.clearTimeout(id);
+    };
+  }, []);
   useEffect(() => {
     const el = boxRef.current;
     if (!el) return;
@@ -114,7 +133,7 @@ export default function KinePhonePreview() {
             </span>
           </div>
           <iframe
-            src={near ? "/demo/kine" : undefined}
+            src={near && pageLoaded ? "/demo/kine" : undefined}
             title={t("iframeTitle")}
             className="absolute left-0 origin-top-left border-0"
             style={{ top: STATUS_H * scale + 4, width: SCREEN_W, height: SCREEN_H, transform: `scale(${scale})` }}

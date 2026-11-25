@@ -2,7 +2,6 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
 import { useTranslations } from "next-intl";
 import { Check, X } from "lucide-react";
 import { isPhoneFormat } from "@/lib/phoneFormat";
@@ -18,6 +17,8 @@ import { joinWaitlist, type WaitlistState } from "@/app/waitlistActions";
 // page (position fixe) pour ne rien décaler des écrans « sans défilement ».
 // Fermée ou inscrite : plus jamais affichée sur cet appareil.
 const STORAGE_KEY = "app-coming-soon-dismissed";
+// Le seul morceau de Clerk lu ici (window.Clerk, posé par Clerk quand il est chargé).
+type ClerkWindow = Window & { Clerk?: { user?: { primaryEmailAddress?: { emailAddress?: string } | null } | null } };
 const INITIAL: WaitlistState = { ok: false, error: null };
 
 // Pas pendant une séance guidée (/patient/<id>), ni sur la page des stores,
@@ -43,7 +44,6 @@ function remember() {
 export default function AppComingSoonBanner({ enabled }: { enabled: boolean }) {
   const t = useTranslations("common.appSoon");
   const pathname = usePathname() ?? "/";
-  const { user } = useUser();
   const [visible, setVisible] = useState(false);
   const [asking, setAsking] = useState(false);
   const [state, formAction, pending] = useActionState(joinWaitlist, INITIAL);
@@ -77,7 +77,11 @@ export default function AppComingSoonBanner({ enabled }: { enabled: boolean }) {
     setVisible(false);
   };
   const role = pathname.startsWith("/patient") ? "patient" : "kine";
-  const email = user?.primaryEmailAddress?.emailAddress ?? "";
+  // E-mail du compte connecté, pour pré-remplir : lu sur Clerk s'il est chargé
+  // (pages de l'espace, de connexion…). Sur les pages publiques, Clerk n'est
+  // plus chargé (audit vitesse du 2026-11-25) : champ vide.
+  const clerk = typeof window !== "undefined" ? (window as ClerkWindow).Clerk : undefined;
+  const email = clerk?.user?.primaryEmailAddress?.emailAddress ?? "";
 
   return (
     <div
