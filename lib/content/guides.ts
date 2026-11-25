@@ -490,25 +490,30 @@ export const GUIDES: Guide[] = [
     slug: "comparatif-logiciel-exercices-kine",
     audience: "kine",
     published: "2026-11-25",
-    updated: "2026-11-25",
+    updated: "2026-11-26",
     text: {
       fr: {
         title: "Logiciel d'exercices kiné : comparatif des prix",
         description:
-          "Prix de 3 logiciels d'exercices pour kiné, relevés le 25 novembre 2026 : Physitrack, Physiom, et EasyPhysio, gratuit pour le kiné. Qui paie, et combien.",
+          "Prix de 8 logiciels d'exercices pour kiné (Andrew, Axomove, Weasyo, KineHub, Physitrack…), relevés en novembre 2026. Qui paie, et combien.",
         sections: [
           {
             heading: "Qui paie : le kiné ou le patient ?",
             paragraphs: [
-              "La plupart des logiciels d'exercices pour kiné sont payés par le kiné, par un abonnement mensuel par praticien. EasyPhysio fonctionne autrement : il est gratuit pour le kiné, et c'est le patient qui paie s'il choisit de souscrire au suivi entre les séances. Pour un kiné qui cherche une alternative gratuite à Physitrack ou à Physiom, c'est la principale différence.",
+              "La plupart des logiciels d'exercices pour kiné sont payés par le kiné, par un abonnement mensuel, souvent entre 19 et 50 € par mois. Quelques-uns sont gratuits pour le kiné, comme Weasyo et EasyPhysio. EasyPhysio permet en plus au kiné d'être payé pour son suivi entre les séances, directement par le patient qui y souscrit, sans commission.",
             ],
           },
           {
-            heading: "Les prix affichés, relevés le 25 novembre 2026",
-            paragraphs: ["Prix publiés sur la page officielle de chaque éditeur à cette date :"],
+            heading: "Les prix affichés, relevés les 25 et 26 novembre 2026",
+            paragraphs: ["Prix publiés sur la page officielle de chaque éditeur à ces dates, par ordre alphabétique :"],
             bullets: [
-              "Physitrack : 23,99 $ par praticien et par mois (formule mensuelle, moins de 20 praticiens), ou 259,09 $ par an ; 2 semaines d'essai ; application patient gratuite.",
+              "Andrew : Andrew Lite à 34,90 € par mois, patients illimités ; Andrew Coach à 49,90 € par mois (19,90 € après remboursement FAMI) ; 15 jours d'essai, carte bancaire requise.",
+              "Axomove : pack Exercices à 30 € TTC par mois (300 € par an), pack Télésoin à 60 € par mois ; patients illimités ; 15 jours d'essai.",
+              "Hexfit : offre Solo pour thérapeutes à 50 € par mois, jusqu'à 50 patients actifs ; 14 jours d'essai sans carte bancaire.",
+              "KineHub : Hub Essentiel, avec la prescription d'exercices, à 19 € par mois (199 € par an), présenté comme remboursé par le FAMI ; gratuit pour le patient ; 14 jours d'essai.",
               "Physiom : 24,90 € par mois, soit 298,80 € par an ; patients illimités ; application patient comprise ; 15 jours d'essai sans carte bancaire.",
+              "Physitrack : 23,99 $ par praticien et par mois (formule mensuelle, moins de 20 praticiens), ou 259,09 $ par an ; 2 semaines d'essai ; application patient gratuite.",
+              "Weasyo : gratuit pour les professionnels de santé selon sa page pro ; abonnements Premium proposés aux patients (prix non affiché sur la page lue).",
               "EasyPhysio : 0 € pour le kiné, sans abonnement, patients illimités. Le patient qui souscrit paie l'accès à l'application ({low} € à {high} € par mois selon l'engagement, après {trial} jours d'essai) et le prix du programme fixé par son kiné ({kine} € par mois par défaut), versé au kiné sans commission.",
             ],
           },
@@ -526,32 +531,43 @@ export const GUIDES: Guide[] = [
           {
             heading: "À savoir",
             paragraphs: [
+              "Plusieurs éditeurs affichent un prix « après FAMI » : le forfait d'aide à la modernisation et à l'informatisation de l'Assurance Maladie peut rembourser une partie du logiciel, selon l'éligibilité du kiné.",
               "Cette page est publiée par EasyPhysio. Les prix des autres logiciels peuvent changer : vérifiez-les sur le site de chaque éditeur, dont les liens figurent ci-dessous. Pour voir EasyPhysio avant de créer un compte, la [démo](/demo) s'essaie sans inscription.",
             ],
           },
         ],
         sources: [
-          { label: "Physitrack : tarifs (page officielle, consultée le 25/11/2026)", url: "https://www.physitrack.com/fr/physitrack-pricing" },
+          { label: "Andrew : tarifs (page officielle, consultée le 26/11/2026)", url: "https://www.andrewapp.com/#tarifs" },
+          { label: "Axomove : offre kinésithérapeute (page officielle, consultée le 26/11/2026)", url: "https://www.axomove.com/kinesitherapeute" },
+          { label: "Hexfit : tarifs (page officielle, consultée le 26/11/2026)", url: "https://hexfit.com/fr-fr/tarifs/" },
+          { label: "KineHub : tarifs (page officielle, consultée le 26/11/2026)", url: "https://www.kinehub.fr/pricing" },
           { label: "Physiom : tarifs (page officielle, consultée le 25/11/2026)", url: "https://physiom.tech/#tarifs" },
+          { label: "Physitrack : tarifs (page officielle, consultée le 25/11/2026)", url: "https://www.physitrack.com/fr/physitrack-pricing" },
+          { label: "Weasyo : espace professionnel (page officielle, consultée le 26/11/2026)", url: "https://weasyo.com/pro/" },
         ],
       },
       en: {
         title: "Physio exercise software: price comparison",
         description:
-          "Prices of 3 exercise apps for physios, checked on 25 November 2026: Physitrack, Physiom, and EasyPhysio, free for the physio. Who pays, and how much.",
+          "Prices of 8 exercise apps for physios (Andrew, Axomove, Weasyo, KineHub, Physitrack…), checked in November 2026. Who pays, and how much.",
         sections: [
           {
             heading: "Who pays: the physio or the patient?",
             paragraphs: [
-              "Most exercise software for physiotherapists is paid by the physio, through a monthly subscription per practitioner. EasyPhysio works differently: it is free for the physio, and the patient pays if they choose to subscribe to follow-up between sessions. For a physio looking for a free alternative to Physitrack or Physiom, that is the main difference.",
+              "Most exercise software for physiotherapists is paid by the physio, through a monthly subscription, often between €19 and €50 a month. A few are free for the physio, such as Weasyo and EasyPhysio. EasyPhysio also lets the physio be paid for follow-up between sessions, directly by the patient who subscribes, with no commission.",
             ],
           },
           {
-            heading: "Listed prices, checked on 25 November 2026",
-            paragraphs: ["Prices published on each vendor's official page on that date:"],
+            heading: "Listed prices, checked on 25 and 26 November 2026",
+            paragraphs: ["Prices published on each vendor's official page on those dates, in alphabetical order:"],
             bullets: [
-              "Physitrack: $23.99 per practitioner per month (monthly plan, under 20 practitioners), or $259.09 a year; 2-week trial; free patient app.",
+              "Andrew: Andrew Lite at €34.90 a month, unlimited patients; Andrew Coach at €49.90 a month (€19.90 after FAMI reimbursement); 15-day trial, card required.",
+              "Axomove: Exercises pack at €30 a month incl. VAT (€300 a year), Telehealth pack at €60 a month; unlimited patients; 15-day trial.",
+              "Hexfit: Solo plan for therapists at €50 a month, up to 50 active patients; 14-day trial with no card.",
+              "KineHub: Hub Essentiel, which includes exercise prescription, at €19 a month (€199 a year), presented as reimbursed by FAMI; free for the patient; 14-day trial.",
               "Physiom: €24.90 a month, i.e. €298.80 a year; unlimited patients; patient app included; 15-day trial with no card.",
+              "Physitrack: $23.99 per practitioner per month (monthly plan, under 20 practitioners), or $259.09 a year; 2-week trial; free patient app.",
+              "Weasyo: free for health professionals according to its pro page; Premium subscriptions offered to patients (price not shown on the page read).",
               "EasyPhysio: €0 for the physio, no subscription, unlimited patients. A patient who subscribes pays for app access (€{low} to €{high} a month depending on commitment, after a {trial}-day trial) and the programme price their physio sets (€{kine} a month by default), paid to the physio with no commission.",
             ],
           },
@@ -569,13 +585,19 @@ export const GUIDES: Guide[] = [
           {
             heading: "Good to know",
             paragraphs: [
+              "Several French vendors show a price \"after FAMI\": this French health-insurance digitisation allowance can reimburse part of the software, depending on the physio's eligibility.",
               "This page is published by EasyPhysio. Other vendors' prices may change: check them on each vendor's website, linked below. To see EasyPhysio before creating an account, the [demo](/demo) works without signing up.",
             ],
           },
         ],
         sources: [
-          { label: "Physitrack: pricing (official page, checked 25/11/2026)", url: "https://www.physitrack.com/physitrack-pricing" },
+          { label: "Andrew: pricing (official page, checked 26/11/2026)", url: "https://www.andrewapp.com/#tarifs" },
+          { label: "Axomove: physiotherapist offer (official page, checked 26/11/2026)", url: "https://www.axomove.com/kinesitherapeute" },
+          { label: "Hexfit: pricing (official page, checked 26/11/2026)", url: "https://hexfit.com/fr-fr/tarifs/" },
+          { label: "KineHub: pricing (official page, checked 26/11/2026)", url: "https://www.kinehub.fr/pricing" },
           { label: "Physiom: pricing (official page, checked 25/11/2026)", url: "https://physiom.tech/#tarifs" },
+          { label: "Physitrack: pricing (official page, checked 25/11/2026)", url: "https://www.physitrack.com/physitrack-pricing" },
+          { label: "Weasyo: professional page (official page, checked 26/11/2026)", url: "https://weasyo.com/pro/" },
         ],
       },
     },
