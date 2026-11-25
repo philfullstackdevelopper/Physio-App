@@ -14,6 +14,8 @@ const COLUMNS = [
       { href: "/#comparaison", label: "comparison" },
       { href: "/#tarifs", label: "pricing" },
       { href: "/guides", label: "guides" },
+      // Démo sans compte : liée depuis toutes les pages publiques (SEO, 2026-11-25).
+      { href: "/demo", label: "demo" },
     ],
   },
   {

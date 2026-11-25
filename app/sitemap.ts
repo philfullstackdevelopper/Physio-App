@@ -8,10 +8,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // « maintenant » à chaque lecture, les moteurs de recherche voyaient des
   // pages « modifiées » en permanence et finissaient par ignorer la date.
   const now = new Date("2026-11-16");
+  // Accueil, liste des guides et démo : titre/description revus le 2026-11-25.
+  const seoPass = new Date("2026-11-25");
 
   return [
-    { url: `${base}/`, lastModified: now, changeFrequency: "monthly", priority: 1 },
-    { url: `${base}/guides`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${base}/`, lastModified: seoPass, changeFrequency: "monthly", priority: 1 },
+    { url: `${base}/guides`, lastModified: seoPass, changeFrequency: "weekly", priority: 0.8 },
+    // Démo publique, sans compte : la page « essayer gratuitement » du site.
+    { url: `${base}/demo`, lastModified: seoPass, changeFrequency: "monthly", priority: 0.7 },
     // Guides publics (lib/content/guides.ts) : date de leur dernière mise à jour.
     ...GUIDES.map((g) => ({
       url: `${base}/guides/${g.slug}`,

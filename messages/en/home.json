@@ -32,7 +32,8 @@
       "cgu": "Terms of use",
       "privacy": "Privacy policy",
       "legalNotice": "Legal notice",
-      "guides": "Guides"
+      "guides": "Guides",
+      "demo": "Demo, no sign-up"
     },
     "copyright": "© 2026 EasyPhysio · made in France, between two physio sessions",
     "illustrations": "Some illustrations:"
@@ -212,7 +213,7 @@
   },
   "guides": {
     "metaTitle": "Guides for physios and patients",
-    "metaDescription": "EasyPhysio guides: free exercise software for physiotherapists, home exercise programmes, follow-up between sessions, doing physio exercises at home.",
+    "metaDescription": "EasyPhysio guides: free exercise software for physios, sports physio follow-up, home exercises, HDS hosting, paid follow-up, exercises at home.",
     "title": "Guides",
     "intro": "Plain explanations about following exercises between physio sessions, for practitioners and their patients alike.",
     "forKine": "For physios",

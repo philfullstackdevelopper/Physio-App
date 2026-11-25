@@ -11,7 +11,9 @@ import { LogoLockup } from "@/components/Logo";
 // bleu côté kiné, vert côté patient, chaque moitié est un seul grand lien.
 export async function generateMetadata() {
   const t = await getTranslations("demo.meta");
-  return { title: t("entry") };
+  // La démo s'essaie sans compte : c'est l'offre que les moteurs et les
+  // assistants IA doivent lire en premier (pack de recherche SEO, 2026-11-25).
+  return { title: t("entry"), description: t("entryDescription") };
 }
 
 export default async function DemoPage() {

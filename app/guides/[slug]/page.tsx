@@ -27,7 +27,9 @@ export async function generateMetadata({ params }: Props) {
   if (!guide) return {};
   const text = guideText(guide, await getLocale());
   return {
-    title: text.title,
+    // Titre Google = titre affiché (H1), sans « · EasyPhysio » ajouté : les
+    // titres des guides font déjà ~50 caractères, et Google coupe vers 60.
+    title: { absolute: text.title },
     description: text.description,
     openGraph: { type: "article", title: text.title, description: text.description, url: `${siteConfig.url}/guides/${slug}` },
   };
@@ -42,7 +44,11 @@ export default async function GuidePage({ params }: Props) {
   const text = guideText(guide, locale);
   const url = `${siteConfig.url}/guides/${slug}`;
   const updated = new Date(guide.updated).toLocaleDateString(intlTag(locale), { day: "numeric", month: "long", year: "numeric" });
-  const others = GUIDES.filter((g) => g.slug !== slug).map((g) => ({ slug: g.slug, ...guideText(g, locale) }));
+  // « À lire aussi » : 3 guides, ceux du même public d'abord.
+  const others = GUIDES.filter((g) => g.slug !== slug)
+    .sort((a, b) => Number(b.audience === guide.audience) - Number(a.audience === guide.audience))
+    .slice(0, 3)
+    .map((g) => ({ slug: g.slug, ...guideText(g, locale) }));
 
   return (
     <GuidesShell>

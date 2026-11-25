@@ -45,7 +45,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(siteConfig.url),
     title: {
-      default: `${siteConfig.name}, ${t("titleSuffix")}`,
+      // Titre de l'accueil : l'offre d'abord, dans les mots que les kinés
+      // tapent (pack de recherche SEO, 2026-11-25).
+      default: t("homeTitle"),
       template: `%s · ${siteConfig.name}`,
     },
     description,

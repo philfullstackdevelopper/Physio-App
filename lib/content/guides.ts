@@ -38,12 +38,12 @@ export const GUIDES: Guide[] = [
     slug: "logiciel-exercices-kine-gratuit",
     audience: "kine",
     published: "2026-11-16",
-    updated: "2026-11-16",
+    updated: "2026-11-25",
     text: {
       fr: {
-        title: "Logiciel d'exercices pour kiné gratuit : créer des programmes à domicile pour vos patients",
+        title: "Logiciel d'exercices kiné gratuit : programmes à domicile",
         description:
-          "Ce qu'un logiciel d'exercices doit faire pour un kiné libéral, et comment EasyPhysio le propose gratuitement : programmes filmés, suivi de la douleur et de l'assiduité, sans abonnement.",
+          "EasyPhysio est un logiciel d'exercices gratuit pour le kiné, sans abonnement ni limite de patients : exercices filmés, suivi de la douleur et des séances.",
         sections: [
           {
             heading: "Pourquoi un logiciel d'exercices ?",
@@ -68,21 +68,21 @@ export const GUIDES: Guide[] = [
             heading: "Gratuit pour le kiné : comment c'est possible",
             paragraphs: [
               "La plupart des logiciels du marché demandent au kiné un abonnement mensuel, qu'il ait beaucoup de patients actifs ou très peu. EasyPhysio fonctionne autrement : le kiné l'utilise gratuitement, sans abonnement et sans limite de patients.",
-              "C'est le patient qui choisit de souscrire au suivi entre les séances : il paie l'accès à l'application ({low} € à {high} € par mois selon l'engagement) et {kine} € par mois à son kiné, versés directement sur le compte du kiné, sans commission, les mois où celui-ci met à jour son programme. Le kiné peut donc être rémunéré pour le temps qu'il passe à suivre son patient à distance.",
+              "C'est le patient qui choisit de souscrire au suivi entre les séances : il paie l'accès à l'application ({low} € à {high} € par mois selon l'engagement) et, à son kiné, le prix du programme fixé par celui-ci ({kine} € par mois par défaut, de 0 à 500 €), versé directement sur le compte du kiné, sans commission, les mois où celui-ci met à jour son programme. Le kiné peut donc être rémunéré pour le temps qu'il passe à suivre son patient à distance.",
             ],
           },
           {
             heading: "Comment démarrer",
             paragraphs: [
-              "Créez votre compte praticien, composez un premier programme à partir des exercices filmés, puis invitez un patient avec un lien ou un QR code. Le patient installe l'application sur son téléphone et retrouve son programme. EasyPhysio est en phase de lancement : si les inscriptions ne sont pas encore ouvertes, laissez votre adresse sur la liste d'attente de la page d'accueil.",
+              "Créez votre compte praticien, composez un premier programme à partir des exercices filmés, puis invitez un patient avec un lien ou un QR code. Le patient installe l'application sur son téléphone et retrouve son programme. Pour voir l'outil avant de créer un compte, la démo de la page d'accueil s'essaie sans inscription, avec des patients fictifs.",
             ],
           },
         ],
       },
       en: {
-        title: "Free exercise software for physiotherapists: build home programmes for your patients",
+        title: "Free exercise software for physios: home programmes",
         description:
-          "What exercise software should do for a physiotherapist in private practice, and how EasyPhysio offers it for free: filmed programmes, pain and adherence tracking, no subscription.",
+          "EasyPhysio is free exercise software for physiotherapists, with no subscription and no patient limit: filmed exercises, pain and adherence tracking.",
         sections: [
           {
             heading: "Why exercise software?",
@@ -107,13 +107,13 @@ export const GUIDES: Guide[] = [
             heading: "Free for the physio: how it works",
             paragraphs: [
               "Most software on the market charges the physio a monthly subscription, however many active patients they have. EasyPhysio works differently: physios use it for free, with no subscription and no patient limit.",
-              "The patient chooses to subscribe to follow-up between sessions: they pay for app access (€{low} to €{high} a month depending on commitment) and €{kine} a month to their physio, paid straight into the physio's account with no commission, in months when the physio updates their programme. The physio can therefore be paid for the time spent following the patient remotely.",
+              "The patient chooses to subscribe to follow-up between sessions: they pay for app access (€{low} to €{high} a month depending on commitment) and, to their physio, the programme price the physio sets (€{kine} a month by default, from €0 to €500), paid straight into the physio's account with no commission, in months when the physio updates their programme. The physio can therefore be paid for the time spent following the patient remotely.",
             ],
           },
           {
             heading: "How to get started",
             paragraphs: [
-              "Create your practitioner account, build a first programme from the filmed exercises, then invite a patient with a link or QR code. The patient installs the app and finds their programme. EasyPhysio is launching: if sign-ups aren't open yet, leave your e-mail on the waiting list on the home page.",
+              "Create your practitioner account, build a first programme from the filmed exercises, then invite a patient with a link or QR code. The patient installs the app and finds their programme. To see the tool before creating an account, the demo on the home page works without signing up, with fictional patients.",
             ],
           },
         ],
@@ -124,12 +124,12 @@ export const GUIDES: Guide[] = [
     slug: "programme-exercices-domicile-patient",
     audience: "kine",
     published: "2026-11-16",
-    updated: "2026-11-16",
+    updated: "2026-11-25",
     text: {
       fr: {
-        title: "Programme d'exercices à domicile : aider vos patients à les faire vraiment",
+        title: "Programme d'exercices à domicile : 5 principes",
         description:
-          "Pistes concrètes pour qu'un patient fasse ses exercices de rééducation entre deux séances : un programme court et clair, des consignes visibles, un retour régulier au kiné.",
+          "Un programme d'exercices à domicile est mieux suivi s'il est court, montré en vidéo, guidé pas à pas, avec un retour simple au kiné. Les 5 principes.",
         sections: [
           {
             heading: "Le problème : ce qui se passe entre deux séances",
@@ -158,9 +158,9 @@ export const GUIDES: Guide[] = [
         ],
       },
       en: {
-        title: "Home exercise programmes: helping your patients actually do them",
+        title: "Home exercise programmes: 5 principles",
         description:
-          "Practical ways to help patients do their rehab exercises between sessions: a short, clear programme, visible instructions and regular feedback to the physio.",
+          "A home exercise programme is followed better when it is short, shown on video, guided step by step, with simple feedback to the physio. The 5 principles.",
         sections: [
           {
             heading: "The problem: what happens between sessions",
@@ -194,12 +194,12 @@ export const GUIDES: Guide[] = [
     slug: "suivi-entre-seances-kine-remuneration",
     audience: "kine",
     published: "2026-11-16",
-    updated: "2026-11-16",
+    updated: "2026-11-25",
     text: {
       fr: {
-        title: "Être rémunéré pour le suivi entre les séances : comment fonctionne EasyPhysio",
+        title: "Suivi entre les séances : être rémunéré comme kiné",
         description:
-          "Le suivi à distance des exercices prend du temps au kiné. Avec EasyPhysio, le patient qui y souscrit verse {kine} € par mois à son kiné, sans commission. Explications.",
+          "Avec EasyPhysio, le patient qui souscrit au suivi paie à son kiné le prix qu'il fixe ({kine} € par mois par défaut), sans commission. Le fonctionnement.",
         sections: [
           {
             heading: "Un temps de travail qui n'était pas payé",
@@ -212,7 +212,7 @@ export const GUIDES: Guide[] = [
             paragraphs: ["Avec EasyPhysio, le patient choisit de souscrire au suivi entre les séances. Il paie alors deux choses distinctes :"],
             bullets: [
               "l'accès à l'application, à EasyPhysio : de {low} € à {high} € par mois selon la durée d'engagement, après {trial} jours d'essai ;",
-              "le programme de son kiné : {kine} € par mois, versés directement sur le compte Stripe du kiné, uniquement les mois où le kiné met à jour son programme.",
+              "le programme de son kiné, au prix fixé par le kiné ({kine} € par mois par défaut, de 0 à 500 €, 0 € voulant dire offert), versé directement sur le compte Stripe du kiné, uniquement les mois où le kiné met à jour son programme.",
             ],
           },
           {
@@ -225,9 +225,9 @@ export const GUIDES: Guide[] = [
         ],
       },
       en: {
-        title: "Getting paid for follow-up between sessions: how EasyPhysio works",
+        title: "Follow-up between sessions: getting paid as a physio",
         description:
-          "Following a patient's exercises remotely takes a physio's time. With EasyPhysio, a patient who subscribes pays their physio €{kine} a month, with no commission. Here's how.",
+          "With EasyPhysio, a patient who subscribes pays their physio the price the physio sets (€{kine} a month by default), with no commission. How it works.",
         sections: [
           {
             heading: "Work that wasn't paid",
@@ -240,7 +240,7 @@ export const GUIDES: Guide[] = [
             paragraphs: ["With EasyPhysio, the patient chooses to subscribe to follow-up between sessions. They then pay for two separate things:"],
             bullets: [
               "access to the app, to EasyPhysio: €{low} to €{high} a month depending on commitment, after a {trial}-day trial;",
-              "their physio's programme: €{kine} a month, paid straight into the physio's Stripe account, only in months when the physio updates the programme.",
+              "their physio's programme, at the price the physio sets (€{kine} a month by default, from €0 to €500, €0 meaning free), paid straight into the physio's Stripe account, only in months when the physio updates the programme.",
             ],
           },
           {
@@ -254,16 +254,249 @@ export const GUIDES: Guide[] = [
       },
     },
   },
+  // Deux guides « question précise » (2026-11-25, pack de recherche SEO : sur un
+  // site jeune, les pages qui répondent à UNE question précise se classent
+  // avant les pages génériques). Rien de clinique : on décrit l'outil.
+  {
+    slug: "kine-du-sport-suivi-retour-au-sport",
+    audience: "kine",
+    published: "2026-11-25",
+    updated: "2026-11-25",
+    text: {
+      fr: {
+        title: "Kiné du sport : suivre le retour au sport à distance",
+        description:
+          "Un kiné du sport peut suivre à distance le retour au sport avec EasyPhysio : programme par étapes, douleur notée après chaque séance, messages.",
+        sections: [
+          {
+            heading: "Le sportif s'entraîne surtout entre les séances",
+            paragraphs: [
+              "Un patient sportif veut reprendre vite, et c'est souvent entre deux rendez-vous qu'il en fait trop, ou pas assez. Le kiné du sport a donc besoin de savoir ce qui se passe pendant ces jours-là : séances faites, douleur ressentie, difficultés rencontrées.",
+            ],
+          },
+          {
+            heading: "Que voit le kiné, concrètement ?",
+            paragraphs: [
+              "Le kiné voit, pour chaque patient, les séances terminées, leur régularité et la douleur notée sur 10 à la fin de chaque séance. Son tableau de bord fait ressortir les patients en retard et ceux qui signalent une douleur élevée, pour qu'il puisse réagir avant le rendez-vous suivant.",
+            ],
+          },
+          {
+            heading: "Comment avance le programme ?",
+            paragraphs: [
+              "Le programme avance par étapes définies par le kiné : le patient ne passe à l'étape suivante que lorsque la précédente est acquise. Quand le patient signale de la douleur, l'application ralentit la progression, elle ne l'accélère jamais. C'est toujours le kiné qui décide d'ajuster le programme.",
+            ],
+            bullets: [
+              "ajuster une séance pour un seul patient, sans toucher au programme des autres ;",
+              "échanger des messages avec le patient dans l'application ;",
+              "tenir compte du matériel que le patient a déclaré (élastique, haltères…) pour choisir les exercices.",
+            ],
+          },
+          {
+            heading: "Et pour le kiné ?",
+            paragraphs: [
+              "EasyPhysio est gratuit pour le kiné, sans abonnement ni limite de patients. Le kiné fixe le prix de son suivi entre les séances ({kine} € par mois par défaut, de 0 à 500 €), payé directement par le patient qui souscrit, sans commission. Les données de santé sont hébergées en France chez un hébergeur certifié HDS.",
+            ],
+          },
+        ],
+      },
+      en: {
+        title: "Sports physio: following return to sport remotely",
+        description:
+          "A sports physio can follow their patients' return to sport remotely with EasyPhysio: a step-by-step programme, pain noted after each session, messages.",
+        sections: [
+          {
+            heading: "Athletes train mostly between sessions",
+            paragraphs: [
+              "An athlete wants to get back quickly, and it is often between appointments that they do too much, or too little. A sports physio therefore needs to know what happens on those days: sessions done, pain felt, difficulties met.",
+            ],
+          },
+          {
+            heading: "What does the physio actually see?",
+            paragraphs: [
+              "For each patient, the physio sees the sessions completed, how regular they are and the pain noted out of 10 at the end of each session. The dashboard highlights patients who are behind and those reporting high pain, so the physio can react before the next appointment.",
+            ],
+          },
+          {
+            heading: "How does the programme progress?",
+            paragraphs: [
+              "The programme moves forward in stages set by the physio: the patient only moves to the next stage once the previous one is achieved. When the patient reports pain, the app slows progression down, never speeds it up. The physio always decides when to adjust the programme.",
+            ],
+            bullets: [
+              "adjust a session for one patient only, without changing anyone else's programme;",
+              "message the patient in the app;",
+              "take into account the equipment the patient has declared (resistance band, dumbbells…) when choosing exercises.",
+            ],
+          },
+          {
+            heading: "And for the physio?",
+            paragraphs: [
+              "EasyPhysio is free for physiotherapists, with no subscription and no patient limit. The physio sets the price of their follow-up between sessions (€{kine} a month by default, from €0 to €500), paid directly by the patient who subscribes, with no commission. Health data is hosted in France with a certified health-data host (HDS).",
+            ],
+          },
+        ],
+      },
+    },
+  },
+  {
+    slug: "savoir-si-patient-fait-ses-exercices",
+    audience: "kine",
+    published: "2026-11-25",
+    updated: "2026-11-25",
+    text: {
+      fr: {
+        title: "Savoir si votre patient fait ses exercices à la maison",
+        description:
+          "Pour savoir si un patient fait ses exercices à la maison, il faut un retour après chaque séance : avec EasyPhysio, le kiné voit séances faites et douleur.",
+        sections: [
+          {
+            heading: "Pourquoi le kiné ne le sait pas, aujourd'hui",
+            paragraphs: [
+              "Avec une feuille d'exercices ou une vidéo envoyée par message, le kiné n'a qu'une source : ce que le patient lui dit au rendez-vous suivant. « Oui oui, j'ai fait mes exercices » ne dit ni combien de séances ont été faites, ni comment elles ont été vécues.",
+            ],
+          },
+          {
+            heading: "Ce qu'une appli de suivi change",
+            paragraphs: [
+              "Quand le patient suit sa séance sur son téléphone, chaque séance terminée est enregistrée, avec la douleur notée sur 10 à la fin. Le kiné le voit sans rien demander :",
+            ],
+            bullets: [
+              "les séances faites, et leur régularité par rapport au nombre de séances prévues par semaine ;",
+              "la douleur signalée, et son évolution sur les dernières semaines ;",
+              "les patients en retard ou qui signalent une douleur élevée, mis en avant sur son tableau de bord ;",
+              "les messages du patient, au même endroit.",
+            ],
+          },
+          {
+            heading: "Est-ce que ça aide le patient à s'y tenir ?",
+            paragraphs: [
+              "Savoir que son kiné voit son suivi motive davantage. La séance guidée aide aussi : chaque exercice est montré en vidéo ou en dessin, avec les répétitions et les temps de repos, et un téléphone suffit, sans caméra ni montre connectée.",
+              "EasyPhysio est gratuit pour le kiné, sans abonnement ni limite de patients. Le kiné choisit les exercices et ajuste le programme ; l'application ne remplace ni le bilan ni les séances au cabinet.",
+            ],
+          },
+        ],
+      },
+      en: {
+        title: "How to know if your patient does their home exercises",
+        description:
+          "To know whether a patient does their home exercises, you need feedback after each session: with EasyPhysio, the physio sees sessions done and pain.",
+        sections: [
+          {
+            heading: "Why the physio doesn't know today",
+            paragraphs: [
+              "With an exercise sheet or a video sent by message, the physio has one source: what the patient says at the next appointment. \"Yes, yes, I did my exercises\" tells you neither how many sessions were done nor how they felt.",
+            ],
+          },
+          {
+            heading: "What a follow-up app changes",
+            paragraphs: [
+              "When the patient follows their session on their phone, each completed session is recorded, with the pain noted out of 10 at the end. The physio sees it without asking:",
+            ],
+            bullets: [
+              "the sessions done, and how regular they are compared with the number planned per week;",
+              "the pain reported, and how it changes over the last few weeks;",
+              "patients who are behind or report high pain, highlighted on the dashboard;",
+              "the patient's messages, in the same place.",
+            ],
+          },
+          {
+            heading: "Does it help the patient stick to it?",
+            paragraphs: [
+              "Knowing their physio sees their follow-up motivates patients more. The guided session helps too: each exercise is shown on video or as a drawing, with repetitions and rest times, and a phone is enough, with no camera or smartwatch.",
+              "EasyPhysio is free for physiotherapists, with no subscription and no patient limit. The physio chooses the exercises and adjusts the programme; the app replaces neither the assessment nor the sessions in the clinic.",
+            ],
+          },
+        ],
+      },
+    },
+  },
+  {
+    slug: "appli-kine-hebergement-hds",
+    audience: "kine",
+    published: "2026-11-25",
+    updated: "2026-11-25",
+    text: {
+      fr: {
+        title: "Appli kiné et données de santé : l'hébergement HDS",
+        description:
+          "Une appli de suivi kiné doit héberger les données de santé chez un hébergeur certifié HDS. EasyPhysio les héberge en France chez Scalingo, certifié HDS.",
+        sections: [
+          {
+            heading: "Pourquoi une appli kiné doit être hébergée HDS",
+            paragraphs: [
+              "En France, des données de santé confiées à un prestataire doivent être hébergées chez un hébergeur certifié HDS (Hébergeur de Données de Santé), selon l'article L.1111-8 du Code de la santé publique. Une appli de suivi des exercices en contient : douleur notée, séances faites, situation du patient, messages avec le kiné.",
+            ],
+          },
+          {
+            heading: "Où sont hébergées les données d'EasyPhysio ?",
+            paragraphs: [
+              "Les données de santé d'EasyPhysio sont hébergées en France chez Scalingo, hébergeur certifié HDS. L'application et sa base de données tournent sur une infrastructure ouverte avec l'option HDS.",
+            ],
+          },
+          {
+            heading: "Qui voit les données d'un patient ?",
+            paragraphs: ["Les règles sont appliquées par la base de données elle-même, pas seulement par l'affichage :"],
+            bullets: [
+              "le patient voit ses propres données, et son kiné celles de ses patients, jamais celles d'un autre kiné ;",
+              "le patient donne son accord explicite au traitement de ses données de santé avant d'utiliser l'application ;",
+              "il peut exporter ses données ou supprimer son compte depuis l'application ;",
+              "les données servent uniquement au suivi : jamais revendues ni utilisées à des fins publicitaires.",
+            ],
+          },
+          {
+            heading: "Et pour le kiné ?",
+            paragraphs: [
+              "EasyPhysio est gratuit pour le kiné, sans abonnement ni limite de patients : il compose des programmes à partir d'exercices filmés et suit l'assiduité et la douleur de ses patients. Cet article décrit le fonctionnement d'EasyPhysio ; ce n'est pas un conseil juridique.",
+            ],
+          },
+        ],
+      },
+      en: {
+        title: "Physio apps and health data: HDS hosting",
+        description:
+          "In France, a physio follow-up app must host health data with a certified HDS host. EasyPhysio hosts it in France with Scalingo, an HDS-certified host.",
+        sections: [
+          {
+            heading: "Why a physio app must use HDS hosting",
+            paragraphs: [
+              "In France, health data entrusted to a provider must be hosted by a certified health-data host (HDS, Hébergeur de Données de Santé), under article L.1111-8 of the Public Health Code. An exercise follow-up app holds such data: pain scores, sessions done, the patient's situation, messages with the physio.",
+            ],
+          },
+          {
+            heading: "Where is EasyPhysio's data hosted?",
+            paragraphs: [
+              "EasyPhysio's health data is hosted in France with Scalingo, an HDS-certified host. The app and its database run on infrastructure set up with the HDS option.",
+            ],
+          },
+          {
+            heading: "Who sees a patient's data?",
+            paragraphs: ["The rules are enforced by the database itself, not only by the screens:"],
+            bullets: [
+              "patients see their own data, and physios see their own patients' data, never another physio's;",
+              "patients give explicit consent to the processing of their health data before using the app;",
+              "they can export their data or delete their account from the app;",
+              "the data is used only for follow-up: never sold or used for advertising.",
+            ],
+          },
+          {
+            heading: "And for the physio?",
+            paragraphs: [
+              "EasyPhysio is free for physiotherapists, with no subscription and no patient limit: they build programmes from filmed exercises and track their patients' adherence and pain. This article describes how EasyPhysio works; it is not legal advice.",
+            ],
+          },
+        ],
+      },
+    },
+  },
   {
     slug: "exercices-kine-a-la-maison",
     audience: "patient",
     published: "2026-11-16",
-    updated: "2026-11-16",
+    updated: "2026-11-25",
     text: {
       fr: {
-        title: "Faire ses exercices de kiné à la maison : une appli pour vous guider entre deux séances",
+        title: "Exercices de kiné à la maison : l'appli qui vous guide",
         description:
-          "Votre kiné vous a donné des exercices à faire chez vous ? EasyPhysio vous guide séance par séance sur votre téléphone, et votre kiné suit vos progrès.",
+          "Pour faire vos exercices de kiné à la maison, EasyPhysio vous guide séance par séance sur votre téléphone, et votre kiné suit vos progrès et votre douleur.",
         sections: [
           {
             heading: "Pourquoi les exercices à la maison comptent",
@@ -286,15 +519,15 @@ export const GUIDES: Guide[] = [
             heading: "Toujours avec votre kiné",
             paragraphs: [
               "EasyPhysio ne remplace pas votre kiné : c'est lui qui choisit vos exercices et les adapte. En cas de douleur vive ou inhabituelle, arrêtez l'exercice et parlez-en à votre kiné.",
-              "L'application s'utilise sur invitation de votre kiné. Après {trial} jours offerts, le suivi coûte de {low} € à {high} € par mois pour l'accès à l'application selon l'engagement, plus {kine} € versés à votre kiné les mois où il met à jour votre programme. Ce suivi n'est pas remboursé par l'Assurance Maladie, et vous pouvez l'arrêter à tout moment.",
+              "L'application s'utilise sur invitation de votre kiné. Après {trial} jours offerts, le suivi coûte de {low} € à {high} € par mois pour l'accès à l'application selon l'engagement, plus le prix du programme fixé par votre kiné ({kine} € par défaut, parfois offert), versé à votre kiné les mois où il met à jour votre programme. Ce suivi n'est pas remboursé par l'Assurance Maladie, et vous pouvez l'arrêter à tout moment.",
             ],
           },
         ],
       },
       en: {
-        title: "Doing your physio exercises at home: an app to guide you between sessions",
+        title: "Physio exercises at home: the app that guides you",
         description:
-          "Has your physio given you exercises to do at home? EasyPhysio guides you session by session on your phone, and your physio follows your progress.",
+          "To do your physio exercises at home, EasyPhysio guides you session by session on your phone, and your physio follows your progress and your pain.",
         sections: [
           {
             heading: "Why home exercises matter",
@@ -317,7 +550,7 @@ export const GUIDES: Guide[] = [
             heading: "Always with your physio",
             paragraphs: [
               "EasyPhysio does not replace your physio: they choose your exercises and adapt them. If you feel sharp or unusual pain, stop the exercise and talk to your physio.",
-              "The app is used on your physio's invitation. After a {trial}-day free trial, follow-up costs €{low} to €{high} a month for app access depending on commitment, plus €{kine} paid to your physio in months when they update your programme. In France it is not reimbursed by the national health insurance, and you can stop at any time.",
+              "The app is used on your physio's invitation. After a {trial}-day free trial, follow-up costs €{low} to €{high} a month for app access depending on commitment, plus the programme price your physio sets (€{kine} by default, sometimes free), paid to your physio in months when they update your programme. In France it is not reimbursed by the national health insurance, and you can stop at any time.",
             ],
           },
         ],

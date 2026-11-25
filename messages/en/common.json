@@ -1,8 +1,8 @@
 {
   "site": {
-    "titleSuffix": "rehab exercise follow-up",
+    "homeTitle": "EasyPhysio: home exercise app, free for physios",
     "tagline": "Rehab that continues between appointments",
-    "description": "EasyPhysio connects physiotherapists and their patients: tailored exercise programmes, video-guided sessions and progress tracking between appointments."
+    "description": "Free for physiotherapists, with no subscription and no patient limit: filmed exercise programmes, guided sessions on the phone, pain tracking."
   },
   "language": {
     "label": "Language",

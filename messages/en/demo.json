@@ -2,6 +2,7 @@
   "actionDisabled": "Preview: action disabled.",
   "meta": {
     "entry": "Try the demo",
+    "entryDescription": "Try EasyPhysio for free, with no sign-up: the physio space and the patient space with fictional patients. Nothing is saved.",
     "kine": "Demo · physio space",
     "patient": "Demo · patient space",
     "previewHome": "Patient home preview",

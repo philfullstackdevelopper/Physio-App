@@ -2,6 +2,7 @@
   "actionDisabled": "Aperçu : action désactivée.",
   "meta": {
     "entry": "Essayer la démo",
+    "entryDescription": "Essayez EasyPhysio gratuitement, sans inscription : l'espace kiné et l'espace patient avec des patients fictifs. Rien n'est enregistré.",
     "kine": "Démo · espace kiné",
     "patient": "Démo · espace patient",
     "previewHome": "Aperçu Accueil patient",

@@ -73,7 +73,9 @@ export function applicationLd(description: string) {
         lowPrice: euros(LOWEST_PLATFORM_CENTS),
         highPrice: euros(HIGHEST_PLATFORM_CENTS),
         priceCurrency: "EUR",
-        description: `Abonnement mensuel du patient selon l'engagement, plus ${euros(KINE_FOLLOW_UP_CENTS)} € par mois versés directement à son kiné les mois où il met à jour le programme.`,
+        // Même formulation que la FAQ et les guides : depuis le 2026-11-19 le
+        // kiné fixe son prix (KINE_FOLLOW_UP_CENTS = prix par défaut).
+        description: `Abonnement mensuel du patient selon l'engagement, plus le prix du programme fixé par son kiné (${euros(KINE_FOLLOW_UP_CENTS)} € par mois par défaut), versé directement au kiné les mois où il met à jour le programme.`,
       },
     ],
   };

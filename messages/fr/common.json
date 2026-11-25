@@ -1,8 +1,8 @@
 {
   "site": {
-    "titleSuffix": "suivi d'exercices de rééducation",
+    "homeTitle": "EasyPhysio : exercices à domicile, gratuit pour le kiné",
     "tagline": "La rééducation continue entre deux séances",
-    "description": "EasyPhysio relie les kinésithérapeutes et leurs patients : programmes d'exercices sur mesure, séances guidées en vidéo et suivi de progression entre deux rendez-vous."
+    "description": "Gratuit pour le kiné, sans abonnement ni limite de patients : programmes d'exercices filmés, séances guidées sur téléphone, suivi de la douleur."
   },
   "language": {
     "label": "Langue",
