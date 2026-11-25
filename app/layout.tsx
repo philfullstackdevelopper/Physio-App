@@ -1,15 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Sans, Plus_Jakarta_Sans } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
-import { easyPhysioEN, easyPhysioFR } from "@/lib/clerk/localization";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import CookieBanner from "@/components/CookieBanner";
 import InstallPromptCatcher from "@/components/InstallPromptCatcher";
 import type { Locale } from "@/i18n/locales";
 import { siteConfig } from "@/lib/site";
-import AppBridge from "@/components/AppBridge";
-import WebPushPrompt from "@/components/WebPushPrompt";
 import { appStoreId, storeLinks } from "@/lib/app/storeLinks";
 import AppComingSoonBanner from "@/components/AppComingSoonBanner";
 import "./globals.css";
@@ -33,9 +29,6 @@ const brandFont = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["500", "800"],
 });
-
-// Pack de textes Clerk (connexion, création de compte) pour chaque langue.
-const CLERK_LOCALIZATION = { fr: easyPhysioFR, en: easyPhysioEN } satisfies Record<Locale, unknown>;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = (await getLocale()) as Locale;
@@ -104,15 +97,13 @@ export default async function RootLayout({
           <body> lui-même, pas sur ses enfants. */}
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <NextIntlClientProvider>
-          <ClerkProvider localization={CLERK_LOCALIZATION[locale] ?? easyPhysioFR}>
-            {children}
-            {/* Appli mobile : notifications (ne fait rien dans un navigateur). */}
-            <AppBridge />
-            {/* Site installé sur l'écran d'accueil : notifications (rien ailleurs). */}
-            <WebPushPrompt />
-            {/* Téléphone : « l'appli arrive bientôt » tant que les stores ne sont pas configurés. */}
-            <AppComingSoonBanner enabled={!storeLinks().ios && !storeLinks().android} />
-          </ClerkProvider>
+          {/* Pas de <ClerkProvider> ici (audit vitesse du 2026-11-25) : il est
+              posé seulement dans les parties qui utilisent Clerk
+              (components/ClerkShell.tsx), pour que les pages publiques ne
+              chargent pas son code. */}
+          {children}
+          {/* Téléphone : « l'appli arrive bientôt » tant que les stores ne sont pas configurés. */}
+          <AppComingSoonBanner enabled={!storeLinks().ios && !storeLinks().android} />
           <CookieBanner />
           {/* Garde l'offre « Installer » d'Android pour le bouton (lib/pwa/installPrompt.ts). */}
           <InstallPromptCatcher />

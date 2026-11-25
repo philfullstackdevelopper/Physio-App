@@ -8,6 +8,7 @@ import PatientWelcomeGate from "@/components/PatientWelcomeGate";
 import PatientNoRecordGate from "@/components/PatientNoRecordGate";
 import { createClient } from "@/lib/supabase/server";
 import { loadPatientGate } from "@/lib/patient/patientGate";
+import ClerkShell from "@/components/ClerkShell";
 
 const ONBOARDING_PATH = "/patient/onboarding";
 // Suivi mensuel à accepter quand le kiné a fixé un tarif au-dessus de 0 €.
@@ -30,7 +31,7 @@ const SUIVI_PATH = "/patient/suivi";
 // dans les pages (requirePatientAccess) et les actions du patient, pour qu'ils
 // ne puissent pas diverger (audit du 2026-11-10, B4). cache() : la page qui
 // suit ne refait pas les lectures.
-export default async function PatientLayout({ children }: { children: React.ReactNode }) {
+async function PatientLayoutInner({ children }: { children: React.ReactNode }) {
   const gate = await loadPatientGate();
   const { user } = gate;
 
@@ -129,5 +130,15 @@ export default async function PatientLayout({ children }: { children: React.Reac
         {children}
       </div>
     </div>
+  );
+}
+
+// Clerk (connexion) chargé seulement dans les parties qui en ont besoin
+// (audit vitesse du 2026-11-25, components/ClerkShell.tsx).
+export default function PatientLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ClerkShell>
+      <PatientLayoutInner>{children}</PatientLayoutInner>
+    </ClerkShell>
   );
 }

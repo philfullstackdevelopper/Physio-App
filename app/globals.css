@@ -106,6 +106,19 @@ body {
   }
 }
 
+/* Téléphone de l'accueil qui flotte doucement (components/PhoneMockup.tsx).
+   En CSS plutôt qu'avec motion : le navigateur l'anime seul, sans faire
+   travailler le JavaScript à chaque image (audit vitesse du 2026-11-25). */
+@keyframes ep-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 @keyframes ringIn {
   from {
     stroke-dashoffset: var(--ring-total, 264);

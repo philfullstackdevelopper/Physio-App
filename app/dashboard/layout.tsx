@@ -10,13 +10,14 @@ import { requireUser } from "@/lib/supabase/require-user";
 import { getInstructor } from "@/lib/dashboard/instructor";
 import { loadUnreadCount } from "@/lib/dashboard/unreadMessages";
 import { setInstructorStatus } from "@/lib/db/admin";
+import ClerkShell from "@/components/ClerkShell";
 
 // The one shared gate for every /dashboard/* route: not an instructor at all
 // -> back to the patient side; instructor but not yet approved by Philippe
 // (see app/signup/actions.ts / app/admin) -> a waiting/rejected message
 // instead of the real dashboard. Centralised here rather than repeated
 // per-page, since every /dashboard/* route already renders inside this layout.
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+async function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
@@ -116,5 +117,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
           Téléphone : marge du bas = barre d'onglets fixe (comme app/patient/layout.tsx). */}
       <div data-phone-pad="" className="relative min-w-0 flex-1 max-sm:pb-[calc(5rem+env(safe-area-inset-bottom))]">{children}</div>
     </div>
+  );
+}
+
+// Clerk (connexion) chargé seulement dans les parties qui en ont besoin
+// (audit vitesse du 2026-11-25, components/ClerkShell.tsx).
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ClerkShell>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </ClerkShell>
   );
 }

@@ -4,10 +4,11 @@ import { ShieldCheck, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/require-user";
 import { isAdminEmail } from "@/lib/admin";
+import ClerkShell from "@/components/ClerkShell";
 
 // Gate for every /admin/* route. Single-owner allowlist (ADMIN_EMAILS) rather
 // than a roles table — see lib/admin.ts.
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+async function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const user = await requireUser(supabase);
 
@@ -36,5 +37,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="mx-auto max-w-3xl p-6 max-sm:p-4 sm:p-8 short:sm:py-5">{children}</div>
       </div>
     </div>
+  );
+}
+
+// Clerk (connexion) chargé seulement dans les parties qui en ont besoin
+// (audit vitesse du 2026-11-25, components/ClerkShell.tsx).
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ClerkShell>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </ClerkShell>
   );
 }
