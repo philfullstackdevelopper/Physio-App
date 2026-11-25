@@ -19,6 +19,8 @@ const NAV_LINKS = [
   { href: "/#comparaison", key: "comparison" },
   { href: "/#formules", key: "pricing" },
   { href: "/#faq", key: "faq" },
+  // Guides : lien depuis toutes les pages vers les articles (SEO, 2026-11-25).
+  { href: "/guides", key: "guides" },
 ] as const;
 
 export default function SiteHeader() {

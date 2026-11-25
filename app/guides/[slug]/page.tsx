@@ -20,6 +20,28 @@ type Props = { params: Promise<{ slug: string }> };
 /** Auteur des guides (identique à l'auteur des données Article, lib/seo/structuredData.ts). */
 const AUTHOR = "Philippe Maupain";
 
+/**
+ * Liens dans le texte d'un guide : « [texte](/adresse) » dans lib/content/guides.ts
+ * devient un vrai lien. Les liens internes entre guides aident Google à trouver
+ * les pages et à comprendre de quoi elles parlent (texte du lien = sujet visé).
+ */
+function RichText({ text }: { text: string }) {
+  const parts = text.split(/(\[[^\]]+\]\([^)\s]+\))/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        const m = part.match(/^\[([^\]]+)\]\(([^)\s]+)\)$/);
+        if (!m) return part;
+        return (
+          <Link key={i} href={m[2]} className="font-medium text-blue-600 underline underline-offset-4 hover:text-blue-700">
+            {m[1]}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
 }
@@ -88,14 +110,14 @@ export default async function GuidePage({ params }: Props) {
               <section key={s.heading} className="mt-10">
                 <h2 className="font-display text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">{s.heading}</h2>
                 {s.paragraphs.map((p) => (
-                  <p key={p} className="mt-4 text-[1.0625rem] leading-relaxed text-slate-700">{p}</p>
+                  <p key={p} className="mt-4 text-[1.0625rem] leading-relaxed text-slate-700"><RichText text={p} /></p>
                 ))}
                 {s.bullets && (
                   <ul className="mt-4 space-y-2.5">
                     {s.bullets.map((b) => (
                       <li key={b} className="flex gap-3 text-[1.0625rem] leading-relaxed text-slate-700">
                         <span aria-hidden className="mt-[0.6em] h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-                        <span>{b}</span>
+                        <span><RichText text={b} /></span>
                       </li>
                     ))}
                   </ul>
