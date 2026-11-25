@@ -13,7 +13,10 @@ export async function generateMetadata() {
   const t = await getTranslations("demo.meta");
   // La démo s'essaie sans compte : c'est l'offre que les moteurs et les
   // assistants IA doivent lire en premier (pack de recherche SEO, 2026-11-25).
-  return { title: t("entry"), description: t("entryDescription") };
+  // Seule cette page d'entrée est indexée (« essayer gratuitement, sans
+  // inscription ») ; les écrans /demo/kine et /demo/patient, avec leurs
+  // patients fictifs, restent hors index (app/demo/layout.tsx).
+  return { title: t("entry"), description: t("entryDescription"), robots: { index: true, follow: true } };
 }
 
 export default async function DemoPage() {
